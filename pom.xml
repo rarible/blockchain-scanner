@@ -53,7 +53,7 @@
             </dependency>
 
             <dependency>
-                <groupId>com.fasterxml.jackson.module</groupId>
+                <groupId>com.rarible.blockchain.scanner</groupId>
                 <artifactId>rarible-blockchain-scanner-core</artifactId>
                 <version>${project.version}</version>
             </dependency>

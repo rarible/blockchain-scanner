@@ -1,9 +1,9 @@
 package com.rarible.blockchain.scanner.ethereum.repository
 
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
+import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.core.logging.LoggingUtils
 import com.rarible.core.mongo.repository.AbstractMongoRepository
-import com.rarible.ethereum.listener.log.domain.BlockHead
-import com.rarible.ethereum.listener.log.domain.BlockStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -20,33 +20,33 @@ import reactor.core.publisher.Mono
 @Component
 class EthereumBlockRepository(
     mongo: ReactiveMongoOperations
-) : AbstractMongoRepository<BlockHead, Long>(mongo, BlockHead::class.java) {
+) : AbstractMongoRepository<EthereumBlock, Long>(mongo, EthereumBlock::class.java) {
 
-    fun findByStatus(status: BlockStatus): Flux<BlockHead> =
-        mongo.find(Query(BlockHead::status isEqualTo status))
+    fun findByStatus(status: Block.Status): Flux<EthereumBlock> =
+        mongo.find(Query(EthereumBlock::status isEqualTo status))
 
     fun getLastBlock(): Mono<Long> {
-        return mongo.find(Query().with(Sort.by(Sort.Direction.DESC, "_id")).limit(1), BlockHead::class.java)
+        return mongo.find(Query().with(Sort.by(Sort.Direction.DESC, "_id")).limit(1), EthereumBlock::class.java)
             .next()
             .map { it.id }
     }
 
-    fun updateBlockStatus(number: Long, status: BlockStatus): Mono<Void> {
+    fun updateBlockStatus(number: Long, status: Block.Status): Mono<Void> {
         return LoggingUtils.withMarker { marker ->
             logger.info(marker, "updateBlockStatus $number $status")
             mongo.updateFirst(
-                Query(BlockHead::id isEqualTo number),
+                Query(EthereumBlock::id isEqualTo number),
                 Update().set("status", status),
-                BlockHead::class.java
+                EthereumBlock::class.java
             ).then()
         }
     }
 
-    fun findFirstByIdAsc(): Mono<BlockHead> =
-        mongo.findOne(Query().with(Sort.by(Sort.Direction.ASC, BlockHead::id.name)))
+    fun findFirstByIdAsc(): Mono<EthereumBlock> =
+        mongo.findOne(Query().with(Sort.by(Sort.Direction.ASC, EthereumBlock::id.name)))
 
-    fun findFirstByIdDesc(): Mono<BlockHead> =
-        mongo.findOne(Query().with(Sort.by(Sort.Direction.DESC, BlockHead::id.name)))
+    fun findFirstByIdDesc(): Mono<EthereumBlock> =
+        mongo.findOne(Query().with(Sort.by(Sort.Direction.DESC, EthereumBlock::id.name)))
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(EthereumBlockRepository::class.java)

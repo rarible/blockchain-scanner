@@ -3,12 +3,14 @@ package com.rarible.blockchain.scanner.ethereum.migration
 import com.github.cloudyrock.mongock.ChangeLog
 import com.github.cloudyrock.mongock.ChangeSet
 import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate
-import com.rarible.blockchain.scanner.service.reindex.ReindexTopicTaskHandler
+import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
 import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
 import org.bson.Document
+import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 @ChangeLog(order = "00003")
 class ChangeLog00003 {
@@ -18,7 +20,7 @@ class ChangeLog00003 {
             .forEach {
                 val param = it.getString("_id")
                 val criteria = Criteria().andOperator(
-                    Task::type isEqualTo ReindexTopicTaskHandler.TOPIC,
+                    Task::type isEqualTo ReconciliationTaskHandler.TOPIC,
                     Task::param isEqualTo param
                 )
                 val found = mongockTemplate.findOne<Task>(Query(criteria))
@@ -28,7 +30,7 @@ class ChangeLog00003 {
                         else -> TaskStatus.NONE
                     }
                     val newTask = Task(
-                        type = ReindexTopicTaskHandler.TOPIC,
+                        type = ReconciliationTaskHandler.TOPIC,
                         param = param,
                         lastStatus = taskStatus,
                         state = it.getLong("reindexEndBlockNumber"),

@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
-import com.rarible.blockchain.scanner.model.EventData
-import com.rarible.blockchain.scanner.model.LogEvent
+import com.rarible.blockchain.scanner.framework.model.EventData
+import com.rarible.blockchain.scanner.framework.model.LogEvent
 import io.daonomic.rpc.domain.Word
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id

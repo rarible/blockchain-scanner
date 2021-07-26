@@ -2,8 +2,8 @@ package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEvent
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogEventRepository
-import com.rarible.blockchain.scanner.model.LogEventStatus
-import com.rarible.blockchain.scanner.service.LogEventService
+import com.rarible.blockchain.scanner.framework.model.LogEvent
+import com.rarible.blockchain.scanner.framework.service.LogEventService
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.common.toOptional
 import io.daonomic.rpc.domain.Word
@@ -92,7 +92,7 @@ class EthereumLogEventService(
         collection: String,
         blockHash: String,
         topic: String,
-        status: LogEventStatus?
+        status: LogEvent.Status?
     ): Flux<EthereumLogEvent> {
         return ethereumLogEventRepository.findAndDelete(
             collection,
@@ -105,7 +105,7 @@ class EthereumLogEventService(
     override fun updateStatus(
         collection: String,
         log: EthereumLogEvent,
-        status: LogEventStatus
+        status: LogEvent.Status
     ): Mono<EthereumLogEvent> {
         val toSave = log.copy(status = status, visible = false)
         return ethereumLogEventRepository.save(collection, toSave)

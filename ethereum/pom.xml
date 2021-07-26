@@ -13,7 +13,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
+            <groupId>com.rarible.blockchain.scanner</groupId>
             <artifactId>rarible-blockchain-scanner-core</artifactId>
         </dependency>
 
@@ -21,10 +21,6 @@
             <groupId>io.daonomic.scalether</groupId>
             <artifactId>core-mono_${scala.major.version}</artifactId>
             <version>${scalether.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.rarible.ethereum</groupId>
-            <artifactId>rarible-ethereum-listener-log-service</artifactId>
         </dependency>
         <dependency>
             <groupId>com.rarible.ethereum</groupId>

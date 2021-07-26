@@ -1,9 +1,9 @@
 package com.rarible.blockchain.scanner.ethereum.mapper
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEvent
-import com.rarible.blockchain.scanner.mapper.LogEventMapper
-import com.rarible.blockchain.scanner.model.EventData
-import com.rarible.blockchain.scanner.model.LogEvent
+import com.rarible.blockchain.scanner.framework.mapper.LogEventMapper
+import com.rarible.blockchain.scanner.framework.model.EventData
+import com.rarible.blockchain.scanner.framework.model.LogEvent
 import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
 import org.bson.types.ObjectId
 import scalether.domain.response.Block

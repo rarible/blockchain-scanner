@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEvent
-import com.rarible.blockchain.scanner.model.LogEvent
+import com.rarible.blockchain.scanner.framework.model.LogEvent
 import com.rarible.core.logging.LoggingUtils
 import io.daonomic.rpc.domain.Word
 import org.bson.types.ObjectId

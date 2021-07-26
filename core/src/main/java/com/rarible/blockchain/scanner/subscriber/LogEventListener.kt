@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.subscriber
 
-import com.rarible.blockchain.scanner.model.LogEvent
+import com.rarible.blockchain.scanner.framework.model.LogEvent
 import reactor.core.publisher.Mono
 
 interface LogEventListener<L : LogEvent> {
