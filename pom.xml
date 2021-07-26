@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <groupId>com.rarible</groupId>
+        <artifactId>rarible-parent-pom</artifactId>
+        <version>1.1-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.rarible.blockchain.scanner</groupId>
+    <artifactId>rarible-blockchain-scanner</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <nexus.maven.public>http://nexus.rarible.int/repository/maven-public/</nexus.maven.public>
+
+        <!-- ========= Internal Dependencies ========== -->
+        <version.rarible.core>1.2-SNAPSHOT</version.rarible.core>
+        <version.rarible.ethereum>1.0-SNAPSHOT</version.rarible.ethereum>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>nexus-maven-public</id>
+            <url>http://nexus.rarible.int/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>nexus-snapshots</id>
+            <url>http://nexus.rarible.int/repository/maven-snapshots/</url>
+        </repository>
+    </distributionManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.rarible.core</groupId>
+                <artifactId>rarible-core-parent</artifactId>
+                <version>${version.rarible.core}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.rarible.ethereum</groupId>
+                <artifactId>rarible-ethereum-parent</artifactId>
+                <version>${version.rarible.ethereum}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>rarible-blockchain-scanner-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>5.7.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <modules>
+        <module>core</module>
+        <module>ethereum</module>
+    </modules>
+
+</project>
+
