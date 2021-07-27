@@ -2,19 +2,21 @@ package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.data.RichLogEvent
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEvent
 import com.rarible.blockchain.scanner.framework.model.LogEvent
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toFlux
-import scalether.domain.response.Block
-import scalether.domain.response.Transaction
+import scalether.core.MonoEthereum
 import scalether.java.Lists
 
-class EthereumPendingLogService() : PendingLogService<Block<Transaction>, EthereumLogEvent> {
+class EthereumPendingLogService(
+    private val monoEthereum: MonoEthereum
+) : PendingLogService<EthereumBlockchainBlock, EthereumLogEvent> {
 
     override fun markInactive(
-        block: Block<Transaction>,
+        block: EthereumBlockchainBlock,
         logs: List<RichLogEvent<EthereumLogEvent>>
     ): Flux<LogEventStatusUpdate<EthereumLogEvent>> {
         if (logs.isEmpty()) {
@@ -22,7 +24,8 @@ class EthereumPendingLogService() : PendingLogService<Block<Transaction>, Ethere
         }
         val byTxHash = logs.groupBy { it.log.transactionHash }
         val byFromNonce = logs.groupBy { Pair(it.log.from, it.log.nonce) }
-        return Flux.fromIterable(Lists.toJava(block.transactions()))
+        val fullBlock = monoEthereum.ethGetFullBlockByHash(block.ethBlock.hash())
+        return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
             .flatMap { tx ->
                 val first = byTxHash[tx.hash().toString()] ?: emptyList() // TODO ???
                 val second =
