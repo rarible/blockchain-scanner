@@ -58,7 +58,7 @@ class BlockEventHandler<OB : BlockchainBlock, OL, L : LogEvent, D : EventData>(
         }
     }
 
-    fun onBlockEvent(event: NewBlockEvent): Flux<L>? {
+    fun onBlockEvent(event: NewBlockEvent): Flux<L> {
         return Flux.fromIterable(handlers)
             .flatMap { it.onBlockEvent(event) }
     }
