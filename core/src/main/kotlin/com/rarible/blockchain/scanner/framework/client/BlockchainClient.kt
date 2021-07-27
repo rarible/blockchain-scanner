@@ -12,9 +12,9 @@ interface BlockchainClient<OB : BlockchainBlock, OL> {
 
     fun listenNewBlocks(): Flux<OB>
 
-    fun getBlockMeta(id: Long): Mono<OB>
+    fun getBlock(id: Long): Mono<OB>
 
-    fun getBlockMeta(hash: String): Mono<OB>
+    fun getBlock(hash: String): Mono<OB>
 
     fun getLastBlockNumber(): Mono<Long>
 

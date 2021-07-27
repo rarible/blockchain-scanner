@@ -64,7 +64,7 @@ class BlockchainScannerService<OB : BlockchainBlock, OL, B : Block, L : LogEvent
     fun reindexPendingBlock(block: B): Mono<Void?> {
         return LoggingUtils.withMarker { marker: Marker? ->
             logger.info(marker, "reindexing block {}", block)
-            blockchainClient.getBlockMeta(block.id).flatMap {
+            blockchainClient.getBlock(block.id).flatMap {
                 val event = NewBlockEvent(block.id, it.hash, it.timestamp, null)
                 onBlock(event)
             }

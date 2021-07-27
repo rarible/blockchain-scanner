@@ -39,7 +39,7 @@ class ReconciliationBlockIndexer<OB : BlockchainBlock, OL, L : LogEvent, D : Eve
     private fun reindexBlock(logs: BlockLogs<OL>): Flux<L> {
         return LoggingUtils.withMarkerFlux { marker ->
             logger.info(marker, "reindex. processing block ${logs.blockHash} logs: ${logs.logs.size}")
-            blockchainClient.getBlockMeta(logs.blockHash)
+            blockchainClient.getBlock(logs.blockHash)
                 .flatMapMany { block -> logEventProcessor.processLogs(marker, block, logs.logs) }
         }.loggerContext(mapOf("blockHash" to logs.blockHash))
     }

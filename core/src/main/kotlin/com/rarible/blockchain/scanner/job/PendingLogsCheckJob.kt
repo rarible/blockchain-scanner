@@ -89,7 +89,7 @@ class PendingLogsCheckJob<L : LogEvent>(
                         Mono.empty()
                     } else {
                         logger.info("for log $log\nfound transaction $tx\nit's confirmed. update logs for its block")
-                        blockchainClient.getBlockMeta(blockHash)
+                        blockchainClient.getBlock(blockHash)
                             .map { block -> Pair(null, block) }
                     }
                 }

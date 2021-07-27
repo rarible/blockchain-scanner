@@ -34,13 +34,13 @@ class EthereumClient(
             .map { EthereumBlockchainBlock(it) }
     }
 
-    override fun getBlockMeta(hash: String): Mono<EthereumBlockchainBlock> {
+    override fun getBlock(hash: String): Mono<EthereumBlockchainBlock> {
         return ethereum.ethGetBlockByHash(Word.apply(hash)).map {
             EthereumBlockchainBlock(it)
         }
     }
 
-    override fun getBlockMeta(id: Long): Mono<EthereumBlockchainBlock> {
+    override fun getBlock(id: Long): Mono<EthereumBlockchainBlock> {
         return ethereum.ethGetBlockByNumber(BigInteger.valueOf(id)).map {
             EthereumBlockchainBlock(it)
         }

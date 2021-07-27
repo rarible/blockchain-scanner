@@ -34,7 +34,7 @@ class BlockEventSubscriber<OB : BlockchainBlock, OL, L : LogEvent, D : EventData
 
         val descriptor = subscriber.getDescriptor()
 
-        val originalBlock = blockchainClient.getBlockMeta(event.hash)
+        val originalBlock = blockchainClient.getBlock(event.hash)
             .doOnError { th -> logger.warn("Unable to get block by hash: " + event.hash, th) }
             .retryWhen(backoff)
 

@@ -11,12 +11,7 @@ interface LogEvent : Identifiable<ObjectId> {
     val version: Long?
 
     val topic: String
-    val data: EventData
     val transactionHash: String
-    val index: Int
-    val minorLogIndex: Int
-    val from: String?
-    val nonce: Long?
 
     enum class Status {
         PENDING,

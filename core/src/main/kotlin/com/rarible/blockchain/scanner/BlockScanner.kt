@@ -38,7 +38,7 @@ class BlockScanner<OB : BlockchainBlock, OL, B : Block>(
                         }
                         Flux.concat(
                             Flux.fromIterable(range.asIterable())
-                                .concatMap { blockchainClient.getBlockMeta(it) },
+                                .concatMap { blockchainClient.getBlock(it) },
                             Flux.just(newBlock)
                         )
                     }
@@ -60,7 +60,7 @@ class BlockScanner<OB : BlockchainBlock, OL, B : Block>(
                         //do nothing if parent hash is the same
                         parentBlockHash.get() == b.parentHash -> Flux.empty()
                         //fetch parent block and save it if parent block hash changed
-                        else -> blockchainClient.getBlockMeta(b.number - 1)
+                        else -> blockchainClient.getBlock(b.number - 1)
                             .flatMapMany { insertOrUpdateBlock(marker, it) }
                     }
                 },

@@ -16,12 +16,12 @@ data class EthereumLogEvent(
 
     override val topic: String,
     override val transactionHash: String,
-    override val from: String? = null,
-    override val nonce: Long? = null,
-    override val minorLogIndex: Int,
-    override val index: Int,
-    override val data: EventData,
 
+    val from: String? = null,
+    val nonce: Long? = null,
+    val minorLogIndex: Int,
+    val index: Int,
+    val data: EventData,
     val address: String,
     val status: LogEvent.Status,
     val blockHash: Word? = null,
