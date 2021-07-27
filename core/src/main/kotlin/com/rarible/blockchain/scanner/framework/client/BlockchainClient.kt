@@ -8,7 +8,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.util.*
 
-interface BlockchainClient<OB : BlockchainBlock, OL> {
+interface BlockchainClient<OB : BlockchainBlock, OL : BlockchainLog> {
 
     fun listenNewBlocks(): Flux<OB>
 

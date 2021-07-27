@@ -1,9 +1,9 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEvent
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogEventRepository
-import com.rarible.blockchain.scanner.framework.model.LogEvent
-import com.rarible.blockchain.scanner.framework.service.LogEventService
+import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.common.toOptional
 import io.daonomic.rpc.domain.Word
@@ -16,21 +16,21 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @Component
-class EthereumLogEventService(
+class EthereumLogService(
     private val ethereumLogEventRepository: EthereumLogEventRepository
-) : LogEventService<EthereumLogEvent> {
+) : LogService<EthereumLog> {
 
-    private val logger: Logger = LoggerFactory.getLogger(EthereumLogEventService::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override fun delete(collection: String, log: EthereumLogEvent): Mono<EthereumLogEvent> {
+    override fun delete(collection: String, log: EthereumLog): Mono<EthereumLog> {
         return ethereumLogEventRepository.delete(collection, log)
     }
 
     override fun saveOrUpdate(
         marker: Marker,
         collection: String,
-        event: EthereumLogEvent
-    ): Mono<EthereumLogEvent> {
+        event: EthereumLog
+    ): Mono<EthereumLog> {
         val opt = ethereumLogEventRepository.findVisibleByKey(
             collection,
             Word.apply(event.transactionHash), // TODO ???
@@ -68,19 +68,19 @@ class EthereumLogEventService(
         }
     }
 
-    override fun save(collection: String, log: EthereumLogEvent): Mono<EthereumLogEvent> {
+    override fun save(collection: String, log: EthereumLog): Mono<EthereumLog> {
         return ethereumLogEventRepository.save(collection, log)
     }
 
-    override fun findPendingLogs(collection: String): Flux<EthereumLogEvent> {
+    override fun findPendingLogs(collection: String): Flux<EthereumLog> {
         return ethereumLogEventRepository.findPendingLogs(collection)
     }
 
-    override fun findLogEvent(collection: String, id: ObjectId): Mono<EthereumLogEvent> {
+    override fun findLogEvent(collection: String, id: ObjectId): Mono<EthereumLog> {
         return ethereumLogEventRepository.findLogEvent(collection, id)
     }
 
-    override fun findAndRevert(collection: String, blockHash: String, topic: String): Flux<EthereumLogEvent> {
+    override fun findAndRevert(collection: String, blockHash: String, topic: String): Flux<EthereumLog> {
         return ethereumLogEventRepository.findAndRevert(
             collection,
             Word.apply(blockHash), // TODO ???
@@ -92,8 +92,8 @@ class EthereumLogEventService(
         collection: String,
         blockHash: String,
         topic: String,
-        status: LogEvent.Status?
-    ): Flux<EthereumLogEvent> {
+        status: Log.Status?
+    ): Flux<EthereumLog> {
         return ethereumLogEventRepository.findAndDelete(
             collection,
             Word.apply(blockHash), // TODO ???
@@ -104,9 +104,9 @@ class EthereumLogEventService(
 
     override fun updateStatus(
         collection: String,
-        log: EthereumLogEvent,
-        status: LogEvent.Status
-    ): Mono<EthereumLogEvent> {
+        log: EthereumLog,
+        status: Log.Status
+    ): Mono<EthereumLog> {
         val toSave = log.copy(status = status, visible = false)
         return ethereumLogEventRepository.save(collection, toSave)
     }

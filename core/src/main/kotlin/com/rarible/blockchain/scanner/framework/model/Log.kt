@@ -6,7 +6,7 @@ import org.bson.types.ObjectId
 /**
  * Basic data class for blockchain block data to be stored in Mongo
  */
-interface LogEvent : Identifiable<ObjectId> {
+interface Log : Identifiable<ObjectId> {
     override val id: ObjectId
     val version: Long?
 
@@ -20,6 +20,5 @@ interface LogEvent : Identifiable<ObjectId> {
         DROPPED,
         INACTIVE
     }
-
 
 }

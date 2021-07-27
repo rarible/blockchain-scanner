@@ -6,9 +6,11 @@ import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
+@Component
 class EthereumBlockService(
     private val blockRepository: EthereumBlockRepository
 ) : BlockService<EthereumBlock> {

@@ -1,11 +1,11 @@
 package com.rarible.blockchain.scanner.subscriber
 
-import com.rarible.blockchain.scanner.framework.model.LogEvent
+import com.rarible.blockchain.scanner.framework.model.Log
 import reactor.core.publisher.Mono
 
-interface LogEventListener<L : LogEvent> {
+interface LogEventListener<L : Log> {
 
-    val topics: List<String>
+    val topics: Set<String>
 
     fun onLogEvent(log: L): Mono<Void>
 }

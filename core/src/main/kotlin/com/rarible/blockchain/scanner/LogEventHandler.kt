@@ -1,9 +1,10 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.framework.mapper.LogEventMapper
+import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.EventData
-import com.rarible.blockchain.scanner.framework.model.LogEvent
-import com.rarible.blockchain.scanner.framework.service.LogEventService
+import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.core.common.retryOptimisticLock
@@ -14,10 +15,10 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 
-class LogEventProcessor<OB, OL, L : LogEvent, D : EventData>(
+class LogEventHandler<OB, OL, L : Log, D : EventData>(
     val subscriber: LogEventSubscriber<OL, OB, D>,
-    private val logEventMapper: LogEventMapper<OL, OB, L>,
-    private val logEventService: LogEventService<L>,
+    private val logMapper: LogMapper<OL, OB, L>,
+    private val logService: LogService<L>,
     private val logEventListeners: List<LogEventListener<L>>
 ) {
 
@@ -30,7 +31,21 @@ class LogEventProcessor<OB, OL, L : LogEvent, D : EventData>(
         )
     }
 
-    fun processLogs(marker: Marker, block: OB, logs: List<OL>): Flux<L> {
+    fun beforeHandleBlock(event: BlockEvent): Flux<L> {
+        val collection = subscriber.getDescriptor().collection
+        val topic = subscriber.getDescriptor().topic
+
+        return if (event.reverted != null) {
+            logService
+                .findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
+                .thenMany(logService.findAndRevert(collection, topic, event.reverted.hash))
+        } else {
+            logService.findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
+                .thenMany(Flux.empty())
+        }
+    }
+
+    fun handleLogs(marker: Marker, block: OB, logs: List<OL>): Flux<L> {
         if (logs.isNotEmpty()) {
             logger.info(marker, "processLogs ${logs.size} logs")
         }
@@ -47,7 +62,7 @@ class LogEventProcessor<OB, OL, L : LogEvent, D : EventData>(
             .collectList()
             .flatMapIterable { dataCollection ->
                 dataCollection.mapIndexed { minorLogIndex, data ->
-                    logEventMapper.map(
+                    logMapper.map(
                         block,
                         log,
                         index,
@@ -66,7 +81,7 @@ class LogEventProcessor<OB, OL, L : LogEvent, D : EventData>(
             Mono.just(it)
                 .flatMap { toSave ->
                     logger.info(marker, "saving $toSave to $collection")
-                    logEventService.saveOrUpdate(marker, collection, it)
+                    logService.saveOrUpdate(marker, collection, it)
                 }.retryOptimisticLock(3)
         }
     }

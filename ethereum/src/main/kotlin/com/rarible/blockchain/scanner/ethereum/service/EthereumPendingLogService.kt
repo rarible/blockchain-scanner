@@ -1,24 +1,26 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
+import com.rarible.blockchain.scanner.data.LogEvent
 import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
-import com.rarible.blockchain.scanner.data.RichLogEvent
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEvent
-import com.rarible.blockchain.scanner.framework.model.LogEvent
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toFlux
 import scalether.core.MonoEthereum
 import scalether.java.Lists
 
+@Component
 class EthereumPendingLogService(
     private val monoEthereum: MonoEthereum
-) : PendingLogService<EthereumBlockchainBlock, EthereumLogEvent> {
+) : PendingLogService<EthereumBlockchainBlock, EthereumLog> {
 
     override fun markInactive(
         block: EthereumBlockchainBlock,
-        logs: List<RichLogEvent<EthereumLogEvent>>
-    ): Flux<LogEventStatusUpdate<EthereumLogEvent>> {
+        logs: List<LogEvent<EthereumLog>>
+    ): Flux<LogEventStatusUpdate<EthereumLog>> {
         if (logs.isEmpty()) {
             return Flux.empty()
         }
@@ -31,8 +33,8 @@ class EthereumPendingLogService(
                 val second =
                     (byFromNonce[Pair(tx.from().hex(), tx.nonce().toLong())] ?: emptyList()) - first // TODO ???
                 listOf(
-                    LogEventStatusUpdate(first, LogEvent.Status.INACTIVE),
-                    LogEventStatusUpdate(second, LogEvent.Status.DROPPED)
+                    LogEventStatusUpdate(first, Log.Status.INACTIVE),
+                    LogEventStatusUpdate(second, Log.Status.DROPPED)
                 ).toFlux()
             }
     }

@@ -8,6 +8,7 @@ import io.daonomic.rpc.domain.Word
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.Marker
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.util.retry.RetryBackoffSpec
@@ -21,11 +22,12 @@ import scalether.util.Hex
 import java.math.BigInteger
 import java.util.*
 
+@Component
 class EthereumClient(
     private val ethereum: MonoEthereum,
     private val ethPubSub: EthPubSub,
     private val backoff: RetryBackoffSpec
-) : BlockchainClient<EthereumBlockchainBlock, Log> {
+) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog> {
 
     private val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
@@ -71,14 +73,14 @@ class EthereumClient(
         block: EthereumBlockchainBlock,
         descriptor: LogEventDescriptor,
         marker: Marker
-    ): Mono<List<Log>> {
+    ): Mono<List<EthereumBlockchainLog>> {
         val filter = LogFilter
             .apply(TopicFilter.simple(Word.apply(descriptor.topic))) // TODO ???
             .address(*descriptor.contracts.map { Address.apply(it) }.toTypedArray())
             .blockHash(block.ethBlock.hash())
 
         return ethereum.ethGetLogsJava(filter)
-            .map { orderByTransaction(it) }
+            .map { orderByTransaction(it).map { log -> EthereumBlockchainLog(log) } }
             .doOnError { logger.warn(marker, "Unable to get logs for block ${block.ethBlock.hash()}", it) }
             .retryWhen(backoff)
     }
@@ -87,7 +89,7 @@ class EthereumClient(
         descriptor: LogEventDescriptor,
         range: LongRange,
         marker: Marker
-    ): Flux<BlockLogs<Log>> {
+    ): Flux<BlockLogs<EthereumBlockchainLog>> {
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
@@ -107,7 +109,7 @@ class EthereumClient(
                     log.blockHash()
                 }.entries.map { e ->
                     val orderedLogs = orderByTransaction(e.value)
-                    BlockLogs(e.key.toString(), orderedLogs)
+                    BlockLogs(e.key.toString(), orderedLogs.map { EthereumBlockchainLog(it) })
                 }
             }
     }

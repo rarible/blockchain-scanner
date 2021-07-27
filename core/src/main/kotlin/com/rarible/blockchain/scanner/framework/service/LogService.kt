@@ -1,12 +1,12 @@
 package com.rarible.blockchain.scanner.framework.service
 
-import com.rarible.blockchain.scanner.framework.model.LogEvent
+import com.rarible.blockchain.scanner.framework.model.Log
 import org.bson.types.ObjectId
 import org.slf4j.Marker
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
-interface LogEventService<L : LogEvent> {
+interface LogService<L : Log> {
 
     fun delete(collection: String, log: L): Mono<L>
 
@@ -20,9 +20,9 @@ interface LogEventService<L : LogEvent> {
 
     fun findAndRevert(collection: String, blockHash: String, topic: String): Flux<L>
 
-    fun findAndDelete(collection: String, blockHash: String, topic: String, status: LogEvent.Status? = null): Flux<L>
+    fun findAndDelete(collection: String, blockHash: String, topic: String, status: Log.Status? = null): Flux<L>
 
-    fun updateStatus(collection: String, log: L, status: LogEvent.Status): Mono<L>
+    fun updateStatus(collection: String, log: L, status: Log.Status): Mono<L>
 
 
 }

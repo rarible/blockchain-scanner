@@ -1,9 +1,9 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.pending
 
+import com.rarible.blockchain.scanner.data.LogEvent
 import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
-import com.rarible.blockchain.scanner.data.RichLogEvent
-import com.rarible.blockchain.scanner.framework.model.LogEvent
-import com.rarible.blockchain.scanner.framework.service.LogEventService
+import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
 import com.rarible.core.common.retryOptimisticLock
@@ -14,8 +14,8 @@ import org.slf4j.Marker
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toFlux
 
-class PendingLogMarker<OB, L : LogEvent>(
-    private val logEventService: LogEventService<L>,
+class PendingLogMarker<OB, L : Log>(
+    private val logService: LogService<L>,
     private val pendingLogService: PendingLogService<OB, L>
 ) {
 
@@ -23,9 +23,9 @@ class PendingLogMarker<OB, L : LogEvent>(
 
     fun markInactive(block: OB, descriptor: LogEventDescriptor): Flux<L> {
         return LoggingUtils.withMarkerFlux { marker ->
-            logEventService.findPendingLogs(descriptor.collection)
+            logService.findPendingLogs(descriptor.collection)
                 .filter { it.topic == descriptor.topic }
-                .map { RichLogEvent(it, descriptor.collection) }
+                .map { LogEvent(it, descriptor.collection) }
                 .collectList()
                 .flatMapMany { pendingLogService.markInactive(block, it) }
                 .flatMap { markInactive(marker, it) }
@@ -38,7 +38,7 @@ class PendingLogMarker<OB, L : LogEvent>(
         return if (logs.isNotEmpty()) {
             logger.info(marker, "markInactive $status $logs")
             logs.toFlux().flatMap {
-                logEventService.updateStatus(it.collection, it.log, status)
+                logService.updateStatus(it.collection, it.log, status)
                     .retryOptimisticLock()
             }
         } else {

@@ -1,13 +1,13 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
 import com.rarible.blockchain.scanner.framework.model.EventData
-import com.rarible.blockchain.scanner.framework.model.LogEvent
+import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 
-data class EthereumLogEvent(
+data class EthereumLog(
     @Id
     override val id: ObjectId,
 
@@ -23,10 +23,10 @@ data class EthereumLogEvent(
     val index: Int,
     val data: EventData,
     val address: String,
-    val status: LogEvent.Status,
+    val status: Log.Status,
     val blockHash: Word? = null,
     val blockNumber: Long? = null,
     val logIndex: Int? = null,
     val visible: Boolean = true
 
-) : LogEvent
+) : Log

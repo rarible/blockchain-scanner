@@ -1,9 +1,8 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.core.task.TaskService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -11,15 +10,13 @@ import org.springframework.stereotype.Component
 @Component
 class ReconciliationTaskInitializer(
     private val taskService: TaskService,
-    private val subscribers: List<LogEventSubscriber<*, *, *>>,
-    @Value("\${ethereumBlockReindexEnabled:true}") private val reindexEnabled: Boolean
+    private val reconciliationExecutor: ReconciliationExecutor,
+    private val properties: BlockchainScannerProperties
 ) {
     @Scheduled(initialDelayString = "\${taskInitializerDelay:60000}", fixedDelay = Long.MAX_VALUE)
     fun initialize() {
-        if (reindexEnabled) {
-            subscribers
-                .map { it.getDescriptor().topic }
-                .distinct()
+        if (properties.reindexEnabled) {
+            reconciliationExecutor.getTopics()
                 .forEach {
                     taskService.runTask(ReconciliationTaskHandler.TOPIC, it)
                 }
