@@ -18,7 +18,7 @@ class ChangeLog00001 {
     @ChangeSet(id = "fillMinorLogIndex", order = "0000", author = "eugene")
     fun fillMinorLogIndex(
         template: MongockTemplate,
-        @NonLockGuarded holderEthereum: EthereumLogEventSubscriberHolder<*>
+        @NonLockGuarded holderEthereum: EthereumLogEventSubscriberHolder
     ) {
         val collections = holderEthereum.subscribers.map { it.getDescriptor().collection }.toSet()
         collections.forEach {
@@ -33,7 +33,7 @@ class ChangeLog00001 {
     @ChangeSet(id = "ensureInitialIndexes", order = "00001", author = "eugene")
     fun ensureInitialIndexes(
         template: MongockTemplate,
-        @NonLockGuarded holderEthereum: EthereumLogEventSubscriberHolder<*>
+        @NonLockGuarded holderEthereum: EthereumLogEventSubscriberHolder
     ) {
         val collections = holderEthereum.subscribers.map { it.getDescriptor().collection }.toSet()
         collections.forEach { createInitialIndices(template, it) }

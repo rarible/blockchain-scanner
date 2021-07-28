@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -19,9 +18,9 @@ import reactor.util.retry.Retry
 import java.time.Duration
 import java.util.stream.Collectors
 
-class BlockEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log, D : EventData>(
+class BlockEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB, D>>,
+    subscribers: List<LogEventSubscriber<OL, OB>>,
     logMapper: LogMapper<OL, OB, L>,
     logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,
@@ -30,7 +29,7 @@ class BlockEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log, D : E
     minBackoff: Long
 ) {
 
-    private val subscribers = ArrayList<BlockEventSubscriber<OB, OL, L, D>>()
+    private val subscribers = ArrayList<BlockEventSubscriber<OB, OL, L>>()
 
     private val pendingLogMarker = PendingLogMarker(
         logService,

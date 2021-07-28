@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
@@ -17,9 +16,9 @@ import org.slf4j.LoggerFactory
 import reactor.core.publisher.Flux
 import reactor.util.retry.RetryBackoffSpec
 
-class BlockEventSubscriber<OB : BlockchainBlock, OL : BlockchainLog, L : Log, D : EventData>(
+class BlockEventSubscriber<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     private val blockchainClient: BlockchainClient<OB, OL>,
-    val subscriber: LogEventSubscriber<OL, OB, D>,
+    val subscriber: LogEventSubscriber<OL, OB>,
     logMapper: LogMapper<OL, OB, L>,
     logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,

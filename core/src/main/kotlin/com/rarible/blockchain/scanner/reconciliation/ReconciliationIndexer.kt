@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.data.BlockLogs
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.logging.LoggingUtils
@@ -15,9 +14,9 @@ import org.slf4j.LoggerFactory
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
 
-class ReconciliationIndexer<OB : BlockchainBlock, OL : BlockchainLog, L : Log, D : EventData>(
+class ReconciliationIndexer<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     private val blockchainClient: BlockchainClient<OB, OL>,
-    private val logEventHandler: LogEventHandler<OB, OL, L, D>,
+    private val logEventHandler: LogEventHandler<OB, OL, L>,
     private val batchSize: Long
 ) {
 

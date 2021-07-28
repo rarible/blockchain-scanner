@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -23,9 +22,9 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.Duration
 
-class DefaultBlockListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log, D : EventData>(
+class DefaultBlockListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log>(
     blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB, D>>,
+    subscribers: List<LogEventSubscriber<OL, OB>>,
     private val blockService: BlockService<B>,
     logMapper: LogMapper<OL, OB, L>,
     logService: LogService<L>,
@@ -35,7 +34,7 @@ class DefaultBlockListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, 
     private val properties: BlockchainScannerProperties
 ) : BlockListener {
 
-    private val blockEventHandler: BlockEventHandler<OB, OL, L, D> = BlockEventHandler(
+    private val blockEventHandler: BlockEventHandler<OB, OL, L> = BlockEventHandler(
         blockchainClient,
         subscribers,
         logMapper,

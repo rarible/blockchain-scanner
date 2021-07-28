@@ -6,16 +6,15 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import reactor.core.publisher.Flux
 
-class ReconciliationService<OB : BlockchainBlock, OL : BlockchainLog, L : Log, D : EventData>(
+class ReconciliationService<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     private val blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB, D>>,
+    subscribers: List<LogEventSubscriber<OL, OB>>,
     logMapper: LogMapper<OL, OB, L>,
     logService: LogService<L>,
     logEventListeners: List<LogEventListener<L>>,

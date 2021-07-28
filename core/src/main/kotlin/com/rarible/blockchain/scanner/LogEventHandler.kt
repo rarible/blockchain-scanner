@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
@@ -15,8 +14,8 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 
-class LogEventHandler<OB, OL, L : Log, D : EventData>(
-    val subscriber: LogEventSubscriber<OL, OB, D>,
+class LogEventHandler<OB, OL, L : Log>(
+    val subscriber: LogEventSubscriber<OL, OB>,
     private val logMapper: LogMapper<OL, OB, L>,
     private val logService: LogService<L>,
     private val logEventListeners: List<LogEventListener<L>>

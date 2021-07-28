@@ -8,7 +8,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -28,9 +27,9 @@ import reactor.core.publisher.Mono
 import reactor.util.retry.Retry
 import java.time.Duration
 
-open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log, D : EventData>(
+open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log>(
     blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB, D>>,
+    subscribers: List<LogEventSubscriber<OL, OB>>,
     blockMapper: BlockMapper<OB, B>,
     blockService: BlockService<B>,
     logMapper: LogMapper<OL, OB, L>,
