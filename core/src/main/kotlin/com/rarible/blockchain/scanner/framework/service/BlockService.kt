@@ -1,23 +1,22 @@
 package com.rarible.blockchain.scanner.framework.service
 
 import com.rarible.blockchain.scanner.framework.model.Block
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
+import kotlinx.coroutines.flow.Flow
 
 interface BlockService<B : Block> {
 
-    fun findByStatus(status: Block.Status): Flux<B>
+    fun findByStatus(status: Block.Status): Flow<B>
 
-    fun getLastBlock(): Mono<Long>
+    suspend fun getLastBlock(): Long?
 
-    fun getBlockHash(id: Long): Mono<String>
+    suspend fun getBlockHash(id: Long): String?
 
-    fun updateBlockStatus(id: Long, status: Block.Status): Mono<Void>
+    suspend fun updateBlockStatus(id: Long, status: Block.Status)
 
-    fun saveBlock(block: B): Mono<Void>
+    suspend fun saveBlock(block: B)
 
-    fun findFirstByIdAsc(): Mono<B>
+    suspend fun findFirstByIdAsc(): B
 
-    fun findFirstByIdDesc(): Mono<B>
+    suspend fun findFirstByIdDesc(): B
 
 }

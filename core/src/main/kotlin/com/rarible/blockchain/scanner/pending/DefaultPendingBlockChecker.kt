@@ -8,14 +8,17 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.job.PendingBlocksCheckJob
-import com.rarible.core.logging.LoggingUtils
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.Marker
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import kotlin.math.abs
 
+@ExperimentalCoroutinesApi
 class DefaultPendingBlockChecker<OB : BlockchainBlock, OL : BlockchainLog, B : Block>(
     private val blockchainClient: BlockchainClient<OB, OL>,
     private val blockService: BlockService<B>,
@@ -23,30 +26,29 @@ class DefaultPendingBlockChecker<OB : BlockchainBlock, OL : BlockchainLog, B : B
 ) : PendingBlockChecker {
 
     override fun checkPendingBlocks() {
-        logger.info("started")
-        try {
-            Flux.concat(
-                blockService.findByStatus(Block.Status.PENDING).filter {
-                    abs(System.currentTimeMillis() / 1000 - it.timestamp) > 60
-                },
-                blockService.findByStatus(Block.Status.ERROR)
-            )
-                .concatMap { reindexPendingBlock(it) }
-                .then().block()
-            logger.info("ended")
-        } catch (e: Exception) {
-            logger.error("error", e)
+        runBlocking {
+            logger.info("started")
+            try {
+                merge(
+                    blockService.findByStatus(Block.Status.PENDING).filter {
+                        abs(System.currentTimeMillis() / 1000 - it.timestamp) > 60
+                    },
+                    blockService.findByStatus(Block.Status.ERROR)
+                ).map {
+                    reindexPendingBlock(it)
+                }.collect()
+                logger.info("ended")
+            } catch (e: Exception) {
+                logger.error("error", e)
+            }
         }
     }
 
-    fun reindexPendingBlock(block: B): Mono<Void?> {
-        return LoggingUtils.withMarker { marker: Marker? ->
-            logger.info(marker, "reindexing block {}", block)
-            blockchainClient.getBlock(block.id).flatMap {
-                val event = BlockEvent(it)
-                blockListener.onBlockEvent(event)
-            }
-        }
+    suspend fun reindexPendingBlock(block: B) {
+        logger.info("reindexing block {}", block)
+        val block = blockchainClient.getBlock(block.id)
+        val event = BlockEvent(block)
+        blockListener.onBlockEvent(event)
     }
 
     companion object {

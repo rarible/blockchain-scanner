@@ -10,52 +10,51 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
-import com.rarible.core.logging.LoggingUtils
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.merge
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import reactor.core.publisher.Flux
-import reactor.util.retry.RetryBackoffSpec
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 class BlockEventSubscriber<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     private val blockchainClient: BlockchainClient<OB, OL>,
     val subscriber: LogEventSubscriber<OL, OB>,
     logMapper: LogMapper<OL, OB, L>,
     logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,
-    private val pendingLogMarker: PendingLogMarker<OB, L>,
-    private val backoff: RetryBackoffSpec
+    private val pendingLogMarker: PendingLogMarker<OB, L>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService, logEventListeners)
 
-    fun onBlockEvent(event: BlockEvent): Flux<L> {
+    suspend fun onBlockEvent(event: BlockEvent): Flow<L> {
         val start = logHandler.beforeHandleBlock(event)
-
         val descriptor = subscriber.getDescriptor()
+        logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
 
-        val originalBlock = blockchainClient.getBlock(event.block.hash)
-            .doOnError { th -> logger.warn("Unable to get block by hash: " + event.block.hash, th) }
-            .retryWhen(backoff)
+        val block = blockchainClient.getBlock(event.block.hash)
 
-        val process = originalBlock.flatMapMany {
-            Flux.concat(
-                pendingLogMarker.markInactive(it, descriptor),
-                processBlock(it)
-            )
-        }
+        val process = merge(
+            pendingLogMarker.markInactive(block, descriptor),
+            processBlock(block)
+        )
 
-        return Flux.concat(start, process)
+        return merge(start, process)
     }
 
-    private fun processBlock(originalBlock: OB): Flux<L> {
-        return LoggingUtils.withMarkerFlux { marker ->
-            blockchainClient.getBlockEvents(originalBlock, subscriber.getDescriptor(), marker)
-                .flatMapMany { logHandler.handleLogs(marker, originalBlock, it) }
-        }
+    private suspend fun processBlock(originalBlock: OB): Flow<L> {
+        val events = blockchainClient.getBlockEvents(originalBlock, subscriber.getDescriptor())
+        return logHandler.handleLogs(originalBlock, events)
     }
 
+    override fun toString(): String {
+        return subscriber::class.java.name + ":[${subscriber.getDescriptor()}]"
+    }
 }
 
 

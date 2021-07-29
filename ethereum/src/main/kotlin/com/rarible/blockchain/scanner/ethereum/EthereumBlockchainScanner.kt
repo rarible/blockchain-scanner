@@ -15,10 +15,14 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventPostProcessor
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import org.springframework.stereotype.Component
 
 @Component
-class EthereumScanner(
+@FlowPreview
+@ExperimentalCoroutinesApi
+class EthereumBlockchainScanner(
     blockchainClient: EthereumClient,
     subscribers: List<LogEventSubscriber<EthereumBlockchainLog, EthereumBlockchainBlock>>,
     blockMapper: EthereumBlockMapper,
@@ -27,7 +31,7 @@ class EthereumScanner(
     logService: EthereumLogService,
     logEventListeners: List<LogEventListener<EthereumLog>>,
     pendingLogService: EthereumPendingLogService,
-    logEventPostProcessors: List<LogEventPostProcessor<EthereumLog>>?,
+    logEventPostProcessors: List<LogEventPostProcessor<EthereumLog>>,
     properties: BlockchainScannerProperties
 ) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog>(
     blockchainClient,

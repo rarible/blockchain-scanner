@@ -4,11 +4,13 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumBlockRepository
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 
 @Component
 class EthereumBlockService(
@@ -19,33 +21,34 @@ class EthereumBlockService(
         val logger: Logger = LoggerFactory.getLogger(EthereumBlockService::class.java)
     }
 
-    override fun findByStatus(status: Block.Status): Flux<EthereumBlock> {
-        return blockRepository.findByStatus(status)
+    override fun findByStatus(status: Block.Status): Flow<EthereumBlock> {
+        return blockRepository.findByStatus(status).asFlow()
     }
 
-    override fun getLastBlock(): Mono<Long> {
-        return blockRepository.getLastBlock()
+    override suspend fun getLastBlock(): Long {
+        return blockRepository.getLastBlock().awaitFirst()
     }
 
-    override fun getBlockHash(id: Long): Mono<String> {
+    override suspend fun getBlockHash(id: Long): String {
         return blockRepository.findByIdR(id)
             .map { it.hash }
+            .awaitFirst()
     }
 
-    override fun updateBlockStatus(id: Long, status: Block.Status): Mono<Void> {
-        return blockRepository.updateBlockStatus(id, status)
+    override suspend fun updateBlockStatus(id: Long, status: Block.Status) {
+        blockRepository.updateBlockStatus(id, status).awaitFirstOrNull()
     }
 
-    override fun saveBlock(block: EthereumBlock): Mono<Void> {
+    override suspend fun saveBlock(block: EthereumBlock) {
         logger.info("saveKnownBlock $block")
-        return blockRepository.saveR(block).then()
+        blockRepository.saveR(block).awaitFirstOrNull()
     }
 
-    override fun findFirstByIdAsc(): Mono<EthereumBlock> {
-        return blockRepository.findFirstByIdAsc()
+    override suspend fun findFirstByIdAsc(): EthereumBlock {
+        return blockRepository.findFirstByIdAsc().awaitFirst()
     }
 
-    override fun findFirstByIdDesc(): Mono<EthereumBlock> {
-        return blockRepository.findFirstByIdDesc()
+    override suspend fun findFirstByIdDesc(): EthereumBlock {
+        return blockRepository.findFirstByIdDesc().awaitFirst()
     }
 }

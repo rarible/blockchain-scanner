@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class PendingLogsCheckJob(
-    private val PendingLogChecker: PendingLogChecker
+    private val pendingLogChecker: PendingLogChecker
 ) {
 
     @Scheduled(
@@ -15,6 +15,6 @@ class PendingLogsCheckJob(
         initialDelay = DateUtils.MILLIS_PER_MINUTE
     )
     fun job() {
-        PendingLogChecker.checkPendingLogs()
+        pendingLogChecker.checkPendingLogs()
     }
 }

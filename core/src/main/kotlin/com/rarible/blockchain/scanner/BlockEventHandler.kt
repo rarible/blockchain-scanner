@@ -11,22 +11,24 @@ import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapConcat
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import reactor.core.publisher.Flux
-import reactor.util.retry.Retry
-import java.time.Duration
 import java.util.stream.Collectors
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 class BlockEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     blockchainClient: BlockchainClient<OB, OL>,
     subscribers: List<LogEventSubscriber<OL, OB>>,
     logMapper: LogMapper<OL, OB, L>,
     logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,
-    pendingLogService: PendingLogService<OB, L>,
-    maxAttempts: Long,
-    minBackoff: Long
+    pendingLogService: PendingLogService<OB, L>
 ) {
 
     private val subscribers = ArrayList<BlockEventSubscriber<OB, OL, L>>()
@@ -41,32 +43,35 @@ class BlockEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     }
 
     init {
-        logger.info("injected subscribers: {}", subscribers)
+        logger.info("Injecting {} subscribers", subscribers.size)
 
-        val backoff = Retry.backoff(maxAttempts, Duration.ofMillis(minBackoff))
         for (subscriber in subscribers) {
             val topic = subscriber.getDescriptor().topic
             val logEventTopicListeners: List<LogEventListener<L>> = logEventListeners.stream()
                 .filter { it.topics.contains(topic) }
                 .collect(Collectors.toList())
 
-            this.subscribers.add(
-                BlockEventSubscriber(
-                    blockchainClient,
-                    subscriber,
-                    logMapper,
-                    logEventTopicListeners,
-                    logService,
-                    pendingLogMarker,
-                    backoff
-                )
+            val blockEventSubscriber = BlockEventSubscriber(
+                blockchainClient,
+                subscriber,
+                logMapper,
+                logEventTopicListeners,
+                logService,
+                pendingLogMarker
+            )
+            this.subscribers.add(blockEventSubscriber)
+
+            logger.info(
+                "Injected {} subscriber with {} LogEventListeners",
+                blockEventSubscriber, logEventTopicListeners.size
             )
         }
     }
 
-    fun onBlockEvent(event: BlockEvent): Flux<L> {
-        return Flux.fromIterable(subscribers)
-            .flatMap { it.onBlockEvent(event) }
+    fun onBlockEvent(event: BlockEvent): Flow<L> {
+        logger.debug("Triggered block event for [{}] subscribers: {}", subscribers.size, event)
+        return subscribers.asFlow()
+            .flatMapConcat { it.onBlockEvent(event) }
     }
 
 }

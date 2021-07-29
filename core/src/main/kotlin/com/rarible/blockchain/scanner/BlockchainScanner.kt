@@ -21,12 +21,14 @@ import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventPostProcessor
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
-import reactor.util.retry.Retry
-import java.time.Duration
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log>(
     blockchainClient: BlockchainClient<OB, OL>,
     subscribers: List<LogEventSubscriber<OL, OB>>,
@@ -36,18 +38,19 @@ open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block
     logService: LogService<L>,
     logEventListeners: List<LogEventListener<L>>,
     pendingLogService: PendingLogService<OB, L>,
-    logEventPostProcessors: List<LogEventPostProcessor<L>>?,
+    logEventPostProcessors: List<LogEventPostProcessor<L>>,
     properties: BlockchainScannerProperties
 
 ) : PendingLogChecker, BlockListener, PendingBlockChecker, ReconciliationExecutor {
 
-    private val blockScanner = DefaultBlockScanner(
+    private val blockScanner = BlockScanner(
         blockchainClient,
         blockMapper,
-        blockService
+        blockService,
+        properties
     )
 
-    private val blockListener = DefaultBlockListener(
+    private val blockListener = BlockEventListener(
         blockchainClient,
         subscribers,
         blockService,
@@ -84,24 +87,12 @@ open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block
 
     private val topics = subscribers.map { it.getDescriptor().topic }.toSet()
 
-    fun scan() {
-        Mono.delay(Duration.ofMillis(1000))
-            .thenMany(blockScanner.scan())
-            .timeout(Duration.ofMinutes(5))
-            .concatMap { onBlockEvent(it) }
-            .then(Mono.error<Void>(IllegalStateException("disconnected")))
-            .retryWhen(
-                Retry.backoff(Long.MAX_VALUE, Duration.ofMillis(300))
-                    .maxBackoff(Duration.ofMillis(2000))
-                    .doAfterRetry { logger.warn("retrying {}", it) }
-            )
-            .subscribe(
-                { },
-                { logger.error("unable to process block events. should never happen", it) }
-            )
+    // TODO should be called in onApplicationStartedEvent in implementations
+    fun scan() = runBlocking {
+        blockScanner.scan(blockListener)
     }
 
-    override fun onBlockEvent(event: BlockEvent): Mono<Void> {
+    override suspend fun onBlockEvent(event: BlockEvent) {
         return blockListener.onBlockEvent(event)
     }
 
@@ -113,7 +104,7 @@ open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block
         pendingBlockChecker.checkPendingBlocks()
     }
 
-    override fun reconcile(topic: String?, from: Long): Flux<LongRange> {
+    override suspend fun reconcile(topic: String?, from: Long): Flow<LongRange> {
         return reconciliationService.reindex(topic, from)
     }
 

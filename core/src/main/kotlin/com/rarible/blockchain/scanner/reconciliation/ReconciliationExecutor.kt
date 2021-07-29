@@ -1,10 +1,10 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import reactor.core.publisher.Flux
+import kotlinx.coroutines.flow.Flow
 
 interface ReconciliationExecutor {
 
-    fun reconcile(topic: String?, from: Long): Flux<LongRange>
+    suspend fun reconcile(topic: String?, from: Long): Flow<LongRange>
 
     fun getTopics(): Set<String>
 

@@ -7,13 +7,16 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.logging.LoggingUtils
-import com.rarible.core.logging.loggerContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import reactor.core.publisher.Flux
-import reactor.kotlin.core.publisher.toMono
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 class ReconciliationIndexer<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     private val blockchainClient: BlockchainClient<OB, OL>,
     private val logEventHandler: LogEventHandler<OB, OL, L>,
@@ -22,26 +25,24 @@ class ReconciliationIndexer<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
 
     private val logger: Logger = LoggerFactory.getLogger(logEventHandler.subscriber.javaClass)
 
-    fun reindex(from: Long, to: Long): Flux<LongRange> {
-        return LoggingUtils.withMarkerFlux { marker ->
-            logger.info(marker, "loading logs in batches from=$from to=$to batchSize=$batchSize")
-            val ranges = BlockRanges.getRanges(from, to, batchSize)
-            ranges.concatMap { range ->
-                val descriptor = logEventHandler.subscriber.getDescriptor()
-                val blocks = blockchainClient.getBlockEvents(descriptor, range, marker)
-                blocks.flatMap {
-                    reindexBlock(it)
-                }.toMono().thenReturn(range)
+    fun reindex(from: Long, to: Long): Flow<LongRange> {
+        logger.info("Scanning for Logs in batches from={} to={} with batchSize={}", from, to, batchSize)
+        val ranges = BlockRanges.getRanges(from, to, batchSize)
+        val rangeFlow = ranges.map { range ->
+            val descriptor = logEventHandler.subscriber.getDescriptor()
+            val blocks = blockchainClient.getBlockEvents(descriptor, range)
+            blocks.collect {
+                reindexBlock(it)
             }
+            range
         }
+        return rangeFlow
     }
 
-    private fun reindexBlock(logs: BlockLogs<OL>): Flux<L> {
-        return LoggingUtils.withMarkerFlux { marker ->
-            logger.info(marker, "reindex. processing block ${logs.blockHash} logs: ${logs.logs.size}")
-            blockchainClient.getBlock(logs.blockHash)
-                .flatMapMany { block -> logEventHandler.handleLogs(marker, block, logs.logs) }
-        }.loggerContext(mapOf("blockHash" to logs.blockHash))
+    private suspend fun reindexBlock(logs: BlockLogs<OL>): Flow<L> {
+        logger.info("Reindexing Block {} with {} Logs", logs.blockHash, logs.logs.size)
+        val block = blockchainClient.getBlock(logs.blockHash)
+        return logEventHandler.handleLogs(block, logs.logs)
     }
 
 }

@@ -57,6 +57,17 @@
             <artifactId>rarible-core-logging</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.michael-bull.kotlin-retry</groupId>
+            <artifactId>kotlin-retry</artifactId>
+            <version>1.0.8</version>
+        </dependency>
+
     </dependencies>
 
 </project>

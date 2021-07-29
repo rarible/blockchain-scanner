@@ -6,8 +6,10 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.reactive.asFlow
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toFlux
 import scalether.core.MonoEthereum
 import scalether.java.Lists
@@ -20,9 +22,9 @@ class EthereumPendingLogService(
     override fun markInactive(
         block: EthereumBlockchainBlock,
         logs: List<LogEvent<EthereumLog>>
-    ): Flux<LogEventStatusUpdate<EthereumLog>> {
+    ): Flow<LogEventStatusUpdate<EthereumLog>> {
         if (logs.isEmpty()) {
-            return Flux.empty()
+            return emptyFlow()
         }
         val byTxHash = logs.groupBy { it.log.transactionHash }
         val byFromNonce = logs.groupBy { Pair(it.log.from, it.log.nonce) }
@@ -36,6 +38,6 @@ class EthereumPendingLogService(
                     LogEventStatusUpdate(first, Log.Status.INACTIVE),
                     LogEventStatusUpdate(second, Log.Status.DROPPED)
                 ).toFlux()
-            }
+            }.asFlow()
     }
 }

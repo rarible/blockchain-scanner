@@ -3,26 +3,24 @@ package com.rarible.blockchain.scanner.framework.client
 import com.rarible.blockchain.scanner.data.BlockLogs
 import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
-import org.slf4j.Marker
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
+import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 interface BlockchainClient<OB : BlockchainBlock, OL : BlockchainLog> {
 
-    fun listenNewBlocks(): Flux<OB>
+    fun listenNewBlocks(): Flow<OB>
 
-    fun getBlock(id: Long): Mono<OB>
+    suspend fun getBlock(id: Long): OB
 
-    fun getBlock(hash: String): Mono<OB>
+    suspend fun getBlock(hash: String): OB
 
-    fun getLastBlockNumber(): Mono<Long>
+    suspend fun getLastBlockNumber(): Long
 
-    fun getBlockEvents(block: OB, descriptor: LogEventDescriptor, marker: Marker): Mono<List<OL>>
+    suspend fun getBlockEvents(block: OB, descriptor: LogEventDescriptor): List<OL>
 
-    fun getBlockEvents(descriptor: LogEventDescriptor, range: LongRange, marker: Marker): Flux<BlockLogs<OL>>
+    fun getBlockEvents(descriptor: LogEventDescriptor, range: LongRange): Flow<BlockLogs<OL>>
 
-    fun getTransactionMeta(transactionHash: String): Mono<Optional<TransactionMeta>>
+    suspend fun getTransactionMeta(transactionHash: String): Optional<TransactionMeta>
 
 
 }

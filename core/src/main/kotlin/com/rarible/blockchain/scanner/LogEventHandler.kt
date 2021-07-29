@@ -1,20 +1,24 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
-import com.rarible.core.common.retryOptimisticLock
+import com.rarible.core.common.optimisticLock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.Marker
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.toFlux
 
-class LogEventHandler<OB, OL, L : Log>(
+@FlowPreview
+@ExperimentalCoroutinesApi
+class LogEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
     val subscriber: LogEventSubscriber<OL, OB>,
     private val logMapper: LogMapper<OL, OB, L>,
     private val logService: LogService<L>,
@@ -30,65 +34,66 @@ class LogEventHandler<OB, OL, L : Log>(
         )
     }
 
-    fun beforeHandleBlock(event: BlockEvent): Flux<L> {
+    fun beforeHandleBlock(event: BlockEvent): Flow<L> {
         val collection = subscriber.getDescriptor().collection
         val topic = subscriber.getDescriptor().topic
 
+        logger.info("Before handling block event [{}] by descriptor: [{}]", event, subscriber.getDescriptor())
         return if (event.reverted != null) {
+            logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
             logService
                 .findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
-                .thenMany(logService.findAndRevert(collection, topic, event.reverted.hash))
+                .onCompletion { (logService.findAndRevert(collection, topic, event.reverted.hash)) }
         } else {
             logService.findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
-                .thenMany(Flux.empty())
+                .onCompletion { emptyFlow<L>() }
         }
     }
 
-    fun handleLogs(marker: Marker, block: OB, logs: List<OL>): Flux<L> {
+    fun handleLogs(block: OB, logs: List<OL>): Flow<L> {
         if (logs.isNotEmpty()) {
-            logger.info(marker, "processLogs ${logs.size} logs")
+            logger.info("Handling {} Logs from block: [{}]", logs.size, block.meta)
         }
-        val processedLogs = Flux.fromIterable(logs.withIndex()).flatMap { (idx, log) ->
-            onLog(marker, block, idx, log)
+        val processedLogs = logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
+            onLog(block, idx, log)
+        }.onEach {
+            notifyListeners(it)
         }
-        return processedLogs.flatMap { notifyListeners(it) }
+
+        return processedLogs
     }
 
-    private fun onLog(marker: Marker, block: OB, index: Int, log: OL): Flux<L> {
-        logger.info(marker, "onLog $log")
+    private suspend fun onLog(block: OB, index: Int, log: OL): Flow<L> {
+        logger.info("Handling single Log: [{}]", log)
 
-        val mappedLogs = subscriber.getEventData(log, block).toFlux()
-            .collectList()
-            .flatMapIterable { dataCollection ->
-                dataCollection.mapIndexed { minorLogIndex, data ->
-                    logMapper.map(
-                        block,
-                        log,
-                        index,
-                        minorLogIndex,
-                        data,
-                        subscriber.getDescriptor()
-                    )
-                }
-            }
-        return saveProcessedLogs(marker, mappedLogs)
+        val logs = subscriber.getEventData(log, block).asFlow()
+            .toCollection(mutableListOf())
+            .mapIndexed { minorLogIndex, data ->
+                logMapper.map(
+                    block,
+                    log,
+                    index,
+                    minorLogIndex,
+                    data,
+                    subscriber.getDescriptor()
+                )
+            }.asFlow()
+
+        return saveProcessedLogs(logs)
     }
 
-    private fun saveProcessedLogs(marker: Marker, logs: Flux<L>): Flux<L> {
+    private suspend fun saveProcessedLogs(logs: Flow<L>): Flow<L> {
         val collection = subscriber.getDescriptor().collection
-        return logs.flatMap {
-            Mono.just(it)
-                .flatMap { toSave ->
-                    logger.info(marker, "saving $toSave to $collection")
-                    logService.saveOrUpdate(marker, collection, it)
-                }.retryOptimisticLock(3)
+        return logs.map {
+            optimisticLock(3) {
+                logger.info("Saving Log [{}] to '{}'", it, collection)
+                logService.saveOrUpdate(collection, it)
+            }
         }
     }
 
-    private fun notifyListeners(logEvent: L): Mono<L> {
-        return Flux.concat(
-            logEventListeners.map { it.onLogEvent(logEvent) }
-        ).then(Mono.just(logEvent))
+    private suspend fun notifyListeners(logEvent: L) {
+        logEventListeners.forEach { it.onLogEvent(logEvent) }
     }
 
 }

@@ -5,12 +5,12 @@ import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.Marker
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import reactor.util.retry.RetryBackoffSpec
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
@@ -20,9 +20,11 @@ import scalether.domain.request.TopicFilter
 import scalether.domain.response.Log
 import scalether.util.Hex
 import java.math.BigInteger
+import java.time.Duration
 import java.util.*
 
 @Component
+// TODO configure retry spec for all methods
 class EthereumClient(
     private val ethereum: MonoEthereum,
     private val ethPubSub: EthPubSub,
@@ -31,28 +33,30 @@ class EthereumClient(
 
     private val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
-    override fun listenNewBlocks(): Flux<EthereumBlockchainBlock> {
+    override fun listenNewBlocks(): Flow<EthereumBlockchainBlock> {
         return ethPubSub.newHeads()
             .map { EthereumBlockchainBlock(it) }
+            .timeout(Duration.ofMinutes(5))
+            .asFlow()
     }
 
-    override fun getBlock(hash: String): Mono<EthereumBlockchainBlock> {
+    override suspend fun getBlock(hash: String): EthereumBlockchainBlock {
         return ethereum.ethGetBlockByHash(Word.apply(hash)).map {
             EthereumBlockchainBlock(it)
-        }
+        }.awaitFirst()
     }
 
-    override fun getBlock(id: Long): Mono<EthereumBlockchainBlock> {
+    override suspend fun getBlock(id: Long): EthereumBlockchainBlock {
         return ethereum.ethGetBlockByNumber(BigInteger.valueOf(id)).map {
             EthereumBlockchainBlock(it)
-        }
+        }.awaitFirst()
     }
 
-    override fun getLastBlockNumber(): Mono<Long> {
-        return ethereum.ethBlockNumber().map { it.toLong() }
+    override suspend fun getLastBlockNumber(): Long {
+        return ethereum.ethBlockNumber().map { it.toLong() }.awaitFirst()
     }
 
-    override fun getTransactionMeta(transactionHash: String): Mono<Optional<TransactionMeta>> {
+    override suspend fun getTransactionMeta(transactionHash: String): Optional<TransactionMeta> {
         return ethereum.ethGetTransactionByHash(Word.apply(transactionHash)).map {
             if (it.isEmpty) {
                 Optional.empty()
@@ -66,14 +70,13 @@ class EthereumClient(
                     )
                 )
             }
-        }
+        }.awaitFirst()
     }
 
-    override fun getBlockEvents(
+    override suspend fun getBlockEvents(
         block: EthereumBlockchainBlock,
-        descriptor: LogEventDescriptor,
-        marker: Marker
-    ): Mono<List<EthereumBlockchainLog>> {
+        descriptor: LogEventDescriptor
+    ): List<EthereumBlockchainLog> {
         val filter = LogFilter
             .apply(TopicFilter.simple(Word.apply(descriptor.topic))) // TODO ???
             .address(*descriptor.contracts.map { Address.apply(it) }.toTypedArray())
@@ -81,15 +84,15 @@ class EthereumClient(
 
         return ethereum.ethGetLogsJava(filter)
             .map { orderByTransaction(it).map { log -> EthereumBlockchainLog(log) } }
-            .doOnError { logger.warn(marker, "Unable to get logs for block ${block.ethBlock.hash()}", it) }
+            .doOnError { logger.warn("Unable to get logs for block ${block.ethBlock.hash()}", it) }
             .retryWhen(backoff)
+            .awaitFirst()
     }
 
     override fun getBlockEvents(
         descriptor: LogEventDescriptor,
-        range: LongRange,
-        marker: Marker
-    ): Flux<BlockLogs<EthereumBlockchainLog>> {
+        range: LongRange
+    ): Flow<BlockLogs<EthereumBlockchainLog>> {
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
@@ -99,11 +102,11 @@ class EthereumClient(
             BigInteger.valueOf(range.first).encodeForFilter(),
             BigInteger.valueOf(range.last).encodeForFilter()
         )
-        logger.info(marker, "loading logs $finalFilter range=$range")
+        logger.info("loading logs $finalFilter range=$range")
 
         return ethereum.ethGetLogsJava(finalFilter)
             .doOnNext {
-                logger.info(marker, "loaded ${it.size} logs for range $range")
+                logger.info("loaded ${it.size} logs for range $range")
             }.flatMapIterable { allLogs ->
                 allLogs.groupBy { log ->
                     log.blockHash()
@@ -111,7 +114,10 @@ class EthereumClient(
                     val orderedLogs = orderByTransaction(e.value)
                     BlockLogs(e.key.toString(), orderedLogs.map { EthereumBlockchainLog(it) })
                 }
+            }.doOnError {
+                logger.warn("Unable to get Logs for descriptor [{}] from Block range {}", descriptor, range, it)
             }
+            .retryWhen(backoff).asFlow()
     }
 
     private fun orderByTransaction(logs: List<Log>): List<Log> {
