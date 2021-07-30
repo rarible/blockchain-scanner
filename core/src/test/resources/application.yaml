@@ -1,0 +1,7 @@
+blockchain:
+  scanner:
+    test:
+      maxProcessTime: 30000
+      batchSize: 100
+      reconnectDelay: 2000
+      reindexEnabled: true

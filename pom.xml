@@ -57,6 +57,11 @@
                 <artifactId>rarible-blockchain-scanner-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-ethereum</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>net.java.dev.jna</groupId>
@@ -78,6 +83,7 @@
     <modules>
         <module>core</module>
         <module>ethereum</module>
+        <module>test-coverage</module>
     </modules>
 
 </project>

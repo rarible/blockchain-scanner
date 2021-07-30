@@ -13,14 +13,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class PendingLogMarker<OB, L : Log>(
+class PendingLogMarker<BB, L : Log>(
     private val logService: LogService<L>,
-    private val pendingLogService: PendingLogService<OB, L>
+    private val pendingLogService: PendingLogService<BB, L>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(PendingLogService::class.java)
 
-    suspend fun markInactive(block: OB, descriptor: LogEventDescriptor): Flow<L> {
+    suspend fun markInactive(block: BB, descriptor: LogEventDescriptor): Flow<L> {
         val pendingLogs = logService.findPendingLogs(descriptor.collection)
             .filter { it.topic == descriptor.topic }
             .map { LogEvent(it, descriptor.collection) }

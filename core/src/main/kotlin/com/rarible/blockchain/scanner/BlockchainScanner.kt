@@ -29,15 +29,15 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-open class BlockchainScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log>(
-    blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB>>,
-    blockMapper: BlockMapper<OB, B>,
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(
+    blockchainClient: BlockchainClient<BB, BL>,
+    subscribers: List<LogEventSubscriber<BB, BL>>,
+    blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
-    logMapper: LogMapper<OL, OB, L>,
+    logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L>,
     logEventListeners: List<LogEventListener<L>>,
-    pendingLogService: PendingLogService<OB, L>,
+    pendingLogService: PendingLogService<BB, L>,
     logEventPostProcessors: List<LogEventPostProcessor<L>>,
     properties: BlockchainScannerProperties
 

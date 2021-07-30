@@ -28,19 +28,19 @@ import org.slf4j.MDC
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log>(
-    blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB>>,
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(
+    blockchainClient: BlockchainClient<BB, BL>,
+    subscribers: List<LogEventSubscriber<BB, BL>>,
     private val blockService: BlockService<B>,
-    logMapper: LogMapper<OL, OB, L>,
+    logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L>,
     logEventListeners: List<LogEventListener<L>>,
-    pendingLogService: PendingLogService<OB, L>,
+    pendingLogService: PendingLogService<BB, L>,
     private val logEventPostProcessors: List<LogEventPostProcessor<L>>,
     private val properties: BlockchainScannerProperties
 ) : BlockListener {
 
-    private val blockEventHandler: BlockEventHandler<OB, OL, L> = BlockEventHandler(
+    private val blockEventHandler: BlockEventHandler<BB, BL, L> = BlockEventHandler(
         blockchainClient,
         subscribers,
         logMapper,
