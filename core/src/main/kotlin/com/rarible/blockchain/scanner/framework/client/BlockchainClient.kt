@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 
+//todo можно добавить еще type param для LogEventDescriptor. у Flow там будут свои какие-то сущности. вроде, не сложно
 interface BlockchainClient<BB : BlockchainBlock, BL : BlockchainLog> {
 
     fun listenNewBlocks(): Flow<BB>

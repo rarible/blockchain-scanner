@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
+//todo а зачем этот класс имплементит все подряд? ReconciliationExecutor например
 @FlowPreview
 @ExperimentalCoroutinesApi
 open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(

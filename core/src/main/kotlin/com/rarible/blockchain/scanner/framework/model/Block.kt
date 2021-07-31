@@ -11,6 +11,7 @@ interface Block : Identifiable<Long> {
     val hash: String
     val timestamp: Long
 
+    //todo status поля не должно быть тут?
     enum class Status {
         PENDING,
         SUCCESS,
