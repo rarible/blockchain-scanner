@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 
 data class BlockEvent(
+    val eventSource: Source,
     val block: BlockMeta,
     val reverted: BlockMeta? = null
 ) {
 
-    constructor(blockchainBlock: BlockchainBlock) : this(BlockMeta(blockchainBlock))
+    constructor(eventSource: Source, blockchainBlock: BlockchainBlock) : this(eventSource, BlockMeta(blockchainBlock))
 
     @get:JsonIgnore
     val contextParams: Map<String, String>
@@ -17,4 +18,10 @@ data class BlockEvent(
             "blockHash" to block.hash,
             "eventType" to "newBlock"
         ) + if (reverted != null) mapOf("reverted" to reverted.hash) else emptyMap()
+}
+
+enum class Source {
+    BLOCKCHAIN,
+    PENDING,
+    REINDEX
 }

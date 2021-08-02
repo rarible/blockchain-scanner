@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.pending
 
 import com.rarible.blockchain.scanner.BlockListener
 import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -44,10 +45,10 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
         }
     }
 
-    suspend fun reindexPendingBlock(block: B) {
+    private suspend fun reindexPendingBlock(block: B) {
         logger.info("reindexing block {}", block)
         val block = blockchainClient.getBlock(block.id)
-        val event = BlockEvent(block)
+        val event = BlockEvent(Source.PENDING, block)
         blockListener.onBlockEvent(event)
     }
 

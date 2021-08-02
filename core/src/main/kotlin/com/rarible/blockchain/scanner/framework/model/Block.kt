@@ -12,7 +12,6 @@ interface Block : Identifiable<Long> {
     val timestamp: Long
     val status: Status
 
-    //todo status поля не должно быть тут?
     enum class Status {
         PENDING,
         SUCCESS,

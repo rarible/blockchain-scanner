@@ -1,7 +1,10 @@
 package com.rarible.blockchain.scanner.reconciliation
 
+import com.rarible.blockchain.scanner.BlockEventPostProcessor
 import com.rarible.blockchain.scanner.LogEventHandler
-import com.rarible.blockchain.scanner.data.BlockLogs
+import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.data.FullBlock
+import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -12,6 +15,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toCollection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -20,6 +24,7 @@ import org.slf4j.LoggerFactory
 class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     private val blockchainClient: BlockchainClient<BB, BL>,
     private val logEventHandler: LogEventHandler<BB, BL, L>,
+    private val blockEventPostProcessor: BlockEventPostProcessor<L>,
     private val batchSize: Long
 ) {
 
@@ -32,17 +37,18 @@ class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
             val descriptor = logEventHandler.subscriber.getDescriptor()
             val blocks = blockchainClient.getBlockEvents(descriptor, range)
             blocks.collect {
-                reindexBlock(it)
+                val processedLogs = reindexBlock(it)
+                val blockEvent = BlockEvent(Source.REINDEX, it.block)
+                blockEventPostProcessor.onBlockProcessed(blockEvent, processedLogs)
             }
             range
         }
         return rangeFlow
     }
 
-    private suspend fun reindexBlock(logs: BlockLogs<BL>): Flow<L> {
-        logger.info("Reindexing Block {} with {} Logs", logs.blockHash, logs.logs.size)
-        val block = blockchainClient.getBlock(logs.blockHash)
-        return logEventHandler.handleLogs(block, logs.logs)
+    private suspend fun reindexBlock(fullBlock: FullBlock<BB, BL>): List<L> {
+        logger.info("Reindexing Block {} with {} Logs", fullBlock.block.hash, fullBlock.logs.size)
+        return logEventHandler.handleLogs(fullBlock).toCollection(mutableListOf())
     }
 
 }

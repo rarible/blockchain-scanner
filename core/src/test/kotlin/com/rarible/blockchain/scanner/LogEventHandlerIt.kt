@@ -1,6 +1,8 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.data.FullBlock
+import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -10,10 +12,7 @@ import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventListener
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import io.mockk.coVerify
-import io.mockk.spyk
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
@@ -39,22 +38,12 @@ internal class LogEventHandlerIt {
     private val topic = descriptor.topic
 
     @Test
-    fun `handle logs - unrelated listeners error`() = runBlocking<Unit> {
-        val listener1 = TestLogEventListener(setOf(testDescriptor1().topic))
-        val listener2 = TestLogEventListener(setOf(testDescriptor2().topic))
-
-        assertThrows(IllegalArgumentException::class.java) {
-            createHandler(TestLogEventSubscriber(testDescriptor1(), 2), listener1, listener2)
-        }
-    }
-
-    @Test
     fun `handle logs - log saved with minor index`() = runBlocking {
         val handler = createHandler(TestLogEventSubscriber(descriptor, 2))
         val block = randomBlockchainBlock()
         val log = randomBlockchainLog(block, topic)
 
-        val savedLogs = handler.handleLogs(block, listOf(log)).toCollection(mutableListOf())
+        val savedLogs = handler.handleLogs(FullBlock(block, listOf(log))).toCollection(mutableListOf())
 
         assertEquals(2, savedLogs.size)
 
@@ -78,7 +67,7 @@ internal class LogEventHandlerIt {
         val block = randomBlockchainBlock()
         val logs = listOf(randomBlockchainLog(block, topic), randomBlockchainLog(block, topic))
 
-        val savedLogs = handler.handleLogs(block, logs).toCollection(mutableListOf())
+        val savedLogs = handler.handleLogs(FullBlock(block, logs)).toCollection(mutableListOf())
 
         assertEquals(6, savedLogs.size)
 
@@ -91,33 +80,12 @@ internal class LogEventHandlerIt {
     }
 
     @Test
-    fun `handle logs - listeners notified`() = runBlocking {
-        val listener1 = spyk(TestLogEventListener(setOf(descriptor.topic)))
-        val listener2 = spyk(TestLogEventListener(setOf(descriptor.topic)))
-
-        val handler = createHandler(TestLogEventSubscriber(descriptor, 3), listener1, listener2)
-        val block = randomBlockchainBlock()
-        val logs = listOf(randomBlockchainLog(block, topic), randomBlockchainLog(block, topic))
-
-        val savedLogs = handler.handleLogs(block, logs).toCollection(mutableListOf())
-
-        assertEquals(6, savedLogs.size)
-        savedLogs.forEach {
-            coVerify(exactly = 1) { listener1.onLogEvent(it) }
-            coVerify(exactly = 1) { listener2.onLogEvent(it) }
-        }
-    }
-
-    @Test
     fun `handle logs - nothing on empty flow`() = runBlocking {
-        val listener = spyk(TestLogEventListener(setOf(descriptor.topic)))
-        val handler = createHandler(TestLogEventSubscriber(descriptor, 3), listener)
+        val handler = createHandler(TestLogEventSubscriber(descriptor, 3))
         val block = randomBlockchainBlock()
 
-        val savedLogs = handler.handleLogs(block, emptyList()).toCollection(mutableListOf())
+        val savedLogs = handler.handleLogs(FullBlock(block, emptyList())).toCollection(mutableListOf())
         assertEquals(0, savedLogs.size)
-
-        coVerify(exactly = 0) { listener.onLogEvent(any()) }
     }
 
     @Test
@@ -130,7 +98,7 @@ internal class LogEventHandlerIt {
 
         testLogRepository.saveAll(collection, log1, log2)
 
-        val deleted = handler.beforeHandleBlock(BlockEvent(block)).toCollection(mutableListOf())
+        val deleted = handler.beforeHandleBlock(BlockEvent(Source.BLOCKCHAIN, block)).toCollection(mutableListOf())
         assertEquals(0, deleted.size)
 
         // This log is still alive
@@ -145,7 +113,7 @@ internal class LogEventHandlerIt {
 
         val block = randomBlockchainBlock()
         val reverted = randomBlockchainBlock()
-        val event = BlockEvent(block.meta, reverted.meta)
+        val event = BlockEvent(Source.BLOCKCHAIN, block.meta, reverted.meta)
 
         val log1 = randomTestLog(topic, reverted.hash).copy(status = Log.Status.CONFIRMED)
         val log2 = randomTestLog(topic, block.hash).copy(status = Log.Status.REVERTED)
@@ -189,14 +157,12 @@ internal class LogEventHandlerIt {
     }
 
     private fun createHandler(
-        subscriber: TestLogEventSubscriber,
-        vararg listeners: TestLogEventListener
+        subscriber: TestLogEventSubscriber
     ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog> {
         return LogEventHandler(
             subscriber,
             testLogMapper,
-            testLogService,
-            listeners.toList()
+            testLogService
         )
     }
 

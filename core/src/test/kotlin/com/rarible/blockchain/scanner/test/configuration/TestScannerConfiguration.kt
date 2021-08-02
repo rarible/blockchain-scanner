@@ -55,16 +55,15 @@ class TestScannerConfiguration {
 
     @Bean
     fun testScanner() = TestScanner(
-        testBlockchainClient(),
-        listOf(testSubscriber1(), testSubscriber2()),
-        testBlockMapper(),
-        testBlockService(),
-        testLogMapper(),
-        testLogService(),
-        listOf(),
-        testPendingLogService(),
-        listOf(),
-        properties
+        blockchainClient = testBlockchainClient(),
+        subscribers = listOf(testSubscriber1(), testSubscriber2()),
+        blockMapper = testBlockMapper(),
+        blockService = testBlockService(),
+        logMapper = testLogMapper(),
+        logService = testLogService(),
+        pendingLogService = testPendingLogService(),
+        logEventListeners = listOf(),
+        properties = properties
     )
 
 }
