@@ -15,10 +15,10 @@ data class TestLog(
 
     override val topic: String,
     override val transactionHash: String,
+    override val status: Log.Status,
 
     val minorLogIndex: Int,
     val data: EventData,
-    val status: Log.Status,
     val blockHash: String? = null,
     val logIndex: Int? = null,
     val index: Int,

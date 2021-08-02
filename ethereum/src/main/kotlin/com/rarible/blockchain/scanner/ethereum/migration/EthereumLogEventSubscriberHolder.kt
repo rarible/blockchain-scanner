@@ -8,6 +8,6 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogEventSubscriberHolder(
 
-    val subscribers: List<LogEventSubscriber<EthereumBlockchainLog, EthereumBlockchainBlock>>
+    val subscribers: List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog>>
 
 )

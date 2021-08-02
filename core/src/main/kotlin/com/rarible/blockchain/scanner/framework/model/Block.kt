@@ -10,6 +10,7 @@ interface Block : Identifiable<Long> {
     override val id: Long
     val hash: String
     val timestamp: Long
+    val status: Status
 
     //todo status поля не должно быть тут?
     enum class Status {

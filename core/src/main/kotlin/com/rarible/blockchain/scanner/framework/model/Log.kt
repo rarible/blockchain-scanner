@@ -15,8 +15,8 @@ interface Log : Identifiable<ObjectId> {
 
     val topic: String
     val transactionHash: String
+    val status: Status
 
-    //todo status не должно быть тут?
     enum class Status {
         PENDING,
         CONFIRMED,

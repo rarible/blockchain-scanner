@@ -9,6 +9,6 @@ class TestBlock(
 
     override val hash: String,
     override val timestamp: Long,
-    val extra: String,
-    val status: Block.Status = Block.Status.PENDING
+    override val status: Block.Status = Block.Status.PENDING,
+    val extra: String
 ) : Block
