@@ -3,6 +3,9 @@ package com.rarible.blockchain.scanner.framework.model
 import com.rarible.core.common.Identifiable
 import org.bson.types.ObjectId
 
+//todo давай все-таки сделаем, чтобы в монго сохранялись кастомные event'ы сразу.
+//todo И чтобы внутри было поле log: Log (где номер блока, хэш блока и т.д.)
+//todo кажется, что это лучше, чем текущий подход (все равно придется переиндексировать все)
 /**
  * Basic data class for blockchain block data to be stored in Mongo
  */
@@ -13,6 +16,7 @@ interface Log : Identifiable<ObjectId> {
     val topic: String
     val transactionHash: String
 
+    //todo status не должно быть тут?
     enum class Status {
         PENDING,
         CONFIRMED,

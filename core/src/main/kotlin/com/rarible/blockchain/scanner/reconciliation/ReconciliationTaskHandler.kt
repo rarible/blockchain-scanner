@@ -14,6 +14,7 @@ class ReconciliationTaskHandler(
     override val type: String
         get() = TOPIC
 
+    //todo runBlocking не должно нигде использоваться в прод коде - потоки блокироваться будут. хотя, в job это можно, если там отдельный thread pool
     override fun runLongTask(from: Long?, param: String): Flow<Long> = runBlocking {
         reconciliationExecutor.reconcile(param, from ?: 1)
             .map { it.first }

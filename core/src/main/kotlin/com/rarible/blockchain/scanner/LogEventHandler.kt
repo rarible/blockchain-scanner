@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class LogEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
-    val subscriber: LogEventSubscriber<OL, OB>,
-    private val logMapper: LogMapper<OL, OB, L>,
+class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
+    val subscriber: LogEventSubscriber<BB, BL>,
+    private val logMapper: LogMapper<BB, BL, L>,
     private val logService: LogService<L>,
     private val logEventListeners: List<LogEventListener<L>>
 ) {
@@ -32,28 +32,45 @@ class LogEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
             "Creating LogEventProcessor for ${subscriber.javaClass.simpleName}," +
                     " got onLogEventListeners: ${logEventListeners.joinToString { it.javaClass.simpleName }}"
         )
+        logEventListeners.forEach {
+            if (!it.topics.contains(subscriber.getDescriptor().topic)) {
+                throw IllegalArgumentException(
+                    "LogEventListener ${it.javaClass.simpleName} " +
+                            "should listen topics ${it.topics}, not allowed for descriptor ${subscriber.getDescriptor()}"
+                )
+            }
+        }
     }
 
     fun beforeHandleBlock(event: BlockEvent): Flow<L> {
         val collection = subscriber.getDescriptor().collection
         val topic = subscriber.getDescriptor().topic
 
-        logger.info("Before handling block event [{}] by descriptor: [{}]", event, subscriber.getDescriptor())
-        return if (event.reverted != null) {
-            logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
-            logService
-                .findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
-                .onCompletion { (logService.findAndRevert(collection, topic, event.reverted.hash)) }
+        logger.info(
+            "Deleting all reverted logs before handling block event [{}] by descriptor: [{}]",
+            event, subscriber.getDescriptor()
+        )
+
+        val deletedAndReverted = logService.findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
+            .dropWhile { true }
+
+        return if (event.reverted == null) {
+            deletedAndReverted
         } else {
-            logService.findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
-                .onCompletion { emptyFlow<L>() }
+            logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
+            merge(
+                deletedAndReverted,
+                logService.findAndRevert(collection, event.reverted.hash, topic)
+            )
         }
     }
 
-    fun handleLogs(block: OB, logs: List<OL>): Flow<L> {
-        if (logs.isNotEmpty()) {
-            logger.info("Handling {} Logs from block: [{}]", logs.size, block.meta)
+
+    fun handleLogs(block: BB, logs: List<BL>): Flow<L> {
+        if (logs.isEmpty()) {
+            return emptyFlow()
         }
+        logger.info("Handling {} Logs from block: [{}]", logs.size, block.meta)
         val processedLogs = logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
             onLog(block, idx, log)
         }.onEach {
@@ -63,10 +80,10 @@ class LogEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
         return processedLogs
     }
 
-    private suspend fun onLog(block: OB, index: Int, log: OL): Flow<L> {
+    private suspend fun onLog(block: BB, index: Int, log: BL): Flow<L> {
         logger.info("Handling single Log: [{}]", log)
 
-        val logs = subscriber.getEventData(log, block).asFlow()
+        val logs = subscriber.getEventData(block, log).asFlow()
             .toCollection(mutableListOf())
             .mapIndexed { minorLogIndex, data ->
                 logMapper.map(

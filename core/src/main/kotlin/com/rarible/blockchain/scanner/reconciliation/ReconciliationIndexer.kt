@@ -17,9 +17,9 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class ReconciliationIndexer<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
-    private val blockchainClient: BlockchainClient<OB, OL>,
-    private val logEventHandler: LogEventHandler<OB, OL, L>,
+class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
+    private val blockchainClient: BlockchainClient<BB, BL>,
+    private val logEventHandler: LogEventHandler<BB, BL, L>,
     private val batchSize: Long
 ) {
 
@@ -39,7 +39,7 @@ class ReconciliationIndexer<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
         return rangeFlow
     }
 
-    private suspend fun reindexBlock(logs: BlockLogs<OL>): Flow<L> {
+    private suspend fun reindexBlock(logs: BlockLogs<BL>): Flow<L> {
         logger.info("Reindexing Block {} with {} Logs", logs.blockHash, logs.logs.size)
         val block = blockchainClient.getBlock(logs.blockHash)
         return logEventHandler.handleLogs(block, logs.logs)

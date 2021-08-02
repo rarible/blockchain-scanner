@@ -22,16 +22,16 @@ import java.util.stream.Collectors
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventHandler<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
-    blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB>>,
-    logMapper: LogMapper<OL, OB, L>,
+class BlockEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
+    blockchainClient: BlockchainClient<BB, BL>,
+    subscribers: List<LogEventSubscriber<BB, BL>>,
+    logMapper: LogMapper<BB, BL, L>,
     logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,
-    pendingLogService: PendingLogService<OB, L>
+    pendingLogService: PendingLogService<BB, L>
 ) {
 
-    private val subscribers = ArrayList<BlockEventSubscriber<OB, OL, L>>()
+    private val subscribers = ArrayList<BlockEventSubscriber<BB, BL, L>>()
 
     private val pendingLogMarker = PendingLogMarker(
         logService,

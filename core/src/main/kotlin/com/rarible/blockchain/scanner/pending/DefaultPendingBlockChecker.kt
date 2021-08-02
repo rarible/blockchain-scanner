@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory
 import kotlin.math.abs
 
 @ExperimentalCoroutinesApi
-class DefaultPendingBlockChecker<OB : BlockchainBlock, OL : BlockchainLog, B : Block>(
-    private val blockchainClient: BlockchainClient<OB, OL>,
+class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
+    private val blockchainClient: BlockchainClient<BB, BL>,
     private val blockService: BlockService<B>,
     private val blockListener: BlockListener
 ) : PendingBlockChecker {

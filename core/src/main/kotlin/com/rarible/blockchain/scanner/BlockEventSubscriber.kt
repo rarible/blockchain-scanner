@@ -19,13 +19,13 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventSubscriber<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
-    private val blockchainClient: BlockchainClient<OB, OL>,
-    val subscriber: LogEventSubscriber<OL, OB>,
-    logMapper: LogMapper<OL, OB, L>,
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
+    private val blockchainClient: BlockchainClient<BB, BL>,
+    val subscriber: LogEventSubscriber<BB, BL>,
+    logMapper: LogMapper<BB, BL, L>,
     logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,
-    private val pendingLogMarker: PendingLogMarker<OB, L>
+    private val pendingLogMarker: PendingLogMarker<BB, L>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
@@ -47,7 +47,7 @@ class BlockEventSubscriber<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
         return merge(start, process)
     }
 
-    private suspend fun processBlock(originalBlock: OB): Flow<L> {
+    private suspend fun processBlock(originalBlock: BB): Flow<L> {
         val events = blockchainClient.getBlockEvents(originalBlock, subscriber.getDescriptor())
         return logHandler.handleLogs(originalBlock, events)
     }

@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.data
 
-data class BlockLogs<OL>(
+data class BlockLogs<BL>(
     val blockHash: String,
-    val logs: List<OL>
+    val logs: List<BL>
 )

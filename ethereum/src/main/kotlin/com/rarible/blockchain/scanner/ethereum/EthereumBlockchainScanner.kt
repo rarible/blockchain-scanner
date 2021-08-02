@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component
 @ExperimentalCoroutinesApi
 class EthereumBlockchainScanner(
     blockchainClient: EthereumClient,
-    subscribers: List<LogEventSubscriber<EthereumBlockchainLog, EthereumBlockchainBlock>>,
+    subscribers: List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog>>,
     blockMapper: EthereumBlockMapper,
     blockService: EthereumBlockService,
     logMapper: EthereumLogMapper,

@@ -89,6 +89,8 @@ class EthereumClient(
             .awaitFirst()
     }
 
+    //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
+    //todo (уникальный чтобы считался внутри транзакции, topic, address). это ты учел тут?
     override fun getBlockEvents(
         descriptor: LogEventDescriptor,
         range: LongRange

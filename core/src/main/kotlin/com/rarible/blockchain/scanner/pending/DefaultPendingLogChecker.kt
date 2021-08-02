@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.job.PendingLogsCheckJob
 import com.rarible.blockchain.scanner.subscriber.LogEventPostProcessor
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.mapNotNull
@@ -17,8 +18,9 @@ import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class DefaultPendingLogChecker<OB : BlockchainBlock, OL : BlockchainLog, L : Log>(
-    private val blockchainClient: BlockchainClient<OB, OL>,
+@FlowPreview
+class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
+    private val blockchainClient: BlockchainClient<BB, BL>,
     private val blockListener: BlockListener,
     private val collections: Set<String>,
     private val logService: LogService<L>,
@@ -49,18 +51,6 @@ class DefaultPendingLogChecker<OB : BlockchainBlock, OL : BlockchainLog, L : Log
                 logger.error("caught exception while onDroppedLogs logs of listener: {}", it.javaClass, ex)
             }
         }
-        // TODO ???
-        /*return (logEventPostProcessors ?: emptyList()).asFlow()
-            .map { logEventsListener ->
-                logEventsListener.postProcessLogs(droppedLogs).onErrorResume { th ->
-                    logger.error(
-                        "caught exception while onDroppedLogs logs of listener: {}",
-                        logEventsListener.javaClass, th
-                    )
-                    Mono.empty()
-                }
-            }.then()
-            */
     }
 
     private suspend fun onNewBlocks(newBlocks: List<BlockchainBlock>) {

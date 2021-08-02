@@ -11,7 +11,7 @@ import org.bson.types.ObjectId
 import org.springframework.stereotype.Component
 
 @Component
-class EthereumLogMapper : LogMapper<EthereumBlockchainLog, EthereumBlockchainBlock, EthereumLog> {
+class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog> {
 
     override fun map(
         block: EthereumBlockchainBlock,
@@ -24,7 +24,7 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainLog, EthereumBlockchainBlo
         val ethLog = log.ethLog
         return EthereumLog(
             id = ObjectId(),
-            version = 0,
+            version = null,
             data = data,
             address = ethLog.address().hex(),
             topic = descriptor.topic,

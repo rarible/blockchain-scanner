@@ -14,13 +14,13 @@ import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventPostProcessor
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toCollection
-import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
@@ -28,19 +28,19 @@ import org.slf4j.MDC
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L : Log>(
-    blockchainClient: BlockchainClient<OB, OL>,
-    subscribers: List<LogEventSubscriber<OL, OB>>,
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(
+    blockchainClient: BlockchainClient<BB, BL>,
+    subscribers: List<LogEventSubscriber<BB, BL>>,
     private val blockService: BlockService<B>,
-    logMapper: LogMapper<OL, OB, L>,
+    logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L>,
     logEventListeners: List<LogEventListener<L>>,
-    pendingLogService: PendingLogService<OB, L>,
+    pendingLogService: PendingLogService<BB, L>,
     private val logEventPostProcessors: List<LogEventPostProcessor<L>>,
     private val properties: BlockchainScannerProperties
 ) : BlockListener {
 
-    private val blockEventHandler: BlockEventHandler<OB, OL, L> = BlockEventHandler(
+    private val blockEventHandler: BlockEventHandler<BB, BL, L> = BlockEventHandler(
         blockchainClient,
         subscribers,
         logMapper,
@@ -53,7 +53,7 @@ class BlockEventListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L 
         logger.info("Received BlockEvent [{}]", event)
         event.contextParams.forEach { (key, value) -> MDC.put(key, value) }
 
-        withContext(MDCContext()) {
+        withContext(RaribleMDCContext()) {
             val logs = processBlock(event)
             val status = postProcessBlock(event, logs)
             updateBlockStatus(event, status)
@@ -71,6 +71,7 @@ class BlockEventListener<OB : BlockchainBlock, OL : BlockchainLog, B : Block, L 
         val status = try {
             logger.debug(
                 "Starting to post-process {} Logs of BlockEvent [{}] for {} post-processors",
+                // TODO оставить только эти слушатели
                 logs.size, event, logEventPostProcessors.size
             )
 

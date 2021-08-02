@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block>(
-    private val blockchainClient: BlockchainClient<OB, OL>,
-    private val blockMapper: BlockMapper<OB, B>,
+class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
+    private val blockchainClient: BlockchainClient<BB, BL>,
+    private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
     private val properties: BlockchainScannerProperties
 ) {
@@ -57,7 +57,7 @@ class BlockScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block>(
         }
     }
 
-    private suspend fun getNewBlocks(newBlock: OB): Flow<OB> {
+    private suspend fun getNewBlocks(newBlock: BB): Flow<BB> {
         logger.info("Checking for not-indexed blocks previous to new on with number: {}", newBlock.number)
 
         val lastKnown = blockService.getLastBlock()
@@ -78,7 +78,7 @@ class BlockScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block>(
     /**
      * when inserting/updating block we need to inspect parent blocks if chain was reorganized
      */
-    private suspend fun saveBlock(newBlock: OB, depth: Int = 0): Flow<BlockEvent> {
+    private suspend fun saveBlock(newBlock: BB, depth: Int = 0): Flow<BlockEvent> {
         logger.info("Saving block: [{}]", newBlock)
         val parentBlockHash = blockService.getBlockHash(newBlock.number - 1)
         val parentBlockFlow = when (parentBlockHash) {
@@ -114,7 +114,7 @@ class BlockScanner<OB : BlockchainBlock, OL : BlockchainLog, B : Block>(
         return merge(parentBlockFlow, checkNewBlock(newBlock))
     }
 
-    private suspend fun checkNewBlock(block: OB): Flow<BlockEvent> {
+    private suspend fun checkNewBlock(block: BB): Flow<BlockEvent> {
         val knownHash = blockService.getBlockHash(block.number)
 
         return when {
