@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 
 interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log> {
 

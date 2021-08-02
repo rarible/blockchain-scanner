@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
@@ -19,12 +20,12 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
-    private val blockchainClient: BlockchainClient<BB, BL>,
-    val subscriber: LogEventSubscriber<BB, BL>,
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : LogEventDescriptor>(
+    private val blockchainClient: BlockchainClient<BB, BL, D>,
+    val subscriber: LogEventSubscriber<BB, BL, D>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L>,
-    private val pendingLogMarker: PendingLogMarker<BB, L>
+    logService: LogService<L, D>,
+    private val pendingLogMarker: PendingLogMarker<BB, L, D>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)

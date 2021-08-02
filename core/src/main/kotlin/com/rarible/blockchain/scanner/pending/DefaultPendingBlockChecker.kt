@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.job.PendingBlocksCheckJob
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,8 +21,8 @@ import org.slf4j.LoggerFactory
 import kotlin.math.abs
 
 @ExperimentalCoroutinesApi
-class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
-    private val blockchainClient: BlockchainClient<BB, BL>,
+class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : LogEventDescriptor>(
+    private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockService: BlockService<B>,
     private val blockListener: BlockListener
 ) : PendingBlockChecker {

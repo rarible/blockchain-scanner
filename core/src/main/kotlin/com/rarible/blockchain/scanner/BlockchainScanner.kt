@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -28,14 +29,14 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(
-    blockchainClient: BlockchainClient<BB, BL>,
-    subscribers: List<LogEventSubscriber<BB, BL>>,
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, D : LogEventDescriptor>(
+    blockchainClient: BlockchainClient<BB, BL, D>,
+    subscribers: List<LogEventSubscriber<BB, BL, D>>,
     blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L>,
-    pendingLogService: PendingLogService<BB, L>,
+    logService: LogService<L, D>,
+    pendingLogService: PendingLogService<BB, L, D>,
     logEventListeners: List<LogEventListener<L>>,
     properties: BlockchainScannerProperties
 
@@ -66,7 +67,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     private val pendingLogChecker = DefaultPendingLogChecker(
         blockchainClient,
         blockListener,
-        subscribers.map { it.getDescriptor().collection }.toSet(),
+        subscribers.map { it.getDescriptor() }, // TODO will it work in right way?
         logService,
         logEventListeners
     )

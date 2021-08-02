@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.core.common.optimisticLock
@@ -18,13 +19,14 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
-    val subscriber: LogEventSubscriber<BB, BL>,
+class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : LogEventDescriptor>(
+    val subscriber: LogEventSubscriber<BB, BL, D>,
     private val logMapper: LogMapper<BB, BL, L>,
-    private val logService: LogService<L>
+    private val logService: LogService<L, D>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
+    private val descriptor: D = subscriber.getDescriptor()
 
     init {
         logger.info(
@@ -33,15 +35,13 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     }
 
     fun beforeHandleBlock(event: BlockEvent): Flow<L> {
-        val collection = subscriber.getDescriptor().collection
-        val topic = subscriber.getDescriptor().topic
 
         logger.info(
             "Deleting all reverted logs before handling block event [{}] by descriptor: [{}]",
-            event, subscriber.getDescriptor()
+            event, descriptor
         )
 
-        val deletedAndReverted = logService.findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
+        val deletedAndReverted = logService.findAndDelete(descriptor, event.block.hash, Log.Status.REVERTED)
             .dropWhile { true }
 
         return if (event.reverted == null) {
@@ -50,7 +50,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
             logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
             merge(
                 deletedAndReverted,
-                logService.findAndRevert(collection, event.reverted.hash, topic)
+                logService.findAndRevert(descriptor, event.reverted.hash)
             )
         }
     }
@@ -88,11 +88,10 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     }
 
     private suspend fun saveProcessedLogs(logs: Flow<L>): Flow<L> {
-        val collection = subscriber.getDescriptor().collection
         return logs.map {
             optimisticLock(3) {
-                logger.info("Saving Log [{}] to '{}'", it, collection)
-                logService.saveOrUpdate(collection, it)
+                logger.info("Saving Log [{}] for descriptor [{}]", it, descriptor)
+                logService.saveOrUpdate(descriptor, it)
             }
         }
     }

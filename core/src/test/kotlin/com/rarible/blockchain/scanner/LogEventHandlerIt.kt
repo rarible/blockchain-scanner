@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
@@ -158,7 +159,7 @@ internal class LogEventHandlerIt {
 
     private fun createHandler(
         subscriber: TestLogEventSubscriber
-    ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog> {
+    ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogEventDescriptor> {
         return LogEventHandler(
             subscriber,
             testLogMapper,

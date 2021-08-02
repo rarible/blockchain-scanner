@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.test.service
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.common.toOptional
@@ -13,18 +14,18 @@ import org.bson.types.ObjectId
 
 class TestLogService(
     private val testLogRepository: TestLogRepository
-) : LogService<TestLog> {
+) : LogService<TestLog, TestLogEventDescriptor> {
 
-    override suspend fun delete(collection: String, log: TestLog): TestLog {
-        return testLogRepository.delete(collection, log).awaitFirst()
+    override suspend fun delete(descriptor: TestLogEventDescriptor, log: TestLog): TestLog {
+        return testLogRepository.delete(descriptor.collection, log).awaitFirst()
     }
 
     override suspend fun saveOrUpdate(
-        collection: String,
+        descriptor: TestLogEventDescriptor,
         event: TestLog
     ): TestLog {
         val opt = testLogRepository.findByKey(
-            collection,
+            descriptor.collection,
             event.transactionHash,
             event.blockHash!!,
             event.logIndex!!,
@@ -36,47 +37,46 @@ class TestLogService(
                 val found = it.get()
                 val withCorrectId = event.copy(id = found.id, version = found.version)
                 if (withCorrectId != found) {
-                    testLogRepository.save(collection, withCorrectId)
+                    testLogRepository.save(descriptor.collection, withCorrectId)
                 } else {
                     found.justOrEmpty()
                 }
             } else {
-                testLogRepository.save(collection, event)
+                testLogRepository.save(descriptor.collection, event)
             }
         }.awaitFirst()
     }
 
-    override suspend fun save(collection: String, log: TestLog): TestLog {
-        return testLogRepository.save(collection, log).awaitFirst()
+    override suspend fun save(descriptor: TestLogEventDescriptor, log: TestLog): TestLog {
+        return testLogRepository.save(descriptor.collection, log).awaitFirst()
     }
 
-    override fun findPendingLogs(collection: String): Flow<TestLog> {
-        return testLogRepository.findPendingLogs(collection).asFlow()
+    override fun findPendingLogs(descriptor: TestLogEventDescriptor): Flow<TestLog> {
+        return testLogRepository.findPendingLogs(descriptor.collection).asFlow()
     }
 
-    override suspend fun findLogEvent(collection: String, id: ObjectId): TestLog {
-        return testLogRepository.findLogEvent(collection, id).awaitFirst()
+    override suspend fun findLogEvent(descriptor: TestLogEventDescriptor, id: ObjectId): TestLog {
+        return testLogRepository.findLogEvent(descriptor.collection, id).awaitFirst()
     }
 
-    override fun findAndRevert(collection: String, blockHash: String, topic: String): Flow<TestLog> {
-        return testLogRepository.findAndRevert(collection, blockHash, topic).asFlow()
+    override fun findAndRevert(descriptor: TestLogEventDescriptor, blockHash: String): Flow<TestLog> {
+        return testLogRepository.findAndRevert(descriptor.collection, blockHash, descriptor.topic).asFlow()
     }
 
     override fun findAndDelete(
-        collection: String,
+        descriptor: TestLogEventDescriptor,
         blockHash: String,
-        topic: String,
         status: Log.Status?
     ): Flow<TestLog> {
-        return testLogRepository.findAndDelete(collection, blockHash, topic, status).asFlow()
+        return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.topic, status).asFlow()
     }
 
     override suspend fun updateStatus(
-        collection: String,
+        descriptor: TestLogEventDescriptor,
         log: TestLog,
         status: Log.Status
     ): TestLog {
         val toSave = log.copy(status = status, visible = false)
-        return testLogRepository.save(collection, toSave).awaitFirst()
+        return testLogRepository.save(descriptor.collection, toSave).awaitFirst()
     }
 }

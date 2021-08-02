@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -21,17 +22,17 @@ import org.slf4j.MDC
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(
-    blockchainClient: BlockchainClient<BB, BL>,
-    subscribers: List<LogEventSubscriber<BB, BL>>,
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, D : LogEventDescriptor>(
+    blockchainClient: BlockchainClient<BB, BL, D>,
+    subscribers: List<LogEventSubscriber<BB, BL, D>>,
     private val blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L>,
-    pendingLogService: PendingLogService<BB, L>,
+    logService: LogService<L, D>,
+    pendingLogService: PendingLogService<BB, L, D>,
     private val blockEventPostProcessor: BlockEventPostProcessor<L>
 ) : BlockListener {
 
-    private val blockEventHandler: BlockEventHandler<BB, BL, L> = BlockEventHandler(
+    private val blockEventHandler: BlockEventHandler<BB, BL, L, D> = BlockEventHandler(
         blockchainClient,
         subscribers,
         logMapper,

@@ -3,8 +3,8 @@ package com.rarible.blockchain.scanner.test.client
 import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
+import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
@@ -12,7 +12,7 @@ import java.util.*
 
 class TestBlockchainClient(
     data: TestBlockchainData
-) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog> {
+) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestLogEventDescriptor> {
 
     val blocksByNumber = data.blocks.associateBy { it.number }
     val blocksByHash = data.blocks.associateBy { it.hash }
@@ -37,13 +37,13 @@ class TestBlockchainClient(
 
     override suspend fun getBlockEvents(
         block: TestBlockchainBlock,
-        descriptor: LogEventDescriptor
+        descriptor: TestLogEventDescriptor
     ): List<TestBlockchainLog> {
         return logs[block.hash]!!.filter { it.topic.equals(descriptor.topic) }.map { TestBlockchainLog(it) }
     }
 
     override fun getBlockEvents(
-        descriptor: LogEventDescriptor,
+        descriptor: TestLogEventDescriptor,
         range: LongRange
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
         return blocksByNumber.values.filter { range.contains(it.number) }

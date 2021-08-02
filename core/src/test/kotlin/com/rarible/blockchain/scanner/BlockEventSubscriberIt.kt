@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.coEvery
@@ -41,7 +42,7 @@ class BlockEventSubscriberIt {
         val pendingLog = randomTestLog(topic, block.hash).copy(status = Log.Status.PENDING)
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
-        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog>>()
+        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestLogEventDescriptor>>()
 
         coEvery {
             pendingLogMarker.markInactive(TestBlockchainBlock(block), subscriber.getDescriptor())

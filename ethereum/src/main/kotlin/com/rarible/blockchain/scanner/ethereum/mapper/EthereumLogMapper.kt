@@ -6,7 +6,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Component
 

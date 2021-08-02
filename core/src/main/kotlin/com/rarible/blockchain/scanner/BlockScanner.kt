@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -24,8 +25,8 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
-    private val blockchainClient: BlockchainClient<BB, BL>,
+class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : LogEventDescriptor>(
+    private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
     private val properties: BlockchainScannerProperties
