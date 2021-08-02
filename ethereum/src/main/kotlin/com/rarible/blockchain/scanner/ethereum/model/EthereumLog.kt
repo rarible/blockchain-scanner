@@ -16,6 +16,7 @@ data class EthereumLog(
 
     override val topic: String,
     override val transactionHash: String,
+    override val status: Log.Status,
 
     val from: String? = null,
     val nonce: Long? = null,
@@ -23,7 +24,6 @@ data class EthereumLog(
     val index: Int,
     val data: EventData,
     val address: String,
-    val status: Log.Status,
     val blockHash: Word? = null,
     val blockNumber: Long? = null,
     val logIndex: Int? = null,

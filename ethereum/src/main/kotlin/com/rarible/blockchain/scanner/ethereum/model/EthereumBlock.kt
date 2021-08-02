@@ -9,5 +9,5 @@ class EthereumBlock(
 
     override val hash: String,
     override val timestamp: Long,
-    val status: Block.Status = Block.Status.PENDING
+    override val status: Block.Status = Block.Status.PENDING
 ) : Block

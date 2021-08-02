@@ -38,8 +38,8 @@ fun randomTestBlock(hash: String): TestBlock {
         randomPositiveLong(),
         hash,
         randomPositiveLong(),
-        randomString(16),
-        Block.Status.PENDING
+        Block.Status.PENDING,
+        randomString(16)
     )
 }
 
