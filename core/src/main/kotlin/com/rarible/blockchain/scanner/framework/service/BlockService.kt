@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.framework.service
 import com.rarible.blockchain.scanner.framework.model.Block
 import kotlinx.coroutines.flow.Flow
 
+//todo кажется, что BlockService не будет отличаться в разных блокчейнах и есть смысл сделать DefaultBlockService для какого стандартного блока
 interface BlockService<B : Block> {
 
     fun findByStatus(status: Block.Status): Flow<B>
