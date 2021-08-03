@@ -15,7 +15,7 @@ import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
@@ -52,8 +52,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
     }
 
     private suspend fun processBlock(event: BlockEvent): List<L> {
-        val logs = blockEventHandler.onBlockEvent(event)
-            .toCollection(mutableListOf())
+        val logs = blockEventHandler.onBlockEvent(event).toList()
         logger.info("BlockEvent [{}] processed, {} Logs gathered", event, logs.size)
         return logs
     }

@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -32,24 +33,27 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D 
 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService)
 
-    suspend fun onBlockEvent(event: BlockEvent): Flow<L> {
+    fun onBlockEvent(event: BlockEvent): Flow<L> = flatten {
         val start = logHandler.beforeHandleBlock(event)
         val descriptor = subscriber.getDescriptor()
         logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
 
         val block = blockchainClient.getBlock(event.block.hash)
 
+        //todo тут можно все merge вместе сделать? все 3 потока. результат не изменится
+        //todo но кажется это не совсем верно, потому что вначале pending нужно убрать, а потом из блоков грузить
+        //todo иначе получится, что индексы уникальные могут сказать ошибку
         val process = merge(
             pendingLogMarker.markInactive(block, descriptor),
             processBlock(block)
         )
 
-        return merge(start, process)
+        merge(start, process)
     }
 
-    private suspend fun processBlock(originalBlock: BB): Flow<L> {
+    private fun processBlock(originalBlock: BB): Flow<L> = flatten {
         val events = blockchainClient.getBlockEvents(originalBlock, subscriber.getDescriptor())
-        return logHandler.handleLogs(FullBlock(originalBlock, events))
+        logHandler.handleLogs(FullBlock(originalBlock, events))
     }
 
     override fun toString(): String {

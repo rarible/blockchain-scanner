@@ -62,14 +62,13 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
     }
 
     private suspend fun processLog(descriptor: D, log: L): Pair<L?, BlockchainBlock?>? {
-        val txOption = blockchainClient.getTransactionMeta(log.transactionHash)
+        val tx = blockchainClient.getTransactionMeta(log.transactionHash)
 
-        if (!txOption.isPresent) {
+        if (tx == null) {
             logger.info("for log $log\nnot found transaction. dropping it")
             val updatedLog = markLogAsDropped(log, descriptor)
             return Pair(updatedLog, null)
         } else {
-            val tx = txOption.get()
             val blockHash = tx.blockHash
             if (blockHash == null) {
                 logger.info("for log $log\nfound transaction $tx\nit's pending. skip it")

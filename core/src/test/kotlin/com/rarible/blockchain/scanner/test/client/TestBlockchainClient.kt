@@ -8,7 +8,6 @@ import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
-import java.util.*
 
 class TestBlockchainClient(
     data: TestBlockchainData
@@ -52,7 +51,7 @@ class TestBlockchainClient(
             .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(TestBlockchainBlock(it), descriptor)) }
     }
 
-    override suspend fun getTransactionMeta(transactionHash: String): Optional<TransactionMeta> {
+    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         TODO("Not yet implemented")
     }
 }

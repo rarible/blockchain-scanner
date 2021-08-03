@@ -20,6 +20,7 @@ class EthereumPendingLogService(
     private val monoEthereum: MonoEthereum
 ) : PendingLogService<EthereumBlockchainBlock, EthereumLog, EthereumLogEventDescriptor> {
 
+    //todo тут Flux остался, а не Flow. лучше, наверное Flow сделать все
     override fun markInactive(
         block: EthereumBlockchainBlock,
         logs: List<LogEvent<EthereumLog, EthereumLogEventDescriptor>>
