@@ -55,21 +55,18 @@ class EthereumClient(
         return ethereum.ethBlockNumber().map { it.toLong() }.awaitFirst()
     }
 
-    override suspend fun getTransactionMeta(transactionHash: String): Optional<TransactionMeta> {
-        return ethereum.ethGetTransactionByHash(Word.apply(transactionHash)).map {
-            if (it.isEmpty) {
-                Optional.empty()
-            } else {
-                val tx = it.get()
-                Optional.of(
-                    TransactionMeta(
-                        tx.hash().toString(),
-                        tx.blockNumber().toLong(),
-                        tx.blockHash().toString()
-                    )
-                )
-            }
-        }.awaitFirst()
+    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
+        val opt = ethereum.ethGetTransactionByHash(Word.apply(transactionHash)).awaitFirst()
+        return if (opt.isEmpty) {
+            null
+        } else {
+            val tx = opt.get()
+            TransactionMeta(
+                tx.hash().toString(),
+                tx.blockNumber().toLong(),
+                tx.blockHash().toString()
+            )
+        }
     }
 
     override suspend fun getBlockEvents(

@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.common.optimisticLock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -68,11 +69,12 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
         return processedLogs
     }
 
-    private suspend fun onLog(block: BB, index: Int, log: BL): Flow<L> {
+    private fun onLog(block: BB, index: Int, log: BL): Flow<L> = flatten {
         logger.info("Handling single Log: [{}]", log)
 
+        //todo кажется, оператор withIndex подойдет вместо преобразования в list, а потом mapIndexed
         val logs = subscriber.getEventData(block, log).asFlow()
-            .toCollection(mutableListOf())
+            .toList()
             .mapIndexed { minorLogIndex, data ->
                 logMapper.map(
                     block,
@@ -84,10 +86,10 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
                 )
             }.asFlow()
 
-        return saveProcessedLogs(logs)
+        saveProcessedLogs(logs)
     }
 
-    private suspend fun saveProcessedLogs(logs: Flow<L>): Flow<L> {
+    private fun saveProcessedLogs(logs: Flow<L>): Flow<L> {
         val collection = subscriber.getDescriptor().collection
         return logs.map {
             optimisticLock(3) {

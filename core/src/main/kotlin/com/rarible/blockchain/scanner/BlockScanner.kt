@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
+import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -50,39 +51,38 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
         }
     }
 
-    private suspend fun getEventFlow(): Flow<BlockEvent> {
-        return blockchainClient.listenNewBlocks().flatMapConcat { newBlock ->
+    private fun getEventFlow(): Flow<BlockEvent> = flatten {
+        blockchainClient.listenNewBlocks().flatMapConcat { newBlock ->
             getNewBlocks(newBlock).flatMapConcat { blockToUpdate ->
                 saveBlock(blockToUpdate)
             }
         }
     }
 
-    private suspend fun getNewBlocks(newBlock: BB): Flow<BB> {
+    private fun getNewBlocks(newBlock: BB): Flow<BB> = flatten {
         logger.info("Checking for not-indexed blocks previous to new on with number: {}", newBlock.number)
 
         val lastKnown = blockService.getLastBlock()
         if (lastKnown == null) {
             logger.info("Last indexed block not found, will handle only new block: [{}]", newBlock.meta)
-            return flowOf(newBlock)
+            flowOf(newBlock)
+        } else {
+            logger.info("Found last known block with number: {}", lastKnown)
+            val range = (lastKnown + 1) until newBlock.number
+            if (range.last >= range.first) {
+                logger.info("Range of not-indexed blocks: {}", range)
+            }
+            val blockRangeFlow = range.asFlow().map { blockchainClient.getBlock(it) }
+            merge(blockRangeFlow, flowOf(newBlock))
         }
-
-        logger.info("Found last known block with number: {}", lastKnown)
-        val range = (lastKnown + 1) until newBlock.number
-        if (range.last >= range.first) {
-            logger.info("Range of not-indexed blocks: {}", range)
-        }
-        val blockRangeFlow = range.asFlow().map { blockchainClient.getBlock(it) }
-        return merge(blockRangeFlow, flowOf(newBlock))
     }
 
     /**
      * when inserting/updating block we need to inspect parent blocks if chain was reorganized
      */
-    private suspend fun saveBlock(newBlock: BB, depth: Int = 0): Flow<BlockEvent> {
+    private fun saveBlock(newBlock: BB, depth: Int = 0): Flow<BlockEvent> = flatten {
         logger.info("Saving block: [{}]", newBlock)
-        val parentBlockHash = blockService.getBlockHash(newBlock.number - 1)
-        val parentBlockFlow = when (parentBlockHash) {
+        val parentBlockFlow = when (val parentBlockHash = blockService.getBlockHash(newBlock.number - 1)) {
             //do nothing if parent hash not found (just started listening to blocks)
             null -> {
                 logger.info(
@@ -112,13 +112,13 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
             }
         }
 
-        return merge(parentBlockFlow, checkNewBlock(newBlock))
+        merge(parentBlockFlow, checkNewBlock(newBlock))
     }
 
-    private suspend fun checkNewBlock(block: BB): Flow<BlockEvent> {
+    private fun checkNewBlock(block: BB): Flow<BlockEvent> = flatten {
         val knownHash = blockService.getBlockHash(block.number)
 
-        return when {
+        when {
             knownHash == null -> {
                 logger.info("Block with number and {} hash '{}' NOT found, this is new block", block.number, block.hash)
                 blockService.saveBlock(blockMapper.map(block))

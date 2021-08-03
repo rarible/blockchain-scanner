@@ -13,7 +13,7 @@ import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 
 @FlowPreview
@@ -33,12 +33,9 @@ class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
         it.subscriber.getDescriptor().topic to createIndexer(it, blockEventPostProcessor, properties)
     }
 
-    fun reindex(topic: String?, from: Long): Flow<LongRange> {
-        return flow {
-            emit(blockchainClient.getLastBlockNumber())
-        }.flatMapConcat {
-            reindex(topic, from, it)
-        }
+    fun reindex(topic: String?, from: Long): Flow<LongRange> = flow {
+        val lastBlockNumber = blockchainClient.getLastBlockNumber()
+        emitAll(reindex(topic, from, lastBlockNumber))
     }
 
     private fun reindex(topic: String?, from: Long, to: Long): Flow<LongRange> {

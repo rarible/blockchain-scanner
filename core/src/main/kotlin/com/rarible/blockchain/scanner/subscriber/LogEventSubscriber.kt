@@ -9,6 +9,7 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog> {
 
     fun getDescriptor(): LogEventDescriptor
 
+    //todo кажется тут Flow просто вернуть нужно
     fun getEventData(block: BB, log: BL): Publisher<EventData>
 
 }
