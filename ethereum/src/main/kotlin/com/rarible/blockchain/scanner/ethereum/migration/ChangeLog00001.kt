@@ -23,8 +23,8 @@ class ChangeLog00001 {
         val collections = holderEthereum.subscribers.map { it.getDescriptor().collection }.toSet()
         collections.forEach {
             template.updateMulti(
-                Query(Criteria.where("minorLogIndex").exists(false)),
-                Update().set("minorLogIndex", 0),
+                Query(Criteria.where("log.minorLogIndex").exists(false)),
+                Update().set("log.minorLogIndex", 0),
                 it
             )
         }
@@ -43,44 +43,46 @@ class ChangeLog00001 {
         val indexOps = template.indexOps(collection)
         indexOps.ensureIndex(
             Index()
-                .on("transactionHash", Sort.Direction.ASC)
-                .on("topic", Sort.Direction.ASC)
-                .on("index", Sort.Direction.ASC)
-                .on("minorLogIndex", Sort.Direction.ASC)
-                .on("visible", Sort.Direction.ASC)
+                .on("log.transactionHash", Sort.Direction.ASC)
+                .on("log.topic", Sort.Direction.ASC)
+                .on("log.index", Sort.Direction.ASC)
+                .on("log.minorLogIndex", Sort.Direction.ASC)
+                .on("log.visible", Sort.Direction.ASC)
+                .on("log.address", Sort.Direction.ASC)
                 .named(VISIBLE_INDEX_NAME)
                 .background()
                 .unique()
-                .partial(PartialIndexFilter.of(Document("visible", true)))
+                .partial(PartialIndexFilter.of(Document("log.visible", true)))
         )
 
         indexOps.ensureIndex(
             Index()
-                .on("transactionHash", Sort.Direction.ASC)
-                .on("blockHash", Sort.Direction.ASC)
-                .on("logIndex", Sort.Direction.ASC)
-                .on("minorLogIndex", Sort.Direction.ASC)
-                .named("transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1")
+                .on("log.transactionHash", Sort.Direction.ASC)
+                .on("log.blockHash", Sort.Direction.ASC)
+                .on("log.logIndex", Sort.Direction.ASC)
+                .on("log.minorLogIndex", Sort.Direction.ASC)
+                .named("log_transactionHash_1_log_blockHash_1_log_logIndex_1_log_minorLogIndex_1")
                 .background()
                 .unique()
         )
 
         indexOps.ensureIndex(
             Index()
-                .on("status", Sort.Direction.ASC)
-                .named("status")
+                .on("log.status", Sort.Direction.ASC)
+                .named("log_status")
                 .background()
         )
 
         indexOps.ensureIndex(
             Index()
-                .on("blockHash", Sort.Direction.ASC)
-                .named("blockHash")
+                .on("log.blockHash", Sort.Direction.ASC)
+                .named("log_blockHash")
                 .background()
         )
     }
 
     companion object {
-        const val VISIBLE_INDEX_NAME = "transactionHash_1_topic_1_index_1_minorLogIndex_1_visible_1"
+        const val VISIBLE_INDEX_NAME =
+            "log_transactionHash_1_log_topic_1_log_index_1_log_minorLogIndex_1_log_visible_1_log_address_1"
     }
 }
