@@ -21,6 +21,11 @@ import kotlinx.coroutines.flow.toCollection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * Reconciliation indexer for single LogEventHandler (which means, for single subscriber).
+ * The goal of such indexer to re-read LogEvents from blocks, update them and publish changes.
+ * Indexer do NOT check pending blocks/logs and also do NOT update state of blocks.
+ */
 @FlowPreview
 @ExperimentalCoroutinesApi
 class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(

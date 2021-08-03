@@ -94,7 +94,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         return logs.map {
             optimisticLock(3) {
                 logger.info("Saving Log [{}] for descriptor [{}]", it, descriptor)
-                logService.saveOrUpdate(descriptor, it)
+                logService.save(descriptor, it)
             }
         }
     }

@@ -25,7 +25,7 @@ class EthereumBlockService(
         return blockRepository.findByStatus(status).asFlow()
     }
 
-    override suspend fun getLastBlock(): Long {
+    override suspend fun getLastBlockNumber(): Long {
         return blockRepository.getLastBlock().awaitFirst()
     }
 
@@ -35,20 +35,12 @@ class EthereumBlockService(
             .awaitFirst()
     }
 
-    override suspend fun updateBlockStatus(id: Long, status: Block.Status) {
+    override suspend fun updateStatus(id: Long, status: Block.Status) {
         blockRepository.updateBlockStatus(id, status).awaitFirstOrNull()
     }
 
-    override suspend fun saveBlock(block: EthereumBlock) {
+    override suspend fun save(block: EthereumBlock) {
         logger.info("saveKnownBlock $block")
         blockRepository.saveR(block).awaitFirstOrNull()
-    }
-
-    override suspend fun findFirstByIdAsc(): EthereumBlock {
-        return blockRepository.findFirstByIdAsc().awaitFirst()
-    }
-
-    override suspend fun findFirstByIdDesc(): EthereumBlock {
-        return blockRepository.findFirstByIdDesc().awaitFirst()
     }
 }

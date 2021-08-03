@@ -3,10 +3,15 @@ package com.rarible.blockchain.scanner.framework.mapper
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.model.Block
 
-//todo давай на всех (ну или почти) классах и интерфейсах общих (из этого модуля) буквально одно предложение напишем в javadoc -
-//todo зачем нужен этот класс, какую роль выполняет. с ходу не всегда понятно
+/**
+ * Mapper (i.e. converter) of original Blockchain Block to persistent Block, which will be stored in storage of specific
+ * BlockchainScanner implementation.
+ */
 interface BlockMapper<BB : BlockchainBlock, B : Block> {
 
+    /**
+     * Convert original Blockchain Block to persistent Block data
+     */
     fun map(originalBlock: BB): B
 
 }

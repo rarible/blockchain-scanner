@@ -20,7 +20,7 @@ class TestLogService(
         return testLogRepository.delete(descriptor.collection, record).awaitFirst()
     }
 
-    override suspend fun saveOrUpdate(
+    override suspend fun save(
         descriptor: TestDescriptor,
         record: TestLogRecord<*>
     ): TestLogRecord<*> {
@@ -46,10 +46,6 @@ class TestLogService(
                 testLogRepository.save(descriptor.collection, record)
             }
         }.awaitFirst()
-    }
-
-    override suspend fun save(descriptor: TestDescriptor, record: TestLogRecord<*>): TestLogRecord<*> {
-        return testLogRepository.save(descriptor.collection, record).awaitFirst()
     }
 
     override fun findPendingLogs(descriptor: TestDescriptor): Flow<TestLogRecord<*>> {

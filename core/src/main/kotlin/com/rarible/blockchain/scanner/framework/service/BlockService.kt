@@ -4,20 +4,32 @@ import com.rarible.blockchain.scanner.framework.model.Block
 import kotlinx.coroutines.flow.Flow
 
 //todo кажется, что BlockService не будет отличаться в разных блокчейнах и есть смысл сделать DefaultBlockService для какого стандартного блока
+/**
+ * Interface describes operations with persistent storage for Block records. Each Blockchain Scanner implementation
+ * may have its own storage (Mongo/Postgres etc.).
+ */
 interface BlockService<B : Block> {
 
     fun findByStatus(status: Block.Status): Flow<B>
 
-    suspend fun getLastBlock(): Long?
+    /**
+     * Return last (i.e.MAX) stored Block number.
+     */
+    suspend fun getLastBlockNumber(): Long?
 
+    /**
+     * Return Block hash by number.
+     */
     suspend fun getBlockHash(id: Long): String?
 
-    suspend fun updateBlockStatus(id: Long, status: Block.Status)
+    /**
+     * Update status of the Block.
+     */
+    suspend fun updateStatus(id: Long, status: Block.Status)
 
-    suspend fun saveBlock(block: B)
-
-    suspend fun findFirstByIdAsc(): B
-
-    suspend fun findFirstByIdDesc(): B
+    /**
+     * Insert or update Block record to the persistent storage.
+     */
+    suspend fun save(block: B)
 
 }

@@ -63,7 +63,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private fun getNewBlocks(newBlock: BB): Flow<BB> = flatten {
         logger.info("Checking for not-indexed blocks previous to new on with number: {}", newBlock.number)
 
-        val lastKnown = blockService.getLastBlock()
+        val lastKnown = blockService.getLastBlockNumber()
         if (lastKnown == null) {
             logger.info("Last indexed block not found, will handle only new block: [{}]", newBlock.meta)
             flowOf(newBlock)
@@ -122,7 +122,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
         when {
             knownHash == null -> {
                 logger.info("Block with number and {} hash '{}' NOT found, this is new block", block.number, block.hash)
-                blockService.saveBlock(blockMapper.map(block))
+                blockService.save(blockMapper.map(block))
                 flowOf(BlockEvent(Source.BLOCKCHAIN, block))
             }
             knownHash != block.hash -> {
@@ -130,7 +130,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
                     "Block with number and {} hash '{}' found, but hash is different: {}",
                     block.number, block.hash, knownHash
                 )
-                blockService.saveBlock(blockMapper.map(block))
+                blockService.save(blockMapper.map(block))
                 val revertedBlock = BlockMeta(block.number, knownHash, block.parentHash, block.timestamp)
                 flowOf(BlockEvent(Source.BLOCKCHAIN, block.meta, revertedBlock))
             }

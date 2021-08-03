@@ -60,7 +60,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
 
     private suspend fun updateBlockStatus(event: BlockEvent, status: Block.Status) {
         try {
-            blockService.updateBlockStatus(event.block.number, status)
+            blockService.updateStatus(event.block.number, status)
         } catch (ex: Throwable) {
             logger.error("Unable to save Block from BlockEvent [{}] with status {}", event, status, ex)
         }

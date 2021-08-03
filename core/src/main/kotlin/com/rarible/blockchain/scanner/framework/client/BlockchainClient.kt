@@ -6,7 +6,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Blockchain client - implement this to support new blockchain
+ * Blockchain Client - implement it to support new Blockchain
  */
 interface BlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor> {
 

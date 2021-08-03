@@ -18,6 +18,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 
+/**
+ * Reconciliation service contains set of single Reconciliation Indexers(one per subscriber) and
+ * triggers reconciliation procedure for any of them from specified block until last known.
+ */
 @FlowPreview
 @ExperimentalCoroutinesApi
 class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
@@ -29,6 +33,7 @@ class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R
     properties: BlockchainScannerProperties
 ) {
 
+    // Making single LogEventHandler for each subscriber
     private val indexers = subscribers.map {
         LogEventHandler(it, logMapper, logService)
     }.associate {

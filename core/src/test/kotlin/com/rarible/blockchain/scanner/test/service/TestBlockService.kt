@@ -19,7 +19,7 @@ class TestBlockService(
         return blockRepository.findByStatus(status).asFlow()
     }
 
-    override suspend fun getLastBlock(): Long {
+    override suspend fun getLastBlockNumber(): Long {
         return blockRepository.getLastBlock().awaitFirst()
     }
 
@@ -29,19 +29,12 @@ class TestBlockService(
             .awaitFirst()
     }
 
-    override suspend fun updateBlockStatus(id: Long, status: Block.Status) {
+    override suspend fun updateStatus(id: Long, status: Block.Status) {
         blockRepository.updateBlockStatus(id, status).awaitFirstOrNull()
     }
 
-    override suspend fun saveBlock(block: TestBlock) {
+    override suspend fun save(block: TestBlock) {
         blockRepository.saveR(block).awaitFirstOrNull()
     }
 
-    override suspend fun findFirstByIdAsc(): TestBlock {
-        return blockRepository.findFirstByIdAsc().awaitFirst()
-    }
-
-    override suspend fun findFirstByIdDesc(): TestBlock {
-        return blockRepository.findFirstByIdDesc().awaitFirst()
-    }
 }

@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.framework.model
 
 /**
- * Basic data class for blockchain block data to be stored in Mongo
+ * Basic data class for blockchain block data to be stored in persistent storage.
  */
 interface Block {
 

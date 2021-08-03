@@ -27,7 +27,7 @@ class EthereumLogService(
         return ethereumLogEventRepository.delete(descriptor.collection, record).awaitFirst()
     }
 
-    override suspend fun saveOrUpdate(
+    override suspend fun save(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord<*>
     ): EthereumLogRecord<*> {
@@ -65,10 +65,6 @@ class EthereumLogService(
                 ethereumLogEventRepository.save(collection, record)
             }
         }.awaitFirst()
-    }
-
-    override suspend fun save(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
-        return ethereumLogEventRepository.save(descriptor.collection, record).awaitFirst()
     }
 
     override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {

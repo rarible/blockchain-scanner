@@ -13,6 +13,7 @@ class ReconciliationTaskInitializer(
     private val reconciliationExecutor: ReconciliationExecutor,
     private val properties: BlockchainScannerProperties
 ) {
+
     //todo кажется это можно сделать с помощью autoRun в TaskHandler. я его позже добавил уже, чем этот initializer
     @Scheduled(initialDelayString = "\${taskInitializerDelay:60000}", fixedDelay = Long.MAX_VALUE)
     fun initialize() {

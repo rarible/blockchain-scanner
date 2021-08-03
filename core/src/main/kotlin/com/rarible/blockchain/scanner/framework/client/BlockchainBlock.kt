@@ -2,6 +2,9 @@ package com.rarible.blockchain.scanner.framework.client
 
 import com.rarible.blockchain.scanner.data.BlockMeta
 
+/**
+ * Simple wrapper for original Blockchain Block, provided by Blockchain Client.
+ */
 interface BlockchainBlock {
 
     val meta: BlockMeta
