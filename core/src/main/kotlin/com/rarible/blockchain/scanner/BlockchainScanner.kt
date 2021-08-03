@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -29,14 +30,14 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, D : Descriptor>(
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, D>>,
+    subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, D>,
-    pendingLogService: PendingLogService<BB, L, D>,
+    logService: LogService<L, R, D>,
+    pendingLogService: PendingLogService<BB, L, R, D>,
     logEventListeners: List<LogEventListener<L>>,
     properties: BlockchainScannerProperties
 
@@ -49,7 +50,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties
     )
 
-    private val blockEventPostProcessor = BlockEventPostProcessor(
+    private val logEventPublisher = LogEventPublisher(
         logEventListeners,
         properties
     )
@@ -61,7 +62,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         logMapper,
         logService,
         pendingLogService,
-        blockEventPostProcessor
+        logEventPublisher
     )
 
     private val pendingLogChecker = DefaultPendingLogChecker(
@@ -83,7 +84,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         subscribers,
         logMapper,
         logService,
-        blockEventPostProcessor,
+        logEventPublisher,
         properties
     )
 

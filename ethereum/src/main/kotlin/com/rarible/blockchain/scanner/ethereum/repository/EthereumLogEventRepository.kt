@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.core.logging.LoggingUtils
 import io.daonomic.rpc.domain.Word
@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono
 class EthereumLogEventRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-    fun delete(collection: String, event: EthereumLog): Mono<EthereumLog> {
+    fun delete(collection: String, event: EthereumLogRecord): Mono<EthereumLogRecord> {
         return mongo.remove(event, collection).thenReturn(event)
     }
 
@@ -30,15 +30,15 @@ class EthereumLogEventRepository(
         topic: Word,
         index: Int,
         minorLogIndex: Int
-    ): Mono<EthereumLog> {
-        val c = Criteria.where("transactionHash").`is`(transactionHash)
-            .and("topic").`is`(topic)
-            .and("index").`is`(index)
-            .and("minorLogIndex").`is`(minorLogIndex)
-            .and("visible").`is`(true)
+    ): Mono<EthereumLogRecord> {
+        val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
+            .and("log.topic").`is`(topic)
+            .and("log.index").`is`(index)
+            .and("log.minorLogIndex").`is`(minorLogIndex)
+            .and("log.visible").`is`(true)
         return mongo.findOne(
-            Query.query(c).withHint(ChangeLog00001.VISIBLE_INDEX_NAME),
-            EthereumLog::class.java,
+            Query.query(criteria).withHint(ChangeLog00001.VISIBLE_INDEX_NAME),
+            EthereumLogRecord::class.java,
             collection
         )
     }
@@ -49,50 +49,49 @@ class EthereumLogEventRepository(
         blockHash: Word,
         logIndex: Int,
         minorLogIndex: Int
-    ): Mono<EthereumLog> {
-        val c = Criteria().andOperator(
-            EthereumLog::transactionHash isEqualTo transactionHash,
-            EthereumLog::blockHash isEqualTo blockHash,
-            EthereumLog::logIndex isEqualTo logIndex,
-            EthereumLog::minorLogIndex isEqualTo minorLogIndex
-        )
-        return mongo.findOne(Query(c), EthereumLog::class.java, collection)
+    ): Mono<EthereumLogRecord> {
+        val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
+            .and("log.blockHash").`is`(blockHash)
+            .and("log.logIndex").`is`(logIndex)
+            .and("log.minorLogIndex").`is`(minorLogIndex)
+        return mongo.findOne(Query(criteria), EthereumLogRecord::class.java, collection)
     }
 
-    fun save(collection: String, event: EthereumLog): Mono<EthereumLog> {
+    fun save(collection: String, event: EthereumLogRecord): Mono<EthereumLogRecord> {
         return mongo.save(event, collection)
     }
 
-    fun findPendingLogs(collection: String, topic: Word): Flux<EthereumLog> {
-        val topicCriteria = Criteria.where(EthereumLog::topic.name).isEqualTo(topic)
-        val statusCriteria = Criteria.where(EthereumLog::status.name).`is`(Log.Status.PENDING)
+    fun findPendingLogs(collection: String, topic: Word): Flux<EthereumLogRecord> {
+        val topicCriteria = Criteria.where("log.topic").isEqualTo(topic)
+        val statusCriteria = Criteria.where("log.status").`is`(Log.Status.PENDING)
         val query = Query().apply {
             addCriteria(topicCriteria)
             addCriteria(statusCriteria)
         }
         return mongo.find(
             query,
-            EthereumLog::class.java,
+            EthereumLogRecord::class.java,
             collection
         )
     }
 
-    fun findLogEvent(collection: String, id: ObjectId): Mono<EthereumLog> {
-        return mongo.findById(id, EthereumLog::class.java, collection)
+    fun findLogEvent(collection: String, id: ObjectId): Mono<EthereumLogRecord> {
+        return mongo.findById(id, EthereumLogRecord::class.java, collection)
     }
 
-    fun findAndRevert(collection: String, blockHash: Word, topic: Word): Flux<EthereumLog> {
-        val blockHashCriteria = Criteria.where(EthereumLog::blockHash.name).isEqualTo(blockHash)
-        val topicCriteria = Criteria.where(EthereumLog::topic.name).isEqualTo(topic)
+    fun findAndRevert(collection: String, blockHash: Word, topic: Word): Flux<EthereumLogRecord> {
+        val blockHashCriteria = Criteria.where("log.blockHash").isEqualTo(blockHash)
+        val topicCriteria = Criteria.where("log.topic").isEqualTo(topic)
         val query = Query().apply {
             addCriteria(blockHashCriteria)
             addCriteria(topicCriteria)
         }
         return LoggingUtils.withMarkerFlux { marker ->
-            mongo.find(query, EthereumLog::class.java, collection)
+            mongo.find(query, EthereumLogRecord::class.java, collection)
                 .map {
                     logger.info(marker, "reverting $it")
-                    it.copy(status = Log.Status.REVERTED, visible = false)
+                    it.log = it.log!!.copy(status = Log.Status.REVERTED, visible = false)
+                    it
                 }
                 .flatMap { mongo.save(it, collection) }
         }
@@ -103,11 +102,11 @@ class EthereumLogEventRepository(
         blockHash: Word,
         topic: Word,
         status: Log.Status? = null
-    ): Flux<EthereumLog> {
+    ): Flux<EthereumLogRecord> {
         return LoggingUtils.withMarkerFlux { marker ->
-            val blockHashCriteria = Criteria.where(EthereumLog::blockHash.name).isEqualTo(blockHash)
-            val topicCriteria = Criteria.where(EthereumLog::topic.name).isEqualTo(topic)
-            val statusCriteria = status?.let { Criteria.where(EthereumLog::status.name).isEqualTo(it) }
+            val blockHashCriteria = Criteria.where("log.blockHash").isEqualTo(blockHash)
+            val topicCriteria = Criteria.where("log.topic").isEqualTo(topic)
+            val statusCriteria = status?.let { Criteria.where("log.status").isEqualTo(it) }
 
             val query = Query().apply {
                 addCriteria(blockHashCriteria)
@@ -115,9 +114,10 @@ class EthereumLogEventRepository(
                 statusCriteria?.let { addCriteria(it) }
             }
             mongo
-                .find(query, EthereumLog::class.java, collection)
+                .find(query, EthereumLogRecord::class.java, collection)
                 .flatMap {
-                    logger.info(marker, "Delete log event: blockHash={}, status={}", it.blockHash, it.status)
+                    val log = it.log!!
+                    logger.info(marker, "Delete log event: blockHash={}, status={}", log.blockHash, log.status)
                     delete(collection, it).thenReturn(it)
                 }
         }

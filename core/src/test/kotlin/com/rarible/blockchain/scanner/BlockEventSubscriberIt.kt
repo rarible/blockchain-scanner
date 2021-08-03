@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.coEvery
@@ -39,10 +40,11 @@ class BlockEventSubscriberIt {
         val subscriber = TestLogEventSubscriber(testDescriptor1())
         val block = randomOriginalBlock()
         val log = randomOriginalLog(block.hash, topic)
-        val pendingLog = randomTestLog(topic, block.hash).copy(status = Log.Status.PENDING)
+        val pendingLog = randomTestLogRecord(topic, block.hash)
+        pendingLog.log = pendingLog.log!!.copy(status = Log.Status.PENDING)
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
-        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestDescriptor>>()
+        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord, TestDescriptor>>()
 
         coEvery {
             pendingLogMarker.markInactive(TestBlockchainBlock(block), subscriber.getDescriptor())
@@ -63,7 +65,7 @@ class BlockEventSubscriberIt {
         assertEquals(2, logEvents.size)
 
         assertEquals(pendingLog, logEvents[0])
-        assertBlockchainLogAndLogEquals(log, logEvents[1])
+        assertOriginalLogAndLogEquals(log, logEvents[1].log!!)
     }
 }
 

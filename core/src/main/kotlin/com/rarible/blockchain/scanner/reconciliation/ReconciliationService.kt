@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.BlockEventPostProcessor
 import com.rarible.blockchain.scanner.LogEventHandler
+import com.rarible.blockchain.scanner.LogEventPublisher
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,19 +20,19 @@ import kotlinx.coroutines.flow.flow
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
+class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, D>>,
+    subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, D>,
-    blockEventPostProcessor: BlockEventPostProcessor<L>,
+    logService: LogService<L, R, D>,
+    logEventPublisher: LogEventPublisher<L>,
     properties: BlockchainScannerProperties
 ) {
 
     private val indexers = subscribers.map {
         LogEventHandler(it, logMapper, logService)
     }.associate {
-        it.subscriber.getDescriptor().id to createIndexer(it, blockEventPostProcessor, properties)
+        it.subscriber.getDescriptor().id to createIndexer(it, logEventPublisher, properties)
     }
 
     fun reindex(descriptorId: String?, from: Long): Flow<LongRange> = flow {
@@ -50,14 +51,14 @@ class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D
     }
 
     private fun createIndexer(
-        logEventHandler: LogEventHandler<BB, BL, L, D>,
-        blockEventPostProcessor: BlockEventPostProcessor<L>,
+        logEventHandler: LogEventHandler<BB, BL, L, R, D>,
+        logEventPublisher: LogEventPublisher<L>,
         properties: BlockchainScannerProperties
-    ): ReconciliationIndexer<BB, BL, L, D> {
+    ): ReconciliationIndexer<BB, BL, L, R, D> {
         return ReconciliationIndexer(
             blockchainClient,
             logEventHandler,
-            blockEventPostProcessor,
+            logEventPublisher,
             properties.batchSize
         )
     }

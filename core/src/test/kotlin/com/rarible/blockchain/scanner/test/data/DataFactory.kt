@@ -7,13 +7,9 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
-import com.rarible.blockchain.scanner.test.model.TestBlock
-import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.blockchain.scanner.test.subscriber.TestEventData
+import com.rarible.blockchain.scanner.test.model.*
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
-import org.bson.types.ObjectId
 import kotlin.math.abs
 
 fun testDescriptor1(): TestDescriptor {
@@ -73,29 +69,30 @@ fun randomOriginalLog(blockHash: String, topic: String): TestOriginalLog {
     )
 }
 
-fun randomTestLog(topic: String, blockHash: String): TestLog {
-    val data = randomTestData()
-    return TestLog(
-        id = ObjectId(),
+fun randomTestLogRecord(topic: String, blockHash: String): TestLogRecord {
+    val testLog = randomTestLog(topic, blockHash)
+    val record = TestCustomLogRecord(
+        id = randomPositiveLong(),
         version = null,
-        data = data,
+        logExtra = testLog.extra,
+        blockExtra = randomString(16),
+        customData = randomString()
+    )
+    record.log = testLog
+    return record
+}
+
+fun randomTestLog(topic: String, blockHash: String): TestLog {
+    return TestLog(
         topic = topic,
         transactionHash = randomString(),
-        extra = data.logExtra,
+        extra = randomString(16),
         visible = true,
         minorLogIndex = randomPositiveInt(),
         status = Log.Status.CONFIRMED,
         blockHash = blockHash,
         logIndex = randomPositiveInt(),
         index = randomPositiveInt()
-    )
-}
-
-fun randomTestData(): TestEventData {
-    return TestEventData(
-        randomPositiveInt(),
-        randomString(16),
-        randomString(16)
     )
 }
 

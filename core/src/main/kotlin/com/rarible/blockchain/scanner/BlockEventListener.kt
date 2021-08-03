@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -22,17 +23,17 @@ import org.slf4j.MDC
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, D : Descriptor>(
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, D>>,
+    subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     private val blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, D>,
-    pendingLogService: PendingLogService<BB, L, D>,
-    private val blockEventPostProcessor: BlockEventPostProcessor<L>
+    logService: LogService<L, R, D>,
+    pendingLogService: PendingLogService<BB, L, R, D>,
+    private val logEventPublisher: LogEventPublisher<L>
 ) : BlockListener {
 
-    private val blockEventHandler: BlockEventHandler<BB, BL, L, D> = BlockEventHandler(
+    private val blockEventHandler: BlockEventHandler<BB, BL, L, R, D> = BlockEventHandler(
         blockchainClient,
         subscribers,
         logMapper,
@@ -46,12 +47,12 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
 
         withContext(RaribleMDCContext()) {
             val logs = processBlock(event)
-            val status = blockEventPostProcessor.onBlockProcessed(event, logs)
+            val status = logEventPublisher.onBlockProcessed(event, logs)
             updateBlockStatus(event, status)
         }
     }
 
-    private suspend fun processBlock(event: BlockEvent): List<L> {
+    private suspend fun processBlock(event: BlockEvent): List<LogRecord<L>> {
         val logs = blockEventHandler.onBlockEvent(event).toList()
         logger.info("BlockEvent [{}] processed, {} Logs gathered", event, logs.size)
         return logs

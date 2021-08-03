@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.flatten
@@ -19,10 +20,10 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
-    val subscriber: LogEventSubscriber<BB, BL, D>,
+class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
+    val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     private val logMapper: LogMapper<BB, BL, L>,
-    private val logService: LogService<L, D>
+    private val logService: LogService<L, R, D>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
@@ -34,7 +35,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Des
         )
     }
 
-    fun beforeHandleBlock(event: BlockEvent): Flow<L> {
+    fun beforeHandleBlock(event: BlockEvent): Flow<R> {
 
         logger.info(
             "Deleting all reverted logs before handling block event [{}] by descriptor: [{}]",
@@ -56,7 +57,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Des
     }
 
 
-    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<L> {
+    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> {
         if (fullBlock.logs.isEmpty()) {
             return emptyFlow()
         }
@@ -68,28 +69,29 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Des
         return processedLogs
     }
 
-    private fun onLog(block: BB, index: Int, log: BL): Flow<L> = flatten {
+    private fun onLog(block: BB, index: Int, log: BL): Flow<R> = flatten {
         logger.info("Handling single Log: [{}]", log)
 
-        val logs = subscriber.getEventData(block, log)
+        val logs = subscriber.getEventRecords(block, log)
             .withIndex()
             .map { indexed ->
-                val data = indexed.value
+                val record = indexed.value
                 val minorLogIndex = indexed.index
-                logMapper.map(
+                val recordLog = logMapper.map(
                     block,
                     log,
                     index,
                     minorLogIndex,
-                    data,
                     subscriber.getDescriptor()
                 )
+                record.log = recordLog
+                record
             }
 
         saveProcessedLogs(logs)
     }
 
-    private fun saveProcessedLogs(logs: Flow<L>): Flow<L> {
+    private fun saveProcessedLogs(logs: Flow<R>): Flow<R> {
         return logs.map {
             optimisticLock(3) {
                 logger.info("Saving Log [{}] for descriptor [{}]", it, descriptor)

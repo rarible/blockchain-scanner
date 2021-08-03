@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.ProcessedBlockEvent
 import kotlinx.coroutines.flow.asFlow
@@ -12,12 +13,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 
-class BlockEventPostProcessor<L : Log>(
+class LogEventPublisher<L : Log>(
     private val logEventListeners: List<LogEventListener<L>>,
     private val properties: BlockchainScannerProperties
 ) {
 
-    suspend fun onBlockProcessed(event: BlockEvent, logs: List<L>): Block.Status {
+    suspend fun onBlockProcessed(event: BlockEvent, logs: List<LogRecord<L>>): Block.Status {
         val status = try {
             logger.debug(
                 "Starting to notify all listeners for {} Logs of BlockEvent [{}] for {} post-processors",
@@ -35,7 +36,7 @@ class BlockEventPostProcessor<L : Log>(
         return status
     }
 
-    private suspend fun onLogsProcessed(event: BlockEvent, logs: List<L>) {
+    private suspend fun onLogsProcessed(event: BlockEvent, logs: List<LogRecord<L>>) {
         return (logEventListeners).asFlow().map {
             try {
                 it.onBlockLogsProcessed(ProcessedBlockEvent(event, logs))
