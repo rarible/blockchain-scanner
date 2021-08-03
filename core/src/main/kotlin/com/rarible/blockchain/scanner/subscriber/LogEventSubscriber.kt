@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import kotlinx.coroutines.flow.Flow
 
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor> {
+interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor> {
 
     fun getDescriptor(): D
 

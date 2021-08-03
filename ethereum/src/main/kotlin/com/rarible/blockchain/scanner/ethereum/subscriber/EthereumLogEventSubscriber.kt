@@ -8,5 +8,5 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 
 interface EthereumLogEventSubscriber :
-    LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog, EthereumLogRecord, EthereumDescriptor> {
+    LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 }

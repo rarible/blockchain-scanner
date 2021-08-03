@@ -10,12 +10,12 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
-class TestPendingLogService : PendingLogService<TestBlockchainBlock, TestLog, TestLogRecord, TestDescriptor> {
+class TestPendingLogService : PendingLogService<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor> {
 
     override fun markInactive(
         block: TestBlockchainBlock,
-        logs: List<LogEvent<TestLog, TestLogRecord, TestDescriptor>>
-    ): Flow<LogEventStatusUpdate<TestLog, TestLogRecord, TestDescriptor>> {
+        logs: List<LogEvent<TestLog, TestLogRecord<*>, TestDescriptor>>
+    ): Flow<LogEventStatusUpdate<TestLog, TestLogRecord<*>, TestDescriptor>> {
         return emptyFlow()
     }
 }

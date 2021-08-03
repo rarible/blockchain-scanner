@@ -19,18 +19,18 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogService(
     private val ethereumLogEventRepository: EthereumLogEventRepository
-) : LogService<EthereumLog, EthereumLogRecord, EthereumDescriptor> {
+) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
     private val logger: Logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
+    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
         return ethereumLogEventRepository.delete(descriptor.collection, record).awaitFirst()
     }
 
     override suspend fun saveOrUpdate(
         descriptor: EthereumDescriptor,
-        record: EthereumLogRecord
-    ): EthereumLogRecord {
+        record: EthereumLogRecord<*>
+    ): EthereumLogRecord<*> {
         val collection = descriptor.collection
         val log = record.log!!
         val opt = ethereumLogEventRepository.findVisibleByKey(
@@ -52,13 +52,12 @@ class EthereumLogService(
         return opt.flatMap {
             if (it.isPresent) {
                 val found = it.get()
-                record.id = found.id
-                record.version = found.version
-                if (record != found) {
-                    logger.info("Saving changed LogEvent $record to $collection")
-                    ethereumLogEventRepository.save(collection, record)
+                val withCorrectId = record.withIdAndVersion(found.id, found.version)
+                if (withCorrectId != found) {
+                    logger.info("Saving changed LogEvent $withCorrectId to $collection")
+                    ethereumLogEventRepository.save(collection, withCorrectId)
                 } else {
-                    logger.info("LogEvent didn't change: $record")
+                    logger.info("LogEvent didn't change: $withCorrectId")
                     found.justOrEmpty()
                 }
             } else {
@@ -68,15 +67,15 @@ class EthereumLogService(
         }.awaitFirst()
     }
 
-    override suspend fun save(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
+    override suspend fun save(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
         return ethereumLogEventRepository.save(descriptor.collection, record).awaitFirst()
     }
 
-    override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord> {
+    override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {
         return ethereumLogEventRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
     }
 
-    override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLogRecord> {
+    override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLogRecord<*>> {
         return ethereumLogEventRepository.findAndRevert(
             descriptor.collection,
             Word.apply(blockHash), // TODO ???
@@ -88,7 +87,7 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         blockHash: String,
         status: Log.Status?
-    ): Flow<EthereumLogRecord> {
+    ): Flow<EthereumLogRecord<*>> {
         return ethereumLogEventRepository.findAndDelete(
             descriptor.collection,
             Word.apply(blockHash), // TODO ???
@@ -99,10 +98,10 @@ class EthereumLogService(
 
     override suspend fun updateStatus(
         descriptor: EthereumDescriptor,
-        record: EthereumLogRecord,
+        record: EthereumLogRecord<*>,
         status: Log.Status
-    ): EthereumLogRecord {
-        record.log = record.log!!.copy(status = status, visible = false)
-        return ethereumLogEventRepository.save(descriptor.collection, record).awaitFirst()
+    ): EthereumLogRecord<*> {
+        val copy = record.withLog(record.log!!.copy(status = status, visible = false))
+        return ethereumLogEventRepository.save(descriptor.collection, copy).awaitFirst()
     }
 }

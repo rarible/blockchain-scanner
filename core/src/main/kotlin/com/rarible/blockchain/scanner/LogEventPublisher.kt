@@ -13,12 +13,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 
-class LogEventPublisher<L : Log>(
-    private val logEventListeners: List<LogEventListener<L>>,
+class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
+    private val logEventListeners: List<LogEventListener<L, R>>,
     private val properties: BlockchainScannerProperties
 ) {
 
-    suspend fun onBlockProcessed(event: BlockEvent, logs: List<LogRecord<L>>): Block.Status {
+    suspend fun onBlockProcessed(event: BlockEvent, logs: List<R>): Block.Status {
         val status = try {
             logger.debug(
                 "Starting to notify all listeners for {} Logs of BlockEvent [{}] for {} post-processors",
@@ -36,7 +36,7 @@ class LogEventPublisher<L : Log>(
         return status
     }
 
-    private suspend fun onLogsProcessed(event: BlockEvent, logs: List<LogRecord<L>>) {
+    private suspend fun onLogsProcessed(event: BlockEvent, logs: List<R>) {
         return (logEventListeners).asFlow().map {
             try {
                 it.onBlockLogsProcessed(ProcessedBlockEvent(event, logs))

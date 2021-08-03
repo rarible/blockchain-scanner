@@ -14,16 +14,16 @@ import kotlinx.coroutines.reactive.awaitFirst
 
 class TestLogService(
     private val testLogRepository: TestLogRepository
-) : LogService<TestLog, TestLogRecord, TestDescriptor> {
+) : LogService<TestLog, TestLogRecord<*>, TestDescriptor> {
 
-    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord): TestLogRecord {
+    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord<*>): TestLogRecord<*> {
         return testLogRepository.delete(descriptor.collection, record).awaitFirst()
     }
 
     override suspend fun saveOrUpdate(
         descriptor: TestDescriptor,
-        record: TestLogRecord
-    ): TestLogRecord {
+        record: TestLogRecord<*>
+    ): TestLogRecord<*> {
         val log = record.log!!
         val opt = testLogRepository.findByKey(
             descriptor.collection,
@@ -36,10 +36,9 @@ class TestLogService(
         return opt.flatMap {
             if (it.isPresent) {
                 val found = it.get()
-                record.id = found.id
-                record.version = found.version
-                if (record != found) {
-                    testLogRepository.save(descriptor.collection, record)
+                val withCorrectId = record.withIdAndVersion(found.id, found.version)
+                if (withCorrectId != found) {
+                    testLogRepository.save(descriptor.collection, withCorrectId)
                 } else {
                     found.justOrEmpty()
                 }
@@ -49,15 +48,15 @@ class TestLogService(
         }.awaitFirst()
     }
 
-    override suspend fun save(descriptor: TestDescriptor, record: TestLogRecord): TestLogRecord {
+    override suspend fun save(descriptor: TestDescriptor, record: TestLogRecord<*>): TestLogRecord<*> {
         return testLogRepository.save(descriptor.collection, record).awaitFirst()
     }
 
-    override fun findPendingLogs(descriptor: TestDescriptor): Flow<TestLogRecord> {
+    override fun findPendingLogs(descriptor: TestDescriptor): Flow<TestLogRecord<*>> {
         return testLogRepository.findPendingLogs(descriptor.collection).asFlow()
     }
 
-    override fun findAndRevert(descriptor: TestDescriptor, blockHash: String): Flow<TestLogRecord> {
+    override fun findAndRevert(descriptor: TestDescriptor, blockHash: String): Flow<TestLogRecord<*>> {
         return testLogRepository.findAndRevert(descriptor.collection, blockHash, descriptor.topic).asFlow()
     }
 
@@ -65,16 +64,16 @@ class TestLogService(
         descriptor: TestDescriptor,
         blockHash: String,
         status: Log.Status?
-    ): Flow<TestLogRecord> {
+    ): Flow<TestLogRecord<*>> {
         return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.topic, status).asFlow()
     }
 
     override suspend fun updateStatus(
         descriptor: TestDescriptor,
-        record: TestLogRecord,
+        record: TestLogRecord<*>,
         status: Log.Status
-    ): TestLogRecord {
-        record.log = record.log!!.copy(status = status, visible = false)
-        return testLogRepository.save(descriptor.collection, record).awaitFirst()
+    ): TestLogRecord<*> {
+        val copy = record.withLog(record.log!!.copy(status = status, visible = false))
+        return testLogRepository.save(descriptor.collection, copy).awaitFirst()
     }
 }

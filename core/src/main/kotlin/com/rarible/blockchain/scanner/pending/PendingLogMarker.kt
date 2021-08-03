@@ -15,7 +15,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class PendingLogMarker<BB, L : Log, R : LogRecord<L>, D : Descriptor>(
+class PendingLogMarker<BB, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val logService: LogService<L, R, D>,
     private val pendingLogService: PendingLogService<BB, L, R, D>
 ) {

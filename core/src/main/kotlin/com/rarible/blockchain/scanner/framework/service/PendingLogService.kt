@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import kotlinx.coroutines.flow.Flow
 
-interface PendingLogService<BB, L : Log, R : LogRecord<L>, D : Descriptor> {
+interface PendingLogService<BB, L : Log, R : LogRecord<L, *>, D : Descriptor> {
 
     /**
      * Finds log events to mark inactive

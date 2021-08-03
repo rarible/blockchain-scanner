@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     logMapper: LogMapper<BB, BL, L>,

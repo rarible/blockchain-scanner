@@ -19,15 +19,15 @@ import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 
 class TestScanner(
     blockchainClient: TestBlockchainClient,
-    subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor>>,
+    subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor>>,
     blockMapper: TestBlockMapper,
     blockService: TestBlockService,
     logMapper: TestLogMapper,
     logService: TestLogService,
     pendingLogService: TestPendingLogService,
-    logEventListeners: List<LogEventListener<TestLog>>,
+    logEventListeners: List<LogEventListener<TestLog, TestLogRecord<*>>>,
     properties: BlockchainScannerProperties
-) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord, TestDescriptor>(
+) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord<*>, TestDescriptor>(
     blockchainClient,
     subscribers,
     blockMapper,

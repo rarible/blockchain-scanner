@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
+import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -52,8 +53,10 @@ internal class LogEventHandlerIt {
         val savedLog2 = getTestLog(savedLogs[1].id)!!
 
         // These event logs are based on same Blockchain log, so basic params should be the same
-        assertBlockchainLogAndLogEquals(block, log, savedLog1.log!!)
-        assertBlockchainLogAndLogEquals(block, log, savedLog2.log!!)
+        assertTrue(savedLog1 is TestCustomLogRecord)
+        assertTrue(savedLog1 is TestCustomLogRecord)
+        assertRecordAndLogEquals(savedLog1, log.testOriginalLog, block.testOriginalBlock)
+        assertRecordAndLogEquals(savedLog2, log.testOriginalLog, block.testOriginalBlock)
         assertEquals(0, savedLog1.log!!.index)
         assertEquals(0, savedLog2.log!!.index)
 
@@ -95,8 +98,7 @@ internal class LogEventHandlerIt {
 
         val block = randomBlockchainBlock()
         val log1 = randomTestLogRecord(topic, block.hash)
-        val log2 = randomTestLogRecord(topic, block.hash)
-        log2.log = log2.log!!.copy(status = Log.Status.REVERTED)
+        val log2 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
 
         testLogRepository.saveAll(collection, log1, log2)
 
@@ -117,14 +119,10 @@ internal class LogEventHandlerIt {
         val reverted = randomBlockchainBlock()
         val event = BlockEvent(Source.BLOCKCHAIN, block.meta, reverted.meta)
 
-        val log1 = randomTestLogRecord(topic, reverted.hash)
-        log1.log = log1.log!!.copy(status = Log.Status.CONFIRMED)
-        val log2 = randomTestLogRecord(topic, block.hash)
-        log2.log = log2.log!!.copy(status = Log.Status.REVERTED)
-        val log3 = randomTestLogRecord(topic, block.hash)
-        log3.log = log3.log!!.copy(status = Log.Status.CONFIRMED)
-        val log4 = randomTestLogRecord(topic, randomBlockHash())
-        log4.log = log4.log!!.copy(status = Log.Status.REVERTED)
+        val log1 = randomTestLogRecord(topic, reverted.hash, Log.Status.CONFIRMED)
+        val log2 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
+        val log3 = randomTestLogRecord(topic, block.hash, Log.Status.CONFIRMED)
+        val log4 = randomTestLogRecord(topic, randomBlockHash(), Log.Status.REVERTED)
 
         testLogRepository.saveAll(collection, log1, log2, log3, log4)
 
@@ -158,13 +156,13 @@ internal class LogEventHandlerIt {
         assertEquals(log4.log!!.status, log4FromDb.log!!.status)
     }
 
-    private suspend fun getTestLog(id: Long): TestLogRecord? {
+    private suspend fun getTestLog(id: Long): TestLogRecord<*>? {
         return testLogRepository.findLogEvent(collection, id).awaitFirstOrNull()
     }
 
     private fun createHandler(
         subscriber: TestLogEventSubscriber
-    ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor> {
+    ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return LogEventHandler(
             subscriber,
             testLogMapper,

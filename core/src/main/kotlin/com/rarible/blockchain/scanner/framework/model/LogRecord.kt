@@ -1,7 +1,9 @@
 package com.rarible.blockchain.scanner.framework.model
 
-interface LogRecord<L : Log> {
+interface LogRecord<L : Log, LR : LogRecord<L, LR>> {
 
-    var log: L?
+    val log: L?
+
+    fun withLog(log: L): LR
 
 }

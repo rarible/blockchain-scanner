@@ -15,14 +15,14 @@ import kotlinx.coroutines.flow.asFlow
 class TestLogEventSubscriber(
     private val descriptor: TestDescriptor,
     private val eventDataCount: Int = 1
-) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor> {
+) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
 
     override fun getDescriptor(): TestDescriptor {
         return descriptor
     }
 
-    override fun getEventRecords(block: TestBlockchainBlock, log: TestBlockchainLog): Flow<TestLogRecord> {
-        val eventDataList = ArrayList<TestLogRecord>(eventDataCount)
+    override fun getEventRecords(block: TestBlockchainBlock, log: TestBlockchainLog): Flow<TestLogRecord<*>> {
+        val eventDataList = ArrayList<TestLogRecord<*>>(eventDataCount)
         for (i in 0 until eventDataCount) {
             val record = TestCustomLogRecord(
                 id = randomPositiveLong(),

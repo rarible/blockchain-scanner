@@ -7,7 +7,10 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
-import com.rarible.blockchain.scanner.test.model.*
+import com.rarible.blockchain.scanner.test.model.TestBlock
+import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
+import com.rarible.blockchain.scanner.test.model.TestLog
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
 import kotlin.math.abs
@@ -69,27 +72,31 @@ fun randomOriginalLog(blockHash: String, topic: String): TestOriginalLog {
     )
 }
 
-fun randomTestLogRecord(topic: String, blockHash: String): TestLogRecord {
-    val testLog = randomTestLog(topic, blockHash)
+fun randomTestLogRecord(
+    topic: String,
+    blockHash: String,
+    status: Log.Status = Log.Status.CONFIRMED
+): TestCustomLogRecord {
+    val testLog = randomTestLog(topic, blockHash, status)
     val record = TestCustomLogRecord(
         id = randomPositiveLong(),
         version = null,
         logExtra = testLog.extra,
         blockExtra = randomString(16),
-        customData = randomString()
+        customData = randomString(),
+        log = testLog
     )
-    record.log = testLog
     return record
 }
 
-fun randomTestLog(topic: String, blockHash: String): TestLog {
+fun randomTestLog(topic: String, blockHash: String, status: Log.Status = Log.Status.CONFIRMED): TestLog {
     return TestLog(
         topic = topic,
         transactionHash = randomString(),
         extra = randomString(16),
         visible = true,
         minorLogIndex = randomPositiveInt(),
-        status = Log.Status.CONFIRMED,
+        status = status,
         blockHash = blockHash,
         logIndex = randomPositiveInt(),
         index = randomPositiveInt()

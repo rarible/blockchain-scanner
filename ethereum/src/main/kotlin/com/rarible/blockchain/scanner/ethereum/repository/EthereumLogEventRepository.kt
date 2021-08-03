@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.core.logging.LoggingUtils
 import io.daonomic.rpc.domain.Word
-import org.bson.types.ObjectId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
@@ -20,7 +19,7 @@ import reactor.core.publisher.Mono
 class EthereumLogEventRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-    fun delete(collection: String, event: EthereumLogRecord): Mono<EthereumLogRecord> {
+    fun delete(collection: String, event: EthereumLogRecord<*>): Mono<EthereumLogRecord<*>> {
         return mongo.remove(event, collection).thenReturn(event)
     }
 
@@ -30,7 +29,7 @@ class EthereumLogEventRepository(
         topic: Word,
         index: Int,
         minorLogIndex: Int
-    ): Mono<EthereumLogRecord> {
+    ): Mono<EthereumLogRecord<*>> {
         val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
             .and("log.topic").`is`(topic)
             .and("log.index").`is`(index)
@@ -49,7 +48,7 @@ class EthereumLogEventRepository(
         blockHash: Word,
         logIndex: Int,
         minorLogIndex: Int
-    ): Mono<EthereumLogRecord> {
+    ): Mono<EthereumLogRecord<*>> {
         val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
             .and("log.blockHash").`is`(blockHash)
             .and("log.logIndex").`is`(logIndex)
@@ -57,11 +56,11 @@ class EthereumLogEventRepository(
         return mongo.findOne(Query(criteria), EthereumLogRecord::class.java, collection)
     }
 
-    fun save(collection: String, event: EthereumLogRecord): Mono<EthereumLogRecord> {
+    fun save(collection: String, event: EthereumLogRecord<*>): Mono<EthereumLogRecord<*>> {
         return mongo.save(event, collection)
     }
 
-    fun findPendingLogs(collection: String, topic: Word): Flux<EthereumLogRecord> {
+    fun findPendingLogs(collection: String, topic: Word): Flux<EthereumLogRecord<*>> {
         val topicCriteria = Criteria.where("log.topic").isEqualTo(topic)
         val statusCriteria = Criteria.where("log.status").`is`(Log.Status.PENDING)
         val query = Query().apply {
@@ -75,11 +74,7 @@ class EthereumLogEventRepository(
         )
     }
 
-    fun findLogEvent(collection: String, id: ObjectId): Mono<EthereumLogRecord> {
-        return mongo.findById(id, EthereumLogRecord::class.java, collection)
-    }
-
-    fun findAndRevert(collection: String, blockHash: Word, topic: Word): Flux<EthereumLogRecord> {
+    fun findAndRevert(collection: String, blockHash: Word, topic: Word): Flux<EthereumLogRecord<*>> {
         val blockHashCriteria = Criteria.where("log.blockHash").isEqualTo(blockHash)
         val topicCriteria = Criteria.where("log.topic").isEqualTo(topic)
         val query = Query().apply {
@@ -90,8 +85,7 @@ class EthereumLogEventRepository(
             mongo.find(query, EthereumLogRecord::class.java, collection)
                 .map {
                     logger.info(marker, "reverting $it")
-                    it.log = it.log!!.copy(status = Log.Status.REVERTED, visible = false)
-                    it
+                    it.withLog(it.log!!.copy(status = Log.Status.REVERTED, visible = false))
                 }
                 .flatMap { mongo.save(it, collection) }
         }
@@ -102,7 +96,7 @@ class EthereumLogEventRepository(
         blockHash: Word,
         topic: Word,
         status: Log.Status? = null
-    ): Flux<EthereumLogRecord> {
+    ): Flux<EthereumLogRecord<*>> {
         return LoggingUtils.withMarkerFlux { marker ->
             val blockHashCriteria = Criteria.where("log.blockHash").isEqualTo(blockHash)
             val topicCriteria = Criteria.where("log.topic").isEqualTo(topic)

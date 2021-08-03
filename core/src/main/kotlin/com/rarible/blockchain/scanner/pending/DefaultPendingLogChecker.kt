@@ -22,12 +22,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
+class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockListener: BlockListener,
     private val descriptors: List<D>,
     private val logService: LogService<L, R, D>,
-    private val logEventListeners: List<LogEventListener<L>>
+    private val logEventListeners: List<LogEventListener<L, R>>
 ) : PendingLogChecker {
 
     override fun checkPendingLogs() {
@@ -46,7 +46,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
         }
     }
 
-    private suspend fun onDroppedLogs(droppedLogs: List<LogRecord<L>>) {
+    private suspend fun onDroppedLogs(droppedLogs: List<R>) {
         logEventListeners.forEach {
             try {
                 it.onPendingLogsDropped(droppedLogs)

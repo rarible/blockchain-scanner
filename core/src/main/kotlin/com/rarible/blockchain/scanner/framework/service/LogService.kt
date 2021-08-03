@@ -5,7 +5,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import kotlinx.coroutines.flow.Flow
 
-interface LogService<L : Log, R : LogRecord<L>, D : Descriptor> {
+interface LogService<L : Log, R : LogRecord<L, *>, D : Descriptor> {
 
     suspend fun delete(descriptor: D, record: R): R
 

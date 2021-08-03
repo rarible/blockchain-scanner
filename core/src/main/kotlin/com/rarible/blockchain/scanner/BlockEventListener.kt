@@ -23,14 +23,14 @@ import org.slf4j.MDC
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L>, D : Descriptor>(
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     private val blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
     pendingLogService: PendingLogService<BB, L, R, D>,
-    private val logEventPublisher: LogEventPublisher<L>
+    private val logEventPublisher: LogEventPublisher<L, R>
 ) : BlockListener {
 
     private val blockEventHandler: BlockEventHandler<BB, BL, L, R, D> = BlockEventHandler(
@@ -52,7 +52,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         }
     }
 
-    private suspend fun processBlock(event: BlockEvent): List<LogRecord<L>> {
+    private suspend fun processBlock(event: BlockEvent): List<R> {
         val logs = blockEventHandler.onBlockEvent(event).toList()
         logger.info("BlockEvent [{}] processed, {} Logs gathered", event, logs.size)
         return logs

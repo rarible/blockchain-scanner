@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
+class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     private val logMapper: LogMapper<BB, BL, L>,
     private val logService: LogService<L, R, D>
@@ -84,8 +84,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
                     minorLogIndex,
                     subscriber.getDescriptor()
                 )
-                record.log = recordLog
-                record
+                record.withLog(recordLog) as R
             }
 
         saveProcessedLogs(logs)

@@ -49,14 +49,14 @@ class BlockEventHandlerIt {
         assertEquals(2, logEvents.size)
 
         // Since we have two subscribers for same topic, we await 2 similar events here
-        assertOriginalLogAndLogEquals(log, logEvents[0].log!!)
-        assertOriginalLogAndLogEquals(log, logEvents[1].log!!)
+        assertRecordAndLogEquals(logEvents[0], log, block)
+        assertRecordAndLogEquals(logEvents[1], log, block)
     }
 
     private fun createBlockHandler(
         testBlockchainClient: TestBlockchainClient,
         vararg subscribers: TestLogEventSubscriber
-    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor> {
+    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return BlockEventHandler(
             testBlockchainClient,
             subscribers.asList(),

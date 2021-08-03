@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L>, D : Descriptor>(
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,
@@ -38,7 +38,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
     pendingLogService: PendingLogService<BB, L, R, D>,
-    logEventListeners: List<LogEventListener<L>>,
+    logEventListeners: List<LogEventListener<L, R>>,
     properties: BlockchainScannerProperties
 
 ) : PendingLogChecker, BlockListener, PendingBlockChecker, ReconciliationExecutor {

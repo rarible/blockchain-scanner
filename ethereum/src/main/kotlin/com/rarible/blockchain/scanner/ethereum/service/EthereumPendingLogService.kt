@@ -19,12 +19,12 @@ import scalether.java.Lists
 @Component
 class EthereumPendingLogService(
     private val monoEthereum: MonoEthereum
-) : PendingLogService<EthereumBlockchainBlock, EthereumLog, EthereumLogRecord, EthereumDescriptor> {
+) : PendingLogService<EthereumBlockchainBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
     override fun markInactive(
         block: EthereumBlockchainBlock,
-        records: List<LogEvent<EthereumLog, EthereumLogRecord, EthereumDescriptor>>
-    ): Flow<LogEventStatusUpdate<EthereumLog, EthereumLogRecord, EthereumDescriptor>> {
+        records: List<LogEvent<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>>
+    ): Flow<LogEventStatusUpdate<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>> {
         if (records.isEmpty()) {
             return emptyFlow()
         }

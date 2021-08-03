@@ -31,9 +31,9 @@ class EthereumBlockchainScanner(
     logMapper: EthereumLogMapper,
     logService: EthereumLogService,
     pendingLogService: EthereumPendingLogService,
-    logEventListeners: List<LogEventListener<EthereumLog>>,
+    logEventListeners: List<LogEventListener<EthereumLog, EthereumLogRecord<*>>>,
     properties: BlockchainScannerProperties
-) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumLogRecord, EthereumDescriptor>(
+) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>(
     blockchainClient,
     subscribers,
     blockMapper,

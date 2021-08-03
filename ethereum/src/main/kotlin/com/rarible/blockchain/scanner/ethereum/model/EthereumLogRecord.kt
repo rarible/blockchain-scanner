@@ -2,17 +2,11 @@ package com.rarible.blockchain.scanner.ethereum.model
 
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import org.bson.types.ObjectId
-import org.springframework.data.annotation.Id
-import org.springframework.data.annotation.Version
 
-abstract class EthereumLogRecord(
+abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<EthereumLog, LR> {
 
-    @Id
-    var id: ObjectId,
+    abstract val id: ObjectId
+    abstract val version: Long?
 
-    @Version
-    var version: Long?,
-
-    override var log: EthereumLog? = null
-
-) : LogRecord<EthereumLog>
+    abstract fun withIdAndVersion(id: ObjectId, version: Long?): LR
+}

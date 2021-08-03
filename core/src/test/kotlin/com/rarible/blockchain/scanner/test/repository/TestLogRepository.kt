@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono
 class TestLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-    fun delete(collection: String, event: TestLogRecord): Mono<TestLogRecord> {
+    fun delete(collection: String, event: TestLogRecord<*>): Mono<TestLogRecord<*>> {
         return mongo.remove(event, collection).thenReturn(event)
     }
 
@@ -23,7 +23,7 @@ class TestLogRepository(
         blockHash: String,
         logIndex: Int,
         minorLogIndex: Int
-    ): Mono<TestLogRecord> {
+    ): Mono<TestLogRecord<*>> {
         val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
             .and("log.blockHash").`is`(blockHash)
             .and("log.logIndex").`is`(logIndex)
@@ -31,17 +31,17 @@ class TestLogRepository(
         return mongo.findOne(Query(criteria), TestLogRecord::class.java, collection)
     }
 
-    fun save(collection: String, event: TestLogRecord): Mono<TestLogRecord> {
+    fun save(collection: String, event: TestLogRecord<*>): Mono<TestLogRecord<*>> {
         return mongo.save(event, collection)
     }
 
-    suspend fun saveAll(collection: String, vararg events: TestLogRecord) {
+    suspend fun saveAll(collection: String, vararg events: TestLogRecord<*>) {
         events.forEach {
             mongo.save(it, collection).awaitFirstOrNull()
         }
     }
 
-    fun findPendingLogs(collection: String): Flux<TestLogRecord> {
+    fun findPendingLogs(collection: String): Flux<TestLogRecord<*>> {
         return mongo.find(
             Query(Criteria.where("log.status").`is`(Log.Status.PENDING)),
             TestLogRecord::class.java,
@@ -49,19 +49,18 @@ class TestLogRepository(
         )
     }
 
-    fun findLogEvent(collection: String, id: Long): Mono<TestLogRecord> {
+    fun findLogEvent(collection: String, id: Long): Mono<TestLogRecord<*>> {
         return mongo.findById(id, TestLogRecord::class.java, collection)
     }
 
-    fun findAndRevert(collection: String, blockHash: String, topic: String): Flux<TestLogRecord> {
+    fun findAndRevert(collection: String, blockHash: String, topic: String): Flux<TestLogRecord<*>> {
         val query = Query().apply {
             addCriteria(Criteria.where("log.blockHash").isEqualTo(blockHash))
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
         }
         return mongo.find(query, TestLogRecord::class.java, collection)
             .map {
-                it.log = it.log!!.copy(status = Log.Status.REVERTED, visible = false)
-                it
+                it.withLog(it.log!!.copy(status = Log.Status.REVERTED, visible = false))
             }
             .flatMap { mongo.save(it, collection) }
     }
@@ -71,7 +70,7 @@ class TestLogRepository(
         blockHash: String,
         topic: String,
         status: Log.Status? = null
-    ): Flux<TestLogRecord> {
+    ): Flux<TestLogRecord<*>> {
         val query = Query().apply {
             addCriteria(Criteria.where("log.blockHash").isEqualTo(blockHash))
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
