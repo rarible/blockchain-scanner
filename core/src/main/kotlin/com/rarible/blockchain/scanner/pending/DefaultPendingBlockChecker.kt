@@ -7,21 +7,21 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.job.PendingBlocksCheckJob
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.math.abs
 
+@FlowPreview
 @ExperimentalCoroutinesApi
-class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
-    private val blockchainClient: BlockchainClient<BB, BL>,
+class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Descriptor>(
+    private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockService: BlockService<B>,
     private val blockListener: BlockListener
 ) : PendingBlockChecker {
@@ -30,12 +30,12 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
         runBlocking {
             logger.info("started")
             try {
-                merge(
+                flowOf(
                     blockService.findByStatus(Block.Status.PENDING).filter {
                         abs(System.currentTimeMillis() / 1000 - it.timestamp) > 60
                     },
                     blockService.findByStatus(Block.Status.ERROR)
-                ).map {
+                ).flattenConcat().map {
                     reindexPendingBlock(it)
                 }.collect()
                 logger.info("ended")

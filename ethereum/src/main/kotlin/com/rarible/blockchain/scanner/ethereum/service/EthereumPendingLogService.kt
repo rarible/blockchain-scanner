@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.service
 import com.rarible.blockchain.scanner.data.LogEvent
 import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -17,13 +18,12 @@ import scalether.java.Lists
 @Component
 class EthereumPendingLogService(
     private val monoEthereum: MonoEthereum
-) : PendingLogService<EthereumBlockchainBlock, EthereumLog> {
+) : PendingLogService<EthereumBlockchainBlock, EthereumLog, EthereumDescriptor> {
 
-    //todo тут Flux остался, а не Flow. лучше, наверное Flow сделать все
     override fun markInactive(
         block: EthereumBlockchainBlock,
-        logs: List<LogEvent<EthereumLog>>
-    ): Flow<LogEventStatusUpdate<EthereumLog>> {
+        logs: List<LogEvent<EthereumLog, EthereumDescriptor>>
+    ): Flow<LogEventStatusUpdate<EthereumLog, EthereumDescriptor>> {
         if (logs.isEmpty()) {
             return emptyFlow()
         }

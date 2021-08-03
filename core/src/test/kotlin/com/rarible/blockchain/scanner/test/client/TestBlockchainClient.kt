@@ -3,16 +3,15 @@ package com.rarible.blockchain.scanner.test.client
 import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
-import java.util.*
 
 class TestBlockchainClient(
     data: TestBlockchainData
-) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog> {
+) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
 
     val blocksByNumber = data.blocks.associateBy { it.number }
     val blocksByHash = data.blocks.associateBy { it.hash }
@@ -37,13 +36,13 @@ class TestBlockchainClient(
 
     override suspend fun getBlockEvents(
         block: TestBlockchainBlock,
-        descriptor: LogEventDescriptor
+        descriptor: TestDescriptor
     ): List<TestBlockchainLog> {
         return logs[block.hash]!!.filter { it.topic.equals(descriptor.topic) }.map { TestBlockchainLog(it) }
     }
 
     override fun getBlockEvents(
-        descriptor: LogEventDescriptor,
+        descriptor: TestDescriptor,
         range: LongRange
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
         return blocksByNumber.values.filter { range.contains(it.number) }
@@ -52,7 +51,7 @@ class TestBlockchainClient(
             .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(TestBlockchainBlock(it), descriptor)) }
     }
 
-    override suspend fun getTransactionMeta(transactionHash: String): Optional<TransactionMeta> {
+    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         TODO("Not yet implemented")
     }
 }

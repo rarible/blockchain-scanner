@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,8 +26,8 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
-    private val blockchainClient: BlockchainClient<BB, BL>,
+class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Descriptor>(
+    private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
     private val properties: BlockchainScannerProperties
@@ -73,7 +74,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
                 logger.info("Range of not-indexed blocks: {}", range)
             }
             val blockRangeFlow = range.asFlow().map { blockchainClient.getBlock(it) }
-            merge(blockRangeFlow, flowOf(newBlock))
+            flowOf(blockRangeFlow, flowOf(newBlock)).flattenConcat()
         }
     }
 
@@ -112,7 +113,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
             }
         }
 
-        merge(parentBlockFlow, checkNewBlock(newBlock))
+        flowOf(parentBlockFlow, checkNewBlock(newBlock)).flattenConcat()
     }
 
     private fun checkNewBlock(block: BB): Flow<BlockEvent> = flatten {

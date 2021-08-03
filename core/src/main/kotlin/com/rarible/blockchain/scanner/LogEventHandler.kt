@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
@@ -13,19 +14,19 @@ import com.rarible.core.common.optimisticLock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
-    val subscriber: LogEventSubscriber<BB, BL>,
+class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
+    val subscriber: LogEventSubscriber<BB, BL, D>,
     private val logMapper: LogMapper<BB, BL, L>,
-    private val logService: LogService<L>
+    private val logService: LogService<L, D>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
+    private val descriptor: D = subscriber.getDescriptor()
 
     init {
         logger.info(
@@ -34,25 +35,23 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     }
 
     fun beforeHandleBlock(event: BlockEvent): Flow<L> {
-        val collection = subscriber.getDescriptor().collection
-        val topic = subscriber.getDescriptor().topic
 
         logger.info(
             "Deleting all reverted logs before handling block event [{}] by descriptor: [{}]",
-            event, subscriber.getDescriptor()
+            event, descriptor
         )
 
-        val deletedAndReverted = logService.findAndDelete(collection, event.block.hash, topic, Log.Status.REVERTED)
+        val deletedAndReverted = logService.findAndDelete(descriptor, event.block.hash, Log.Status.REVERTED)
             .dropWhile { true }
 
         return if (event.reverted == null) {
             deletedAndReverted
         } else {
             logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
-            merge(
+            flowOf(
                 deletedAndReverted,
-                logService.findAndRevert(collection, event.reverted.hash, topic)
-            )
+                logService.findAndRevert(descriptor, event.reverted.hash)
+            ).flattenConcat()
         }
     }
 
@@ -72,10 +71,11 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     private fun onLog(block: BB, index: Int, log: BL): Flow<L> = flatten {
         logger.info("Handling single Log: [{}]", log)
 
-        //todo кажется, оператор withIndex подойдет вместо преобразования в list, а потом mapIndexed
-        val logs = subscriber.getEventData(block, log).asFlow()
-            .toList()
-            .mapIndexed { minorLogIndex, data ->
+        val logs = subscriber.getEventData(block, log)
+            .withIndex()
+            .map { indexed ->
+                val data = indexed.value
+                val minorLogIndex = indexed.index
                 logMapper.map(
                     block,
                     log,
@@ -84,17 +84,16 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
                     data,
                     subscriber.getDescriptor()
                 )
-            }.asFlow()
+            }
 
         saveProcessedLogs(logs)
     }
 
     private fun saveProcessedLogs(logs: Flow<L>): Flow<L> {
-        val collection = subscriber.getDescriptor().collection
         return logs.map {
             optimisticLock(3) {
-                logger.info("Saving Log [{}] to '{}'", it, collection)
-                logService.saveOrUpdate(collection, it)
+                logger.info("Saving Log [{}] for descriptor [{}]", it, descriptor)
+                logService.saveOrUpdate(descriptor, it)
             }
         }
     }

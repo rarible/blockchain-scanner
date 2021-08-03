@@ -1,26 +1,27 @@
 package com.rarible.blockchain.scanner.framework.service
 
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import kotlinx.coroutines.flow.Flow
 import org.bson.types.ObjectId
 
-interface LogService<L : Log> {
+interface LogService<L : Log, D : Descriptor> {
 
-    suspend fun delete(collection: String, log: L): L
+    suspend fun delete(descriptor: D, log: L): L
 
-    suspend fun saveOrUpdate(collection: String, event: L): L
+    suspend fun saveOrUpdate(descriptor: D, event: L): L
 
-    suspend fun save(collection: String, log: L): L
+    suspend fun save(descriptor: D, log: L): L
 
-    fun findPendingLogs(collection: String): Flow<L>
+    fun findPendingLogs(descriptor: D): Flow<L>
 
-    suspend fun findLogEvent(collection: String, id: ObjectId): L
+    suspend fun findLogEvent(descriptor: D, id: ObjectId): L
 
-    fun findAndRevert(collection: String, blockHash: String, topic: String): Flow<L>
+    fun findAndRevert(descriptor: D, blockHash: String): Flow<L>
 
-    fun findAndDelete(collection: String, blockHash: String, topic: String, status: Log.Status? = null): Flow<L>
+    fun findAndDelete(descriptor: D, blockHash: String, status: Log.Status? = null): Flow<L>
 
-    suspend fun updateStatus(collection: String, log: L, status: Log.Status): L
+    suspend fun updateStatus(descriptor: D, log: L, status: Log.Status): L
 
 
 }

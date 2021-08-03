@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.job.PendingLogsCheckJob
@@ -20,19 +21,19 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
-    private val blockchainClient: BlockchainClient<BB, BL>,
+class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
+    private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockListener: BlockListener,
-    private val collections: Set<String>,
-    private val logService: LogService<L>,
+    private val descriptors: List<D>,
+    private val logService: LogService<L, D>,
     private val logEventListeners: List<LogEventListener<L>>
 ) : PendingLogChecker {
 
     override fun checkPendingLogs() {
         runBlocking {
-            val collections = collections.asFlow().flatMapConcat { collection ->
-                logService.findPendingLogs(collection)
-                    .mapNotNull { processLog(collection, it) }
+            val collections = descriptors.asFlow().flatMapConcat { descriptors ->
+                logService.findPendingLogs(descriptors)
+                    .mapNotNull { processLog(descriptors, it) }
             }.toCollection(mutableListOf())
 
 
@@ -60,12 +61,12 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
         }
     }
 
-    private suspend fun processLog(collection: String, log: L): Pair<L?, BlockchainBlock?>? {
+    private suspend fun processLog(descriptor: D, log: L): Pair<L?, BlockchainBlock?>? {
         val tx = blockchainClient.getTransactionMeta(log.transactionHash)
 
         if (tx == null) {
             logger.info("for log $log\nnot found transaction. dropping it")
-            val updatedLog = markLogAsDropped(log, collection)
+            val updatedLog = markLogAsDropped(log, descriptor)
             return Pair(updatedLog, null)
         } else {
             val blockHash = tx.blockHash
@@ -79,8 +80,8 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
         }
     }
 
-    private suspend fun markLogAsDropped(log: L, collection: String): L {
-        return logService.updateStatus(collection, log, Log.Status.DROPPED)
+    private suspend fun markLogAsDropped(log: L, descriptor: D): L {
+        return logService.updateStatus(descriptor, log, Log.Status.DROPPED)
     }
 
     companion object {

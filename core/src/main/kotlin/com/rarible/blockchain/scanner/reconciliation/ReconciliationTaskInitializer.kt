@@ -17,9 +17,9 @@ class ReconciliationTaskInitializer(
     @Scheduled(initialDelayString = "\${taskInitializerDelay:60000}", fixedDelay = Long.MAX_VALUE)
     fun initialize() {
         if (properties.reindexEnabled) {
-            reconciliationExecutor.getTopics()
+            reconciliationExecutor.getDescriptorIds()
                 .forEach {
-                    taskService.runTask(ReconciliationTaskHandler.TOPIC, it)
+                    taskService.runTask(ReconciliationTaskHandler.RECONCILIATION, it)
                 }
         }
     }

@@ -13,10 +13,10 @@ data class TestLog(
     @Version
     override val version: Long?,
 
-    override val topic: String,
     override val transactionHash: String,
     override val status: Log.Status,
 
+    val topic: String,
     val minorLogIndex: Int,
     val data: EventData,
     val blockHash: String? = null,

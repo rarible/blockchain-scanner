@@ -8,12 +8,13 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
-import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import org.springframework.stereotype.Component
@@ -23,7 +24,7 @@ import org.springframework.stereotype.Component
 @ExperimentalCoroutinesApi
 class EthereumBlockchainScanner(
     blockchainClient: EthereumClient,
-    subscribers: List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog>>,
+    subscribers: List<EthereumLogEventSubscriber>,
     blockMapper: EthereumBlockMapper,
     blockService: EthereumBlockService,
     logMapper: EthereumLogMapper,
@@ -31,7 +32,7 @@ class EthereumBlockchainScanner(
     pendingLogService: EthereumPendingLogService,
     logEventListeners: List<LogEventListener<EthereumLog>>,
     properties: BlockchainScannerProperties
-) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog>(
+) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumDescriptor>(
     blockchainClient,
     subscribers,
     blockMapper,

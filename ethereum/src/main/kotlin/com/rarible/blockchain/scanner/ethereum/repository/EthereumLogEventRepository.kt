@@ -63,9 +63,15 @@ class EthereumLogEventRepository(
         return mongo.save(event, collection)
     }
 
-    fun findPendingLogs(collection: String): Flux<EthereumLog> {
+    fun findPendingLogs(collection: String, topic: Word): Flux<EthereumLog> {
+        val topicCriteria = Criteria.where(EthereumLog::topic.name).isEqualTo(topic)
+        val statusCriteria = Criteria.where(EthereumLog::status.name).`is`(Log.Status.PENDING)
+        val query = Query().apply {
+            addCriteria(topicCriteria)
+            addCriteria(statusCriteria)
+        }
         return mongo.find(
-            Query(Criteria.where("status").`is`(Log.Status.PENDING)),
+            query,
             EthereumLog::class.java,
             collection
         )
