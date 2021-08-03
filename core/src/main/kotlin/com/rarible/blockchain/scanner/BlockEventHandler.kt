@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
-import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.stream.Collectors
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -26,7 +24,6 @@ class BlockEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     blockchainClient: BlockchainClient<BB, BL>,
     subscribers: List<LogEventSubscriber<BB, BL>>,
     logMapper: LogMapper<BB, BL, L>,
-    logEventListeners: List<LogEventListener<L>>,
     logService: LogService<L>,
     pendingLogService: PendingLogService<BB, L>
 ) {
@@ -46,25 +43,16 @@ class BlockEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
         logger.info("Injecting {} subscribers", subscribers.size)
 
         for (subscriber in subscribers) {
-            val topic = subscriber.getDescriptor().topic
-            val logEventTopicListeners: List<LogEventListener<L>> = logEventListeners.stream()
-                .filter { it.topics.contains(topic) }
-                .collect(Collectors.toList())
-
             val blockEventSubscriber = BlockEventSubscriber(
                 blockchainClient,
                 subscriber,
                 logMapper,
-                logEventTopicListeners,
                 logService,
                 pendingLogMarker
             )
             this.subscribers.add(blockEventSubscriber)
 
-            logger.info(
-                "Injected {} subscriber with {} LogEventListeners",
-                blockEventSubscriber, logEventTopicListeners.size
-            )
+            logger.info("Injected {} subscriber into BlockEventHandler", blockEventSubscriber)
         }
     }
 

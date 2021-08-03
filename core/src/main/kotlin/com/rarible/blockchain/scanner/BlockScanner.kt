@@ -9,6 +9,7 @@ import com.github.michaelbull.retry.retry
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.data.BlockEvent
 import com.rarible.blockchain.scanner.data.BlockMeta
+import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -121,7 +122,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
             knownHash == null -> {
                 logger.info("Block with number and {} hash '{}' NOT found, this is new block", block.number, block.hash)
                 blockService.saveBlock(blockMapper.map(block))
-                flowOf(BlockEvent(block))
+                flowOf(BlockEvent(Source.BLOCKCHAIN, block))
             }
             knownHash != block.hash -> {
                 logger.info(
@@ -130,7 +131,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block>(
                 )
                 blockService.saveBlock(blockMapper.map(block))
                 val revertedBlock = BlockMeta(block.number, knownHash, block.parentHash, block.timestamp)
-                flowOf(BlockEvent(block.meta, revertedBlock))
+                flowOf(BlockEvent(Source.BLOCKCHAIN, block.meta, revertedBlock))
             }
             else -> {
                 logger.info(

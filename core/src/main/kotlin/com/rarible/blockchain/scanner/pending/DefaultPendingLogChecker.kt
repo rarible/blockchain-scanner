@@ -2,13 +2,14 @@ package com.rarible.blockchain.scanner.pending
 
 import com.rarible.blockchain.scanner.BlockListener
 import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.job.PendingLogsCheckJob
-import com.rarible.blockchain.scanner.subscriber.LogEventPostProcessor
+import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
@@ -24,7 +25,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
     private val blockListener: BlockListener,
     private val collections: Set<String>,
     private val logService: LogService<L>,
-    private val logEventPostProcessors: List<LogEventPostProcessor<L>>
+    private val logEventListeners: List<LogEventListener<L>>
 ) : PendingLogChecker {
 
     override fun checkPendingLogs() {
@@ -44,9 +45,9 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
     }
 
     private suspend fun onDroppedLogs(droppedLogs: List<L>) {
-        logEventPostProcessors.forEach {
+        logEventListeners.forEach {
             try {
-                it.postProcessLogs(droppedLogs)
+                it.onPendingLogsDropped(droppedLogs)
             } catch (ex: Throwable) {
                 logger.error("caught exception while onDroppedLogs logs of listener: {}", it.javaClass, ex)
             }
@@ -55,7 +56,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
 
     private suspend fun onNewBlocks(newBlocks: List<BlockchainBlock>) {
         newBlocks.forEach {
-            blockListener.onBlockEvent(BlockEvent(it))
+            blockListener.onBlockEvent(BlockEvent(Source.PENDING, it))
         }
     }
 

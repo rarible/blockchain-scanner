@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-import com.rarible.blockchain.scanner.data.BlockLogs
+import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
@@ -11,6 +11,7 @@ import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import reactor.core.publisher.Mono
 import reactor.util.retry.RetryBackoffSpec
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
@@ -41,9 +42,7 @@ class EthereumClient(
     }
 
     override suspend fun getBlock(hash: String): EthereumBlockchainBlock {
-        return ethereum.ethGetBlockByHash(Word.apply(hash)).map {
-            EthereumBlockchainBlock(it)
-        }.awaitFirst()
+        return getBlock(Word.apply(hash)).awaitFirst()
     }
 
     override suspend fun getBlock(id: Long): EthereumBlockchainBlock {
@@ -94,7 +93,7 @@ class EthereumClient(
     override fun getBlockEvents(
         descriptor: LogEventDescriptor,
         range: LongRange
-    ): Flow<BlockLogs<EthereumBlockchainLog>> {
+    ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
@@ -114,12 +113,16 @@ class EthereumClient(
                     log.blockHash()
                 }.entries.map { e ->
                     val orderedLogs = orderByTransaction(e.value)
-                    BlockLogs(e.key.toString(), orderedLogs.map { EthereumBlockchainLog(it) })
+                    val block = getBlock(e.key)
+                    block.map { originalBlock ->
+                        FullBlock(originalBlock, orderedLogs.map { EthereumBlockchainLog(it) })
+                    }
                 }
             }.doOnError {
                 logger.warn("Unable to get Logs for descriptor [{}] from Block range {}", descriptor, range, it)
             }
-            .retryWhen(backoff).asFlow()
+            .retryWhen(backoff)
+            .flatMap { it }.asFlow()
     }
 
     private fun orderByTransaction(logs: List<Log>): List<Log> {
@@ -129,6 +132,12 @@ class EthereumClient(
             logsInTransaction.sortedBy { log ->
                 log.logIndex()
             }
+        }
+    }
+
+    private fun getBlock(hash: Word): Mono<EthereumBlockchainBlock> {
+        return ethereum.ethGetBlockByHash(hash).map {
+            EthereumBlockchainBlock(it)
         }
     }
 }

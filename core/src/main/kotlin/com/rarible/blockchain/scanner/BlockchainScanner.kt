@@ -19,7 +19,6 @@ import com.rarible.blockchain.scanner.pending.PendingLogChecker
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
-import com.rarible.blockchain.scanner.subscriber.LogEventPostProcessor
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
-//todo а зачем этот класс имплементит все подряд? ReconciliationExecutor например
 @FlowPreview
 @ExperimentalCoroutinesApi
 open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log>(
@@ -37,9 +35,8 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L>,
-    logEventListeners: List<LogEventListener<L>>,
     pendingLogService: PendingLogService<BB, L>,
-    logEventPostProcessors: List<LogEventPostProcessor<L>>,
+    logEventListeners: List<LogEventListener<L>>,
     properties: BlockchainScannerProperties
 
 ) : PendingLogChecker, BlockListener, PendingBlockChecker, ReconciliationExecutor {
@@ -51,16 +48,19 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties
     )
 
+    private val blockEventPostProcessor = BlockEventPostProcessor(
+        logEventListeners,
+        properties
+    )
+
     private val blockListener = BlockEventListener(
         blockchainClient,
         subscribers,
         blockService,
         logMapper,
         logService,
-        logEventListeners,
         pendingLogService,
-        logEventPostProcessors,
-        properties
+        blockEventPostProcessor
     )
 
     private val pendingLogChecker = DefaultPendingLogChecker(
@@ -68,7 +68,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         blockListener,
         subscribers.map { it.getDescriptor().collection }.toSet(),
         logService,
-        logEventPostProcessors
+        logEventListeners
     )
 
     private val pendingBlockChecker = DefaultPendingBlockChecker(
@@ -82,7 +82,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         subscribers,
         logMapper,
         logService,
-        logEventListeners,
+        blockEventPostProcessor,
         properties
     )
 
@@ -105,7 +105,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         pendingBlockChecker.checkPendingBlocks()
     }
 
-    override suspend fun reconcile(topic: String?, from: Long): Flow<LongRange> {
+    override fun reconcile(topic: String?, from: Long): Flow<LongRange> {
         return reconciliationService.reindex(topic, from)
     }
 

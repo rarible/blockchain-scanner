@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -50,12 +51,11 @@ class BlockEventSubscriberIt {
             testBlockchainClient,
             subscriber,
             testLogMapper,
-            listOf(),
             testLogService,
             pendingLogMarker
         )
 
-        val event = BlockEvent(TestBlockchainBlock(block))
+        val event = BlockEvent(Source.BLOCKCHAIN, TestBlockchainBlock(block))
         val logEvents = blockSubscriber.onBlockEvent(event).toCollection(mutableListOf())
 
         // We are expecting here event from pending logs and then event from new block

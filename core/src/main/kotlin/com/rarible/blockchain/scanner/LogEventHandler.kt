@@ -1,12 +1,12 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.core.common.optimisticLock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,25 +21,15 @@ import org.slf4j.LoggerFactory
 class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     val subscriber: LogEventSubscriber<BB, BL>,
     private val logMapper: LogMapper<BB, BL, L>,
-    private val logService: LogService<L>,
-    private val logEventListeners: List<LogEventListener<L>>
+    private val logService: LogService<L>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
 
     init {
         logger.info(
-            "Creating LogEventProcessor for ${subscriber.javaClass.simpleName}," +
-                    " got onLogEventListeners: ${logEventListeners.joinToString { it.javaClass.simpleName }}"
+            "Creating LogEventProcessor for ${subscriber.javaClass.simpleName}"
         )
-        logEventListeners.forEach {
-            if (!it.topics.contains(subscriber.getDescriptor().topic)) {
-                throw IllegalArgumentException(
-                    "LogEventListener ${it.javaClass.simpleName} " +
-                            "should listen topics ${it.topics}, not allowed for descriptor ${subscriber.getDescriptor()}"
-                )
-            }
-        }
     }
 
     fun beforeHandleBlock(event: BlockEvent): Flow<L> {
@@ -66,15 +56,13 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
     }
 
 
-    fun handleLogs(block: BB, logs: List<BL>): Flow<L> {
-        if (logs.isEmpty()) {
+    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<L> {
+        if (fullBlock.logs.isEmpty()) {
             return emptyFlow()
         }
-        logger.info("Handling {} Logs from block: [{}]", logs.size, block.meta)
-        val processedLogs = logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
-            onLog(block, idx, log)
-        }.onEach {
-            notifyListeners(it)
+        logger.info("Handling {} Logs from block: [{}]", fullBlock.logs.size, fullBlock.block.meta)
+        val processedLogs = fullBlock.logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
+            onLog(fullBlock.block, idx, log)
         }
 
         return processedLogs
@@ -108,9 +96,4 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log>(
             }
         }
     }
-
-    private suspend fun notifyListeners(logEvent: L) {
-        logEventListeners.forEach { it.onLogEvent(logEvent) }
-    }
-
 }

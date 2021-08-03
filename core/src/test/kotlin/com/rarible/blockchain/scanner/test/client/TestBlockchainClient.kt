@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.test.client
 
-import com.rarible.blockchain.scanner.data.BlockLogs
+import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.subscriber.LogEventDescriptor
@@ -42,11 +42,14 @@ class TestBlockchainClient(
         return logs[block.hash]!!.filter { it.topic.equals(descriptor.topic) }.map { TestBlockchainLog(it) }
     }
 
-    override fun getBlockEvents(descriptor: LogEventDescriptor, range: LongRange): Flow<BlockLogs<TestBlockchainLog>> {
+    override fun getBlockEvents(
+        descriptor: LogEventDescriptor,
+        range: LongRange
+    ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
         return blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
             .asFlow()
-            .map { BlockLogs(it.hash, getBlockEvents(TestBlockchainBlock(it), descriptor)) }
+            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(TestBlockchainBlock(it), descriptor)) }
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): Optional<TransactionMeta> {
