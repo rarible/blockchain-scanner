@@ -9,15 +9,16 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
+import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
-import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,14 +53,16 @@ internal class LogEventHandlerIt {
         val savedLog2 = getTestLog(savedLogs[1].id)!!
 
         // These event logs are based on same Blockchain log, so basic params should be the same
-        assertBlockchainLogAndLogEquals(block, log, savedLog1)
-        assertBlockchainLogAndLogEquals(block, log, savedLog2)
-        assertEquals(0, savedLog1.index)
-        assertEquals(0, savedLog2.index)
+        assertTrue(savedLog1 is TestCustomLogRecord)
+        assertTrue(savedLog1 is TestCustomLogRecord)
+        assertRecordAndLogEquals(savedLog1, log.testOriginalLog, block.testOriginalBlock)
+        assertRecordAndLogEquals(savedLog2, log.testOriginalLog, block.testOriginalBlock)
+        assertEquals(0, savedLog1.log!!.index)
+        assertEquals(0, savedLog2.log!!.index)
 
         // Minor index should be different because there are 2 custom data objects generated for single Blockchain Log
-        assertEquals(0, savedLog1.minorLogIndex)
-        assertEquals(1, savedLog2.minorLogIndex)
+        assertEquals(0, savedLog1.log!!.minorLogIndex)
+        assertEquals(1, savedLog2.log!!.minorLogIndex)
     }
 
     @Test
@@ -73,8 +76,8 @@ internal class LogEventHandlerIt {
         assertEquals(6, savedLogs.size)
 
         val fromDb = savedLogs.map { getTestLog(it.id)!! }
-        val indices = fromDb.map { it.index }
-        val minorIndices = fromDb.map { it.minorLogIndex }
+        val indices = fromDb.map { it.log!!.index }
+        val minorIndices = fromDb.map { it.log!!.minorLogIndex }
 
         assertIterableEquals(listOf(0, 0, 0, 1, 1, 1), indices)
         assertIterableEquals(listOf(0, 1, 2, 0, 1, 2), minorIndices)
@@ -94,8 +97,8 @@ internal class LogEventHandlerIt {
         val handler = createHandler(TestLogEventSubscriber(descriptor))
 
         val block = randomBlockchainBlock()
-        val log1 = randomTestLog(topic, block.hash)
-        val log2 = randomTestLog(topic, block.hash).copy(status = Log.Status.REVERTED)
+        val log1 = randomTestLogRecord(topic, block.hash)
+        val log2 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
 
         testLogRepository.saveAll(collection, log1, log2)
 
@@ -116,10 +119,10 @@ internal class LogEventHandlerIt {
         val reverted = randomBlockchainBlock()
         val event = BlockEvent(Source.BLOCKCHAIN, block.meta, reverted.meta)
 
-        val log1 = randomTestLog(topic, reverted.hash).copy(status = Log.Status.CONFIRMED)
-        val log2 = randomTestLog(topic, block.hash).copy(status = Log.Status.REVERTED)
-        val log3 = randomTestLog(topic, block.hash).copy(status = Log.Status.CONFIRMED)
-        val log4 = randomTestLog(topic, randomBlockHash()).copy(status = Log.Status.REVERTED)
+        val log1 = randomTestLogRecord(topic, reverted.hash, Log.Status.CONFIRMED)
+        val log2 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
+        val log3 = randomTestLogRecord(topic, block.hash, Log.Status.CONFIRMED)
+        val log4 = randomTestLogRecord(topic, randomBlockHash(), Log.Status.REVERTED)
 
         testLogRepository.saveAll(collection, log1, log2, log3, log4)
 
@@ -133,33 +136,33 @@ internal class LogEventHandlerIt {
 
         // Ensure we got change event for reverted log1
         assertEquals(log1.id, revertedLogs[0].id)
-        assertFalse(revertedLogs[0].visible)
-        assertEquals(Log.Status.REVERTED, revertedLogs[0].status)
+        assertFalse(revertedLogs[0].log!!.visible)
+        assertEquals(Log.Status.REVERTED, revertedLogs[0].log!!.status)
 
         // This log is still alive, and it's status changed to REVERTED
         assertNotNull(log1FromDb)
-        assertEquals(Log.Status.REVERTED, log1FromDb.status)
-        assertFalse(log1FromDb.visible)
+        assertEquals(Log.Status.REVERTED, log1FromDb.log!!.status)
+        assertFalse(log1FromDb.log!!.visible)
 
         // This log should be deleted since it's status is REVERTED
         assertNull(log2FromDb)
 
         // This log should not be changed since it has status CONFIRMED
         assertNotNull(log3FromDb)
-        assertEquals(log3.status, log3FromDb.status)
+        assertEquals(log3.log!!.status, log3FromDb.log!!.status)
 
         // This log should not be changed since it related to another block
         assertNotNull(log4FromDb)
-        assertEquals(log4.status, log4FromDb.status)
+        assertEquals(log4.log!!.status, log4FromDb.log!!.status)
     }
 
-    private suspend fun getTestLog(id: ObjectId): TestLog? {
+    private suspend fun getTestLog(id: Long): TestLogRecord<*>? {
         return testLogRepository.findLogEvent(collection, id).awaitFirstOrNull()
     }
 
     private fun createHandler(
         subscriber: TestLogEventSubscriber
-    ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestDescriptor> {
+    ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return LogEventHandler(
             subscriber,
             testLogMapper,

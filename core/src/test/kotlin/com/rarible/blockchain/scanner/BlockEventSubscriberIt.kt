@@ -6,11 +6,13 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
+import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.coEvery
@@ -39,22 +41,16 @@ class BlockEventSubscriberIt {
         val subscriber = TestLogEventSubscriber(testDescriptor1())
         val block = randomOriginalBlock()
         val log = randomOriginalLog(block.hash, topic)
-        val pendingLog = randomTestLog(topic, block.hash).copy(status = Log.Status.PENDING)
+        val pendingRecord = randomTestLogRecord(topic, block.hash, Log.Status.PENDING)
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
-        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestDescriptor>>()
 
+        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor>>()
         coEvery {
             pendingLogMarker.markInactive(TestBlockchainBlock(block), subscriber.getDescriptor())
-        } returns listOf(pendingLog).asFlow()
+        } returns listOf(pendingRecord).asFlow()
 
-        val blockSubscriber = BlockEventSubscriber(
-            testBlockchainClient,
-            subscriber,
-            testLogMapper,
-            testLogService,
-            pendingLogMarker
-        )
+        val blockSubscriber = createBlockSubscriber(testBlockchainClient, subscriber, pendingLogMarker)
 
         val event = BlockEvent(Source.BLOCKCHAIN, TestBlockchainBlock(block))
         val logEvents = blockSubscriber.onBlockEvent(event).toCollection(mutableListOf())
@@ -62,8 +58,22 @@ class BlockEventSubscriberIt {
         // We are expecting here event from pending logs and then event from new block
         assertEquals(2, logEvents.size)
 
-        assertEquals(pendingLog, logEvents[0])
-        assertBlockchainLogAndLogEquals(log, logEvents[1])
+        assertEquals(pendingRecord, logEvents[0])
+        assertOriginalLogAndLogEquals(log, logEvents[1].log!!)
+    }
+
+    private fun createBlockSubscriber(
+        testBlockchainClient: TestBlockchainClient,
+        subscriber: TestLogEventSubscriber,
+        pendingLogMarker: PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor>
+    ): BlockEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+        return BlockEventSubscriber(
+            testBlockchainClient,
+            subscriber,
+            testLogMapper,
+            testLogService,
+            pendingLogMarker
+        )
     }
 }
 

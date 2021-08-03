@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
@@ -22,19 +23,19 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
-    val subscriber: LogEventSubscriber<BB, BL, D>,
+    val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, D>,
-    private val pendingLogMarker: PendingLogMarker<BB, L, D>
+    logService: LogService<L, R, D>,
+    private val pendingLogMarker: PendingLogMarker<BB, L, R, D>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService)
 
-    fun onBlockEvent(event: BlockEvent): Flow<L> = flatten {
+    fun onBlockEvent(event: BlockEvent): Flow<R> = flatten {
         val start = logHandler.beforeHandleBlock(event)
         val descriptor = subscriber.getDescriptor()
         logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
@@ -48,7 +49,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D 
         ).flattenConcat()
     }
 
-    private fun processBlock(originalBlock: BB): Flow<L> = flatten {
+    private fun processBlock(originalBlock: BB): Flow<R> = flatten {
         val events = blockchainClient.getBlockEvents(originalBlock, subscriber.getDescriptor())
         logHandler.handleLogs(FullBlock(originalBlock, events))
     }

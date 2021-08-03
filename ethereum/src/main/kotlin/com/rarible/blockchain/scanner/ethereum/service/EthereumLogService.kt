@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogEventRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -11,7 +12,6 @@ import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
-import org.bson.types.ObjectId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -19,39 +19,40 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogService(
     private val ethereumLogEventRepository: EthereumLogEventRepository
-) : LogService<EthereumLog, EthereumDescriptor> {
+) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
     private val logger: Logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override suspend fun delete(descriptor: EthereumDescriptor, log: EthereumLog): EthereumLog {
-        return ethereumLogEventRepository.delete(descriptor.collection, log).awaitFirst()
+    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
+        return ethereumLogEventRepository.delete(descriptor.collection, record).awaitFirst()
     }
 
     override suspend fun saveOrUpdate(
         descriptor: EthereumDescriptor,
-        event: EthereumLog
-    ): EthereumLog {
+        record: EthereumLogRecord<*>
+    ): EthereumLogRecord<*> {
         val collection = descriptor.collection
+        val log = record.log!!
         val opt = ethereumLogEventRepository.findVisibleByKey(
             collection,
-            Word.apply(event.transactionHash), // TODO ???
-            Word.apply(event.topic), // TODO ???
-            event.index,
-            event.minorLogIndex
+            Word.apply(log.transactionHash), // TODO ???
+            Word.apply(log.topic), // TODO ???
+            log.index,
+            log.minorLogIndex
         ).switchIfEmpty(
             ethereumLogEventRepository.findByKey(
                 collection,
-                Word.apply(event.transactionHash), // TODO ???
-                event.blockHash!!,
-                event.logIndex!!,
-                event.minorLogIndex
+                Word.apply(log.transactionHash), // TODO ???
+                log.blockHash!!,
+                log.logIndex!!,
+                log.minorLogIndex
             )
         ).toOptional()
 
         return opt.flatMap {
             if (it.isPresent) {
                 val found = it.get()
-                val withCorrectId = event.copy(id = found.id, version = found.version)
+                val withCorrectId = record.withIdAndVersion(found.id, found.version)
                 if (withCorrectId != found) {
                     logger.info("Saving changed LogEvent $withCorrectId to $collection")
                     ethereumLogEventRepository.save(collection, withCorrectId)
@@ -60,25 +61,21 @@ class EthereumLogService(
                     found.justOrEmpty()
                 }
             } else {
-                logger.info("Saving new LogEvent $event")
-                ethereumLogEventRepository.save(collection, event)
+                logger.info("Saving new LogEvent $record")
+                ethereumLogEventRepository.save(collection, record)
             }
         }.awaitFirst()
     }
 
-    override suspend fun save(descriptor: EthereumDescriptor, log: EthereumLog): EthereumLog {
-        return ethereumLogEventRepository.save(descriptor.collection, log).awaitFirst()
+    override suspend fun save(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
+        return ethereumLogEventRepository.save(descriptor.collection, record).awaitFirst()
     }
 
-    override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLog> {
+    override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {
         return ethereumLogEventRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
     }
 
-    override suspend fun findLogEvent(descriptor: EthereumDescriptor, id: ObjectId): EthereumLog {
-        return ethereumLogEventRepository.findLogEvent(descriptor.collection, id).awaitFirst()
-    }
-
-    override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLog> {
+    override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLogRecord<*>> {
         return ethereumLogEventRepository.findAndRevert(
             descriptor.collection,
             Word.apply(blockHash), // TODO ???
@@ -90,7 +87,7 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         blockHash: String,
         status: Log.Status?
-    ): Flow<EthereumLog> {
+    ): Flow<EthereumLogRecord<*>> {
         return ethereumLogEventRepository.findAndDelete(
             descriptor.collection,
             Word.apply(blockHash), // TODO ???
@@ -101,10 +98,10 @@ class EthereumLogService(
 
     override suspend fun updateStatus(
         descriptor: EthereumDescriptor,
-        log: EthereumLog,
+        record: EthereumLogRecord<*>,
         status: Log.Status
-    ): EthereumLog {
-        val toSave = log.copy(status = status, visible = false)
-        return ethereumLogEventRepository.save(descriptor.collection, toSave).awaitFirst()
+    ): EthereumLogRecord<*> {
+        val copy = record.withLog(record.log!!.copy(status = status, visible = false))
+        return ethereumLogEventRepository.save(descriptor.collection, copy).awaitFirst()
     }
 }

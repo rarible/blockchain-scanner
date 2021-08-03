@@ -12,21 +12,22 @@ import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 
 class TestScanner(
     blockchainClient: TestBlockchainClient,
-    subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestDescriptor>>,
+    subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor>>,
     blockMapper: TestBlockMapper,
     blockService: TestBlockService,
     logMapper: TestLogMapper,
     logService: TestLogService,
     pendingLogService: TestPendingLogService,
-    logEventListeners: List<LogEventListener<TestLog>>,
+    logEventListeners: List<LogEventListener<TestLog, TestLogRecord<*>>>,
     properties: BlockchainScannerProperties
-) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestDescriptor>(
+) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord<*>, TestDescriptor>(
     blockchainClient,
     subscribers,
     blockMapper,

@@ -1,12 +1,12 @@
 package com.rarible.blockchain.scanner.subscriber
 
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 
-interface LogEventListener<L : Log> {
+interface LogEventListener<L : Log, R : LogRecord<L, *>> {
 
-    //todo Серега, а вот мы не можем использовать для notification в кафка эту штуку? А не отдельный еще LogEventListener? 2 сущности есть, которые слушают события. думаю, можно унифицировать
-    suspend fun onBlockLogsProcessed(blockEvent: ProcessedBlockEvent<L>)
+    suspend fun onBlockLogsProcessed(blockEvent: ProcessedBlockEvent<L, R>)
 
-    suspend fun onPendingLogsDropped(logs: List<L>)
+    suspend fun onPendingLogsDropped(logs: List<R>)
 
 }

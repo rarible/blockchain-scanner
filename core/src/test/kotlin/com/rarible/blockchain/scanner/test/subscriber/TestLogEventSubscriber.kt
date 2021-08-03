@@ -1,26 +1,37 @@
 package com.rarible.blockchain.scanner.test.subscriber
 
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
+import com.rarible.blockchain.scanner.test.data.randomPositiveLong
+import com.rarible.blockchain.scanner.test.data.randomString
+import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
+import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 
 class TestLogEventSubscriber(
     private val descriptor: TestDescriptor,
     private val eventDataCount: Int = 1
-) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
+) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
 
     override fun getDescriptor(): TestDescriptor {
         return descriptor
     }
 
-    override fun getEventData(block: TestBlockchainBlock, log: TestBlockchainLog): Flow<EventData> {
-        val eventDataList = ArrayList<TestEventData>(eventDataCount)
+    override fun getEventRecords(block: TestBlockchainBlock, log: TestBlockchainLog): Flow<TestLogRecord<*>> {
+        val eventDataList = ArrayList<TestLogRecord<*>>(eventDataCount)
         for (i in 0 until eventDataCount) {
-            eventDataList.add(TestEventData(i, block.testOriginalBlock.testExtra, log.testOriginalLog.testExtra))
+            val record = TestCustomLogRecord(
+                id = randomPositiveLong(),
+                version = null,
+                blockExtra = block.testOriginalBlock.testExtra,
+                logExtra = log.testOriginalLog.testExtra,
+                customData = randomString()
+            )
+            eventDataList.add(record)
         }
         return eventDataList.asFlow()
     }

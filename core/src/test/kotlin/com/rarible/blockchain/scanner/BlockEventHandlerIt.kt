@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
@@ -48,14 +49,14 @@ class BlockEventHandlerIt {
         assertEquals(2, logEvents.size)
 
         // Since we have two subscribers for same topic, we await 2 similar events here
-        assertBlockchainLogAndLogEquals(log, logEvents[0])
-        assertBlockchainLogAndLogEquals(log, logEvents[1])
+        assertRecordAndLogEquals(logEvents[0], log, block)
+        assertRecordAndLogEquals(logEvents[1], log, block)
     }
 
     private fun createBlockHandler(
         testBlockchainClient: TestBlockchainClient,
         vararg subscribers: TestLogEventSubscriber
-    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestDescriptor> {
+    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return BlockEventHandler(
             testBlockchainClient,
             subscribers.asList(),

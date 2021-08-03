@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.framework.mapper
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
 
 interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log> {
@@ -13,7 +12,6 @@ interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log> {
         log: BL,
         index: Int,
         minorIndex: Int,
-        data: EventData,
         descriptor: Descriptor
     ): L
 }
