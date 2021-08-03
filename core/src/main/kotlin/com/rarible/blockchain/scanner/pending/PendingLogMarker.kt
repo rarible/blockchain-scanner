@@ -2,8 +2,8 @@ package com.rarible.blockchain.scanner.pending
 
 import com.rarible.blockchain.scanner.data.LogEvent
 import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.util.flatten
@@ -14,7 +14,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class PendingLogMarker<BB, L : Log, D : LogEventDescriptor>(
+class PendingLogMarker<BB, L : Log, D : Descriptor>(
     private val logService: LogService<L, D>,
     private val pendingLogService: PendingLogService<BB, L, D>
 ) {
@@ -23,13 +23,11 @@ class PendingLogMarker<BB, L : Log, D : LogEventDescriptor>(
 
     fun markInactive(block: BB, descriptor: D): Flow<L> = flatten {
         val pendingLogs = logService.findPendingLogs(descriptor)
-            .filter { it.topic == descriptor.topic }
             .map { LogEvent(it, descriptor) }
             .toCollection(mutableListOf())
 
         pendingLogService.markInactive(block, pendingLogs)
             .flatMapConcat { markInactive(it) }
-
     }
 
     private fun markInactive(logsToMark: LogEventStatusUpdate<L, D>): Flow<L> {

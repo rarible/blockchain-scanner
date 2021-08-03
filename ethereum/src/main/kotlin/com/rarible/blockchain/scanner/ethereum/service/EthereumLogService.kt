@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEventDescriptor
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogEventRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -19,16 +19,16 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogService(
     private val ethereumLogEventRepository: EthereumLogEventRepository
-) : LogService<EthereumLog, EthereumLogEventDescriptor> {
+) : LogService<EthereumLog, EthereumDescriptor> {
 
     private val logger: Logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override suspend fun delete(descriptor: EthereumLogEventDescriptor, log: EthereumLog): EthereumLog {
+    override suspend fun delete(descriptor: EthereumDescriptor, log: EthereumLog): EthereumLog {
         return ethereumLogEventRepository.delete(descriptor.collection, log).awaitFirst()
     }
 
     override suspend fun saveOrUpdate(
-        descriptor: EthereumLogEventDescriptor,
+        descriptor: EthereumDescriptor,
         event: EthereumLog
     ): EthereumLog {
         val collection = descriptor.collection
@@ -66,41 +66,41 @@ class EthereumLogService(
         }.awaitFirst()
     }
 
-    override suspend fun save(descriptor: EthereumLogEventDescriptor, log: EthereumLog): EthereumLog {
+    override suspend fun save(descriptor: EthereumDescriptor, log: EthereumLog): EthereumLog {
         return ethereumLogEventRepository.save(descriptor.collection, log).awaitFirst()
     }
 
-    override fun findPendingLogs(descriptor: EthereumLogEventDescriptor): Flow<EthereumLog> {
-        return ethereumLogEventRepository.findPendingLogs(descriptor.collection).asFlow()
+    override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLog> {
+        return ethereumLogEventRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
     }
 
-    override suspend fun findLogEvent(descriptor: EthereumLogEventDescriptor, id: ObjectId): EthereumLog {
+    override suspend fun findLogEvent(descriptor: EthereumDescriptor, id: ObjectId): EthereumLog {
         return ethereumLogEventRepository.findLogEvent(descriptor.collection, id).awaitFirst()
     }
 
-    override fun findAndRevert(descriptor: EthereumLogEventDescriptor, blockHash: String): Flow<EthereumLog> {
+    override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLog> {
         return ethereumLogEventRepository.findAndRevert(
             descriptor.collection,
             Word.apply(blockHash), // TODO ???
-            Word.apply(descriptor.topic)  // TODO ???
+            descriptor.topic
         ).asFlow()
     }
 
     override fun findAndDelete(
-        descriptor: EthereumLogEventDescriptor,
+        descriptor: EthereumDescriptor,
         blockHash: String,
         status: Log.Status?
     ): Flow<EthereumLog> {
         return ethereumLogEventRepository.findAndDelete(
             descriptor.collection,
             Word.apply(blockHash), // TODO ???
-            Word.apply(descriptor.topic),  // TODO ???
+            descriptor.topic,
             status
         ).asFlow()
     }
 
     override suspend fun updateStatus(
-        descriptor: EthereumLogEventDescriptor,
+        descriptor: EthereumDescriptor,
         log: EthereumLog,
         status: Log.Status
     ): EthereumLog {

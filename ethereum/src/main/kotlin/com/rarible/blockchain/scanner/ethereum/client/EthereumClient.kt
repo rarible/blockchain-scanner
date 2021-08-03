@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.client
 
 import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.data.TransactionMeta
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogEventDescriptor
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +29,7 @@ class EthereumClient(
     private val ethereum: MonoEthereum,
     private val ethPubSub: EthPubSub,
     private val backoff: RetryBackoffSpec
-) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogEventDescriptor> {
+) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
 
     private val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
@@ -70,10 +70,10 @@ class EthereumClient(
 
     override suspend fun getBlockEvents(
         block: EthereumBlockchainBlock,
-        descriptor: EthereumLogEventDescriptor
+        descriptor: EthereumDescriptor
     ): List<EthereumBlockchainLog> {
         val filter = LogFilter
-            .apply(TopicFilter.simple(Word.apply(descriptor.topic))) // TODO ???
+            .apply(TopicFilter.simple(descriptor.topic))
             .address(*descriptor.contracts.toTypedArray())
             .blockHash(block.ethBlock.hash())
 
@@ -87,13 +87,13 @@ class EthereumClient(
     //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
     //todo (уникальный чтобы считался внутри транзакции, topic, address). это ты учел тут?
     override fun getBlockEvents(
-        descriptor: EthereumLogEventDescriptor,
+        descriptor: EthereumDescriptor,
         range: LongRange
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
-            .apply(TopicFilter.simple(Word.apply(descriptor.topic))) // TODO ???
+            .apply(TopicFilter.simple(descriptor.topic)) // TODO ???
             .address(*addresses.toTypedArray())
         val finalFilter = filter.blocks(
             BigInteger.valueOf(range.first).encodeForFilter(),

@@ -20,7 +20,7 @@ class ChangeLog00003 {
             .forEach {
                 val param = it.getString("_id")
                 val criteria = Criteria().andOperator(
-                    Task::type isEqualTo ReconciliationTaskHandler.TOPIC,
+                    Task::type isEqualTo ReconciliationTaskHandler.RECONCILIATION,
                     Task::param isEqualTo param
                 )
                 val found = mongockTemplate.findOne<Task>(Query(criteria))
@@ -30,7 +30,7 @@ class ChangeLog00003 {
                         else -> TaskStatus.NONE
                     }
                     val newTask = Task(
-                        type = ReconciliationTaskHandler.TOPIC,
+                        type = ReconciliationTaskHandler.RECONCILIATION,
                         param = param,
                         lastStatus = taskStatus,
                         state = it.getLong("reindexEndBlockNumber"),

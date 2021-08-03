@@ -8,24 +8,24 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
 import com.rarible.blockchain.scanner.test.model.TestBlock
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import com.rarible.blockchain.scanner.test.subscriber.TestEventData
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
 import org.bson.types.ObjectId
 import kotlin.math.abs
 
-fun testDescriptor1(): TestLogEventDescriptor {
-    return TestLogEventDescriptor(
+fun testDescriptor1(): TestDescriptor {
+    return TestDescriptor(
         "test_log_event_1",
         "test_topic_1",
         listOf("contract-one_1", "contract-two_1")
     )
 }
 
-fun testDescriptor2(): TestLogEventDescriptor {
-    return TestLogEventDescriptor(
+fun testDescriptor2(): TestDescriptor {
+    return TestDescriptor(
         "test_log_event_2",
         "test_topic_2",
         listOf("contract-one_2", "contract-two_2")

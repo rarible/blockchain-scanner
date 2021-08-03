@@ -12,14 +12,14 @@ class ReconciliationTaskHandler(
 ) : TaskHandler<Long> {
 
     override val type: String
-        get() = TOPIC
+        get() = RECONCILIATION
 
-    override fun runLongTask(from: Long?, param: String): Flow<Long> = flatten {
-        reconciliationExecutor.reconcile(param, from ?: 1)
+    override fun runLongTask(from: Long?, descriptorId: String): Flow<Long> = flatten {
+        reconciliationExecutor.reconcile(descriptorId, from ?: 1)
             .map { it.first }
     }
 
     companion object {
-        const val TOPIC = "TOPIC"
+        const val RECONCILIATION = "RECONCILIATION"
     }
 }

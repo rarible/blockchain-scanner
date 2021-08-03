@@ -14,7 +14,7 @@ data class EthereumLog(
     @Version
     override val version: Long?,
 
-    override val topic: String,
+    val topic: String,
     override val transactionHash: String,
     override val status: Log.Status,
 

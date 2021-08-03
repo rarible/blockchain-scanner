@@ -6,8 +6,8 @@ import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.job.PendingLogsCheckJob
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
@@ -21,7 +21,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : LogEventDescriptor>(
+class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockListener: BlockListener,
     private val descriptors: List<D>,

@@ -8,8 +8,8 @@ import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : LogEventDescriptor>(
+class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logEventHandler: LogEventHandler<BB, BL, L, D>,
     private val blockEventPostProcessor: BlockEventPostProcessor<L>,

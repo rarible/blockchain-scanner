@@ -8,8 +8,8 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
@@ -55,7 +55,7 @@ class BlockEventHandlerIt {
     private fun createBlockHandler(
         testBlockchainClient: TestBlockchainClient,
         vararg subscribers: TestLogEventSubscriber
-    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogEventDescriptor> {
+    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestDescriptor> {
         return BlockEventHandler(
             testBlockchainClient,
             subscribers.asList(),

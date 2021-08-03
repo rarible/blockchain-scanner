@@ -1,11 +1,11 @@
 package com.rarible.blockchain.scanner.framework.service
 
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import kotlinx.coroutines.flow.Flow
 import org.bson.types.ObjectId
 
-interface LogService<L : Log, D : LogEventDescriptor> {
+interface LogService<L : Log, D : Descriptor> {
 
     suspend fun delete(descriptor: D, log: L): L
 

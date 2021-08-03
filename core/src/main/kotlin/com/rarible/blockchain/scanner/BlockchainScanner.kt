@@ -8,8 +8,8 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, D : LogEventDescriptor>(
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, D>>,
     blockMapper: BlockMapper<BB, B>,
@@ -67,7 +67,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     private val pendingLogChecker = DefaultPendingLogChecker(
         blockchainClient,
         blockListener,
-        subscribers.map { it.getDescriptor() }, // TODO will it work in right way?
+        subscribers.map { it.getDescriptor() },
         logService,
         logEventListeners
     )
@@ -87,7 +87,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties
     )
 
-    private val topics = subscribers.map { it.getDescriptor().topic }.toSet()
+    private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
 
     // TODO should be called in onApplicationStartedEvent in implementations
     fun scan() = runBlocking {
@@ -106,12 +106,12 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         pendingBlockChecker.checkPendingBlocks()
     }
 
-    override fun reconcile(topic: String?, from: Long): Flow<LongRange> {
-        return reconciliationService.reindex(topic, from)
+    override fun reconcile(descriptorId: String?, from: Long): Flow<LongRange> {
+        return reconciliationService.reindex(descriptorId, from)
     }
 
-    override fun getTopics(): Set<String> {
-        return topics
+    override fun getDescriptorIds(): Set<String> {
+        return descriptorIds
     }
 
     companion object {

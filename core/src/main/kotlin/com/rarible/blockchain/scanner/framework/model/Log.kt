@@ -13,7 +13,6 @@ interface Log : Identifiable<ObjectId> {
     override val id: ObjectId
     val version: Long?
 
-    val topic: String
     val transactionHash: String
     val status: Status
 

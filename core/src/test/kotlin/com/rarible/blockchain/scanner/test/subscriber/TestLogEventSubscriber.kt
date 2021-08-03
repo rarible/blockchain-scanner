@@ -4,16 +4,16 @@ import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
-import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import org.reactivestreams.Publisher
 import reactor.kotlin.core.publisher.toFlux
 
 class TestLogEventSubscriber(
-    private val descriptor: TestLogEventDescriptor,
+    private val descriptor: TestDescriptor,
     private val eventDataCount: Int = 1
-) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogEventDescriptor> {
+) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
 
-    override fun getDescriptor(): TestLogEventDescriptor {
+    override fun getDescriptor(): TestDescriptor {
         return descriptor
     }
 

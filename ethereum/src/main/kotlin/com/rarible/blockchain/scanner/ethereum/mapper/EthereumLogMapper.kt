@@ -4,9 +4,9 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.EventData
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Component
 
@@ -19,7 +19,7 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
         index: Int,
         minorIndex: Int,
         data: EventData,
-        descriptor: LogEventDescriptor
+        descriptor: Descriptor
     ): EthereumLog {
         val ethLog = log.ethLog
         return EthereumLog(
@@ -27,7 +27,7 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
             version = null,
             data = data,
             address = ethLog.address().hex(),
-            topic = descriptor.topic,
+            topic = descriptor.id,
             transactionHash = ethLog.transactionHash().hex(),
             status = Log.Status.CONFIRMED,
             blockHash = ethLog.blockHash(),

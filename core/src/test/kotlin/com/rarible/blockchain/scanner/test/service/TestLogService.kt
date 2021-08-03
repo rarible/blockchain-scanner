@@ -2,8 +2,8 @@ package com.rarible.blockchain.scanner.test.service
 
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.blockchain.scanner.test.model.TestLogEventDescriptor
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.common.toOptional
@@ -14,14 +14,14 @@ import org.bson.types.ObjectId
 
 class TestLogService(
     private val testLogRepository: TestLogRepository
-) : LogService<TestLog, TestLogEventDescriptor> {
+) : LogService<TestLog, TestDescriptor> {
 
-    override suspend fun delete(descriptor: TestLogEventDescriptor, log: TestLog): TestLog {
+    override suspend fun delete(descriptor: TestDescriptor, log: TestLog): TestLog {
         return testLogRepository.delete(descriptor.collection, log).awaitFirst()
     }
 
     override suspend fun saveOrUpdate(
-        descriptor: TestLogEventDescriptor,
+        descriptor: TestDescriptor,
         event: TestLog
     ): TestLog {
         val opt = testLogRepository.findByKey(
@@ -47,24 +47,24 @@ class TestLogService(
         }.awaitFirst()
     }
 
-    override suspend fun save(descriptor: TestLogEventDescriptor, log: TestLog): TestLog {
+    override suspend fun save(descriptor: TestDescriptor, log: TestLog): TestLog {
         return testLogRepository.save(descriptor.collection, log).awaitFirst()
     }
 
-    override fun findPendingLogs(descriptor: TestLogEventDescriptor): Flow<TestLog> {
+    override fun findPendingLogs(descriptor: TestDescriptor): Flow<TestLog> {
         return testLogRepository.findPendingLogs(descriptor.collection).asFlow()
     }
 
-    override suspend fun findLogEvent(descriptor: TestLogEventDescriptor, id: ObjectId): TestLog {
+    override suspend fun findLogEvent(descriptor: TestDescriptor, id: ObjectId): TestLog {
         return testLogRepository.findLogEvent(descriptor.collection, id).awaitFirst()
     }
 
-    override fun findAndRevert(descriptor: TestLogEventDescriptor, blockHash: String): Flow<TestLog> {
+    override fun findAndRevert(descriptor: TestDescriptor, blockHash: String): Flow<TestLog> {
         return testLogRepository.findAndRevert(descriptor.collection, blockHash, descriptor.topic).asFlow()
     }
 
     override fun findAndDelete(
-        descriptor: TestLogEventDescriptor,
+        descriptor: TestDescriptor,
         blockHash: String,
         status: Log.Status?
     ): Flow<TestLog> {
@@ -72,7 +72,7 @@ class TestLogService(
     }
 
     override suspend fun updateStatus(
-        descriptor: TestLogEventDescriptor,
+        descriptor: TestDescriptor,
         log: TestLog,
         status: Log.Status
     ): TestLog {

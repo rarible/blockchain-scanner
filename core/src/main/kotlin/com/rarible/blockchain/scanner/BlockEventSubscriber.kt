@@ -6,8 +6,8 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.framework.model.LogEventDescriptor
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
@@ -15,13 +15,14 @@ import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : LogEventDescriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, D>,
     logMapper: LogMapper<BB, BL, L>,
@@ -40,15 +41,11 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, D 
 
         val block = blockchainClient.getBlock(event.block.hash)
 
-        //todo тут можно все merge вместе сделать? все 3 потока. результат не изменится
-        //todo но кажется это не совсем верно, потому что вначале pending нужно убрать, а потом из блоков грузить
-        //todo иначе получится, что индексы уникальные могут сказать ошибку
-        val process = merge(
+        flowOf(
+            start,
             pendingLogMarker.markInactive(block, descriptor),
             processBlock(block)
-        )
-
-        merge(start, process)
+        ).flattenConcat()
     }
 
     private fun processBlock(originalBlock: BB): Flow<L> = flatten {
