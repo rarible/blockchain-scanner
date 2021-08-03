@@ -52,7 +52,7 @@ class ChangeLog00001 {
                 .named(VISIBLE_INDEX_NAME)
                 .background()
                 .unique()
-                .partial(PartialIndexFilter.of(Document("visible", true)))
+                .partial(PartialIndexFilter.of(Document("log.visible", true)))
         )
 
         indexOps.ensureIndex(
