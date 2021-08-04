@@ -4,4 +4,5 @@ blockchain:
       maxProcessTime: 30000
       batchSize: 100
       reconnectDelay: 2000
+      reconnectAttempts: 1
       reindexEnabled: true

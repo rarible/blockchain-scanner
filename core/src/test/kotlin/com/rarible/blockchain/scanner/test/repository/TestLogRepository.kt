@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.findAll
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -81,6 +82,11 @@ class TestLogRepository(
             .flatMap {
                 delete(collection, it).thenReturn(it)
             }
+    }
+
+    // For tests only
+    fun findAll(collection: String): Mono<List<Any>> {
+        return mongo.findAll<Any>(collection).collectList()
     }
 
 }

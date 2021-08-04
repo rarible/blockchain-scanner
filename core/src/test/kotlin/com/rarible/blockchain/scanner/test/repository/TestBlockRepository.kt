@@ -6,7 +6,6 @@ import com.rarible.core.mongo.repository.AbstractMongoRepository
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -34,9 +33,8 @@ class TestBlockRepository(
         ).then()
     }
 
-    fun findFirstByIdAsc(): Mono<TestBlock> =
-        mongo.findOne(Query().with(Sort.by(Sort.Direction.ASC, TestBlock::id.name)))
-
-    fun findFirstByIdDesc(): Mono<TestBlock> =
-        mongo.findOne(Query().with(Sort.by(Sort.Direction.DESC, TestBlock::id.name)))
+    // For tests only
+    fun findAll(): Mono<List<TestBlock>> {
+        return mongo.findAll(TestBlock::class.java).collectList()
+    }
 }

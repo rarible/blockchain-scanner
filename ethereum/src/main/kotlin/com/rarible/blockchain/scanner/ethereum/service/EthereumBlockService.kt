@@ -29,9 +29,8 @@ class EthereumBlockService(
         return blockRepository.getLastBlock().awaitFirst()
     }
 
-    override suspend fun getBlockHash(id: Long): String {
+    override suspend fun getBlock(id: Long): EthereumBlock {
         return blockRepository.findByIdR(id)
-            .map { it.hash }
             .awaitFirst()
     }
 

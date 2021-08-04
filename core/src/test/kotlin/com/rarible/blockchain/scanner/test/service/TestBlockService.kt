@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.stereotype.Component
 
@@ -19,14 +18,13 @@ class TestBlockService(
         return blockRepository.findByStatus(status).asFlow()
     }
 
-    override suspend fun getLastBlockNumber(): Long {
-        return blockRepository.getLastBlock().awaitFirst()
+    override suspend fun getLastBlockNumber(): Long? {
+        return blockRepository.getLastBlock().awaitFirstOrNull()
     }
 
-    override suspend fun getBlockHash(id: Long): String {
+    override suspend fun getBlock(id: Long): TestBlock? {
         return blockRepository.findByIdR(id)
-            .map { it.hash }
-            .awaitFirst()
+            .awaitFirstOrNull()
     }
 
     override suspend fun updateStatus(id: Long, status: Block.Status) {

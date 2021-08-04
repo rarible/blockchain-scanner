@@ -11,6 +11,7 @@ class EthereumBlockchainScannerProperties(
     val minBackoff: Long,
     override val batchSize: Long,
     override val reconnectDelay: Long,
+    override val reconnectAttempts: Int = Int.MAX_VALUE,
     override val reindexEnabled: Boolean
 
 ) : BlockchainScannerProperties
