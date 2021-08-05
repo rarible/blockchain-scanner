@@ -15,6 +15,6 @@ interface PendingLogService<BB, L : Log, R : LogRecord<L, *>, D : Descriptor> {
      * @param records list of pending logs currently found
      * @return LogEventStatusUpdate's - what log events need to change status
      */
-    fun markInactive(block: BB, records: List<LogEvent<L, R, D>>): Flow<LogEventStatusUpdate<L, R, D>>
+    fun getInactive(block: BB, records: List<LogEvent<L, R, D>>): Flow<LogEventStatusUpdate<L, R, D>>
 
 }

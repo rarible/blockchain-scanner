@@ -34,16 +34,13 @@ fun testDescriptor2(): TestDescriptor {
 
 fun defaultTestProperties(): TestBlockchainScannerProperties {
     return TestBlockchainScannerProperties(
-        maxProcessTime = 10,
-        batchSize = 2,
+        maxProcessTime = 30000,
+        batchSize = 5,
         reconnectDelay = 100,
-        reindexEnabled = false
+        reindexEnabled = false,
+        reconnectAttempts = 1
     )
 }
-
-fun randomTestBlock() = randomTestBlock(randomBlockHash())
-fun randomTestBlock(hash: String) = randomTestBlock(randomPositiveLong(), hash)
-fun randomTestBlock(number: Long) = randomTestBlock(number, randomBlockHash())
 fun randomTestBlock(number: Long, hash: String): TestBlock {
     return TestBlock(
         number,
@@ -56,7 +53,6 @@ fun randomTestBlock(number: Long, hash: String): TestBlock {
 }
 
 fun randomBlockchainBlock() = TestBlockchainBlock(randomOriginalBlock())
-fun randomBlockchainBlock(hash: String) = TestBlockchainBlock(randomOriginalBlock(hash, randomPositiveLong()))
 
 fun randomOriginalBlock() = randomOriginalBlock(randomPositiveLong())
 fun randomOriginalBlock(number: Long) = randomOriginalBlock(randomBlockHash(), number)
@@ -71,11 +67,9 @@ fun randomOriginalBlock(hash: String, number: Long): TestOriginalBlock {
 }
 
 fun randomBlockchainLog(block: BlockchainBlock, topic: String) = TestBlockchainLog(randomOriginalLog(block.hash, topic))
-fun randomBlockchainLog(topic: String) = TestBlockchainLog(randomOriginalLog(topic))
 
-fun randomOriginalLog(topic: String) = randomOriginalLog(randomString(), topic)
 fun randomOriginalLog(block: TestOriginalBlock, topic: String) = randomOriginalLog(block.hash, topic)
-fun randomOriginalLog(blockHash: String, topic: String): TestOriginalLog {
+fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
     return TestOriginalLog(
         transactionHash = randomLogHash(),
         blockHash = blockHash,
@@ -93,7 +87,21 @@ fun randomTestLogRecord(
     status: Log.Status = Log.Status.CONFIRMED
 ): TestCustomLogRecord {
     val testLog = randomTestLog(topic, blockHash, status)
-    val record = TestCustomLogRecord(
+    return randomTestLogRecord(testLog)
+}
+
+fun randomTestLogRecord(log: TestOriginalLog, status: Log.Status): TestCustomLogRecord {
+    val testLog = randomTestLog().copy(
+        transactionHash = log.transactionHash,
+        blockHash = log.blockHash,
+        status = status,
+        topic = log.topic
+    )
+    return randomTestLogRecord(testLog)
+}
+
+fun randomTestLogRecord(testLog: TestLog): TestCustomLogRecord {
+    return TestCustomLogRecord(
         id = randomPositiveLong(),
         version = null,
         logExtra = testLog.extra,
@@ -101,7 +109,6 @@ fun randomTestLogRecord(
         customData = randomString(),
         log = testLog
     )
-    return record
 }
 
 fun randomTestLog() = randomTestLog(randomString(), randomString())

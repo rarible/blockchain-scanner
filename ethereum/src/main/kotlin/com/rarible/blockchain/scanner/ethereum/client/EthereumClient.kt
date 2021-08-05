@@ -62,7 +62,6 @@ class EthereumClient(
             val tx = opt.get()
             TransactionMeta(
                 tx.hash().toString(),
-                tx.blockNumber().toLong(),
                 tx.blockHash().toString()
             )
         }

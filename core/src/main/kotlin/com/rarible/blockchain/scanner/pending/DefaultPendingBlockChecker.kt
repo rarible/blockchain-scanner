@@ -9,14 +9,14 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
-import com.rarible.blockchain.scanner.job.PendingBlocksCheckJob
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import kotlin.math.abs
+import java.time.Duration
+import java.time.Instant
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -26,34 +26,37 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
     private val blockListener: BlockListener
 ) : PendingBlockChecker {
 
+    private val logger: Logger = LoggerFactory.getLogger(DefaultPendingBlockChecker::class.java)
+    private val pendingLogAgeToCheck = Duration.ofMinutes(1)
+
     override fun checkPendingBlocks() {
         runBlocking {
-            logger.info("started")
+            logger.info("Starting to check pending blocks...")
             try {
                 flowOf(
-                    blockService.findByStatus(Block.Status.PENDING).filter {
-                        abs(System.currentTimeMillis() / 1000 - it.timestamp) > 60
-                    },
+                    blockService.findByStatus(Block.Status.PENDING).filter { isOldEnough(it) },
                     blockService.findByStatus(Block.Status.ERROR)
                 ).flattenConcat().map {
                     reindexPendingBlock(it)
                 }.collect()
-                logger.info("ended")
+                logger.info("Finished checking pending blocks")
             } catch (e: Exception) {
-                logger.error("error", e)
+                logger.error("Unexpected error during reindexing pending blocks:", e)
             }
         }
     }
 
-    private suspend fun reindexPendingBlock(block: B) {
-        logger.info("reindexing block {}", block)
-        val block = blockchainClient.getBlock(block.id)
-        val event = BlockEvent(Source.PENDING, block)
-        blockListener.onBlockEvent(event)
+    private fun isOldEnough(block: B): Boolean {
+        val createdAt = Instant.ofEpochSecond(block.timestamp)
+        val sinceCreated = Duration.between(createdAt, Instant.now())
+        return !sinceCreated.minus(pendingLogAgeToCheck).isNegative
     }
 
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(PendingBlocksCheckJob::class.java)
+    private suspend fun reindexPendingBlock(block: B) {
+        logger.info("Reindexing pending block: [{}]", block)
+        val originalBlock = blockchainClient.getBlock(block.id)
+        val event = BlockEvent(Source.PENDING, originalBlock)
+        blockListener.onBlockEvent(event)
     }
 }
 

@@ -16,7 +16,8 @@ class TestBlockchainClient(
     private val blocksByNumber = data.blocks.associateBy { it.number }
     private val blocksByHash = data.blocks.associateBy { it.hash }
     private val lastBlock = data.blocks.maxBy { it.number }
-    private val logs = data.logs.groupBy { it.blockHash }
+    private val logs = data.logs
+    private val logsByBlock = data.logs.filter { it.blockHash != null }.groupBy { it.blockHash }
     private val newBlocks = data.newBlocks
 
     override fun listenNewBlocks(): Flow<TestBlockchainBlock> {
@@ -39,7 +40,7 @@ class TestBlockchainClient(
         block: TestBlockchainBlock,
         descriptor: TestDescriptor
     ): List<TestBlockchainLog> {
-        return logs[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }
+        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }
     }
 
     override fun getBlockEvents(
@@ -53,6 +54,7 @@ class TestBlockchainClient(
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
-        TODO("Not yet implemented")
+        val log = logs.find { it.transactionHash == transactionHash }
+        return if (log == null) null else TransactionMeta(log.transactionHash, log.blockHash)
     }
 }

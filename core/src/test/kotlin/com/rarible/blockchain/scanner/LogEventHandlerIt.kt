@@ -6,34 +6,21 @@ import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
+import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.repository.TestLogRepository
-import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.flow.toCollection
-import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 
 @IntegrationTest
-internal class LogEventHandlerIt {
-
-    @Autowired
-    lateinit var testLogMapper: TestLogMapper
-
-    @Autowired
-    lateinit var testLogService: TestLogService
-
-    @Autowired
-    lateinit var testLogRepository: TestLogRepository
+internal class LogEventHandlerIt : AbstractIntegrationTest() {
 
     private val descriptor = testDescriptor1()
     private val collection = descriptor.collection
@@ -49,8 +36,8 @@ internal class LogEventHandlerIt {
 
         assertEquals(2, savedLogs.size)
 
-        val savedLog1 = getTestLog(savedLogs[0].id)!!
-        val savedLog2 = getTestLog(savedLogs[1].id)!!
+        val savedLog1 = findLog(collection, savedLogs[0].id)!!
+        val savedLog2 = findLog(collection, savedLogs[1].id)!!
 
         // These event logs are based on same Blockchain log, so basic params should be the same
         assertTrue(savedLog1 is TestCustomLogRecord)
@@ -75,7 +62,7 @@ internal class LogEventHandlerIt {
 
         assertEquals(6, savedLogs.size)
 
-        val fromDb = savedLogs.map { getTestLog(it.id)!! }
+        val fromDb = savedLogs.map { findLog(collection, it.id)!! }
         val indices = fromDb.map { it.log!!.index }
         val minorIndices = fromDb.map { it.log!!.minorLogIndex }
 
@@ -106,9 +93,9 @@ internal class LogEventHandlerIt {
         assertEquals(0, deleted.size)
 
         // This log is still alive
-        assertNotNull(getTestLog(log1.id))
+        assertNotNull(findLog(collection, log1.id))
         // This log should be deleted since it's status is REVERTED
-        assertNull(getTestLog(log2.id))
+        assertNull(findLog(collection, log2.id))
     }
 
     @Test
@@ -129,10 +116,10 @@ internal class LogEventHandlerIt {
         val revertedLogs = handler.beforeHandleBlock(event).toCollection(mutableListOf())
         assertEquals(1, revertedLogs.size)
 
-        val log1FromDb = getTestLog(log1.id)!!
-        val log2FromDb = getTestLog(log2.id)
-        val log3FromDb = getTestLog(log3.id)!!
-        val log4FromDb = getTestLog(log4.id)!!
+        val log1FromDb = findLog(collection, log1.id)!!
+        val log2FromDb = findLog(collection, log2.id)
+        val log3FromDb = findLog(collection, log3.id)!!
+        val log4FromDb = findLog(collection, log4.id)!!
 
         // Ensure we got change event for reverted log1
         assertEquals(log1.id, revertedLogs[0].id)
@@ -154,10 +141,6 @@ internal class LogEventHandlerIt {
         // This log should not be changed since it related to another block
         assertNotNull(log4FromDb)
         assertEquals(log4.log!!.status, log4FromDb.log!!.status)
-    }
-
-    private suspend fun getTestLog(id: Long): TestLogRecord<*>? {
-        return testLogRepository.findLogEvent(collection, id).awaitFirstOrNull()
     }
 
     private fun createHandler(

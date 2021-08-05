@@ -1,22 +1,16 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.data.BlockEvent
-import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
-import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
+import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.configuration.TestBlockchainScannerProperties
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.data.assertOriginalBlockAndBlockEquals
 import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
-import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
-import com.rarible.blockchain.scanner.test.service.TestBlockService
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -25,22 +19,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 
 @IntegrationTest
-internal class BlockScannerIt {
-
-    @Autowired
-    lateinit var testBlockService: TestBlockService
-
-    @Autowired
-    lateinit var testBlockMapper: TestBlockMapper
-
-    @Autowired
-    lateinit var testBlockRepository: TestBlockRepository
-
-    @Autowired
-    lateinit var properties: TestBlockchainScannerProperties
+internal class BlockScannerIt : AbstractIntegrationTest() {
 
     private var blockListener: BlockListener = mockk()
 
@@ -58,9 +39,9 @@ internal class BlockScannerIt {
             newBlocks = listOf(block)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData))
+        scanOnce(createBlockScanner(testBlockchainData), blockListener)
 
-        val savedBlock = testBlockRepository.findById(block.number)
+        val savedBlock = findBlock(block.number)
 
         // New block saved with status PENDING, listener notified with single event
         assertOriginalBlockAndBlockEquals(block, savedBlock!!)
@@ -77,9 +58,9 @@ internal class BlockScannerIt {
             newBlocks = listOf(newBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData))
+        scanOnce(createBlockScanner(testBlockchainData), blockListener)
 
-        val savedNewBlock = testBlockRepository.findById(newBlock.number)
+        val savedNewBlock = findBlock(newBlock.number)
 
         // New block saved with status PENDING, listener notified with single event
         // existing block should not emit event
@@ -100,9 +81,9 @@ internal class BlockScannerIt {
             newBlocks = listOf(newBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData))
+        scanOnce(createBlockScanner(testBlockchainData), blockListener)
 
-        val savedNewBlock = testBlockRepository.findById(newBlock.number)
+        val savedNewBlock = findBlock(newBlock.number)
 
         // Missed block and new block saved with status PENDING, listener notified with 2 events
         assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
@@ -132,12 +113,12 @@ internal class BlockScannerIt {
             newBlocks = listOf(newBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData))
+        scanOnce(createBlockScanner(testBlockchainData), blockListener)
 
-        val savedRoot = testBlockRepository.findById(existingRoot.number)!!
-        val savedNewGrandparent = testBlockRepository.findById(newGrandParent.number)!!
-        val savedNewParent = testBlockRepository.findById(newParent.number)!!
-        val savedNewBlock = testBlockRepository.findById(newBlock.number)!!
+        val savedRoot = findBlock(existingRoot.number)!!
+        val savedNewGrandparent = findBlock(newGrandParent.number)!!
+        val savedNewParent = findBlock(newParent.number)!!
+        val savedNewBlock = findBlock(newBlock.number)!!
 
         // Now we need to ensure all changed blocks are stored in DB and root was not changed
         assertOriginalBlockAndBlockEquals(existingRoot, savedRoot)
@@ -171,16 +152,15 @@ internal class BlockScannerIt {
             newBlocks = listOf(existingBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData))
+        scanOnce(createBlockScanner(testBlockchainData), blockListener)
 
-        val storedExistingBlock = testBlockRepository.findById(existingBlock.number)!!
+        val storedExistingBlock = findBlock(existingBlock.number)!!
 
         // Existing block should not be changed, no events should be emitted
         assertOriginalBlockAndBlockEquals(existingBlock, storedExistingBlock)
         assertEquals(Block.Status.SUCCESS, storedExistingBlock.status)
         coVerify(exactly = 0) { blockListener.onBlockEvent(any()) }
     }
-
 
     private fun createBlockScanner(
         testBlockchainData: TestBlockchainData
@@ -192,29 +172,4 @@ internal class BlockScannerIt {
             properties
         )
     }
-
-    private suspend fun scanOnce(blockScanner: BlockScanner<*, *, *, *>) {
-        try {
-            blockScanner.scan(blockListener)
-        } catch (e: IllegalStateException) {
-            // Do nothing, in prod there will be infinite attempts count
-        }
-    }
-
-    private fun blockEvent(block: TestOriginalBlock, reverted: TestOriginalBlock? = null): BlockEvent {
-        return BlockEvent(
-            Source.BLOCKCHAIN,
-            TestBlockchainBlock(block).meta,
-            reverted?.let { TestBlockchainBlock(reverted).meta }
-        )
-    }
-
-    private suspend fun saveBlock(
-        block: TestOriginalBlock,
-        status: Block.Status = Block.Status.SUCCESS
-    ): TestOriginalBlock {
-        testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block)).copy(status = status))
-        return block
-    }
-
 }

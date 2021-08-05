@@ -26,8 +26,8 @@ import org.springframework.data.mongodb.core.ReactiveMongoOperations
 class TestScannerConfiguration {
 
     companion object {
-        val TEST_BLOCK_COUNT = 10
-        val TEST_LOG_COUNT_PER_BLOCK = 5
+        const val TEST_BLOCK_COUNT = 10
+        const val TEST_LOG_COUNT_PER_BLOCK = 5
     }
 
     @Autowired

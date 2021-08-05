@@ -66,9 +66,9 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
     private val pendingLogChecker = DefaultPendingLogChecker(
         blockchainClient,
-        blockListener,
-        subscribers.map { it.getDescriptor() },
         logService,
+        subscribers.map { it.getDescriptor() },
+        blockListener,
         logEventListeners
     )
 
