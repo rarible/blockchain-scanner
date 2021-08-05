@@ -12,6 +12,7 @@ class EthereumBlockMapper : BlockMapper<EthereumBlockchainBlock, EthereumBlock> 
         return EthereumBlock(
             id = originalBlock.number,
             hash = originalBlock.hash,
+            parentHash = originalBlock.parentHash,
             timestamp = originalBlock.timestamp
         )
     }

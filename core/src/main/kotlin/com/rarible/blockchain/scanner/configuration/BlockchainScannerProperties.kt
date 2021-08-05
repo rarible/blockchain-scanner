@@ -5,6 +5,7 @@ interface BlockchainScannerProperties {
     val maxProcessTime: Long
     val batchSize: Long
     val reconnectDelay: Long
+    val reconnectAttempts: Int
     val reindexEnabled: Boolean
 
 }

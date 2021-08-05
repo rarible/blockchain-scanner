@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.test.configuration
 
-import com.rarible.blockchain.scanner.test.TestScanner
+import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
@@ -25,6 +25,11 @@ import org.springframework.data.mongodb.core.ReactiveMongoOperations
 @EnableConfigurationProperties(TestBlockchainScannerProperties::class)
 class TestScannerConfiguration {
 
+    companion object {
+        const val TEST_BLOCK_COUNT = 10
+        const val TEST_LOG_COUNT_PER_BLOCK = 5
+    }
+
     @Autowired
     lateinit var properties: TestBlockchainScannerProperties
 
@@ -32,29 +37,42 @@ class TestScannerConfiguration {
     lateinit var mongo: ReactiveMongoOperations
 
     @Bean
-    fun testBlockchainClient() = TestBlockchainClient(randomBlockchainData(10, 5, testDescriptor1().topic))
+    fun testBlockchainClient() = TestBlockchainClient(
+        randomBlockchainData(
+            TEST_BLOCK_COUNT, TEST_LOG_COUNT_PER_BLOCK,
+            testDescriptor1().topic, testDescriptor2().topic
+        )
+    )
+
     @Bean
     fun testBlockMapper() = TestBlockMapper()
+
     @Bean
     fun testLogMapper() = TestLogMapper()
+
     @Bean
     fun testBlockRepository() = TestBlockRepository(mongo)
+
     @Bean
     fun testLogRepository() = TestLogRepository(mongo)
+
     @Bean
     fun testBlockService() = TestBlockService(testBlockRepository())
+
     @Bean
     fun testLogService() = TestLogService(testLogRepository())
+
     @Bean
     fun testPendingLogService() = TestPendingLogService()
 
     @Bean
     fun testSubscriber1() = TestLogEventSubscriber(testDescriptor1(), 1)
-    @Bean
-    fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 1)
 
     @Bean
-    fun testScanner() = TestScanner(
+    fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 2)
+
+    @Bean
+    fun testScanner() = TestBlockchainScanner(
         blockchainClient = testBlockchainClient(),
         subscribers = listOf(testSubscriber1(), testSubscriber2()),
         blockMapper = testBlockMapper(),

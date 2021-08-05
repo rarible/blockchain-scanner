@@ -10,6 +10,7 @@ class TestBlockMapper : BlockMapper<TestBlockchainBlock, TestBlock> {
         return TestBlock(
             id = originalBlock.number,
             hash = originalBlock.hash,
+            parentHash = originalBlock.parentHash,
             timestamp = originalBlock.timestamp,
             extra = originalBlock.testOriginalBlock.testExtra
         )

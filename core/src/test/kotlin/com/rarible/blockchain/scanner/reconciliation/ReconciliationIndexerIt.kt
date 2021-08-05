@@ -1,0 +1,124 @@
+package com.rarible.blockchain.scanner.reconciliation
+
+import com.rarible.blockchain.scanner.LogEventHandler
+import com.rarible.blockchain.scanner.LogEventPublisher
+import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
+import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
+import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
+import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
+import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
+import com.rarible.blockchain.scanner.test.data.randomBlockchainData
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
+import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+
+@IntegrationTest
+class ReconciliationIndexerIt : AbstractIntegrationTest() {
+
+    @Autowired
+    @Qualifier("testSubscriber1")
+    lateinit var subscriber: TestLogEventSubscriber
+
+    private var topic = ""
+    private var collection = ""
+    private var logEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>> = mockk()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(logEventPublisher)
+        coEvery { logEventPublisher.onBlockProcessed(any(), any()) } returns Block.Status.SUCCESS
+
+        topic = subscriber.getDescriptor().topic
+        collection = subscriber.getDescriptor().collection
+    }
+
+    @Test
+    fun `reindex - no logs in storage`() = runBlocking {
+        // We have blocks in DB, but there in no LogRecords
+        val blockchainData = randomBlockchainData(13, 2, topic)
+
+        val indexer = createReconciliationIndexer(TestBlockchainClient(blockchainData))
+        val ranges = indexer.reindex(0, 11).toList()
+
+        // Batch size is 5, so we should have 3 ranges here
+        assertEquals(3, ranges.size)
+
+        // After reindex there should be 11*2 logs (2 per reindexed block)
+        val logs = findAllLogs(collection)
+        assertEquals(12 * 2, logs.size)
+
+        // During reconciliation we are NOT saving block data/block status
+        assertEquals(0, findAllBlocks().size)
+
+        // Since 12 blocks processed, 12 BlockEvents should be published
+        coVerify(exactly = 12) { logEventPublisher.onBlockProcessed(any(), any()) }
+    }
+
+    @Test
+    fun `reindex - some logs already in storage`() = runBlocking {
+        val blockchainData = randomBlockchainData(9, 2, topic)
+
+        // Reindexing part of logs
+        val indexer = createReconciliationIndexer(TestBlockchainClient(blockchainData))
+        indexer.reindex(0, 4).collect()
+
+        // After reindex there should be 5*2 logs (2 per reindexed block)
+        val newLogs = findAllLogs(collection)
+        assertEquals(5 * 2, newLogs.size)
+
+        // Reindexing same blocks - no new LogRecords should be created
+        indexer.reindex(0, 4).collect()
+        val sameReindexedLogs = findAllLogs(collection)
+        assertEquals(newLogs.size, sameReindexedLogs.size)
+
+        // Another reindex - records from new blocks should be added
+        indexer.reindex(0, 7).collect()
+        val allReindexedLogs = findAllLogs(collection)
+        assertEquals(8 * 2, allReindexedLogs.size)
+
+        // Reconciliation job was launched 3 times, for 5/5/8 blocks, 18 events should be published
+        coVerify(exactly = 5 + 5 + 8) { logEventPublisher.onBlockProcessed(any(), any()) }
+    }
+
+    @Test
+    fun `reindex - reindex range greater than existing max block number`() = runBlocking {
+        val blockchainData = randomBlockchainData(2, 1, topic)
+
+        val indexer = createReconciliationIndexer(TestBlockchainClient(blockchainData))
+        indexer.reindex(0, 4).collect()
+
+        // Only logs from 2 existed blocks should be stored
+        val newLogs = findAllLogs(collection)
+        assertEquals(2, newLogs.size)
+
+        // Events should be published only for existing blocks
+        coVerify(exactly = 2) { logEventPublisher.onBlockProcessed(any(), any()) }
+    }
+
+    private fun createReconciliationIndexer(
+        testBlockchainClient: TestBlockchainClient
+    ): ReconciliationIndexer<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+
+        return ReconciliationIndexer(
+            testBlockchainClient,
+            LogEventHandler(subscriber, testLogMapper, testLogService),
+            logEventPublisher,
+            properties.batchSize
+        )
+    }
+
+}

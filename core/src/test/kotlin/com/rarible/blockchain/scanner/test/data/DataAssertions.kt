@@ -4,9 +4,17 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
+import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import org.junit.jupiter.api.Assertions.assertEquals
+
+fun assertOriginalBlockAndBlockEquals(testOriginalBlock: TestOriginalBlock, testBlock: TestBlock) {
+    assertEquals(testOriginalBlock.number, testBlock.id)
+    assertEquals(testOriginalBlock.hash, testBlock.hash)
+    assertEquals(testOriginalBlock.timestamp, testBlock.timestamp)
+    assertEquals(testOriginalBlock.testExtra, testBlock.extra)
+}
 
 fun assertRecordAndLogEquals(testLogRecord: TestLogRecord<*>, blockchainLog: TestOriginalLog) {
     assertOriginalLogAndLogEquals(blockchainLog, testLogRecord.log!!)

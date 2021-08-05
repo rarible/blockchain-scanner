@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.pending
 
 import com.rarible.blockchain.scanner.data.LogEvent
 import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
+import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -15,7 +16,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class PendingLogMarker<BB, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class PendingLogMarker<BB : BlockchainBlock, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val logService: LogService<L, R, D>,
     private val pendingLogService: PendingLogService<BB, L, R, D>
 ) {
@@ -27,7 +28,7 @@ class PendingLogMarker<BB, L : Log, R : LogRecord<L, *>, D : Descriptor>(
             .map { LogEvent(it, descriptor) }
             .toCollection(mutableListOf())
 
-        pendingLogService.markInactive(block, pendingLogs)
+        pendingLogService.getInactive(block, pendingLogs)
             .flatMapConcat { markInactive(it) }
     }
 
@@ -35,7 +36,7 @@ class PendingLogMarker<BB, L : Log, R : LogRecord<L, *>, D : Descriptor>(
         val logs = logsToMark.logs
         val status = logsToMark.status
         return if (logs.isNotEmpty()) {
-            logger.info("markInactive $status $logs")
+            logger.info("Marking with status {} next logs: {}", status, logs)
             logs.asFlow().map {
                 optimisticLock {
                     //todo optimistic lock не особо поможет, потому что нет повторного чтения логов

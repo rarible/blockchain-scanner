@@ -21,7 +21,7 @@ class EthereumPendingLogService(
     private val monoEthereum: MonoEthereum
 ) : PendingLogService<EthereumBlockchainBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
-    override fun markInactive(
+    override fun getInactive(
         block: EthereumBlockchainBlock,
         records: List<LogEvent<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>>
     ): Flow<LogEventStatusUpdate<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>> {
@@ -33,9 +33,9 @@ class EthereumPendingLogService(
         val fullBlock = monoEthereum.ethGetFullBlockByHash(block.ethBlock.hash())
         return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
             .flatMap { tx ->
-                val first = byTxHash[tx.hash().toString()] ?: emptyList() // TODO ???
+                val first = byTxHash[tx.hash().hex()] ?: emptyList()
                 val second =
-                    (byFromNonce[Pair(tx.from().hex(), tx.nonce().toLong())] ?: emptyList()) - first // TODO ???
+                    (byFromNonce[Pair(tx.from().hex(), tx.nonce().toLong())] ?: emptyList()) - first
                 listOf(
                     LogEventStatusUpdate(first, Log.Status.INACTIVE),
                     LogEventStatusUpdate(second, Log.Status.DROPPED)

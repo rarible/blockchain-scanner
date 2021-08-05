@@ -11,16 +11,15 @@ import org.springframework.stereotype.Service
 class PendingBlocksCheckJob(
     private val pendingBlockChecker: PendingBlockChecker
 ) {
+
+    private val logger: Logger = LoggerFactory.getLogger(PendingBlocksCheckJob::class.java)
+
     @Scheduled(
         fixedRateString = "\${pendingBlocksCheckJobInterval:${DateUtils.MILLIS_PER_MINUTE}}",
         initialDelayString = "\${pendingBlocksCheckJobInterval:${DateUtils.MILLIS_PER_MINUTE}}"
     )
     fun job() {
-        logger.info("started")
+        logger.info("Started job to check pending blocks")
         pendingBlockChecker.checkPendingBlocks()
-    }
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(PendingBlocksCheckJob::class.java)
     }
 }

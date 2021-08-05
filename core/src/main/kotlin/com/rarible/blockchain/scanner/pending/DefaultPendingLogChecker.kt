@@ -10,7 +10,6 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.job.PendingLogsCheckJob
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
@@ -24,11 +23,13 @@ import org.slf4j.LoggerFactory
 @FlowPreview
 class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
-    private val blockListener: BlockListener,
-    private val descriptors: List<D>,
     private val logService: LogService<L, R, D>,
+    private val descriptors: List<D>,
+    private val blockListener: BlockListener,
     private val logEventListeners: List<LogEventListener<L, R>>
 ) : PendingLogChecker {
+
+    private val logger: Logger = LoggerFactory.getLogger(DefaultPendingLogChecker::class.java)
 
     override fun checkPendingLogs() {
         runBlocking {
@@ -66,7 +67,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
         val tx = blockchainClient.getTransactionMeta(record.log!!.transactionHash)
 
         if (tx == null) {
-            logger.info("for log $record\nnot found transaction. dropping it")
+            logger.info("Can't find transaction for record in blockchain, dropping it: [{}]", record)
             val updatedLog = markLogAsDropped(record, descriptor)
             return Pair(updatedLog, null)
         } else {
@@ -83,9 +84,5 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
 
     private suspend fun markLogAsDropped(record: R, descriptor: D): R {
         return logService.updateStatus(descriptor, record, Log.Status.DROPPED)
-    }
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(PendingLogsCheckJob::class.java)
     }
 }

@@ -6,11 +6,12 @@ import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConstructorBinding
 @ConfigurationProperties(prefix = "blockchain.scanner.test")
-class TestBlockchainScannerProperties(
+data class TestBlockchainScannerProperties(
 
     override val maxProcessTime: Long,
     override val batchSize: Long,
     override val reconnectDelay: Long,
+    override val reconnectAttempts: Int = Int.MAX_VALUE,
     override val reindexEnabled: Boolean
 
 ) : BlockchainScannerProperties

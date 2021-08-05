@@ -7,13 +7,12 @@ import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
+import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -22,16 +21,9 @@ import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 
 @IntegrationTest
-class BlockEventSubscriberIt {
-
-    @Autowired
-    lateinit var testLogMapper: TestLogMapper
-
-    @Autowired
-    lateinit var testLogService: TestLogService
+class BlockEventSubscriberIt : AbstractIntegrationTest() {
 
     private val descriptor = testDescriptor1()
     private val topic = descriptor.topic

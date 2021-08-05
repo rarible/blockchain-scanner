@@ -2,6 +2,7 @@ blockchain:
   scanner:
     test:
       maxProcessTime: 30000
-      batchSize: 100
+      batchSize: 5
       reconnectDelay: 2000
+      reconnectAttempts: 1
       reindexEnabled: true

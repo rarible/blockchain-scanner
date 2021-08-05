@@ -5,32 +5,20 @@ import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
+import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.*
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 
 @IntegrationTest
-class BlockEventHandlerIt {
-
-    @Autowired
-    lateinit var testLogMapper: TestLogMapper
-
-    @Autowired
-    lateinit var testLogService: TestLogService
-
-    @Autowired
-    lateinit var testPendingLogService: TestPendingLogService
+class BlockEventHandlerIt : AbstractIntegrationTest() {
 
     @Test
     fun `on block event - two subscribers`() = runBlocking {

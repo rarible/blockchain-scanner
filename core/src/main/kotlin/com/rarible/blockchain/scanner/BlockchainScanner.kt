@@ -26,7 +26,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
-import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -67,9 +66,9 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
     private val pendingLogChecker = DefaultPendingLogChecker(
         blockchainClient,
-        blockListener,
-        subscribers.map { it.getDescriptor() },
         logService,
+        subscribers.map { it.getDescriptor() },
+        blockListener,
         logEventListeners
     )
 
@@ -113,9 +112,5 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
     override fun getDescriptorIds(): Set<String> {
         return descriptorIds
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(BlockchainScanner::class.java)
     }
 }

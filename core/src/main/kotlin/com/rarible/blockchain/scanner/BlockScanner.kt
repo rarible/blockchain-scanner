@@ -40,15 +40,14 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             logger.info("Will try to reconnect to blockchain in ${properties.reconnectDelay}")
             ContinueRetrying
         }
-        retry(retryOnFlowCompleted + limitAttempts(Int.MAX_VALUE) + constantDelay(properties.reconnectDelay)) {
+        retry(retryOnFlowCompleted + limitAttempts(properties.reconnectAttempts) + constantDelay(properties.reconnectDelay)) {
             logger.info("Connecting to blockchain...")
             val blockFlow = getEventFlow()
             logger.info("Connected to blockchain, starting to receive events")
             blockFlow.map {
                 blockListener.onBlockEvent(it)
-            }.onCompletion {
-                throw IllegalStateException("Disconnected from Blockchain, event flow completed")
-            }
+            }.collect()
+            throw IllegalStateException("Disconnected from Blockchain, event flow completed")
         }
     }
 
@@ -83,21 +82,22 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
      */
     private fun saveBlock(newBlock: BB, depth: Int = 0): Flow<BlockEvent> = flatten {
         logger.info("Saving block: [{}]", newBlock)
-        val parentBlockFlow = when (val parentBlockHash = blockService.getBlockHash(newBlock.number - 1)) {
+        val parentBlock = blockService.getBlock(newBlock.number - 1)
+        val parentBlockFlow = when {
             //do nothing if parent hash not found (just started listening to blocks)
-            null -> {
+            parentBlock == null -> {
                 logger.info(
                     "There is no indexed parent for Block [{}], stopping to retrieve chain of changes",
-                    newBlock.meta, parentBlockHash
+                    newBlock.meta
                 )
                 emptyFlow()
             }
 
             //do nothing if parent hash is the same
-            newBlock.parentHash -> {
+            parentBlock.hash == newBlock.parentHash -> {
                 logger.info(
                     "Parent is the same for new Block and indexed Block [{}] -> '{}', " +
-                            "stopping to retrieve chain of changes", newBlock.meta, parentBlockHash
+                            "stopping to retrieve chain of changes", newBlock.meta, parentBlock
                 )
                 emptyFlow()
             }
@@ -117,32 +117,31 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     }
 
     private fun checkNewBlock(block: BB): Flow<BlockEvent> = flatten {
-        val knownHash = blockService.getBlockHash(block.number)
+        val exist = blockService.getBlock(block.number)
 
+        logger.info("Checking new Block: [{}]", block.meta)
         when {
-            knownHash == null -> {
+            exist == null -> {
                 logger.info("Block with number and {} hash '{}' NOT found, this is new block", block.number, block.hash)
                 blockService.save(blockMapper.map(block))
                 flowOf(BlockEvent(Source.BLOCKCHAIN, block))
             }
-            knownHash != block.hash -> {
+            exist.hash != block.hash -> {
                 logger.info(
                     "Block with number and {} hash '{}' found, but hash is different: {}",
-                    block.number, block.hash, knownHash
+                    block.number, block.hash, exist
                 )
                 blockService.save(blockMapper.map(block))
-                val revertedBlock = BlockMeta(block.number, knownHash, block.parentHash, block.timestamp)
+                val revertedBlock = BlockMeta(exist.id, exist.hash, exist.parentHash, exist.timestamp)
                 flowOf(BlockEvent(Source.BLOCKCHAIN, block.meta, revertedBlock))
             }
             else -> {
                 logger.info(
                     "Block with number and {} hash '{}' found, hash is the same: {}",
-                    block.number, block.hash, knownHash
+                    block.number, block.hash, exist
                 )
                 emptyFlow()
             }
-        }.onEach {
-            logger.info("Checking new Block: [{}]", block.meta)
         }.onCompletion {
             logger.info("Checking of new Block completed: [{}]", block.meta)
         }

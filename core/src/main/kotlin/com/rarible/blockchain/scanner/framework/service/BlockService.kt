@@ -18,9 +18,9 @@ interface BlockService<B : Block> {
     suspend fun getLastBlockNumber(): Long?
 
     /**
-     * Return Block hash by number.
+     * Return Block by number.
      */
-    suspend fun getBlockHash(id: Long): String?
+    suspend fun getBlock(id: Long): B?
 
     /**
      * Update status of the Block.
