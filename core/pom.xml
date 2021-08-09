@@ -10,19 +10,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rarible-blockchain-scanner-core</artifactId>
+    <version>${project.parent.version}</version>
 
     <dependencies>
+
+        <!-- =============== Rarible-core ================ -->
         <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-kotlin</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
+            <groupId>com.rarible.core</groupId>
+            <artifactId>rarible-core-logging</artifactId>
         </dependency>
         <dependency>
             <groupId>com.rarible.core</groupId>
@@ -32,9 +27,25 @@
             <groupId>com.rarible.core</groupId>
             <artifactId>rarible-core-task</artifactId>
         </dependency>
+
+        <!-- ================== Spring =================== -->
         <dependency>
-            <groupId>com.github.cloudyrock.mongock</groupId>
-            <artifactId>mongock-spring-v5</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <!-- ================== Other ===================== -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
@@ -49,19 +60,9 @@
             <artifactId>javax.annotation-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.rarible.core</groupId>
-            <artifactId>rarible-core-test-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.rarible.core</groupId>
-            <artifactId>rarible-core-logging</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-slf4j</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.michael-bull.kotlin-retry</groupId>
             <artifactId>kotlin-retry</artifactId>
@@ -71,6 +72,11 @@
 
         <!-- ================== Test ===================== -->
         <dependency>
+            <groupId>com.rarible.core</groupId>
+            <artifactId>rarible-core-test-common</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
@@ -78,11 +84,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>mongodb</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

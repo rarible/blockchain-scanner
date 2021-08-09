@@ -10,5 +10,5 @@ class EthereumDescriptor(
     val contracts: List<Address>
 ) : Descriptor {
 
-    override val id: String get() = topic.hex()
+    override val id: String get() = topic.toString()
 }
