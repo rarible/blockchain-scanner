@@ -6,14 +6,15 @@ import org.bouncycastle.util.encoders.Hex
 import org.onflow.sdk.FlowBlock
 import java.time.ZoneOffset
 
-class FlowBlockchainBlock(override val meta: BlockMeta) : BlockchainBlock {
+class FlowBlockchainBlock(
+    val block: FlowBlock
+) : BlockchainBlock {
 
-    constructor(block: FlowBlock) : this(
-        BlockMeta(
+    override val meta: BlockMeta
+        get() = BlockMeta(
             number = block.height,
             hash = Hex.toHexString(block.id.bytes),
             parentHash = Hex.toHexString(block.parentId.bytes),
             timestamp = block.timestamp.toEpochSecond(ZoneOffset.UTC)
         )
-    )
 }

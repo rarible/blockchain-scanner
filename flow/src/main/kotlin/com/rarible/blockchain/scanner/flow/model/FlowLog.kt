@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.flow.model
 
 import com.rarible.blockchain.scanner.framework.model.Log
-import org.springframework.data.annotation.Id
 import java.time.LocalDateTime
 
 data class FlowLog(
@@ -13,9 +12,4 @@ data class FlowLog(
     val payload: String,
     val timestamp: LocalDateTime,
     val blockHeight: Long
-): Log {
-
-    @get:Id
-    val id: String
-    get() = "${transactionHash}:$eventIndex"
-}
+): Log

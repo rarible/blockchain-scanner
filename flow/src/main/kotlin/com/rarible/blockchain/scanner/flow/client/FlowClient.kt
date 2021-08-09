@@ -53,10 +53,7 @@ class FlowClient(
         val results = flowClient.getEventsForBlockIds("", setOf(FlowId(block.hash))).join()
         return results.flatMap { r ->
             r.events.map { e ->
-                FlowBlockchainLog(
-                    blockId = r.blockId.base16Value,
-                    txId = e.transactionId.base16Value
-                )
+                FlowBlockchainLog(e)
             }
         }
     }
@@ -70,7 +67,7 @@ class FlowClient(
             val block = flowClient.getBlockByHeight(r.blockHeight).join()!!
             FullBlock(
                 block = FlowBlockchainBlock(block),
-                logs = r.events.map { FlowBlockchainLog(blockId = Hex.toHexString(block.id.bytes), txId = Hex.toHexString(it.transactionId.bytes)) }
+                logs = r.events.map { FlowBlockchainLog(it) }
             )
         }.asFlow()
     }
