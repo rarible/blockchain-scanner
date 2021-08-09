@@ -19,6 +19,8 @@
         <!-- ========= Internal Dependencies ========== -->
         <version.rarible.core>1.2-SNAPSHOT</version.rarible.core>
         <version.rarible.ethereum>1.0-SNAPSHOT</version.rarible.ethereum>
+        <kotlin.version>1.5.21</kotlin.version>
+        <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
     </properties>
 
     <repositories>
@@ -64,6 +66,12 @@
             </dependency>
 
             <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-flow</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>net.java.dev.jna</groupId>
                 <artifactId>jna</artifactId>
                 <version>5.7.0</version>
@@ -76,6 +84,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version>
             </plugin>
         </plugins>
     </build>
@@ -84,6 +93,7 @@
         <module>core</module>
         <module>ethereum</module>
         <module>test-coverage</module>
+        <module>flow</module>
     </modules>
 
 </project>
