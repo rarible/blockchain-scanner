@@ -33,8 +33,4 @@ class TestBlockRepository(
         ).then()
     }
 
-    // For tests only
-    fun findAll(): Mono<List<TestBlock>> {
-        return mongo.findAll(TestBlock::class.java).collectList()
-    }
 }

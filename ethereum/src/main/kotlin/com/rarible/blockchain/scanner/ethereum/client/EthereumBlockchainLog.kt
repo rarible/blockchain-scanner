@@ -7,8 +7,8 @@ import scalether.domain.response.Log
 class EthereumBlockchainLog(val ethLog: Log) : BlockchainLog {
 
     override val meta: LogMeta = LogMeta(
-        hash = ethLog.transactionHash().hex(),
-        blockHash = ethLog.blockHash().hex()
+        hash = ethLog.transactionHash().toString(),
+        blockHash = ethLog.blockHash().toString()
     )
 
 }

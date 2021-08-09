@@ -33,9 +33,9 @@ class EthereumPendingLogService(
         val fullBlock = monoEthereum.ethGetFullBlockByHash(block.ethBlock.hash())
         return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
             .flatMap { tx ->
-                val first = byTxHash[tx.hash().hex()] ?: emptyList()
+                val first = byTxHash[tx.hash().toString()] ?: emptyList()
                 val second =
-                    (byFromNonce[Pair(tx.from().hex(), tx.nonce().toLong())] ?: emptyList()) - first
+                    (byFromNonce[Pair(tx.from(), tx.nonce().toLong())] ?: emptyList()) - first
                 listOf(
                     LogEventStatusUpdate(first, Log.Status.INACTIVE),
                     LogEventStatusUpdate(second, Log.Status.DROPPED)

@@ -25,7 +25,6 @@ import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.runBlocking
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -89,8 +88,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
     private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
 
-    // TODO should be called in onApplicationStartedEvent in implementations
-    fun scan() = runBlocking {
+    suspend fun scan() {
         blockScanner.scan(blockListener)
     }
 

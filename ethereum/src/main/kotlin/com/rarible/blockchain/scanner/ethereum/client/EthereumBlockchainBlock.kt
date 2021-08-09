@@ -9,8 +9,8 @@ class EthereumBlockchainBlock(val ethBlock: Block<Word>) : BlockchainBlock {
 
     override val meta = BlockMeta(
         number = ethBlock.number().toLong(),
-        hash = ethBlock.hash().hex(),
-        parentHash = ethBlock.parentHash()?.hex(),
+        hash = ethBlock.hash().toString(),
+        parentHash = ethBlock.parentHash()?.toString(),
         timestamp = ethBlock.timestamp().toLong()
     )
 

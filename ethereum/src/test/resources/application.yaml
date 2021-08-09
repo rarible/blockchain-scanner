@@ -1,0 +1,23 @@
+blockchain:
+  scanner:
+    ethereum:
+      maxProcessTime: 30000
+      batchSize: 5
+      reconnectDelay: 2000
+      reconnectAttempts: 1
+      reindexEnabled: true
+      maxAttempts: 5
+      minBackoff: 300
+
+mongock:
+  change-logs-scan-package:
+    - com.rarible.blockchain.scanner.ethereum.migration
+
+testcontainers:
+  reuse:
+    enable:true
+
+pendingBlocksCheckJobInterval: 1000
+
+ethereumAddress: "0x88966e42b688a2216369bEce3Ea29Cf583465765"
+ethereumPrivateKey: "0x7d1331c00f4cbf44a74f8fa0a846e02f2dd2edf03fa6a3cc96f8ec8bce682963"
