@@ -29,9 +29,9 @@ class EthereumBlockServiceIt : AbstractIntegrationTest() {
 
         val max = listOf(block1, block2, block3).maxBy { it.id }!!.id
 
-        val lastBlock = ethereumBlockService.getLastBlockNumber()
+        val lastBlock = ethereumBlockService.getLastBlock()
 
-        assertEquals(max, lastBlock)
+        assertEquals(max, lastBlock?.id)
     }
 
     @Test

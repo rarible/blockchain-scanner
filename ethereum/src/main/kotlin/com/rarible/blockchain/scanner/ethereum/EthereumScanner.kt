@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component
 @Component
 @FlowPreview
 @ExperimentalCoroutinesApi
-class EthereumBlockchainScanner(
+class EthereumScanner(
     blockchainClient: EthereumClient,
     subscribers: List<EthereumLogEventSubscriber>,
     blockMapper: EthereumBlockMapper,
@@ -49,7 +49,7 @@ class EthereumBlockchainScanner(
     properties
 ) {
 
-    private val logger = LoggerFactory.getLogger(EthereumBlockchainScanner::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumScanner::class.java)
 
     @EventListener(ApplicationReadyEvent::class)
     fun start() {

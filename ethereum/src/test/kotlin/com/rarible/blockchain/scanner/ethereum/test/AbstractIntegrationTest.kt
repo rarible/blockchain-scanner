@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
-import com.rarible.blockchain.scanner.ethereum.EthereumBlockchainScanner
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumBlockchainScannerProperties
+import com.rarible.blockchain.scanner.ethereum.EthereumScanner
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
@@ -40,7 +40,7 @@ abstract class AbstractIntegrationTest {
     protected lateinit var mongo: ReactiveMongoOperations
 
     @Autowired
-    protected lateinit var ethereumBlockchainScanner: EthereumBlockchainScanner
+    protected lateinit var ethereumScanner: EthereumScanner
 
     @Autowired
     lateinit var ethereumBlockMapper: EthereumBlockMapper
@@ -76,7 +76,7 @@ abstract class AbstractIntegrationTest {
     lateinit var testLogEventListener: EthereumLogEventListener
 
     @Autowired
-    lateinit var properties: EthereumBlockchainScannerProperties
+    lateinit var properties: EthereumScannerProperties
 
     protected fun findLog(collection: String, id: ObjectId): EthereumLogRecord<*>? {
         return mono { ethereumLogRepository.findLogEvent(collection, id) }.block()

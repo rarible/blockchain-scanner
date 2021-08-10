@@ -39,9 +39,9 @@ import java.math.BigInteger
 @EthereumTest
 
 @IntegrationTest
-class EthereumBlockchainScannerIt : AbstractIntegrationTest() {
+class EthereumScannerIt : AbstractIntegrationTest() {
 
-    private val logger = LoggerFactory.getLogger(EthereumBlockchainScannerIt::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumScannerIt::class.java)
 
     private var descriptor: EthereumDescriptor = mockk()
     private var collection = ""

@@ -1,10 +1,12 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
-import com.rarible.blockchain.scanner.ethereum.EnableEthereumBlockchainScanner
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumBlockchainScannerProperties
+import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventListener
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -20,14 +22,17 @@ import scalether.transaction.MonoTransactionPoller
 import java.math.BigInteger
 
 @Configuration
-@EnableEthereumBlockchainScanner
+@EnableEthereumScanner
 class TestEthereumScannerConfiguration {
 
     @Value("\${ethereumPrivateKey}")
     lateinit var privateKey: String
 
     @Autowired
-    lateinit var properties: EthereumBlockchainScannerProperties
+    lateinit var properties: EthereumScannerProperties
+
+    @Bean
+    fun meterRegistry(): MeterRegistry = SimpleMeterRegistry()
 
     @Bean
     fun testTransferSubscriber(): TestTransferSubscriber = TestTransferSubscriber()

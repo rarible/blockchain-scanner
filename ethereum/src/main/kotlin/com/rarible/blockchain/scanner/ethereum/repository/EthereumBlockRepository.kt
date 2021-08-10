@@ -26,12 +26,10 @@ class EthereumBlockRepository(
     fun findByStatus(status: Block.Status): Flux<EthereumBlock> =
         mongo.find(Query(EthereumBlock::status isEqualTo status))
 
-    suspend fun getLastBlock(): Long? {
-        val lastBlock =
-            mongo.find(Query().with(Sort.by(Sort.Direction.DESC, "_id")).limit(1), EthereumBlock::class.java)
-                .next()
-                .awaitFirstOrNull()
-        return lastBlock?.id
+    suspend fun getLastBlock(): EthereumBlock? {
+        return mongo.find(Query().with(Sort.by(Sort.Direction.DESC, "_id")).limit(1), EthereumBlock::class.java)
+            .next()
+            .awaitFirstOrNull()
     }
 
     suspend fun updateBlockStatus(number: Long, status: Block.Status) {

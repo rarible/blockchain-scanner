@@ -7,11 +7,16 @@ blockchain:
       reconnectAttempts: 1
       job:
         pendingBlocks:
-          interval: 1s
-          initialDelay: 500ms
+          interval: 1m
+          initialDelay: 1h
           pendingBlockAgeToCheck: 1m
         pendingLogs:
           interval: 1h
           initialDelay: 365d
         reconciliation:
           enabled: false
+      monitoring:
+        enabled: true
+        rootPath: "blockchain.scanner"
+        worker:
+          pollingPeriod: 1s

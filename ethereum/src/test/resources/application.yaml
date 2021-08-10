@@ -18,6 +18,11 @@ blockchain:
           initialDelay: 365d
         reconciliation:
           enabled: false
+      monitoring:
+        enabled: false
+        rootPath: "blockchain.scanner"
+        worker:
+          pollingPeriod: 1m
 
 mongock:
   change-logs-scan-package:

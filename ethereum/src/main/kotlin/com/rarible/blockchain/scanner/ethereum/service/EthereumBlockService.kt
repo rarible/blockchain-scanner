@@ -14,16 +14,16 @@ class EthereumBlockService(
     private val blockRepository: EthereumBlockRepository
 ) : BlockService<EthereumBlock> {
 
-    override fun findByStatus(status: Block.Status): Flow<EthereumBlock> {
-        return blockRepository.findByStatus(status).asFlow()
+    override suspend fun getBlock(id: Long): EthereumBlock? {
+        return blockRepository.findByIdR(id).awaitFirstOrNull()
     }
 
-    override suspend fun getLastBlockNumber(): Long? {
+    override suspend fun getLastBlock(): EthereumBlock? {
         return blockRepository.getLastBlock()
     }
 
-    override suspend fun getBlock(id: Long): EthereumBlock? {
-        return blockRepository.findByIdR(id).awaitFirstOrNull()
+    override fun findByStatus(status: Block.Status): Flow<EthereumBlock> {
+        return blockRepository.findByStatus(status).asFlow()
     }
 
     override suspend fun updateStatus(id: Long, status: Block.Status) {

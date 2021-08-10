@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumBlockchainScannerProperties
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogService(
     private val ethereumLogRepository: EthereumLogRepository,
-    private val properties: EthereumBlockchainScannerProperties
+    private val properties: EthereumScannerProperties
 ) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
     private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
