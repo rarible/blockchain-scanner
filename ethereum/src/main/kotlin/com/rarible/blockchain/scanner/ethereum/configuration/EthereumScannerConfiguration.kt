@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.configuration
 
 import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerConfiguration
-import com.rarible.blockchain.scanner.ethereum.EthereumBlockchainScanner
+import com.rarible.blockchain.scanner.ethereum.EthereumScanner
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import com.rarible.ethereum.converters.EnableScaletherMongoConversions
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -19,11 +19,11 @@ import java.time.Duration
 @EnableRaribleMongo
 @EnableMongock
 @EnableScaletherMongoConversions
-@EnableConfigurationProperties(EthereumBlockchainScannerProperties::class)
-@ComponentScan(basePackageClasses = [EthereumBlockchainScanner::class])
+@EnableConfigurationProperties(EthereumScannerProperties::class)
+@ComponentScan(basePackageClasses = [EthereumScanner::class])
 @Import(BlockchainScannerConfiguration::class)
 class EthereumScannerConfiguration(
-    val properties: EthereumBlockchainScannerProperties
+    val properties: EthereumScannerProperties
 ) {
 
     @Bean
