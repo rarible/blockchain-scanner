@@ -18,6 +18,8 @@ class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
     private val properties: BlockchainScannerProperties
 ) {
 
+    private val logger = LoggerFactory.getLogger(LogEventPublisher::class.java)
+
     suspend fun onBlockProcessed(event: BlockEvent, logs: List<R>): Block.Status {
         val status = try {
             logger.debug(
@@ -45,9 +47,4 @@ class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
             }
         }.collect()
     }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(BlockListener::class.java)
-    }
-
 }

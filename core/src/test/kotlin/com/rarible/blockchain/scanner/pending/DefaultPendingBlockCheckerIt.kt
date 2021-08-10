@@ -19,6 +19,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import java.time.Instant
 
 @IntegrationTest
@@ -55,7 +56,7 @@ class DefaultPendingBlockCheckerIt : AbstractIntegrationTest() {
         )
 
         val checker = createPendingBlockChecker(TestBlockchainClient(testBlockchainData))
-        checker.checkPendingBlocks()
+        checker.checkPendingBlocks(Duration.ofMinutes(1))
 
         // 3 events should be emitted in total
         coVerify(exactly = 3) { blockListener.onBlockEvent(any()) }

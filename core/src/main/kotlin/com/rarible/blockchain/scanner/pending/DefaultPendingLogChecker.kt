@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -29,7 +28,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
     private val logEventListeners: List<LogEventListener<L, R>>
 ) : PendingLogChecker {
 
-    private val logger: Logger = LoggerFactory.getLogger(DefaultPendingLogChecker::class.java)
+    private val logger = LoggerFactory.getLogger(DefaultPendingLogChecker::class.java)
 
     override fun checkPendingLogs() {
         runBlocking {

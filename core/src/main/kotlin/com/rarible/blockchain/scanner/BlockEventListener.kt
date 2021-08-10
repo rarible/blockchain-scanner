@@ -33,6 +33,8 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
     private val logEventPublisher: LogEventPublisher<L, R>
 ) : BlockListener {
 
+    private val logger = LoggerFactory.getLogger(BlockListener::class.java)
+
     private val blockEventHandler: BlockEventHandler<BB, BL, L, R, D> = BlockEventHandler(
         blockchainClient,
         subscribers,
@@ -66,7 +68,4 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         }
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(BlockListener::class.java)
-    }
 }

@@ -5,4 +5,13 @@ blockchain:
       batchSize: 5
       reconnectDelay: 2000
       reconnectAttempts: 1
-      reindexEnabled: true
+      job:
+        pendingBlocks:
+          interval: 1s
+          initialDelay: 500ms
+          pendingBlockAgeToCheck: 1m
+        pendingLogs:
+          interval: 1h
+          initialDelay: 365d
+        reconciliation:
+          enabled: false

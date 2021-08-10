@@ -197,7 +197,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `updated status`() = runBlocking {
+    fun `update status - record exist`() = runBlocking {
         val record = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
 
         ethereumLogService.updateStatus(descriptor, record, Log.Status.INACTIVE)
@@ -208,4 +208,29 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
     }
 
+
+    @Test
+    fun `update status - record doesn't exist`() = runBlocking {
+        val record = randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING)
+
+        ethereumLogService.updateStatus(descriptor, record, Log.Status.INACTIVE)
+
+        val updatedRecord = findLog(collection, record.id)!!
+
+        assertFalse(updatedRecord.log!!.visible)
+        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
+    }
+
+    @Test
+    fun `update status - optimistic lock handled`() = runBlocking {
+        val record = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
+        val prevVersion = record.withIdAndVersion(record.id, null)
+
+        ethereumLogService.updateStatus(descriptor, prevVersion, Log.Status.INACTIVE)
+
+        val updatedRecord = findLog(collection, record.id)!!
+
+        assertFalse(updatedRecord.log!!.visible)
+        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
+    }
 }

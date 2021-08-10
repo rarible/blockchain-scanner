@@ -28,7 +28,6 @@ import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.lt
@@ -42,7 +41,7 @@ import java.math.BigInteger
 @IntegrationTest
 class EthereumBlockchainScannerIt : AbstractIntegrationTest() {
 
-    private val logger: Logger = LoggerFactory.getLogger(EthereumBlockchainScannerIt::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumBlockchainScannerIt::class.java)
 
     private var descriptor: EthereumDescriptor = mockk()
     private var collection = ""
