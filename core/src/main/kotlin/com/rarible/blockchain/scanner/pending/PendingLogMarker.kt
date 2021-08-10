@@ -9,10 +9,8 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.util.flatten
-import com.rarible.core.common.optimisticLock
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -21,7 +19,7 @@ class PendingLogMarker<BB : BlockchainBlock, L : Log, R : LogRecord<L, *>, D : D
     private val pendingLogService: PendingLogService<BB, L, R, D>
 ) {
 
-    private val logger: Logger = LoggerFactory.getLogger(PendingLogService::class.java)
+    private val logger = LoggerFactory.getLogger(PendingLogService::class.java)
 
     fun markInactive(block: BB, descriptor: D): Flow<R> = flatten {
         val pendingLogs = logService.findPendingLogs(descriptor)
@@ -36,12 +34,10 @@ class PendingLogMarker<BB : BlockchainBlock, L : Log, R : LogRecord<L, *>, D : D
         val logs = logsToMark.logs
         val status = logsToMark.status
         return if (logs.isNotEmpty()) {
-            logger.info("Marking with status {} next logs: {}", status, logs)
+            logger.info("Marking with status '{}' {} log records", status, logs.size)
             logs.asFlow().map {
-                optimisticLock {
-                    //todo optimistic lock не особо поможет, потому что нет повторного чтения логов
-                    logService.updateStatus(it.descriptor, it.record, status)
-                }
+                logger.info("Marking with status '{}' log record: [{}]", status, it.record)
+                logService.updateStatus(it.descriptor, it.record, status)
             }
         } else {
             emptyFlow()

@@ -7,7 +7,6 @@ import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.bson.types.ObjectId
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
@@ -21,7 +20,7 @@ class EthereumLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
 
-    val logger: Logger = LoggerFactory.getLogger(EthereumLogRepository::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumLogRepository::class.java)
 
     suspend fun findLogEvent(collection: String, id: ObjectId): EthereumLogRecord<*>? {
         return mongo.findById(id, EthereumLogRecord::class.java, collection).awaitFirstOrNull()

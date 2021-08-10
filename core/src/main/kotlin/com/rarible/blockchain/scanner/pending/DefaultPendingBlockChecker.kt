@@ -13,7 +13,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -26,15 +25,14 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
     private val blockListener: BlockListener
 ) : PendingBlockChecker {
 
-    private val logger: Logger = LoggerFactory.getLogger(DefaultPendingBlockChecker::class.java)
-    private val pendingLogAgeToCheck = Duration.ofMinutes(1)
+    private val logger = LoggerFactory.getLogger(DefaultPendingBlockChecker::class.java)
 
-    override fun checkPendingBlocks() {
+    override fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
         runBlocking {
-            logger.info("Starting to check pending blocks...")
+            logger.info("Starting to check pending blocks with min block age: {}", pendingBlockAgeToCheck)
             try {
                 flowOf(
-                    blockService.findByStatus(Block.Status.PENDING).filter { isOldEnough(it) },
+                    blockService.findByStatus(Block.Status.PENDING).filter { isOldEnough(it, pendingBlockAgeToCheck) },
                     blockService.findByStatus(Block.Status.ERROR)
                 ).flattenConcat().map {
                     reindexPendingBlock(it)
@@ -46,10 +44,10 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
         }
     }
 
-    private fun isOldEnough(block: B): Boolean {
+    private fun isOldEnough(block: B, pendingBlockAgeToCheck: Duration): Boolean {
         val createdAt = Instant.ofEpochSecond(block.timestamp)
         val sinceCreated = Duration.between(createdAt, Instant.now())
-        return !sinceCreated.minus(pendingLogAgeToCheck).isNegative
+        return !sinceCreated.minus(pendingBlockAgeToCheck).isNegative
     }
 
     private suspend fun reindexPendingBlock(block: B) {

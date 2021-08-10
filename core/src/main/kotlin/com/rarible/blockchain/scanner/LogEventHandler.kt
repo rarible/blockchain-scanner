@@ -11,11 +11,9 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.flatten
-import com.rarible.core.common.optimisticLock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -26,7 +24,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
     private val logService: LogService<L, R, D>
 ) {
 
-    private val logger: Logger = LoggerFactory.getLogger(subscriber.javaClass)
+    private val logger = LoggerFactory.getLogger(subscriber.javaClass)
     private val descriptor: D = subscriber.getDescriptor()
 
     init {
@@ -69,6 +67,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         return processedLogs
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun onLog(block: BB, index: Int, log: BL): Flow<R> = flatten {
         logger.info("Handling single Log: [{}]", log)
 
@@ -92,10 +91,8 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
 
     private fun saveProcessedLogs(logs: Flow<R>): Flow<R> {
         return logs.map {
-            optimisticLock(3) {
-                logger.info("Saving Log [{}] for descriptor [{}]", it, descriptor)
-                logService.save(descriptor, it)
-            }
+            logger.info("Saving Log [{}] for descriptor [{}]", it, descriptor)
+            logService.save(descriptor, it)
         }
     }
 }

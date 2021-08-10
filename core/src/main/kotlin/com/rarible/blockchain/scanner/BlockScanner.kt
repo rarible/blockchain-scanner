@@ -21,7 +21,6 @@ import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -33,7 +32,8 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private val properties: BlockchainScannerProperties
 ) {
 
-    // TODO should be called in onApplicationStartedEvent in implementations
+    private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
+
     suspend fun scan(blockListener: BlockListener) {
         val retryOnFlowCompleted: RetryPolicy<Throwable> = {
             logger.warn("Blockchain scanning interrupted with cause:", reason)
@@ -145,9 +145,5 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
         }.onCompletion {
             logger.info("Checking of new Block completed: [{}]", block.meta)
         }
-    }
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(BlockScanner::class.java)
     }
 }

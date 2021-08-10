@@ -8,7 +8,6 @@ import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
@@ -31,7 +30,7 @@ class EthereumClient(
     private val backoff: RetryBackoffSpec
 ) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
 
-    private val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
     override fun listenNewBlocks(): Flow<EthereumBlockchainBlock> {
         return ethPubSub.newHeads()

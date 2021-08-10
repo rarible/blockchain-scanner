@@ -1,24 +1,26 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumBlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.core.common.optimisticLock
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class EthereumLogService(
-    private val ethereumLogRepository: EthereumLogRepository
+    private val ethereumLogRepository: EthereumLogRepository,
+    private val properties: EthereumBlockchainScannerProperties
 ) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
-    private val logger: Logger = LoggerFactory.getLogger(EthereumLogService::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
     override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
         return ethereumLogRepository.delete(descriptor.collection, record)
@@ -27,7 +29,7 @@ class EthereumLogService(
     override suspend fun save(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord<*>
-    ): EthereumLogRecord<*> {
+    ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
 
         val collection = descriptor.collection
         val log = record.log!!
@@ -46,7 +48,7 @@ class EthereumLogService(
             log.minorLogIndex
         )
 
-        return if (found != null) {
+        if (found != null) {
             val withCorrectId = record.withIdAndVersion(found.id, found.version)
             if (withCorrectId != found) {
                 logger.info("Saving changed LogEvent to collection '{}' : [{}]", withCorrectId, collection)
@@ -90,8 +92,13 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord<*>,
         status: Log.Status
-    ): EthereumLogRecord<*> {
-        val copy = record.withLog(record.log!!.copy(status = status, visible = false))
-        return ethereumLogRepository.save(descriptor.collection, copy)
+    ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
+        val exist = ethereumLogRepository.findLogEvent(descriptor.collection, record.id)
+
+        val copy = exist?.withIdAndVersion(record.id, exist.version)
+            ?: record.withIdAndVersion(record.id, null)
+
+        val updatedCopy = copy.withLog(record.log!!.copy(status = status, visible = false))
+        ethereumLogRepository.save(descriptor.collection, updatedCopy)
     }
 }
