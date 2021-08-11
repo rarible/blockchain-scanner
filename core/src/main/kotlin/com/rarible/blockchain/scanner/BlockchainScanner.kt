@@ -42,20 +42,25 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
 ) : PendingLogChecker, BlockListener, PendingBlockChecker, ReconciliationExecutor {
 
-    private val blockScanner = BlockScanner(
+    private val retryableBlockchainClient = RetryableBlockchainClient(
         blockchainClient,
+        properties.retryPolicy.client
+    )
+
+    private val blockScanner = BlockScanner(
+        retryableBlockchainClient,
         blockMapper,
         blockService,
-        properties
+        properties.retryPolicy.scan
     )
 
     private val logEventPublisher = LogEventPublisher(
         logEventListeners,
-        properties
+        properties.retryPolicy.scan
     )
 
     private val blockListener = BlockEventListener(
-        blockchainClient,
+        retryableBlockchainClient,
         subscribers,
         blockService,
         logMapper,
@@ -65,7 +70,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     )
 
     private val pendingLogChecker = DefaultPendingLogChecker(
-        blockchainClient,
+        retryableBlockchainClient,
         logService,
         subscribers.map { it.getDescriptor() },
         blockListener,
@@ -73,18 +78,17 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     )
 
     private val pendingBlockChecker = DefaultPendingBlockChecker(
-        blockchainClient,
+        retryableBlockchainClient,
         blockService,
         blockListener
     )
 
     private val reconciliationService = ReconciliationService(
-        blockchainClient,
+        retryableBlockchainClient,
         subscribers,
         logMapper,
         logService,
-        logEventPublisher,
-        properties
+        logEventPublisher
     )
 
     private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
@@ -105,8 +109,8 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         pendingBlockChecker.checkPendingBlocks(pendingBlockAgeToCheck)
     }
 
-    override fun reconcile(descriptorId: String?, from: Long): Flow<LongRange> {
-        return reconciliationService.reindex(descriptorId, from)
+    override fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> {
+        return reconciliationService.reindex(descriptorId, from, batchSize)
     }
 
     override fun getDescriptorIds(): Set<String> {

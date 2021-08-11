@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.test.configuration
 
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerConfiguration
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
@@ -18,15 +17,15 @@ import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 
 @Configuration
+@EnableAutoConfiguration
 @EnableRaribleMongo
-@Import(BlockchainScannerConfiguration::class)
 @EnableConfigurationProperties(TestBlockchainScannerProperties::class)
 class TestScannerConfiguration {
 

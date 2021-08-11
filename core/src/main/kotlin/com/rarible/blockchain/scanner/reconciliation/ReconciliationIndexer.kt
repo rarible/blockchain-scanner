@@ -15,7 +15,6 @@ import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toCollection
 import org.slf4j.LoggerFactory
@@ -30,19 +29,18 @@ import org.slf4j.LoggerFactory
 class ReconciliationIndexer<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logEventHandler: LogEventHandler<BB, BL, L, R, D>,
-    private val logEventPublisher: LogEventPublisher<L, R>,
-    private val batchSize: Long
+    private val logEventPublisher: LogEventPublisher<L, R>
 ) {
 
     private val logger = LoggerFactory.getLogger(logEventHandler.subscriber.javaClass)
 
-    fun reindex(from: Long, to: Long): Flow<LongRange> {
+    fun reindex(from: Long, to: Long, batchSize: Long): Flow<LongRange> {
         logger.info("Scanning for Logs in batches from={} to={} with batchSize={}", from, to, batchSize)
         val ranges = BlockRanges.getRanges(from, to, batchSize)
         val rangeFlow = ranges.map { range ->
             val descriptor = logEventHandler.subscriber.getDescriptor()
             val blocks = blockchainClient.getBlockEvents(descriptor, range)
-            blocks.collect {
+            blocks.forEach {
                 val processedLogs = reindexBlock(it)
                 val blockEvent = BlockEvent(Source.REINDEX, it.block)
                 logEventPublisher.onBlockProcessed(blockEvent, processedLogs)

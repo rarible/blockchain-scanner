@@ -6,7 +6,7 @@ import com.github.michaelbull.retry.policy.constantDelay
 import com.github.michaelbull.retry.policy.limitAttempts
 import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.data.BlockEvent
 import com.rarible.blockchain.scanner.data.BlockMeta
 import com.rarible.blockchain.scanner.data.Source
@@ -29,18 +29,26 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
-    private val properties: BlockchainScannerProperties
+    private val retryPolicy: ScanRetryPolicyProperties
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
 
+    private val delay = retryPolicy.reconnectDelay.toMillis()
+    private val attempts = if (retryPolicy.reconnectAttempts > 0) {
+        retryPolicy.reconnectAttempts
+    } else {
+        Integer.MAX_VALUE
+    }
+
     suspend fun scan(blockListener: BlockListener) {
         val retryOnFlowCompleted: RetryPolicy<Throwable> = {
             logger.warn("Blockchain scanning interrupted with cause:", reason)
-            logger.info("Will try to reconnect to blockchain in ${properties.reconnectDelay}")
+            logger.info("Will try to reconnect to blockchain in ${retryPolicy.reconnectDelay}")
             ContinueRetrying
         }
-        retry(retryOnFlowCompleted + limitAttempts(properties.reconnectAttempts) + constantDelay(properties.reconnectDelay)) {
+
+        retry(retryOnFlowCompleted + limitAttempts(attempts) + constantDelay(delay)) {
             logger.info("Connecting to blockchain...")
             val blockFlow = getEventFlow()
             logger.info("Connected to blockchain, starting to receive events")

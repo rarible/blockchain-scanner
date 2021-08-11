@@ -6,15 +6,12 @@ import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.time.delay
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
-import org.springframework.stereotype.Service
 
-@Service
 class MonitoringWorker(
     private val properties: BlockchainScannerProperties,
     meterRegistry: MeterRegistry,
     private val monitors: List<Monitor>
 ) : SequentialDaemonWorker(meterRegistry, properties.monitoring.worker) {
-
 
     @EventListener(ApplicationReadyEvent::class)
     fun onApplicationStarted() {

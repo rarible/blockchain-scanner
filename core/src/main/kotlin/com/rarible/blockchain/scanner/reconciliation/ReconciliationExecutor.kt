@@ -15,7 +15,7 @@ interface ReconciliationExecutor {
      *
      * @return range of scanned blocks numbers
      */
-    fun reconcile(descriptorId: String?, from: Long): Flow<LongRange>
+    fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange>
 
     /**
      * @return set of descriptors of all registered subscribers

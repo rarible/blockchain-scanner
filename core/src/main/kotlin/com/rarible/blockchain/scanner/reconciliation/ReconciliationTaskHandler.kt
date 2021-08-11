@@ -7,13 +7,17 @@ import com.rarible.core.task.TaskHandler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.stereotype.Component
 
 @Component
+@ConditionalOnBean(ReconciliationExecutor::class)
 class ReconciliationTaskHandler(
     private val reconciliationExecutor: ReconciliationExecutor,
     private val properties: BlockchainScannerProperties
 ) : TaskHandler<Long> {
+
+    private val jobProperties = properties.job.reconciliation
 
     private val logger = LoggerFactory.getLogger(ReconciliationTaskHandler::class.java)
 
@@ -21,7 +25,7 @@ class ReconciliationTaskHandler(
         get() = RECONCILIATION
 
     override fun getAutorunParams(): List<RunTask> {
-        if (properties.job.reconciliation.enabled) {
+        if (jobProperties.enabled) {
             return reconciliationExecutor.getDescriptorIds().map {
                 logger.info("Creating reconciliation task for descriptor with id '{}'", it)
                 RunTask(it, null)
@@ -32,7 +36,7 @@ class ReconciliationTaskHandler(
     }
 
     override fun runLongTask(from: Long?, descriptorId: String): Flow<Long> = flatten {
-        reconciliationExecutor.reconcile(descriptorId, from ?: 1)
+        reconciliationExecutor.reconcile(descriptorId, from ?: 1, jobProperties.batchSize)
             .map { it.first }
     }
 

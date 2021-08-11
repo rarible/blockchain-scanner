@@ -169,7 +169,7 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
             TestBlockchainClient(testBlockchainData),
             testBlockMapper,
             testBlockService,
-            properties
+            properties.retryPolicy.scan
         )
     }
 }

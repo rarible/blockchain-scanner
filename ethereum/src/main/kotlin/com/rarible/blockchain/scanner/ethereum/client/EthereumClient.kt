@@ -11,7 +11,6 @@ import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
-import reactor.util.retry.RetryBackoffSpec
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
@@ -23,11 +22,9 @@ import java.math.BigInteger
 import java.time.Duration
 
 @Component
-// TODO configure retry spec for all methods
 class EthereumClient(
     private val ethereum: MonoEthereum,
-    private val ethPubSub: EthPubSub,
-    private val backoff: RetryBackoffSpec
+    private val ethPubSub: EthPubSub
 ) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
 
     private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
@@ -67,8 +64,8 @@ class EthereumClient(
     }
 
     override suspend fun getBlockEvents(
-        block: EthereumBlockchainBlock,
-        descriptor: EthereumDescriptor
+        descriptor: EthereumDescriptor,
+        block: EthereumBlockchainBlock
     ): List<EthereumBlockchainLog> {
         val filter = LogFilter
             .apply(TopicFilter.simple(descriptor.topic))
@@ -77,17 +74,15 @@ class EthereumClient(
 
         return ethereum.ethGetLogsJava(filter)
             .map { orderByTransaction(it).map { log -> EthereumBlockchainLog(log) } }
-            .doOnError { logger.warn("Unable to get logs for block ${block.ethBlock.hash()}", it) }
-            .retryWhen(backoff)
             .awaitFirst()
     }
 
     //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
     //todo (уникальный чтобы считался внутри транзакции, topic, address). это ты учел тут?
-    override fun getBlockEvents(
+    override suspend fun getBlockEvents(
         descriptor: EthereumDescriptor,
         range: LongRange
-    ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
+    ): List<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
@@ -100,9 +95,8 @@ class EthereumClient(
         logger.info("Loading logs with filter [$finalFilter] in range=$range")
 
         return ethereum.ethGetLogsJava(finalFilter)
-            .doOnNext {
-                logger.info("Loaded ${it.size} logs for range $range")
-            }.flatMapIterable { allLogs ->
+            .flatMapIterable { allLogs ->
+                logger.info("Loaded ${allLogs.size} logs for range $range")
                 allLogs.groupBy { log ->
                     log.blockHash()
                 }.entries.map { e ->
@@ -112,11 +106,7 @@ class EthereumClient(
                         FullBlock(originalBlock, orderedLogs.map { EthereumBlockchainLog(it) })
                     }
                 }
-            }.doOnError {
-                logger.warn("Unable to get Logs for descriptor [{}] from Block range {}", descriptor, range, it)
-            }
-            .retryWhen(backoff)
-            .flatMap { it }.asFlow()
+            }.concatMap { it }.collectList().awaitFirst()
     }
 
     private fun orderByTransaction(logs: List<Log>): List<Log> {
