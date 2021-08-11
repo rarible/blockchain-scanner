@@ -20,8 +20,13 @@ import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.findAll
 
 abstract class AbstractIntegrationTest {
+
+    @Autowired
+    protected lateinit var mongo: ReactiveMongoOperations
 
     @Autowired
     lateinit var testBlockMapper: TestBlockMapper
@@ -51,16 +56,16 @@ abstract class AbstractIntegrationTest {
         return testLogRepository.findLogEvent(collection, id).awaitFirstOrNull()
     }
 
-    protected suspend fun findAllLogs(collection: String): List<Any> {
-        return testLogRepository.findAll(collection).awaitFirst()
-    }
-
     protected suspend fun findBlock(number: Long): TestBlock? {
         return testBlockRepository.findById(number)
     }
 
+    protected suspend fun findAllLogs(collection: String): List<Any> {
+        return mongo.findAll<Any>(collection).collectList().awaitFirst()
+    }
+
     protected suspend fun findAllBlocks(): List<TestBlock> {
-        return testBlockRepository.findAll().awaitFirst()
+        return mongo.findAll<TestBlock>().collectList().awaitFirst()
     }
 
     protected suspend fun saveBlock(
@@ -95,7 +100,7 @@ abstract class AbstractIntegrationTest {
         }
     }
 
-    protected fun scanOnce(blockchainScanner: BlockchainScanner<*, *, *, *, *, *>) {
+    protected suspend fun scanOnce(blockchainScanner: BlockchainScanner<*, *, *, *, *, *>) {
         try {
             blockchainScanner.scan()
         } catch (e: IllegalStateException) {

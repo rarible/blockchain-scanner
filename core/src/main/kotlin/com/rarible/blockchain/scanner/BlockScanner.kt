@@ -21,7 +21,6 @@ import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -33,7 +32,8 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private val properties: BlockchainScannerProperties
 ) {
 
-    // TODO should be called in onApplicationStartedEvent in implementations
+    private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
+
     suspend fun scan(blockListener: BlockListener) {
         val retryOnFlowCompleted: RetryPolicy<Throwable> = {
             logger.warn("Blockchain scanning interrupted with cause:", reason)
@@ -62,13 +62,13 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private fun getNewBlocks(newBlock: BB): Flow<BB> = flatten {
         logger.info("Checking for not-indexed blocks previous to new on with number: {}", newBlock.number)
 
-        val lastKnown = blockService.getLastBlockNumber()
+        val lastKnown = blockService.getLastBlock()
         if (lastKnown == null) {
             logger.info("Last indexed block not found, will handle only new block: [{}]", newBlock.meta)
             flowOf(newBlock)
         } else {
-            logger.info("Found last known block with number: {}", lastKnown)
-            val range = (lastKnown + 1) until newBlock.number
+            logger.info("Found last known block with number: {}", lastKnown.id)
+            val range = (lastKnown.id + 1) until newBlock.number
             if (range.last >= range.first) {
                 logger.info("Range of not-indexed blocks: {}", range)
             }
@@ -145,9 +145,5 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
         }.onCompletion {
             logger.info("Checking of new Block completed: [{}]", block.meta)
         }
-    }
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(BlockScanner::class.java)
     }
 }

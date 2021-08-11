@@ -8,7 +8,6 @@ import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
@@ -31,7 +30,7 @@ class EthereumClient(
     private val backoff: RetryBackoffSpec
 ) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
 
-    private val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
     override fun listenNewBlocks(): Flow<EthereumBlockchainBlock> {
         return ethPubSub.newHeads()
@@ -44,8 +43,8 @@ class EthereumClient(
         return getBlock(Word.apply(hash)).awaitFirst()
     }
 
-    override suspend fun getBlock(id: Long): EthereumBlockchainBlock {
-        return ethereum.ethGetBlockByNumber(BigInteger.valueOf(id)).map {
+    override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
+        return ethereum.ethGetBlockByNumber(BigInteger.valueOf(number)).map {
             EthereumBlockchainBlock(it)
         }.awaitFirst()
     }
@@ -61,8 +60,8 @@ class EthereumClient(
         } else {
             val tx = opt.get()
             TransactionMeta(
-                tx.hash().toString(),
-                tx.blockHash().toString()
+                hash = tx.hash().toString(),
+                blockHash = tx.blockHash().toString()
             )
         }
     }
@@ -92,17 +91,17 @@ class EthereumClient(
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
-            .apply(TopicFilter.simple(descriptor.topic)) // TODO ???
+            .apply(TopicFilter.simple(descriptor.topic))
             .address(*addresses.toTypedArray())
         val finalFilter = filter.blocks(
             BigInteger.valueOf(range.first).encodeForFilter(),
             BigInteger.valueOf(range.last).encodeForFilter()
         )
-        logger.info("loading logs $finalFilter range=$range")
+        logger.info("Loading logs with filter [$finalFilter] in range=$range")
 
         return ethereum.ethGetLogsJava(finalFilter)
             .doOnNext {
-                logger.info("loaded ${it.size} logs for range $range")
+                logger.info("Loaded ${it.size} logs for range $range")
             }.flatMapIterable { allLogs ->
                 allLogs.groupBy { log ->
                     log.blockHash()

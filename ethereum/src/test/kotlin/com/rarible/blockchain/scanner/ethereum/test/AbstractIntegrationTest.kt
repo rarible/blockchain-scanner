@@ -1,0 +1,104 @@
+package com.rarible.blockchain.scanner.ethereum.test
+
+import com.rarible.blockchain.scanner.ethereum.EthereumScanner
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
+import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumBlockRepository
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
+import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
+import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
+import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventListener
+import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
+import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.core.task.TaskService
+import kotlinx.coroutines.reactor.mono
+import org.bson.types.ObjectId
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.findAll
+import scalether.core.MonoEthereum
+import scalether.transaction.MonoTransactionPoller
+import scalether.transaction.MonoTransactionSender
+
+abstract class AbstractIntegrationTest {
+
+    @Autowired
+    protected lateinit var sender: MonoTransactionSender
+
+    @Autowired
+    protected lateinit var poller: MonoTransactionPoller
+
+    @Autowired
+    protected lateinit var ethereum: MonoEthereum
+
+    @Autowired
+    protected lateinit var mongo: ReactiveMongoOperations
+
+    @Autowired
+    protected lateinit var ethereumScanner: EthereumScanner
+
+    @Autowired
+    lateinit var ethereumBlockMapper: EthereumBlockMapper
+
+    @Autowired
+    lateinit var ethereumBlockRepository: EthereumBlockRepository
+
+    @Autowired
+    lateinit var ethereumBlockService: EthereumBlockService
+
+    @Autowired
+    lateinit var ethereumLogMapper: EthereumLogMapper
+
+    @Autowired
+    lateinit var ethereumLogRepository: EthereumLogRepository
+
+    @Autowired
+    lateinit var ethereumLogService: EthereumLogService
+
+    @Autowired
+    lateinit var ethereumPendingLogService: EthereumPendingLogService
+
+    @Autowired
+    lateinit var testTransferSubscriber: TestTransferSubscriber
+
+    @Autowired
+    lateinit var testBidSubscriber: TestBidSubscriber
+
+    @Autowired
+    lateinit var taskService: TaskService
+
+    @Autowired
+    lateinit var testLogEventListener: EthereumLogEventListener
+
+    @Autowired
+    lateinit var properties: EthereumScannerProperties
+
+    protected fun findLog(collection: String, id: ObjectId): EthereumLogRecord<*>? {
+        return mono { ethereumLogRepository.findLogEvent(collection, id) }.block()
+    }
+
+    protected fun findBlock(number: Long): EthereumBlock? {
+        return mono { ethereumBlockRepository.findById(number) }.block()
+    }
+
+    protected fun findAllLogs(collection: String): List<Any> {
+        return mongo.findAll<Any>(collection).collectList().block() ?: emptyList()
+    }
+
+    protected fun saveLog(collection: String, logRecord: EthereumLogRecord<*>): EthereumLogRecord<*> {
+        return mono { ethereumLogRepository.save(collection, logRecord) }.block()!!
+    }
+
+    protected fun saveBlock(
+        block: EthereumBlock,
+        status: Block.Status = Block.Status.SUCCESS
+    ): EthereumBlock {
+        return mono { ethereumBlockRepository.save(block.copy(status = status)) }.block()!!
+    }
+
+}

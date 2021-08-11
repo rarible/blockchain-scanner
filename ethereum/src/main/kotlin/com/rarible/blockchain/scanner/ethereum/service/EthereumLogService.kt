@@ -1,80 +1,76 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogEventRepository
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.core.common.justOrEmpty
-import com.rarible.core.common.toOptional
+import com.rarible.core.common.optimisticLock
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirst
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class EthereumLogService(
-    private val ethereumLogEventRepository: EthereumLogEventRepository
+    private val ethereumLogRepository: EthereumLogRepository,
+    private val properties: EthereumScannerProperties
 ) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
-    private val logger: Logger = LoggerFactory.getLogger(EthereumLogService::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
     override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
-        return ethereumLogEventRepository.delete(descriptor.collection, record).awaitFirst()
+        return ethereumLogRepository.delete(descriptor.collection, record)
     }
 
     override suspend fun save(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord<*>
-    ): EthereumLogRecord<*> {
+    ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
+
         val collection = descriptor.collection
         val log = record.log!!
-        val opt = ethereumLogEventRepository.findVisibleByKey(
+
+        val found = ethereumLogRepository.findVisibleByKey(
             collection,
-            Word.apply(log.transactionHash), // TODO ???
-            Word.apply(log.topic), // TODO ???
+            log.transactionHash,
+            log.topic,
             log.index,
             log.minorLogIndex
-        ).switchIfEmpty(
-            ethereumLogEventRepository.findByKey(
-                collection,
-                Word.apply(log.transactionHash), // TODO ???
-                log.blockHash!!,
-                log.logIndex!!,
-                log.minorLogIndex
-            )
-        ).toOptional()
+        ) ?: ethereumLogRepository.findByKey(
+            collection,
+            log.transactionHash,
+            log.blockHash!!,
+            log.logIndex!!,
+            log.minorLogIndex
+        )
 
-        return opt.flatMap {
-            if (it.isPresent) {
-                val found = it.get()
-                val withCorrectId = record.withIdAndVersion(found.id, found.version)
-                if (withCorrectId != found) {
-                    logger.info("Saving changed LogEvent $withCorrectId to $collection")
-                    ethereumLogEventRepository.save(collection, withCorrectId)
-                } else {
-                    logger.info("LogEvent didn't change: $withCorrectId")
-                    found.justOrEmpty()
-                }
+        if (found != null) {
+            val withCorrectId = record.withIdAndVersion(found.id, found.version)
+            if (withCorrectId != found) {
+                logger.info("Saving changed LogEvent to collection '{}' : [{}]", withCorrectId, collection)
+                ethereumLogRepository.save(collection, withCorrectId)
             } else {
-                logger.info("Saving new LogEvent $record")
-                ethereumLogEventRepository.save(collection, record)
+                logger.info("LogEvent didn't change: [{}]", withCorrectId)
+                found
             }
-        }.awaitFirst()
+        } else {
+            logger.info("Saving new LogEvent: [{}}", record)
+            ethereumLogRepository.save(collection, record)
+        }
     }
 
     override fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {
-        return ethereumLogEventRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
+        return ethereumLogRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
     }
 
     override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLogRecord<*>> {
-        return ethereumLogEventRepository.findAndRevert(
+        return ethereumLogRepository.findAndRevert(
             descriptor.collection,
-            Word.apply(blockHash), // TODO ???
+            Word.apply(blockHash),
             descriptor.topic
         ).asFlow()
     }
@@ -84,9 +80,9 @@ class EthereumLogService(
         blockHash: String,
         status: Log.Status?
     ): Flow<EthereumLogRecord<*>> {
-        return ethereumLogEventRepository.findAndDelete(
+        return ethereumLogRepository.findAndDelete(
             descriptor.collection,
-            Word.apply(blockHash), // TODO ???
+            Word.apply(blockHash),
             descriptor.topic,
             status
         ).asFlow()
@@ -96,8 +92,13 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord<*>,
         status: Log.Status
-    ): EthereumLogRecord<*> {
-        val copy = record.withLog(record.log!!.copy(status = status, visible = false))
-        return ethereumLogEventRepository.save(descriptor.collection, copy).awaitFirst()
+    ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
+        val exist = ethereumLogRepository.findLogEvent(descriptor.collection, record.id)
+
+        val copy = exist?.withIdAndVersion(record.id, exist.version)
+            ?: record.withIdAndVersion(record.id, null)
+
+        val updatedCopy = copy.withLog(record.log!!.copy(status = status, visible = false))
+        ethereumLogRepository.save(descriptor.collection, updatedCopy)
     }
 }

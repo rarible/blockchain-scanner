@@ -19,10 +19,9 @@ class TestBlockRepository(
     fun findByStatus(status: Block.Status): Flux<TestBlock> =
         mongo.find(Query(TestBlock::status isEqualTo status))
 
-    fun getLastBlock(): Mono<Long> {
+    fun getLastBlock(): Mono<TestBlock> {
         return mongo.find(Query().with(Sort.by(Sort.Direction.DESC, "_id")).limit(1), TestBlock::class.java)
             .next()
-            .map { it.id }
     }
 
     fun updateBlockStatus(number: Long, status: Block.Status): Mono<Void> {
@@ -33,8 +32,4 @@ class TestBlockRepository(
         ).then()
     }
 
-    // For tests only
-    fun findAll(): Mono<List<TestBlock>> {
-        return mongo.findAll(TestBlock::class.java).collectList()
-    }
 }

@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import io.daonomic.rpc.domain.Word
 import org.springframework.stereotype.Component
 
 @Component
@@ -20,9 +21,9 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
     ): EthereumLog {
         val ethLog = log.ethLog
         return EthereumLog(
-            address = ethLog.address().hex(),
-            topic = descriptor.id,
-            transactionHash = ethLog.transactionHash().hex(),
+            address = ethLog.address(),
+            topic = Word.apply(descriptor.id),
+            transactionHash = ethLog.transactionHash().toString(),
             status = Log.Status.CONFIRMED,
             blockHash = ethLog.blockHash(),
             blockNumber = ethLog.blockNumber().toLong(),

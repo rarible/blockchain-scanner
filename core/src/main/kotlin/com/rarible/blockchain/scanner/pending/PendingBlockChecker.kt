@@ -1,7 +1,9 @@
 package com.rarible.blockchain.scanner.pending
 
+import java.time.Duration
+
 interface PendingBlockChecker {
 
-    fun checkPendingBlocks()
+    fun checkPendingBlocks(pendingBlockAgeToCheck: Duration)
 
 }

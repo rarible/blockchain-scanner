@@ -1,17 +1,18 @@
 package com.rarible.blockchain.scanner.test.data
 
+import com.rarible.blockchain.scanner.configuration.JobProperties
+import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
 import com.rarible.blockchain.scanner.test.configuration.TestBlockchainScannerProperties
-import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
+import com.rarible.core.common.nowMillis
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
 import kotlin.math.abs
@@ -37,18 +38,9 @@ fun defaultTestProperties(): TestBlockchainScannerProperties {
         maxProcessTime = 30000,
         batchSize = 5,
         reconnectDelay = 100,
-        reindexEnabled = false,
-        reconnectAttempts = 1
-    )
-}
-fun randomTestBlock(number: Long, hash: String): TestBlock {
-    return TestBlock(
-        number,
-        hash,
-        randomBlockHash(),
-        randomPositiveLong(),
-        Block.Status.PENDING,
-        randomString(16)
+        reconnectAttempts = 1,
+        job = JobProperties(),
+        monitoring = MonitoringProperties()
     )
 }
 
@@ -61,7 +53,7 @@ fun randomOriginalBlock(hash: String, number: Long): TestOriginalBlock {
         number,
         hash,
         randomBlockHash(),
-        randomPositiveLong(),
+        randomPositiveLong(nowMillis().epochSecond),
         randomString(16)
     )
 }
@@ -151,6 +143,7 @@ fun randomPositiveInt() = abs(randomInt())
 
 fun randomLong() = RandomUtils.nextLong()
 fun randomPositiveLong() = abs(randomLong())
+fun randomPositiveLong(max: Long) = RandomUtils.nextLong(0, max)
 
 fun randomBlockHash() = "B_" + randomString()
 fun randomLogHash() = "L_" + randomString()

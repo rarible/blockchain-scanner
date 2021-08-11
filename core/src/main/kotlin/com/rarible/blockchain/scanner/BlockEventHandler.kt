@@ -17,7 +17,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -30,16 +29,14 @@ class BlockEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : L
     pendingLogService: PendingLogService<BB, L, R, D>
 ) {
 
+    private val logger = LoggerFactory.getLogger(BlockEventHandler::class.java)
+
     private val subscribers = ArrayList<BlockEventSubscriber<BB, BL, L, R, D>>()
 
     private val pendingLogMarker = PendingLogMarker(
         logService,
         pendingLogService
     )
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(BlockEventHandler::class.java)
-    }
 
     init {
         logger.info("Injecting {} subscribers", subscribers.size)
