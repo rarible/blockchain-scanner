@@ -37,20 +37,19 @@ class TestBlockchainClient(
     }
 
     override suspend fun getBlockEvents(
-        block: TestBlockchainBlock,
-        descriptor: TestDescriptor
+        descriptor: TestDescriptor,
+        block: TestBlockchainBlock
     ): List<TestBlockchainLog> {
         return logsByBlock[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }
     }
 
-    override fun getBlockEvents(
+    override suspend fun getBlockEvents(
         descriptor: TestDescriptor,
         range: LongRange
-    ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
+    ): List<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
         return blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
-            .asFlow()
-            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(TestBlockchainBlock(it), descriptor)) }
+            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it))) }
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {

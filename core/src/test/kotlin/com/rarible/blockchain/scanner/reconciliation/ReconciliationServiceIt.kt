@@ -42,12 +42,14 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
     private var topic2 = ""
     private var collection2 = ""
     private var logEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>> = mockk()
+    private var batchSize = -1L
 
     @BeforeEach
     fun beforeEach() {
         clearMocks(logEventPublisher)
         coEvery { logEventPublisher.onBlockProcessed(any(), any()) } returns Block.Status.SUCCESS
 
+        batchSize = properties.job.reconciliation.batchSize
         topic1 = subscriber1.getDescriptor().topic
         collection1 = subscriber1.getDescriptor().collection
         topic2 = subscriber2.getDescriptor().topic
@@ -60,13 +62,13 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
 
         val reconciliationService = createReconciliationService(TestBlockchainClient(blockchainData))
 
-        reconciliationService.reindex(topic1, 0).toList()
+        reconciliationService.reindex(topic1, 0, batchSize).toList()
 
         // Only first subscriber should be reindexed at this moment
         assertEquals(7 * 2, findAllLogs(collection1).size)
         assertEquals(0, findAllLogs(collection2).size)
 
-        reconciliationService.reindex(topic2, 3).toList().toList()
+        reconciliationService.reindex(topic2, 3, batchSize).toList().toList()
 
         // LogRecords for first subscriber should be the same,
         // LogRecord amount of second should be 16 (2 logs per 4 indexed blocks * 2 LogRecord per log from subscribers)
@@ -82,7 +84,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
         val blockchainData = randomBlockchainData(1, 1, topic1)
         val reconciliationService = createReconciliationService(TestBlockchainClient(blockchainData))
 
-        reconciliationService.reindex(topic1, 4).toList()
+        reconciliationService.reindex(topic1, 4, batchSize).toList()
 
         // Nothing should be reindexed
         assertEquals(0, findAllLogs(collection1).size)
@@ -95,7 +97,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
         val reconciliationService = createReconciliationService(TestBlockchainClient(blockchainData))
 
         assertThrows<IllegalArgumentException> {
-            runBlocking { reconciliationService.reindex("not exist", 0).collect() }
+            runBlocking { reconciliationService.reindex("not exist", 0, batchSize).collect() }
         }
     }
 
@@ -108,8 +110,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
             listOf(subscriber1, subscriber2),
             testLogMapper,
             testLogService,
-            logEventPublisher,
-            properties
+            logEventPublisher
         )
     }
 

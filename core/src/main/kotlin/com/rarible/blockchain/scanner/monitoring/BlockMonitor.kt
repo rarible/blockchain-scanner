@@ -6,12 +6,10 @@ import com.rarible.blockchain.scanner.framework.service.BlockService
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.runBlocking
-import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.function.Supplier
 import kotlin.math.max
 
-@Component
 class BlockMonitor(
     properties: BlockchainScannerProperties,
     meterRegistry: MeterRegistry,

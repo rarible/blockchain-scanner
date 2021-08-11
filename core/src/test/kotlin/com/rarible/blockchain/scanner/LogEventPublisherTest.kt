@@ -17,10 +17,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 internal class LogEventPublisherTest {
 
-    private val properties = defaultTestProperties()
+    private val properties = defaultTestProperties().retryPolicy.scan
 
     @Test
     fun `on block processed - listeners notified`() = runBlocking {
@@ -61,10 +62,10 @@ internal class LogEventPublisherTest {
 
     @Test
     fun `on block processed - timeout`() = runBlocking {
-        val strictProperties = properties.copy(maxProcessTime = 100)
+        val strictProperties = properties.copy(maxProcessTime = Duration.ofMillis(100))
         val slowListener: TestLogEventListener = mockk()
         coEvery { slowListener.onBlockLogsProcessed(any()) }.coAnswers {
-            delay(strictProperties.maxProcessTime + 10)
+            delay(strictProperties.maxProcessTime.toMillis() + 10)
         }
 
         val publisher = LogEventPublisher(listOf(slowListener), strictProperties)

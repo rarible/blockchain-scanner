@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.LogEventHandler
 import com.rarible.blockchain.scanner.LogEventPublisher
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -29,42 +28,39 @@ class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    logEventPublisher: LogEventPublisher<L, R>,
-    properties: BlockchainScannerProperties
+    logEventPublisher: LogEventPublisher<L, R>
 ) {
 
     // Making single LogEventHandler for each subscriber
     private val indexers = subscribers.map {
         LogEventHandler(it, logMapper, logService)
     }.associate {
-        it.subscriber.getDescriptor().id to createIndexer(it, logEventPublisher, properties)
+        it.subscriber.getDescriptor().id to createIndexer(it, logEventPublisher)
     }
 
-    fun reindex(descriptorId: String?, from: Long): Flow<LongRange> = flow {
+    fun reindex(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> = flow {
         val lastBlockNumber = blockchainClient.getLastBlockNumber()
-        emitAll(reindex(descriptorId, from, lastBlockNumber))
+        emitAll(reindex(descriptorId, from, lastBlockNumber, batchSize))
     }
 
-    private fun reindex(descriptorId: String?, from: Long, to: Long): Flow<LongRange> {
+    private fun reindex(descriptorId: String?, from: Long, to: Long, batchSize: Long): Flow<LongRange> {
         val blockIndexer = indexers[descriptorId]
             ?: throw IllegalArgumentException(
                 "BlockIndexer for descriptor '$descriptorId' not found," +
                         " available descriptors: ${indexers.keys}"
             )
 
-        return blockIndexer.reindex(from, to)
+        return blockIndexer.reindex(from, to, batchSize)
     }
 
     private fun createIndexer(
         logEventHandler: LogEventHandler<BB, BL, L, R, D>,
-        logEventPublisher: LogEventPublisher<L, R>,
-        properties: BlockchainScannerProperties
+        logEventPublisher: LogEventPublisher<L, R>
     ): ReconciliationIndexer<BB, BL, L, R, D> {
         return ReconciliationIndexer(
             blockchainClient,
             logEventHandler,
-            logEventPublisher,
-            properties.batchSize
+            logEventPublisher
         )
     }
 }
