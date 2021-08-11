@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 
 class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
     private val logEventListeners: List<LogEventListener<L, R>>,
-    private val properties: BlockchainScannerProperties
+    private val retryPolicy: ScanRetryPolicyProperties
 ) {
 
     private val logger = LoggerFactory.getLogger(LogEventPublisher::class.java)
@@ -27,7 +27,7 @@ class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
                 logs.size, event, logEventListeners.size
             )
 
-            withTimeout(properties.maxProcessTime) { onLogsProcessed(event, logs) }
+            withTimeout(retryPolicy.maxProcessTime.toMillis()) { onLogsProcessed(event, logs) }
             Block.Status.SUCCESS
         } catch (ex: Throwable) {
             logger.error("Unable to handle event [$event]", ex)

@@ -35,7 +35,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         // Before log handling we have this block with default status = PENDING
         saveBlock(block.testOriginalBlock)
 
-        val publisher = spyk(LogEventPublisher(listOf<TestLogEventListener>(), properties))
+        val publisher = spyk(LogEventPublisher(listOf<TestLogEventListener>(), properties.retryPolicy.scan))
         val testBlockchainClient =
             TestBlockchainClient(TestBlockchainData(listOf(block.testOriginalBlock), listOf(log)))
         val blockEventListener = createBlockListener(testBlockchainClient, publisher, subscriber)

@@ -3,10 +3,12 @@ package com.rarible.blockchain.scanner.job
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.pending.PendingBlockChecker
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 @Service
+@ConditionalOnBean(PendingBlockChecker::class)
 class PendingBlocksCheckJob(
     private val pendingBlockChecker: PendingBlockChecker,
     private val properties: BlockchainScannerProperties

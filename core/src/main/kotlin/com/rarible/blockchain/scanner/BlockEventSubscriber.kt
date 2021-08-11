@@ -49,7 +49,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
     }
 
     private fun processBlock(originalBlock: BB): Flow<R> = flatten {
-        val events = blockchainClient.getBlockEvents(originalBlock, subscriber.getDescriptor())
+        val events = blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock)
         logHandler.handleLogs(FullBlock(originalBlock, events))
     }
 

@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.test.data
 
 import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
+import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -35,10 +36,7 @@ fun testDescriptor2(): TestDescriptor {
 
 fun defaultTestProperties(): TestBlockchainScannerProperties {
     return TestBlockchainScannerProperties(
-        maxProcessTime = 30000,
-        batchSize = 5,
-        reconnectDelay = 100,
-        reconnectAttempts = 1,
+        retryPolicy = RetryPolicyProperties(),
         job = JobProperties(),
         monitoring = MonitoringProperties()
     )

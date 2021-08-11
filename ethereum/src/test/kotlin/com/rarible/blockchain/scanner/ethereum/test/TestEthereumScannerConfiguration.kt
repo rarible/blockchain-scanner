@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.web3j.utils.Numeric
@@ -23,6 +24,7 @@ import java.math.BigInteger
 
 @Configuration
 @EnableEthereumScanner
+@EnableAutoConfiguration
 class TestEthereumScannerConfiguration {
 
     @Value("\${ethereumPrivateKey}")

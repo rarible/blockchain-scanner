@@ -33,12 +33,12 @@ interface BlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descrip
     /**
      * Get events from specific block and by specific descriptor
      */
-    suspend fun getBlockEvents(block: BB, descriptor: D): List<BL>
+    suspend fun getBlockEvents(descriptor: D, block: BB): List<BL>
 
     /**
      * Get events from block range and by specific descriptor
      */
-    fun getBlockEvents(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>>
+    suspend fun getBlockEvents(descriptor: D, range: LongRange): List<FullBlock<BB, BL>>
 
     /**
      * Get tx meta information by transaction hash (or null if not found)

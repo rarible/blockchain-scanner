@@ -36,6 +36,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
     private var topic = ""
     private var collection = ""
     private var logEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>> = mockk()
+    private var batchSize = -1L
 
     @BeforeEach
     fun beforeEach() {
@@ -44,6 +45,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
 
         topic = subscriber.getDescriptor().topic
         collection = subscriber.getDescriptor().collection
+        batchSize = properties.job.reconciliation.batchSize
     }
 
     @Test
@@ -52,7 +54,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         val blockchainData = randomBlockchainData(13, 2, topic)
 
         val indexer = createReconciliationIndexer(TestBlockchainClient(blockchainData))
-        val ranges = indexer.reindex(0, 11).toList()
+        val ranges = indexer.reindex(0, 11, batchSize).toList()
 
         // Batch size is 5, so we should have 3 ranges here
         assertEquals(3, ranges.size)
@@ -74,19 +76,19 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
 
         // Reindexing part of logs
         val indexer = createReconciliationIndexer(TestBlockchainClient(blockchainData))
-        indexer.reindex(0, 4).collect()
+        indexer.reindex(0, 4, batchSize).collect()
 
         // After reindex there should be 5*2 logs (2 per reindexed block)
         val newLogs = findAllLogs(collection)
         assertEquals(5 * 2, newLogs.size)
 
         // Reindexing same blocks - no new LogRecords should be created
-        indexer.reindex(0, 4).collect()
+        indexer.reindex(0, 4, batchSize).collect()
         val sameReindexedLogs = findAllLogs(collection)
         assertEquals(newLogs.size, sameReindexedLogs.size)
 
         // Another reindex - records from new blocks should be added
-        indexer.reindex(0, 7).collect()
+        indexer.reindex(0, 7, batchSize).collect()
         val allReindexedLogs = findAllLogs(collection)
         assertEquals(8 * 2, allReindexedLogs.size)
 
@@ -99,7 +101,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         val blockchainData = randomBlockchainData(2, 1, topic)
 
         val indexer = createReconciliationIndexer(TestBlockchainClient(blockchainData))
-        indexer.reindex(0, 4).collect()
+        indexer.reindex(0, 4, batchSize).collect()
 
         // Only logs from 2 existed blocks should be stored
         val newLogs = findAllLogs(collection)
@@ -116,8 +118,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         return ReconciliationIndexer(
             testBlockchainClient,
             LogEventHandler(subscriber, testLogMapper, testLogService),
-            logEventPublisher,
-            properties.batchSize
+            logEventPublisher
         )
     }
 

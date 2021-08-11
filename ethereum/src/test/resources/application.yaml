@@ -1,13 +1,15 @@
 blockchain:
   scanner:
     ethereum:
-      maxProcessTime: 30000
-      batchSize: 5
-      reconnectDelay: 2000
-      reconnectAttempts: 1
-      maxAttempts: 5
-      minBackoff: 300
       optimisticLockRetries: 3
+      retryPolicy:
+        scan:
+          maxProcessTime: 30s
+          reconnectDelay: 2s
+          reconnectAttempts: 1
+        client:
+          delay: 2s
+          attempts: 3
       job:
         pendingBlocks:
           interval: 1s
@@ -18,6 +20,7 @@ blockchain:
           initialDelay: 365d
         reconciliation:
           enabled: false
+          batchSize: 5
       monitoring:
         enabled: false
         rootPath: "blockchain.scanner"
