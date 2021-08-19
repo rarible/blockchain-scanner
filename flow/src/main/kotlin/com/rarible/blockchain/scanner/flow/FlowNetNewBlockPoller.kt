@@ -4,28 +4,31 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
+import org.onflow.sdk.Flow.DEFAULT_CHAIN_ID
 import org.onflow.sdk.FlowBlock
-import org.onflow.sdk.Flow as FlowSDK
+import org.onflow.sdk.FlowChainId
 
 @ExperimentalCoroutinesApi
 class FlowNetNewBlockPoller(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
-    nodeUrl: String
+    private val chainId: FlowChainId = DEFAULT_CHAIN_ID
 ) {
-
-    private val fcl = FlowSDK.newAccessApi(nodeUrl)
 
     /**
      * Run polling from determined block height
      */
-    fun poll(fromHeight: Long): Flow<FlowBlock> = channelFlow {
+    suspend fun poll(fromHeight: Long): Flow<FlowBlock> = channelFlow {
         var start = fromHeight
         while (!isClosedForSend) {
-            val b = fcl.getBlockByHeight(start++)
-            if (b != null) {
-                send(b)
+            val d = async {
+                val client = FlowAccessApiClientManager.async(start, chainId)
+                val b = client.getBlockByHeight(start++).join()
+                if (b != null) {
+                    send(b)
+                }
+                delay(500)
             }
-            delay(500)
+            d.await()
         }
     }.flowOn(dispatcher)
 

@@ -1,6 +1,8 @@
 package com.rarible.blockchainscanner.flow
 
+import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.client.FlowClient
+import com.rarible.core.test.containers.KGenericContainer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -11,21 +13,59 @@ import kotlinx.coroutines.test.runBlockingTest
 import org.bouncycastle.util.encoders.Hex
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.junit.jupiter.MockitoExtension
 import org.onflow.sdk.Flow
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.onflow.sdk.FlowChainId
+import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 
 @ExperimentalCoroutinesApi
+@Testcontainers
+@ExtendWith(MockitoExtension::class)
 internal class ClientTest {
+
+    companion object {
+
+        private const val GRPC_PORT = 3569
+
+        @Container
+        val flowEmulator: KGenericContainer = KGenericContainer(
+            "gcr.io/flow-container-registry/emulator"
+        ).withEnv("FLOW_VERBOSE", "true").withEnv("FLOW_BLOCKTIME", "500ms")
+            .withExposedPorts(GRPC_PORT, 8080)
+            .waitingFor(Wait.forHttp("/").forPort(8080).forStatusCode(500))
+
+
+    }
+
+
+    @Test
+    internal fun `should ping emulator`() {
+        Assertions.assertTrue(flowEmulator.isRunning)
+        val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
+        try {
+            client.ping()
+        } catch (e: Throwable) {
+            Assertions.fail(e.message, e)
+        }
+    }
 
     @Test
     internal fun `should return block by blockHeight`() {
         runBlocking {
-
-            val client = Flow.newAccessApi("access.devnet.nodes.onflow.org")
+            FlowAccessApiClientManager.sporks[FlowChainId.EMULATOR] = listOf(
+                FlowAccessApiClientManager.Spork(
+                    from = 0L,
+                    nodeUrl = flowEmulator.host,
+                    port = flowEmulator.getMappedPort(GRPC_PORT)
+                )
+            )
+            val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
             val blockId = client.getLatestBlockHeader().height
 
-            val flowClient = FlowClient(nodeUrl = "access.devnet.nodes.onflow.org", lastKnownBlockHeight = blockId)
+            val flowClient = FlowClient(lastKnownBlockHeight = blockId, chainId = FlowChainId.EMULATOR)
             val block = flowClient.getBlock(blockId)
             Assertions.assertNotNull(block)
             Assertions.assertEquals(blockId, block.number, "BAD block!")
@@ -35,11 +75,18 @@ internal class ClientTest {
     @Test
     internal fun `should return block by hash`() {
         runBlocking {
-            val client = Flow.newAccessApi("access.devnet.nodes.onflow.org")
+            FlowAccessApiClientManager.sporks[FlowChainId.EMULATOR] = listOf(
+                FlowAccessApiClientManager.Spork(
+                    from = 0L, nodeUrl = flowEmulator.host, port = flowEmulator.getMappedPort(
+                        GRPC_PORT
+                    )
+                )
+            )
+            val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
             val header = client.getLatestBlockHeader()
 
             val flowClient =
-                FlowClient(nodeUrl = "access.devnet.nodes.onflow.org", lastKnownBlockHeight = header.height)
+                FlowClient(lastKnownBlockHeight = header.height, chainId = FlowChainId.EMULATOR)
             val actual = flowClient.getBlock(header.id.base16Value)
             Assertions.assertNotNull(actual)
             Assertions.assertEquals(header.id.base16Value, actual.hash)
@@ -49,14 +96,21 @@ internal class ClientTest {
     @Test
     internal fun `listen new blocks test`() {
         runBlockingTest {
+            FlowAccessApiClientManager.sporks[FlowChainId.EMULATOR] = listOf(
+                FlowAccessApiClientManager.Spork(
+                    from = 0L, nodeUrl = flowEmulator.host, port = flowEmulator.getMappedPort(
+                        GRPC_PORT
+                    )
+                )
+            )
             val dispatcher = TestCoroutineDispatcher()
-            val client = Flow.newAccessApi("access.devnet.nodes.onflow.org")
+            val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
             val header = client.getLatestBlockHeader()
 
             val flowClient = FlowClient(
-                nodeUrl = "access.devnet.nodes.onflow.org",
                 dispatcher = dispatcher,
-                lastKnownBlockHeight = header.height
+                lastKnownBlockHeight = header.height,
+                chainId = FlowChainId.EMULATOR
             )
 
             val flow = flowClient.listenNewBlocks()
@@ -68,10 +122,14 @@ internal class ClientTest {
                 val second = data.last()
                 Assertions.assertEquals(header.height, first.number, "block height wrong!")
                 Assertions.assertEquals(Hex.toHexString(header.id.bytes), first.hash, "block id wrong!")
-                Assertions.assertEquals(Hex.toHexString(header.parentId.bytes), first.parentHash, "block parent id wrong!")
+                Assertions.assertEquals(
+                    Hex.toHexString(header.parentId.bytes),
+                    first.parentHash,
+                    "block parent id wrong!"
+                )
 
                 Assertions.assertTrue(second.number > first.number, "second block height wrong!")
-                Assertions.assertEquals(second.number, first.number+1, "second block height wrong!")
+                Assertions.assertEquals(second.number, first.number + 1, "second block height wrong!")
             }
             dispatcher.advanceTimeBy(1_000)
 

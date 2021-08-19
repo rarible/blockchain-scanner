@@ -18,10 +18,6 @@ class FlowBlockService(
         return blockRepository.findAllByStatus(status).asFlow()
     }
 
-    override suspend fun getLastBlockNumber(): Long? {
-        return blockRepository.getLastNumber().awaitFirstOrNull()
-    }
-
     override suspend fun getBlock(id: Long): FlowBlock? {
         return blockRepository.findById(id).awaitFirstOrNull()
     }
@@ -34,5 +30,10 @@ class FlowBlockService(
 
     override suspend fun save(block: FlowBlock) {
         blockRepository.save(block).subscribe()
+    }
+
+    override suspend fun getLastBlock(): FlowBlock? {
+        val lastNumber = blockRepository.getLastNumber().awaitFirstOrNull() ?: return null
+        return blockRepository.findById(lastNumber).awaitFirstOrNull()
     }
 }
