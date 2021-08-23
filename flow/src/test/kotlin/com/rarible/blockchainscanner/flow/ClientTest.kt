@@ -15,15 +15,14 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.junit.jupiter.MockitoExtension
-import org.onflow.sdk.Flow
-import org.onflow.sdk.FlowChainId
+import com.nftco.flow.sdk.Flow
+import com.nftco.flow.sdk.FlowChainId
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @ExperimentalCoroutinesApi
 @Testcontainers
-@ExtendWith(MockitoExtension::class)
 internal class ClientTest {
 
     companion object {
@@ -36,7 +35,6 @@ internal class ClientTest {
         ).withEnv("FLOW_VERBOSE", "true").withEnv("FLOW_BLOCKTIME", "500ms")
             .withExposedPorts(GRPC_PORT, 8080)
             .waitingFor(Wait.forHttp("/").forPort(8080).forStatusCode(500))
-
 
     }
 

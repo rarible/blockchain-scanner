@@ -1,11 +1,11 @@
 package com.rarible.blockchain.scanner.flow
 
 import org.bouncycastle.util.encoders.Hex
-import org.onflow.sdk.AsyncFlowAccessApi
-import org.onflow.sdk.Flow
-import org.onflow.sdk.Flow.DEFAULT_CHAIN_ID
-import org.onflow.sdk.FlowChainId
-import org.onflow.sdk.FlowId
+import com.nftco.flow.sdk.AsyncFlowAccessApi
+import com.nftco.flow.sdk.Flow
+import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
+import com.nftco.flow.sdk.FlowChainId
+import com.nftco.flow.sdk.FlowId
 
 object FlowAccessApiClientManager {
 

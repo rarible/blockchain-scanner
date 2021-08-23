@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.flow.client
 import com.rarible.blockchain.scanner.data.BlockMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import org.bouncycastle.util.encoders.Hex
-import org.onflow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlock
 import java.time.ZoneOffset
 
 class FlowBlockchainBlock(

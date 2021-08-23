@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.flow.model
 
 import com.rarible.blockchain.scanner.framework.model.Block
 import org.bouncycastle.util.encoders.Hex
-import org.onflow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlock
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.mapping.FieldType
 import org.springframework.data.mongodb.core.mapping.MongoId

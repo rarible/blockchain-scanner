@@ -4,9 +4,9 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
-import org.onflow.sdk.Flow.DEFAULT_CHAIN_ID
-import org.onflow.sdk.FlowBlock
-import org.onflow.sdk.FlowChainId
+import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
+import com.nftco.flow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowChainId
 
 @ExperimentalCoroutinesApi
 class FlowNetNewBlockPoller(

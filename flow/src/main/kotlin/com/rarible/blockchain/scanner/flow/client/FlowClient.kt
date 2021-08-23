@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.util.encoders.Hex
-import org.onflow.sdk.Flow.DEFAULT_CHAIN_ID
-import org.onflow.sdk.FlowChainId
-import org.onflow.sdk.FlowId
+import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
+import com.nftco.flow.sdk.FlowChainId
+import com.nftco.flow.sdk.FlowId
 
 /**
  * Client for Flow blockchain
