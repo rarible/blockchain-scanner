@@ -8,14 +8,16 @@ import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 
 @Service
 class FlowLogService(
-    private val logRepository: FlowLogRepository,
-    private val blockRepository: FlowBlockRepository
+    private val logRepository: FlowLogRepository
 ): LogService<FlowLog, FlowLogRecord, FlowDescriptor> {
     override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord): FlowLogRecord =
         logRepository.delete(record).thenReturn(record).awaitSingle()
@@ -26,11 +28,11 @@ class FlowLogService(
 
 
     override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord> {
-        throw UnsupportedOperationException("Not supported pending logs")
+        return emptyFlow()
     }
 
     override fun findAndRevert(descriptor: FlowDescriptor, blockHash: String): Flow<FlowLogRecord> {
-        throw UnsupportedOperationException("Not supported reverts!")
+        return emptyFlow()
     }
 
     override fun findAndDelete(
@@ -38,10 +40,13 @@ class FlowLogService(
         blockHash: String,
         status: Log.Status?
     ): Flow<FlowLogRecord> {
-        val block = blockRepository.findByHash(hash = blockHash).block()!!
-        return logRepository.findByLog_BlockHeight(block.id).flatMap {
-            logRepository.delete(it).thenReturn(it)
-        }.asFlow()
+        /*return runBlocking {
+            val block = blockRepository.findByHash(hash = blockHash).awaitSingleOrNull() ?: return@runBlocking emptyFlow()
+             logRepository.findByLogBlockHeight(block.id).flatMap {
+                logRepository.delete(it).thenReturn(it)
+            }.asFlow()
+        }*/
+        return emptyFlow()
     }
 
     override suspend fun updateStatus(

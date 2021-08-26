@@ -1,15 +1,18 @@
 package com.rarible.blockchain.scanner.flow
 
-import org.bouncycastle.util.encoders.Hex
 import com.nftco.flow.sdk.AsyncFlowAccessApi
 import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowId
+import org.bouncycastle.util.encoders.Hex
 
 object FlowAccessApiClientManager {
 
-    data class Spork(val from: Long, val to: Long = Long.MAX_VALUE, val nodeUrl: String, val port: Int = 9000)
+    data class Spork(val from: Long, val to: Long = Long.MAX_VALUE, val nodeUrl: String, val port: Int = 9000) {
+
+        val asyncClient by lazy { Flow.newAsyncAccessApi(nodeUrl, port) }
+    }
 
     val sporks = mutableMapOf(
         FlowChainId.TESTNET to listOf(
@@ -31,14 +34,11 @@ object FlowAccessApiClientManager {
         )
     )
 
-    fun async(blockHeight: Long, chainId: FlowChainId = DEFAULT_CHAIN_ID): AsyncFlowAccessApi {
-        val spork = sporkByBlockHeight(blockHeight, chainId)
-        return Flow.newAsyncAccessApi(host = spork.nodeUrl, port = spork.port)
-    }
-    fun async(range: LongRange, chainId: FlowChainId = DEFAULT_CHAIN_ID): AsyncFlowAccessApi {
-        val spork = sporkByBlockHeightRange(range, chainId)
-        return Flow.newAsyncAccessApi(host = spork.nodeUrl, port = spork.port)
-    }
+    fun async(blockHeight: Long, chainId: FlowChainId = DEFAULT_CHAIN_ID): AsyncFlowAccessApi =
+        sporkByBlockHeight(blockHeight, chainId).asyncClient
+
+    fun async(range: LongRange, chainId: FlowChainId = DEFAULT_CHAIN_ID): AsyncFlowAccessApi =
+        sporkByBlockHeightRange(range, chainId).asyncClient
 
 
 
@@ -46,20 +46,22 @@ object FlowAccessApiClientManager {
      * This is bottle-neck!!!
      */
     fun async(hash: String, chainId: FlowChainId = DEFAULT_CHAIN_ID): AsyncFlowAccessApi {
-        val blockHeight = sporks[chainId]!!.mapNotNull { Flow.newAsyncAccessApi(it.nodeUrl, it.port).getBlockHeaderById(FlowId(hash)).join() }.first().height
-        val spork = sporkByBlockHeight(blockHeight, chainId)
-        return Flow.newAsyncAccessApi(host = spork.nodeUrl, port = spork.port)
+        val blockHeight = checkNotNull(sporks[chainId]!!.mapNotNull { sp ->
+            try {
+                sp.asyncClient.getBlockHeaderById(FlowId(hash)).join()
+            } catch (e: Exception) {
+                null
+            }
+        }.first()) { "Unable to find client for block id: $hash" }.height
+        return sporkByBlockHeight(blockHeight, chainId).asyncClient
     }
 
     fun asyncByTxHAsh(transactionHash: String, chainId: FlowChainId): AsyncFlowAccessApi {
-        val blockId = sporks[chainId]!!.mapNotNull { Flow.newAsyncAccessApi(it.nodeUrl, it.port).getTransactionById(FlowId(transactionHash)).join() }.first().referenceBlockId
+        val blockId = sporks[chainId]!!.mapNotNull { it.asyncClient.getTransactionById(FlowId(transactionHash)).join() }.first().referenceBlockId
         return async(Hex.toHexString(blockId.bytes), chainId)
     }
 
-    fun asyncForCurrentSpork(chainId: FlowChainId): AsyncFlowAccessApi {
-        val spork = sporks[chainId]!!.last()
-        return Flow.newAsyncAccessApi(host = spork.nodeUrl, port = spork.port)
-    }
+    fun asyncForCurrentSpork(chainId: FlowChainId): AsyncFlowAccessApi = sporks[chainId]!!.last().asyncClient
 
     private fun sporkByBlockHeight(blockHeight: Long, chainId: FlowChainId): Spork =
         sporks[chainId]?.find { it.from <= blockHeight && blockHeight <= it.to }

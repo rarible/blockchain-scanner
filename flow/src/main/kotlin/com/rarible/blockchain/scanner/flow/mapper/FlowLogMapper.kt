@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import org.bouncycastle.util.encoders.Hex
 import org.springframework.stereotype.Component
+import java.time.ZoneOffset
 
 @Component
 class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> {
@@ -26,7 +27,7 @@ class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> 
             eventIndex = event.eventIndex,
             type = event.type,
             payload = event.payload.byteStringValue.toStringUtf8(),
-            timestamp = block.block.timestamp,
+            timestamp = block.block.timestamp.toInstant(ZoneOffset.UTC),
             blockHeight = block.number
         )
     }

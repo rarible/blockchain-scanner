@@ -1,13 +1,13 @@
 package com.rarible.blockchainscanner.flow
 
 import com.nftco.flow.sdk.*
-import com.nftco.flow.sdk.cadence.AddressField
 import com.nftco.flow.sdk.cadence.ArrayField
 import com.nftco.flow.sdk.cadence.StringField
 import com.nftco.flow.sdk.crypto.Crypto
 import com.rarible.core.test.containers.KGenericContainer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.testcontainers.containers.wait.strategy.Wait
@@ -34,14 +34,20 @@ internal class EmulatorTest {
         @Container
         private val flowEmulator: KGenericContainer = KGenericContainer(
             "zolt85/flow-cli-emulator:latest"
-        ).withEnv("FLOW_VERBOSE", "true").withEnv("FLOW_BLOCKTIME", "500ms")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contract"), "/home/flow-emulator/contracts")
+        ).withEnv("FLOW_BLOCKTIME", "500ms")
+            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contracts"), "/home/flow-emulator/contracts")
             .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow-emulator/flow.json")
             .withExposedPorts(GRPC_PORT, 8080)
             .withLogConsumer {
                 println(it.utf8String)
             }
             .waitingFor(Wait.forHttp("/").forPort(8080).forStatusCode(500))
+
+        @BeforeAll
+        @JvmStatic
+        internal fun beforeAll() {
+            println(flowEmulator.execInContainer("flow", "project", "deploy"))
+        }
     }
 
 
@@ -52,18 +58,17 @@ internal class EmulatorTest {
         userPrivateKeyHex = pair.private.hex
         userPublicKeyHex = pair.public.hex
         accessApi = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
-        flowEmulator.execInContainer("flow", "project", "deploy")
     }
 
     @Test
     internal fun `check accounts test`() {
-        val expected = arrayOf(Patrick().address, Squidward().address, Gary().address)
+        val expected = EmulatorUser.values().filterNot { it.name == "Emulator" }.map { it.address }.toTypedArray()
         val script = FlowScript(
             script = """
                 pub fun main(): [Address] {
-                    let patric = getAccount(${Patrick().address.formatted})
-                    let squidward = getAccount(${Squidward().address.formatted})
-                    let gary = getAccount(${Gary().address.formatted})
+                    let patric = getAccount(${EmulatorUser.Patrick.address.formatted})
+                    let squidward = getAccount(${EmulatorUser.Squidward.address.formatted})
+                    let gary = getAccount(${EmulatorUser.Gary.address.formatted})
                     return [patric.address, squidward.address, gary.address]
                 }
             """.trimIndent()
@@ -167,7 +172,6 @@ internal class EmulatorTest {
     }
 
     private fun privateKey() =
-//        Crypto.decodePrivateKey("00f3a9484822691e016b1debc094ba9f696112a2770d14caf2f893ef2b38866882")
         Crypto.decodePrivateKey("8ea7b6cb8da7a09c19e2401eafcfd3863136decb5a495779a22f917c376da8b4")
 
     private fun getAccountCreatedAddress(txResult: FlowTransactionResult): FlowAddress {

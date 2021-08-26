@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.flow.service
 
-import com.rarible.blockchain.scanner.flow.repository.FlowBlockRepository
 import com.rarible.blockchain.scanner.flow.model.FlowBlock
+import com.rarible.blockchain.scanner.flow.repository.FlowBlockRepository
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import kotlinx.coroutines.flow.Flow
@@ -13,10 +13,6 @@ import org.springframework.stereotype.Service
 class FlowBlockService(
     private val blockRepository: FlowBlockRepository
 ): BlockService<FlowBlock> {
-
-    override fun findByStatus(status: Block.Status): Flow<FlowBlock> {
-        return blockRepository.findAllByStatus(status).asFlow()
-    }
 
     override suspend fun getBlock(id: Long): FlowBlock? {
         return blockRepository.findById(id).awaitFirstOrNull()
@@ -33,7 +29,10 @@ class FlowBlockService(
     }
 
     override suspend fun getLastBlock(): FlowBlock? {
-        val lastNumber = blockRepository.getLastNumber().awaitFirstOrNull() ?: return null
-        return blockRepository.findById(lastNumber).awaitFirstOrNull()
+        return blockRepository.findTop1ByOrderByIdDesc().awaitFirstOrNull()
+    }
+
+    override fun findByStatus(status: Block.Status): Flow<FlowBlock> {
+        return blockRepository.findAllByStatus(status).asFlow()
     }
 }

@@ -13,8 +13,7 @@ interface FlowBlockRepository: ReactiveMongoRepository<FlowBlock, Long> {
 
     fun findAllByStatus(status: Block.Status): Flux<FlowBlock>
 
-    @Aggregation(pipeline = [ "{\$group: { _id: '', total: {\$max: \$id }}}"])
-    fun getLastNumber(): Mono<Long?>
+    fun findTop1ByOrderByIdDesc(): Mono<FlowBlock>
 
     fun findByHash(hash: String): Mono<FlowBlock>
 }

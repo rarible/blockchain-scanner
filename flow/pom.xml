@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rarible-blockchain-scanner-flow</artifactId>
+    <version>${project.parent.version}</version>
 
     <repositories>
         <repository>
@@ -20,18 +21,14 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>3.4.9</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.rarible.blockchain.scanner</groupId>
             <artifactId>rarible-blockchain-scanner-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.rarible.core</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -40,14 +37,8 @@
             <version>0.5.0</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-commons</artifactId>
-            <version>2.5.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-mongodb</artifactId>
-            <version>3.2.3</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -84,10 +75,6 @@
             <artifactId>kotlinx-coroutines-test</artifactId>
             <version>1.5.1</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor.kotlin</groupId>
-            <artifactId>reactor-kotlin-extensions</artifactId>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>

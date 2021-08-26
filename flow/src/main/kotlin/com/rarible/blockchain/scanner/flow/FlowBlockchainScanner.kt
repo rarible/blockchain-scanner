@@ -18,11 +18,17 @@ import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.reactor.mono
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+
 
 @Component
 @FlowPreview
 @ExperimentalCoroutinesApi
+@ObsoleteCoroutinesApi
 class FlowBlockchainScanner(
     blockchainClient: FlowClient,
     subscribers: List<FlowLogEventSubscriber>,
@@ -43,4 +49,10 @@ class FlowBlockchainScanner(
     pendingLogService,
     logEventListeners,
     properties
-)
+) {
+
+    @EventListener(ApplicationReadyEvent::class)
+    fun start() {
+        mono { (scan()) }.subscribe()
+    }
+}

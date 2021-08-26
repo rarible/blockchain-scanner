@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.flow.model
 
 import com.rarible.blockchain.scanner.framework.model.Log
+import java.time.Instant
 import java.time.LocalDateTime
 
 data class FlowLog(
@@ -10,6 +11,6 @@ data class FlowLog(
     val eventIndex: Int,
     val type: String,
     val payload: String,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,
     val blockHeight: Long
 ): Log

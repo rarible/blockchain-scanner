@@ -22,6 +22,8 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.bson.types.ObjectId
@@ -36,8 +38,8 @@ import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
 
+@FlowPreview
 @EthereumTest
-
 @IntegrationTest
 class EthereumScannerIt : AbstractIntegrationTest() {
 
@@ -200,6 +202,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `reconciliation job`() {
         val number = ethereum.ethBlockNumber().block()!!.toLong()

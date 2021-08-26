@@ -92,8 +92,8 @@
     <modules>
         <module>core</module>
         <module>ethereum</module>
-        <module>test-coverage</module>
         <module>flow</module>
+        <module>test-coverage</module>
     </modules>
 
 </project>
