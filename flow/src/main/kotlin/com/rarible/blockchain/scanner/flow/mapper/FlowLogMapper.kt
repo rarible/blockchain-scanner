@@ -19,16 +19,18 @@ class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> 
         minorIndex: Int,
         descriptor: Descriptor
     ): FlowLog {
+
         val event = log.event
         return FlowLog(
-            transactionHash = Hex.toHexString(event.transactionId.bytes),
+            transactionHash = log.hash,
             status = Log.Status.CONFIRMED,
-            txIndex = event.transactionIndex,
-            eventIndex = event.eventIndex,
-            type = event.type,
-            payload = event.payload.byteStringValue.toStringUtf8(),
+            txIndex = event?.transactionIndex,
+            eventIndex = event?.eventIndex,
+            type = event?.type,
+            payload = event?.payload?.byteStringValue?.toStringUtf8(),
             timestamp = block.block.timestamp.toInstant(ZoneOffset.UTC),
-            blockHeight = block.number
+            blockHeight = block.number,
+            errorMessage = log.errorMessage
         )
     }
 }

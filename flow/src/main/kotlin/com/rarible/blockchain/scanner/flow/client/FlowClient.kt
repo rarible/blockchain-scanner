@@ -94,7 +94,10 @@ class FlowClient(
         return blockEvents(block = chainBlock, api = client).toList()
     }
 
-    private suspend fun blockEvents(block: com.nftco.flow.sdk.FlowBlock, api: AsyncFlowAccessApi): Flow<FlowBlockchainLog> = channelFlow {
+    private suspend fun blockEvents(
+        block: com.nftco.flow.sdk.FlowBlock,
+        api: AsyncFlowAccessApi
+    ): Flow<FlowBlockchainLog> = channelFlow {
         block.collectionGuarantees.forEach { collectionGuarantee ->
             val collection = checkNotNull(
                 api.getCollectionById(collectionGuarantee.id).await()
@@ -103,8 +106,27 @@ class FlowClient(
                 val txResult = checkNotNull(
                     api.getTransactionResultById(txId).await()
                 ) { "Unable to get transaction with id: ${txId.base16Value}, in collection with id: ${collectionGuarantee.id.base16Value}, in block with number: ${block.height}" }
-                txResult.events.forEach {
-                    send(FlowBlockchainLog(it))
+
+                if (txResult.events.isNotEmpty()) {
+                    txResult.events.forEach {
+                        send(
+                            FlowBlockchainLog(
+                                hash = txId.base16Value,
+                                blockHash = block.id.base16Value,
+                                event = it,
+                                errorMessage = null
+                            )
+                        )
+                    }
+                } else if (txResult.errorMessage.isNotEmpty()) {
+                    send(
+                        FlowBlockchainLog(
+                            hash = txId.base16Value,
+                            blockHash = block.id.base16Value,
+                            errorMessage = txResult.errorMessage,
+                            event = null
+                        )
+                    )
                 }
             }
         }

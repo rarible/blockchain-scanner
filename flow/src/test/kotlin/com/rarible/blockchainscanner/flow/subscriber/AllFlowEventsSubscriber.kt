@@ -25,14 +25,15 @@ class AllFlowEventsSubscriber: FlowLogEventSubscriber {
 
     override fun getEventRecords(block: FlowBlockchainBlock, log: FlowBlockchainLog): Flow<FlowLogRecord> = channelFlow {
             send(FlowLogRecord(FlowLog(
-                transactionHash = log.event.transactionId.base16Value,
+                transactionHash = log.hash,
                 status = Log.Status.CONFIRMED,
-                txIndex = log.event.transactionIndex,
-                eventIndex = log.event.eventIndex,
-                type = log.event.type,
-                payload = log.event.payload.stringValue,
+                txIndex = log.event?.transactionIndex,
+                eventIndex = log.event?.eventIndex,
+                type = log.event?.type,
+                payload = log.event?.payload?.stringValue,
                 timestamp = Instant.ofEpochSecond(block.timestamp),
-                blockHeight = block.number
+                blockHeight = block.number,
+                errorMessage = log.errorMessage
             )))
         }
     }

@@ -1,6 +1,7 @@
 package com.rarible.blockchainscanner.flow
 
 import com.nftco.flow.sdk.*
+import com.nftco.flow.sdk.cadence.StringField
 import com.nftco.flow.sdk.crypto.Crypto
 import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.FlowBlockchainScanner
@@ -35,11 +36,11 @@ import kotlin.time.ExperimentalTime
 @FlowPreview
 @SpringBootTest(properties = [
     "blockchain.scanner.flow.chainId=EMULATOR",
-    "spring.data.mongodb.database=test"
+    /*"spring.data.mongodb.database=test"*/
     /*"logging.level.com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller=DEBUG"*/])
 @ContextConfiguration(classes = [TestConfig::class])
 @MongoCleanup
-//@MongoTest
+@MongoTest
 @ExperimentalCoroutinesApi
 @Testcontainers
 class FlowScannerTest {
@@ -84,8 +85,8 @@ class FlowScannerTest {
 
     @Test
     internal fun `scanner test`() = runBlocking {
-        var proposalKey = getAccountKey(EmulatorUser.Emulator.address, 0)
-        var authKey = getAccountKey(EmulatorUser.Patrick.address, 0)
+        var proposalKey = getAccountKey(EmulatorUser.Emulator.address)
+        var authKey = getAccountKey(EmulatorUser.Patrick.address)
 
         var initTx = FlowTransaction(
             script = FlowScript("""
@@ -130,12 +131,12 @@ class FlowScannerTest {
         initTx = initTx.addEnvelopeSignature(address = EmulatorUser.Emulator.address, keyIndex = proposalKey.id, signer = payerSigner)
 
         var txId = accessApi.sendTransaction(initTx)
-        var txResult = waitForSeal(api = accessApi, transactionId = txId)
+        val txResult = waitForSeal(api = accessApi, transactionId = txId)
         println("txResult: $txResult")
         Assertions.assertNotNull(txResult)
 
-        proposalKey = getAccountKey(EmulatorUser.Emulator.address, 0)
-        authKey = getAccountKey(EmulatorUser.Patrick.address, 0)
+        proposalKey = getAccountKey(EmulatorUser.Emulator.address)
+        authKey = getAccountKey(EmulatorUser.Patrick.address)
 
         var mintTx = FlowTransaction(
             script = FlowScript("""
@@ -197,6 +198,53 @@ class FlowScannerTest {
         Assertions.assertEquals(txId, FlowId(event.log.transactionHash), "Transactions are not equals")
     }
 
+    @Test
+    internal fun `check error messages`() = runBlocking {
+        val proposalKey = getAccountKey(EmulatorUser.Emulator.address)
+        val panicMsg = "Some error message!"
+        var errorTx = FlowTransaction(
+            script = FlowScript(
+                """
+                    transaction(panicMsg: String) {
+                        
+                        prepare() {}
+                        
+                        execute {
+                            panic(panicMsg)
+                        }
+                    }
+                """.trimIndent()
+            ),
+            arguments = listOf(FlowArgument(jsonCadence = StringField(panicMsg))),
+            referenceBlockId = latestBlockID,
+            gasLimit = 100L,
+            proposalKey = FlowTransactionProposalKey(
+                address = EmulatorUser.Emulator.address,
+                keyIndex = proposalKey.id,
+                sequenceNumber = proposalKey.sequenceNumber.toLong()
+            ),
+            payerAddress = EmulatorUser.Emulator.address,
+            authorizers = listOf()
+        )
+
+        val signer = Crypto.getSigner(privateKey = Crypto.decodePrivateKey(EmulatorUser.Emulator.keyHex), hashAlgo = proposalKey.hashAlgo)
+        errorTx = errorTx.addEnvelopeSignature(EmulatorUser.Emulator.address, proposalKey.id, signer = signer)
+
+        val txId = accessApi.sendTransaction(transaction = errorTx)
+        val errorEvent = awaitErrorEvent()
+        Assertions.assertEquals(txId, FlowId(errorEvent.log.transactionHash))
+        Assertions.assertNotNull(errorEvent.log.errorMessage)
+        Assertions.assertTrue(errorEvent.log.errorMessage!!.contains(panicMsg))
+    }
+
+    private suspend fun awaitErrorEvent(): FlowLogRecord {
+        var founded: FlowLogRecord? = null
+        while (founded == null) {
+            founded = logRepository.findByExistsLogErrorMessage().awaitFirstOrNull()
+        }
+        return founded
+    }
+
     private suspend fun awaitMintEvent(): FlowLogRecord {
         var founded: FlowLogRecord? = null
         while (founded == null) {
@@ -206,7 +254,7 @@ class FlowScannerTest {
     }
 
 
-    private fun getAccountKey(address: FlowAddress, keyIndex: Int): FlowAccountKey {
+    private fun getAccountKey(address: FlowAddress, keyIndex: Int = 0): FlowAccountKey {
         val account = getAccount(address)
         return account.keys[keyIndex]
     }

@@ -6,12 +6,14 @@ import org.bouncycastle.util.encoders.Hex
 import com.nftco.flow.sdk.FlowEvent
 
 class FlowBlockchainLog(
-    val event: FlowEvent
+    override val hash: String,
+    override val blockHash: String?,
+    val event: FlowEvent?,
+    val errorMessage: String?
 ): BlockchainLog {
 
     override val meta: LogMeta = LogMeta(
-        hash = Hex.toHexString(event.transactionId.bytes),
-        blockHash = null
+        hash = hash,
+        blockHash = blockHash
     )
-
 }

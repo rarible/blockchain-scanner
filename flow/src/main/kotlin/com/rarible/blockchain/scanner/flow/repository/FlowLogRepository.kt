@@ -10,4 +10,7 @@ import reactor.core.publisher.Flux
 interface FlowLogRepository : ReactiveMongoRepository<FlowLogRecord, String> {
     @Query("{'log.type': ?0}")
     fun findByLogType(type: String): Flux<FlowLogRecord>
+
+    @Query("{'log.errorMessage': {\$exists: true}}")
+    fun findByExistsLogErrorMessage(): Flux<FlowLogRecord>
 }
