@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
-import org.bouncycastle.util.encoders.Hex
 import org.springframework.stereotype.Component
 import java.time.ZoneOffset
 
