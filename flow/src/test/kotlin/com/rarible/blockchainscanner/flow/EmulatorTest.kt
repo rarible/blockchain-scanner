@@ -33,10 +33,10 @@ internal class EmulatorTest {
 
         @Container
         private val flowEmulator: KGenericContainer = KGenericContainer(
-            "zolt85/flow-cli-emulator:latest"
+            "zolt85/flow-cli-emulator:27"
         ).withEnv("FLOW_BLOCKTIME", "500ms")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contracts"), "/home/flow-emulator/contracts")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow-emulator/flow.json")
+            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contracts"), "/home/flow/contracts")
+            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow/flow.json")
             .withExposedPorts(GRPC_PORT, 8080)
             .withLogConsumer {
                 println(it.utf8String)

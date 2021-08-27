@@ -1,21 +1,20 @@
 package com.rarible.blockchainscanner.flow
 
-import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.EnableFlowBlockchainScanner
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchainscanner.flow.subscriber.AllFlowEventsSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories
 
+@ObsoleteCoroutinesApi
 @FlowPreview
 @Configuration
 @EnableAutoConfiguration
-@EnableConfigurationProperties(FlowBlockchainScannerProperties::class)
-@EnableReactiveMongoRepositories(basePackages = ["com.rarible.blockchain.scanner.flow.repository"])
+@EnableFlowBlockchainScanner
 @ExperimentalCoroutinesApi
 class TestConfig {
 

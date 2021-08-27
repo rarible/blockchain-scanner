@@ -6,12 +6,8 @@ import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.client.FlowClient
 import com.rarible.core.test.containers.KGenericContainer
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.TestCoroutineDispatcher
-import kotlinx.coroutines.test.runBlockingTest
-import org.bouncycastle.util.encoders.Hex
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.testcontainers.containers.wait.strategy.Wait
@@ -29,9 +25,9 @@ internal class ClientTest {
 
         @Container
         val flowEmulator: KGenericContainer = KGenericContainer(
-            "zolt85/flow-cli-emulator:latest"
+            "zolt85/flow-cli-emulator:27"
         ).withEnv("FLOW_VERBOSE", "true").withEnv("FLOW_BLOCKTIME", "100ms")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow-emulator/flow.json")
+            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow/flow.json")
             .withExposedPorts(GRPC_PORT, 8080)
             .withLogConsumer {
                 println(it.utf8String)
