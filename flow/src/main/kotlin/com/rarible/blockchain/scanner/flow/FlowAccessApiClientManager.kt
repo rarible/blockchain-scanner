@@ -16,7 +16,7 @@ object FlowAccessApiClientManager {
 
     val sporks = mutableMapOf(
         FlowChainId.TESTNET to listOf(
-            Spork(from = 39272449, nodeUrl = "access.devnet.nodes.onflow.org"),
+            Spork(from = 43212001L, nodeUrl = "access.devnet.nodes.onflow.org"),
         ),
 
         FlowChainId.MAINNET to listOf(

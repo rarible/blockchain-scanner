@@ -1,11 +1,10 @@
-package com.rarible.blockchainscanner.flow.subscriber
+package com.rarible.blockchain.scanner.flow.subscriber
 
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
-import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.framework.model.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +16,7 @@ import java.time.Instant
 @Component
 class AllFlowEventsSubscriber: FlowLogEventSubscriber {
 
-    private val descriptor: FlowDescriptor = FlowDescriptor()
+    private val descriptor: FlowDescriptor = FlowDescriptor(id = "BaseAllFlowEventsSubscriber")
 
     override fun getDescriptor(): FlowDescriptor {
         return descriptor

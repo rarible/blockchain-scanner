@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.client.FlowClient
 import com.rarible.core.test.containers.KGenericContainer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -15,6 +16,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
 
+@ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 @Testcontainers
 internal class ClientTest {
@@ -61,7 +63,7 @@ internal class ClientTest {
             val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
             val blockId = client.getLatestBlockHeader().height
 
-            val flowClient = FlowClient(lastKnownBlockHeight = blockId, chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR))
+            val flowClient = FlowClient(chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR))
             val block = flowClient.getBlock(blockId)
             Assertions.assertNotNull(block)
             Assertions.assertEquals(blockId, block.number, "BAD block!")
@@ -82,7 +84,7 @@ internal class ClientTest {
             val header = client.getLatestBlockHeader()
 
             val flowClient =
-                FlowClient(lastKnownBlockHeight = header.height, chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR))
+                FlowClient(chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR))
             val actual = flowClient.getBlock(header.id.base16Value)
             Assertions.assertNotNull(actual)
             Assertions.assertEquals(header.id.base16Value, actual.hash)

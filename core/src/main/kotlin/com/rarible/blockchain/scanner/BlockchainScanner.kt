@@ -84,11 +84,13 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     )
 
     private val reconciliationService = ReconciliationService(
-        retryableBlockchainClient,
-        subscribers,
-        logMapper,
-        logService,
-        logEventPublisher
+        blockchainClient = retryableBlockchainClient,
+        subscribers = subscribers,
+        logMapper = logMapper,
+        logService = logService,
+        logEventPublisher = logEventPublisher,
+        blockService = blockService,
+        blockMapper = blockMapper
     )
 
     private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()

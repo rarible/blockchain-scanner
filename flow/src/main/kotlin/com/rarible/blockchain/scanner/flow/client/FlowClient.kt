@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
+import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.util.encoders.Hex
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import javax.annotation.PreDestroy
@@ -32,12 +34,14 @@ import javax.annotation.PreDestroy
 class FlowClient(
     @Value("\${blockchain.scanner.flow.chainId}")
     private val chainId: FlowChainId = DEFAULT_CHAIN_ID,
-    private var lastKnownBlockHeight: Long = 0L,
     private val poller: FlowNetNewBlockPoller
 ) : BlockchainClient<FlowBlockchainBlock, FlowBlockchainLog, FlowDescriptor> {
 
+    @Autowired
+    private lateinit var lastReadBlock: LastReadBlock
+
     override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = runBlocking {
-        poller.poll(lastKnownBlockHeight).map { FlowBlockchainBlock(it) }
+        poller.poll(lastReadBlock.lastReadBlockHeight).map { FlowBlockchainBlock(it) }
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {

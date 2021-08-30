@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
+import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -17,6 +18,8 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -26,6 +29,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 
+@ExperimentalCoroutinesApi
+@FlowPreview
 @IntegrationTest
 class ReconciliationIndexerIt : AbstractIntegrationTest() {
 
@@ -49,7 +54,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `reindex - no logs in storage`() = runBlocking {
+    fun `reindex - all logs in storage`() = runBlocking {
         // We have blocks in DB, but there in no LogRecords
         val blockchainData = randomBlockchainData(13, 2, topic)
 
@@ -64,7 +69,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         assertEquals(12 * 2, logs.size)
 
         // During reconciliation we are NOT saving block data/block status
-        assertEquals(0, findAllBlocks().size)
+        assertEquals(12, findAllBlocks().size)
 
         // Since 12 blocks processed, 12 BlockEvents should be published
         coVerify(exactly = 12) { logEventPublisher.onBlockProcessed(any(), any()) }
@@ -113,12 +118,12 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
 
     private fun createReconciliationIndexer(
         testBlockchainClient: TestBlockchainClient
-    ): ReconciliationIndexer<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+    ): ReconciliationIndexer<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor, TestBlock> {
 
         return ReconciliationIndexer(
             testBlockchainClient,
             LogEventHandler(subscriber, testLogMapper, testLogService),
-            logEventPublisher
+            logEventPublisher, blockService = testBlockService, blockMapper = testBlockMapper
         )
     }
 

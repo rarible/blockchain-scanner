@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.test.configuration
 
+import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
@@ -90,5 +91,10 @@ class TestScannerConfiguration {
         logEventListeners = listOf(),
         properties = properties
     )
+
+    @Bean
+    fun fromProvider(): ReconciliationFromProvider = object : ReconciliationFromProvider {
+        override fun initialFrom(): Long = 1L
+    }
 
 }

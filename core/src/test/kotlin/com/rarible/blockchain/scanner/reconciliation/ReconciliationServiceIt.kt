@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
+import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -16,6 +17,8 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -26,6 +29,8 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 
+@ExperimentalCoroutinesApi
+@FlowPreview
 @IntegrationTest
 class ReconciliationServiceIt : AbstractIntegrationTest() {
 
@@ -103,14 +108,16 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
 
     private fun createReconciliationService(
         testBlockchainClient: TestBlockchainClient
-    ): ReconciliationService<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+    ): ReconciliationService<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor, TestBlock> {
 
         return ReconciliationService(
             testBlockchainClient,
             listOf(subscriber1, subscriber2),
             testLogMapper,
             testLogService,
-            logEventPublisher
+            logEventPublisher,
+            testBlockService,
+            testBlockMapper
         )
     }
 
