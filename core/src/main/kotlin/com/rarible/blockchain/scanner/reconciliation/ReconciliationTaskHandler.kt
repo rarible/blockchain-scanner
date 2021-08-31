@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component
 @ConditionalOnBean(ReconciliationExecutor::class)
 class ReconciliationTaskHandler(
     private val reconciliationExecutor: ReconciliationExecutor,
-    private val properties: BlockchainScannerProperties
+    private val properties: BlockchainScannerProperties,
+    private val fromProvider: ReconciliationFromProvider
 ) : TaskHandler<Long> {
 
     private val jobProperties = properties.job.reconciliation
@@ -36,7 +37,7 @@ class ReconciliationTaskHandler(
     }
 
     override fun runLongTask(from: Long?, descriptorId: String): Flow<Long> = flatten {
-        reconciliationExecutor.reconcile(descriptorId, from ?: 1, jobProperties.batchSize)
+        reconciliationExecutor.reconcile(descriptorId, from ?: fromProvider.initialFrom(), jobProperties.batchSize)
             .map { it.first }
     }
 

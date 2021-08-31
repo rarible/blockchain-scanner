@@ -70,7 +70,12 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private fun getNewBlocks(newBlock: BB): Flow<BB> = flatten {
         logger.info("Checking for not-indexed blocks previous to new on with number: {}", newBlock.number)
 
-        val lastKnown = blockService.getLastBlock()
+        val lastKnown = try {
+            blockService.getLastBlock()
+        } catch (e: Exception) {
+            logger.warn(e.message, e)
+            null
+        }
         if (lastKnown == null) {
             logger.info("Last indexed block not found, will handle only new block: [{}]", newBlock.meta)
             flowOf(newBlock)
