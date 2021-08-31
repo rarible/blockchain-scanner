@@ -5,7 +5,9 @@ import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.client.FlowClient
+import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.core.test.containers.KGenericContainer
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -43,10 +45,8 @@ internal class ClientTest {
     internal fun `should ping emulator`() {
         Assertions.assertTrue(flowEmulator.isRunning)
         val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
-        try {
+        Assertions.assertDoesNotThrow {
             client.ping()
-        } catch (e: Throwable) {
-            Assertions.fail(e.message, e)
         }
     }
 
@@ -63,7 +63,7 @@ internal class ClientTest {
             val client = Flow.newAccessApi(flowEmulator.host, flowEmulator.getMappedPort(GRPC_PORT))
             val blockId = client.getLatestBlockHeader().height
 
-            val flowClient = FlowClient(chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR))
+            val flowClient = FlowClient(chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR, polledDelay = 1000L), LastReadBlock(blockService = mockk()))
             val block = flowClient.getBlock(blockId)
             Assertions.assertNotNull(block)
             Assertions.assertEquals(blockId, block.number, "BAD block!")
@@ -84,7 +84,7 @@ internal class ClientTest {
             val header = client.getLatestBlockHeader()
 
             val flowClient =
-                FlowClient(chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR))
+                FlowClient(chainId = FlowChainId.EMULATOR, poller = FlowNetNewBlockPoller(chainId = FlowChainId.EMULATOR, polledDelay = 1000L), LastReadBlock(blockService = mockk()))
             val actual = flowClient.getBlock(header.id.base16Value)
             Assertions.assertNotNull(actual)
             Assertions.assertEquals(header.id.base16Value, actual.hash)

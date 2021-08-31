@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.flow
  */
 @FlowPreview
 @ExperimentalCoroutinesApi
-class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor, B: Block>(
+class ReconciliationService<BB : BlockchainBlock, B: Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
@@ -63,7 +63,7 @@ class ReconciliationService<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R
         logEventPublisher: LogEventPublisher<L, R>,
         blockService: BlockService<B>,
         blockMapper: BlockMapper<BB, B>
-    ): ReconciliationIndexer<BB, BL, L, R, D, B> {
+    ): ReconciliationIndexer<BB, B, BL, L, R, D> {
         return ReconciliationIndexer(
             blockchainClient = blockchainClient,
             logEventHandler = logEventHandler,

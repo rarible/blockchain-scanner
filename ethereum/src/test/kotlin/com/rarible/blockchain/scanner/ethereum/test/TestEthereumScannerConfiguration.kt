@@ -2,10 +2,10 @@ package com.rarible.blockchain.scanner.ethereum.test
 
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.ethereum.reconciliation.EthReconciliationFromProvider
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventListener
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.reconciliation.DefaultReconciliationFormProvider
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -58,5 +58,5 @@ class TestEthereumScannerConfiguration {
     fun testLogEventListener(): EthereumLogEventListener = mockk()
 
     @Bean
-    fun fromProvider(): ReconciliationFromProvider = EthReconciliationFromProvider()
+    fun fromProvider(): ReconciliationFromProvider = DefaultReconciliationFormProvider()
 }

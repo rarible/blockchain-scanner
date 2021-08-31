@@ -73,7 +73,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
         val lastKnown = try {
             blockService.getLastBlock()
         } catch (e: Exception) {
-            println(e)
+            logger.warn(e.message, e)
             null
         }
         if (lastKnown == null) {

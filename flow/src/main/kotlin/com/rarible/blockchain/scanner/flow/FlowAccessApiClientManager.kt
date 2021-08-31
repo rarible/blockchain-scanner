@@ -6,6 +6,8 @@ import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowId
 import org.bouncycastle.util.encoders.Hex
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object FlowAccessApiClientManager {
 
@@ -13,6 +15,8 @@ object FlowAccessApiClientManager {
 
         val asyncClient by lazy { Flow.newAsyncAccessApi(nodeUrl, port) }
     }
+
+    private val logger: Logger = LoggerFactory.getLogger(FlowAccessApiClientManager::class.java)
 
     val sporks = mutableMapOf(
         FlowChainId.TESTNET to listOf(
@@ -50,6 +54,7 @@ object FlowAccessApiClientManager {
             try {
                 sp.asyncClient.getBlockHeaderById(FlowId(hash)).join()
             } catch (e: Exception) {
+                logger.warn(e.message, e)
                 null
             }
         }.first()) { "Unable to find client for block id: $hash" }.height

@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.util.encoders.Hex
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import javax.annotation.PreDestroy
@@ -34,11 +33,9 @@ import javax.annotation.PreDestroy
 class FlowClient(
     @Value("\${blockchain.scanner.flow.chainId}")
     private val chainId: FlowChainId = DEFAULT_CHAIN_ID,
-    private val poller: FlowNetNewBlockPoller
+    private val poller: FlowNetNewBlockPoller,
+    private val lastReadBlock: LastReadBlock
 ) : BlockchainClient<FlowBlockchainBlock, FlowBlockchainLog, FlowDescriptor> {
-
-    @Autowired
-    private lateinit var lastReadBlock: LastReadBlock
 
     override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = runBlocking {
         poller.poll(lastReadBlock.lastReadBlockHeight).map { FlowBlockchainBlock(it) }
@@ -94,7 +91,7 @@ class FlowClient(
     ): List<FlowBlockchainLog> {
         val client = FlowAccessApiClientManager.async(block.number, chainId)
         val chainBlock =
-            checkNotNull(client.getBlockByHeight(block.number).await()) { "Unable to get block with height: " }
+            checkNotNull(client.getBlockByHeight(block.number).await()) { "Unable to get block with height: ${block.number}" }
         return blockEvents(block = chainBlock, api = client).toList()
     }
 

@@ -6,7 +6,6 @@ import com.nftco.flow.sdk.FlowChainId
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.future.await
 import org.slf4j.Logger
@@ -22,7 +21,9 @@ import java.util.concurrent.atomic.AtomicLong
 class FlowNetNewBlockPoller(
     private val dispatcher: CoroutineDispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher(),
     @Value("\${blockchain.scanner.flow.chainId}")
-    private val chainId: FlowChainId = DEFAULT_CHAIN_ID
+    private val chainId: FlowChainId = DEFAULT_CHAIN_ID,
+    @Value("\${blockchain.scanner.flow.poller.delay:1000}")
+    private val polledDelay: Long
 ) {
 
     private val log: Logger = LoggerFactory.getLogger(FlowNetNewBlockPoller::class.java)
@@ -42,7 +43,7 @@ class FlowNetNewBlockPoller(
                     start.set(start.incrementAndGet())
                     send(b)
                 }
-                delay(1000L)
+                delay(polledDelay)
             }
         }.retry {
             if (log.isDebugEnabled) {

@@ -3,16 +3,12 @@ package com.rarible.blockchain.scanner.flow.service
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
-import com.rarible.blockchain.scanner.flow.repository.FlowBlockRepository
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 
 @Service
@@ -40,12 +36,6 @@ class FlowLogService(
         blockHash: String,
         status: Log.Status?
     ): Flow<FlowLogRecord> {
-        /*return runBlocking {
-            val block = blockRepository.findByHash(hash = blockHash).awaitSingleOrNull() ?: return@runBlocking emptyFlow()
-             logRepository.findByLogBlockHeight(block.id).flatMap {
-                logRepository.delete(it).thenReturn(it)
-            }.asFlow()
-        }*/
         return emptyFlow()
     }
 

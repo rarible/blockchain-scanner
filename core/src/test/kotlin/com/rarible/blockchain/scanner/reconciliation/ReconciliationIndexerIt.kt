@@ -118,7 +118,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
 
     private fun createReconciliationIndexer(
         testBlockchainClient: TestBlockchainClient
-    ): ReconciliationIndexer<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor, TestBlock> {
+    ): ReconciliationIndexer<TestBlockchainBlock, TestBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
 
         return ReconciliationIndexer(
             testBlockchainClient,

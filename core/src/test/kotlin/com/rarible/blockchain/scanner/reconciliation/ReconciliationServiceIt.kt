@@ -108,7 +108,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
 
     private fun createReconciliationService(
         testBlockchainClient: TestBlockchainClient
-    ): ReconciliationService<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor, TestBlock> {
+    ): ReconciliationService<TestBlockchainBlock, TestBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
 
         return ReconciliationService(
             testBlockchainClient,
