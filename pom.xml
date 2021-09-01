@@ -10,10 +10,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.rarible.blockchain.scanner</groupId>
     <artifactId>rarible-blockchain-scanner</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <properties>
+        <revision>1.0-SNAPSHOT</revision>
         <nexus.maven.public>http://nexus.rarible.int/repository/maven-public/</nexus.maven.public>
 
         <!-- ========= Internal Dependencies ========== -->
@@ -84,7 +85,10 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.7</version>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
