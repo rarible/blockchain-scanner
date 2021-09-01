@@ -1,9 +1,6 @@
 package com.rarible.blockchain.scanner.flow.configuration
 
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.configuration.JobProperties
-import com.rarible.blockchain.scanner.configuration.MonitoringProperties
-import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
+import com.rarible.blockchain.scanner.configuration.*
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 
@@ -13,5 +10,5 @@ data class FlowBlockchainScannerProperties(
     override val blockchain: String = "flow",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(),
-    override val job: JobProperties = JobProperties()
+    override val job: JobProperties = JobProperties(reconciliation = ReconciliationJobProperties(batchSize = 1000L))
 ): BlockchainScannerProperties

@@ -7,11 +7,15 @@ import com.rarible.blockchain.scanner.test.configuration.TestScannerConfiguratio
 import com.rarible.blockchain.scanner.test.configuration.TestScannerConfiguration.Companion.TEST_LOG_COUNT_PER_BLOCK
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
 

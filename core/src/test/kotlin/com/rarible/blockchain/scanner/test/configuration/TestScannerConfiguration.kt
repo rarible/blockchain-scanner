@@ -17,6 +17,8 @@ import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -24,6 +26,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 @Configuration
 @EnableAutoConfiguration
 @EnableRaribleMongo
