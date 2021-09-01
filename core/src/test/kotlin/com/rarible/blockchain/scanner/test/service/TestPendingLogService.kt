@@ -16,6 +16,7 @@ class TestPendingLogService(
     private val inactiveLogs: List<String> = emptyList()
 ) : PendingLogService<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor> {
 
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     override fun getInactive(
         block: TestBlockchainBlock,
         logs: List<LogEvent<TestLog, TestLogRecord<*>, TestDescriptor>>

@@ -16,12 +16,16 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 @IntegrationTest
 class BlockEventSubscriberIt : AbstractIntegrationTest() {
 

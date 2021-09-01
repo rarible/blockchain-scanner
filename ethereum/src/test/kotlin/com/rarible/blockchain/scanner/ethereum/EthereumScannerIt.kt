@@ -15,7 +15,6 @@ import com.rarible.contracts.test.erc20.TransferEvent
 import com.rarible.core.common.nowMillis
 import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
-import com.rarible.core.test.ext.EthereumTest
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
 import io.mockk.clearMocks
@@ -39,8 +38,8 @@ import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
 
 @FlowPreview
-@EthereumTest
 @IntegrationTest
+@ExperimentalCoroutinesApi
 class EthereumScannerIt : AbstractIntegrationTest() {
 
     private val logger = LoggerFactory.getLogger(EthereumScannerIt::class.java)
@@ -167,7 +166,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             // We expect 2 records - first from mint and artificial one with original status PENDING
             assertCollectionSize(collection, 2)
 
-            // PENDING LogRecord should becoe INACTIVE since transfer failed
+            // PENDING LogRecord should become INACTIVE since transfer failed
             val savedLog = findLog(collection, saved.id)!!.log!!
             assertEquals(savedLog.status, Log.Status.INACTIVE)
             assertNull(savedLog.blockNumber)
@@ -202,7 +201,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `reconciliation job`() {
         val number = ethereum.ethBlockNumber().block()!!.toLong()

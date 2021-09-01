@@ -17,10 +17,14 @@ import com.rarible.blockchain.scanner.test.subscriber.TestLogEventListener
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.coVerify
 import io.mockk.spyk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
+@ExperimentalCoroutinesApi
+@FlowPreview
 @IntegrationTest
 internal class BlockEventListenerIt : AbstractIntegrationTest() {
 

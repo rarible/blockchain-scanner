@@ -7,12 +7,16 @@ import com.rarible.blockchain.scanner.ethereum.test.data.*
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 @IntegrationTest
 class EthereumLogServiceIt : AbstractIntegrationTest() {
 

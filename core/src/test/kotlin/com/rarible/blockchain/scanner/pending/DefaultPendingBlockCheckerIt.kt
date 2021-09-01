@@ -16,12 +16,16 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
 
+@ExperimentalCoroutinesApi
+@FlowPreview
 @IntegrationTest
 class DefaultPendingBlockCheckerIt : AbstractIntegrationTest() {
 

@@ -16,6 +16,8 @@ import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.core.task.TaskService
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactor.mono
 import org.bson.types.ObjectId
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,6 +27,8 @@ import scalether.core.MonoEthereum
 import scalether.transaction.MonoTransactionPoller
 import scalether.transaction.MonoTransactionSender
 
+@ExperimentalCoroutinesApi
+@FlowPreview
 abstract class AbstractIntegrationTest {
 
     @Autowired

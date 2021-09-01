@@ -4,11 +4,15 @@ import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlock
 import com.rarible.blockchain.scanner.framework.model.Block
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 @IntegrationTest
 class EthereumBlockServiceIt : AbstractIntegrationTest() {
 
