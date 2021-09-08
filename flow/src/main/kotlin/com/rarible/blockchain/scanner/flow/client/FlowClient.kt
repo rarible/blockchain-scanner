@@ -60,25 +60,14 @@ class FlowClient(
     ): List<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
         val client = FlowAccessApiClientManager.async(range, chainId)
 
-        return range.chunked(10).map {
-            it.map {
-                client.getBlockByHeight(it).asDeferred()
-            }
-        }.asFlow().flatMapConcat {
-            it.awaitAll().asFlow()
-        }.map {
-            checkNotNull(it) { "Block must be not null!!" }
-            FullBlock(block = FlowBlockchainBlock(it), logs = blockEvents(it, client).toList())
-        }.toList()
-
-//        return range.map {
-//            val block = checkNotNull(client.getBlockByHeight(it).await()) { "Unable to get block with height: $it" }
-//            val logs = blockEvents(block, client).toList()
-//            FullBlock(
-//                block = FlowBlockchainBlock(block),
-//                logs = logs
-//            )
-//        }
+        return range.map {
+            val block = checkNotNull(client.getBlockByHeight(it).await()) { "Unable to get block with height: $it" }
+            val logs = blockEvents(block, client).toList()
+            FullBlock(
+                block = FlowBlockchainBlock(block),
+                logs = logs
+            )
+        }
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
@@ -98,37 +87,44 @@ class FlowClient(
     private suspend fun blockEvents(
         block: com.nftco.flow.sdk.FlowBlock,
         api: AsyncFlowAccessApi
-    ): Flow<FlowBlockchainLog> = channelFlow {
-        block.collectionGuarantees.forEach { collectionGuarantee ->
-            //TODO get all collections async
-            val collection = checkNotNull(
-                api.getCollectionById(collectionGuarantee.id).await()
-            ) { "Unable to get collection with id: ${collectionGuarantee.id.base16Value} in block with height: ${block.height}" }
-            collection.transactionIds.forEach { txId ->
-                val txResult = checkNotNull(
-                    api.getTransactionResultById(txId).await()
-                ) { "Unable to get transaction with id: ${txId.base16Value}, in collection with id: ${collectionGuarantee.id.base16Value}, in block with number: ${block.height}" }
+    ): Flow<FlowBlockchainLog> {
+        if (block.collectionGuarantees.isEmpty()) {
+            return emptyFlow()
+        }
 
-                if (txResult.events.isNotEmpty()) {
-                    txResult.events.forEach {
-                        send(
-                            FlowBlockchainLog(
-                                hash = txId.base16Value,
-                                blockHash = block.id.base16Value,
-                                event = it,
-                                errorMessage = null
-                            )
-                        )
-                    }
-                } else if (txResult.errorMessage.isNotEmpty()) {
+        val collections =
+            block.collectionGuarantees.map { api.getCollectionById(it.id).asDeferred() }.awaitAll().filterNotNull()
+        val results = collections.asFlow().flatMapMerge {
+            it.transactionIds.asFlow().map { it to api.getTransactionResultById(it).asDeferred() }.buffer(10).map {
+                it.first to it.second.await()!!
+            }
+        }
+
+        return channelFlow {
+            results.collect {
+                val txId = it.first
+                val res = it.second
+
+                if (res.errorMessage.isNotEmpty()) {
                     send(
                         FlowBlockchainLog(
                             hash = txId.base16Value,
                             blockHash = block.id.base16Value,
-                            errorMessage = txResult.errorMessage,
-                            event = null
+                            event = null,
+                            errorMessage = res.errorMessage
                         )
                     )
+                } else {
+                    res.events.forEach { flowEvent ->
+                        send(
+                            FlowBlockchainLog(
+                                hash = txId.base16Value,
+                                blockHash = block.id.base16Value,
+                                event = flowEvent,
+                                errorMessage = null
+                            )
+                        )
+                    }
                 }
             }
         }

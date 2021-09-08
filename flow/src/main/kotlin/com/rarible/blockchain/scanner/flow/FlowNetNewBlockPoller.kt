@@ -46,7 +46,7 @@ class FlowNetNewBlockPoller(
                     continue
                 }
                 val range = (startNumber .. latest.height).asFlow()
-                log.debug("read block range $range")
+                log.debug("read block range ${(startNumber .. latest.height)}")
                 range.collect {
                     val b = client.getBlockByHeight(it).asDeferred().await()
                     if (b != null) {
