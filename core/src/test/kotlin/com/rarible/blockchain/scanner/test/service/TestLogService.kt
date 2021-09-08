@@ -22,30 +22,32 @@ class TestLogService(
 
     override suspend fun save(
         descriptor: TestDescriptor,
-        record: TestLogRecord<*>
-    ): TestLogRecord<*> {
-        val log = record.log!!
-        val opt = testLogRepository.findByKey(
-            descriptor.collection,
-            log.transactionHash,
-            log.blockHash!!,
-            log.logIndex!!,
-            log.minorLogIndex
-        ).toOptional()
+        records: List<TestLogRecord<*>>
+    ): List<TestLogRecord<*>> {
+        return records.map { record ->
+            val log = record.log!!
+            val opt = testLogRepository.findByKey(
+                descriptor.collection,
+                log.transactionHash,
+                log.blockHash!!,
+                log.logIndex!!,
+                log.minorLogIndex
+            ).toOptional()
 
-        return opt.flatMap {
-            if (it.isPresent) {
-                val found = it.get()
-                val withCorrectId = record.withIdAndVersion(found.id, found.version)
-                if (withCorrectId != found) {
-                    testLogRepository.save(descriptor.collection, withCorrectId)
+            opt.flatMap {
+                if (it.isPresent) {
+                    val found = it.get()
+                    val withCorrectId = record.withIdAndVersion(found.id, found.version)
+                    if (withCorrectId != found) {
+                        testLogRepository.save(descriptor.collection, withCorrectId)
+                    } else {
+                        found.justOrEmpty()
+                    }
                 } else {
-                    found.justOrEmpty()
+                    testLogRepository.save(descriptor.collection, record)
                 }
-            } else {
-                testLogRepository.save(descriptor.collection, record)
-            }
-        }.awaitFirst()
+            }.awaitFirst()
+        }
     }
 
     override fun findPendingLogs(descriptor: TestDescriptor): Flow<TestLogRecord<*>> {

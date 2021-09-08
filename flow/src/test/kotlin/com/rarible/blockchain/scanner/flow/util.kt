@@ -1,4 +1,4 @@
-package com.rarible.blockchainscanner.flow
+package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowAddress
 
