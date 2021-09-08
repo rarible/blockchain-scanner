@@ -1,9 +1,8 @@
-package com.rarible.blockchainscanner.flow
+package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
 import com.nftco.flow.sdk.cadence.StringField
 import com.nftco.flow.sdk.crypto.Crypto
-import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.core.test.containers.KGenericContainer
@@ -56,8 +55,14 @@ class FlowScannerTest {
             "zolt85/flow-cli-emulator:27"
         ).withEnv("FLOW_BLOCKTIME", "300ms")
 //            .withEnv("FLOW_VERBOSE", "true")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contracts"), "/home/flow/contracts")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow/flow.json")
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/contracts"),
+                "/home/flow/contracts"
+            )
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/flow.json"),
+                "/home/flow/flow.json"
+            )
             .withExposedPorts(3569, 8080)
             .withLogConsumer {
                 println(it.utf8String)

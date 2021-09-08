@@ -1,6 +1,5 @@
-package com.rarible.blockchainscanner.flow
+package com.rarible.blockchain.scanner.flow
 
-import com.rarible.blockchain.scanner.flow.EnableFlowBlockchainScanner
 import com.rarible.blockchain.scanner.flow.subscriber.AllFlowEventsSubscriber
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi

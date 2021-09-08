@@ -1,4 +1,4 @@
-package com.rarible.blockchainscanner.flow
+package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
 import com.nftco.flow.sdk.cadence.ArrayField
@@ -35,8 +35,14 @@ internal class EmulatorTest {
         private val flowEmulator: KGenericContainer = KGenericContainer(
             "zolt85/flow-cli-emulator:27"
         ).withEnv("FLOW_BLOCKTIME", "500ms")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contracts"), "/home/flow/contracts")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow/flow.json")
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/contracts"),
+                "/home/flow/contracts"
+            )
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/flow.json"),
+                "/home/flow/flow.json"
+            )
             .withExposedPorts(GRPC_PORT, 8080)
             .withLogConsumer {
                 println(it.utf8String)

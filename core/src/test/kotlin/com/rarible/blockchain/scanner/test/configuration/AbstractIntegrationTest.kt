@@ -76,7 +76,7 @@ abstract class AbstractIntegrationTest {
         block: TestOriginalBlock,
         status: Block.Status = Block.Status.SUCCESS
     ): TestOriginalBlock {
-        testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block)).copy(status = status))
+        testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block), status))
         return block
     }
 

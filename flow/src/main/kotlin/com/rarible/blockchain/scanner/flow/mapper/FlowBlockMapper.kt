@@ -8,13 +8,14 @@ import org.springframework.stereotype.Component
 
 @Component
 class FlowBlockMapper: BlockMapper<FlowBlockchainBlock, FlowBlock> {
-    override fun map(originalBlock: FlowBlockchainBlock): FlowBlock {
+
+    override fun map(originalBlock: FlowBlockchainBlock, status: Block.Status): FlowBlock {
         return FlowBlock(
             id = originalBlock.number,
             hash = originalBlock.hash,
             parentHash = originalBlock.parentHash!!,
             timestamp = originalBlock.timestamp,
-            status = Block.Status.SUCCESS
+            status = status
         )
     }
 }

@@ -1,9 +1,7 @@
-package com.rarible.blockchainscanner.flow
+package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.FlowChainId
-import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
-import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.client.FlowClient
 import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.core.test.containers.KGenericContainer
@@ -31,7 +29,10 @@ internal class ClientTest {
         val flowEmulator: KGenericContainer = KGenericContainer(
             "zolt85/flow-cli-emulator:27"
         ).withEnv("FLOW_VERBOSE", "true").withEnv("FLOW_BLOCKTIME", "100ms")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow/flow.json")
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/flow.json"),
+                "/home/flow/flow.json"
+            )
             .withExposedPorts(GRPC_PORT, 8080)
             .withLogConsumer {
                 println(it.utf8String)
