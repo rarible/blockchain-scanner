@@ -1,9 +1,8 @@
-package com.rarible.blockchainscanner.flow
+package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
 import com.nftco.flow.sdk.cadence.StringField
 import com.nftco.flow.sdk.crypto.Crypto
-import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.core.test.containers.KGenericContainer
@@ -11,7 +10,9 @@ import com.rarible.core.test.ext.MongoCleanup
 import com.rarible.core.test.ext.MongoTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -24,14 +25,18 @@ import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
+import java.time.Duration
 import kotlin.time.ExperimentalTime
 
+@ObsoleteCoroutinesApi
 @ExperimentalTime
 @FlowPreview
 @SpringBootTest(properties = [
+    "rarible.task.initialDelay=0",
     "blockchain.scanner.flow.chainId=EMULATOR",
-    /*"spring.data.mongodb.database=test"*/
-    /*"logging.level.com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller=DEBUG"*/])
+    "blockchain.scanner.flow.poller.delay=200",
+/*    "spring.data.mongodb.database=test",
+    "logging.level.com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller=DEBUG"*/])
 @ContextConfiguration(classes = [TestConfig::class])
 @MongoCleanup
 @MongoTest
@@ -48,14 +53,21 @@ class FlowScannerTest {
         @Container
         private val flowEmulator: KGenericContainer = KGenericContainer(
             "zolt85/flow-cli-emulator:27"
-        ).withEnv("FLOW_BLOCKTIME", "1000ms")
+        ).withEnv("FLOW_BLOCKTIME", "300ms")
 //            .withEnv("FLOW_VERBOSE", "true")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/contracts"), "/home/flow/contracts")
-            .withCopyFileToContainer(MountableFile.forClasspathResource("com/rarible/blockchainscanner/flow/flow.json"), "/home/flow/flow.json")
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/contracts"),
+                "/home/flow/contracts"
+            )
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/flow.json"),
+                "/home/flow/flow.json"
+            )
             .withExposedPorts(3569, 8080)
             .withLogConsumer {
                 println(it.utf8String)
             }
+            .withReuse(true)
             .waitingFor(Wait.forHttp("/").forPort(8080).forStatusCode(500))
 
 
@@ -187,7 +199,6 @@ class FlowScannerTest {
         mintTx = mintTx.addEnvelopeSignature(address = EmulatorUser.Emulator.address, keyIndex = proposalKey.id, signer = payerSigner)
 
         txId = accessApi.sendTransaction(mintTx)
-
         val event = awaitMintEvent()
         Assertions.assertEquals(txId, FlowId(event.log.transactionHash), "Transactions are not equals")
     }
@@ -241,10 +252,21 @@ class FlowScannerTest {
 
     private suspend fun awaitMintEvent(): FlowLogRecord {
         var founded: FlowLogRecord? = null
-        while (founded == null) {
-            founded = logRepository.findByLogType(type = "A.f8d6e0586b0a20c7.ExampleNFT.Mint").awaitFirstOrNull()
+        Assertions.assertTimeout(Duration.ofSeconds(10L)) {
+            runBlocking {
+                while (founded == null) {
+                    founded = try {
+                        logRepository.findByLogType(type = "A.f8d6e0586b0a20c7.ExampleNFT.Mint").awaitSingle()
+                    } catch (e: Exception) {
+                        when (e) {
+                            is IllegalArgumentException -> Assertions.fail("More than one mint log founded!")
+                            else -> null
+                        }
+                    }
+                }
+            }
         }
-        return founded
+        return founded!!
     }
 
 

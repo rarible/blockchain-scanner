@@ -11,22 +11,18 @@ import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 import org.bouncycastle.util.encoders.Hex
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import javax.annotation.PreDestroy
 
 /**
  * Client for Flow blockchain
  */
+@FlowPreview
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 @Component
@@ -43,19 +39,19 @@ class FlowClient(
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
         val client = FlowAccessApiClientManager.async(number, chainId)
-        val a = client.getBlockByHeight(number).join() ?: throw IllegalStateException("Block [$number] not found!")
+        val a = client.getBlockByHeight(number).await() ?: throw IllegalStateException("Block [$number] not found!")
         return FlowBlockchainBlock(a)
     }
 
 
     override suspend fun getBlock(hash: String): FlowBlockchainBlock {
         val client = FlowAccessApiClientManager.async(hash, chainId)
-        val b = client.getBlockById(FlowId(hash)).join() ?: throw IllegalStateException("Block [$hash] not found!")
+        val b = client.getBlockById(FlowId(hash)).await() ?: throw IllegalStateException("Block [$hash] not found!")
         return FlowBlockchainBlock(b)
     }
 
     override suspend fun getLastBlockNumber(): Long =
-        FlowAccessApiClientManager.asyncForCurrentSpork(chainId).getLatestBlockHeader().join().height
+        FlowAccessApiClientManager.asyncForCurrentSpork(chainId).getLatestBlockHeader().await().height
 
 
     override suspend fun getBlockEvents(
@@ -76,13 +72,8 @@ class FlowClient(
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         val client = FlowAccessApiClientManager.asyncByTxHAsh(transactionHash, chainId)
-        val tx = client.getTransactionById(FlowId(transactionHash)).join() ?: return null
+        val tx = client.getTransactionById(FlowId(transactionHash)).await() ?: return null
         return TransactionMeta(hash = transactionHash, blockHash = Hex.toHexString(tx.referenceBlockId.bytes))
-    }
-
-    @PreDestroy
-    fun stopListenNewBlocks() {
-        poller.cancel()
     }
 
     override suspend fun getBlockEvents(
@@ -90,44 +81,50 @@ class FlowClient(
         block: FlowBlockchainBlock
     ): List<FlowBlockchainLog> {
         val client = FlowAccessApiClientManager.async(block.number, chainId)
-        val chainBlock =
-            checkNotNull(client.getBlockByHeight(block.number).await()) { "Unable to get block with height: ${block.number}" }
-        return blockEvents(block = chainBlock, api = client).toList()
+        return blockEvents(block = block.block, api = client).toList()
     }
 
     private suspend fun blockEvents(
         block: com.nftco.flow.sdk.FlowBlock,
         api: AsyncFlowAccessApi
-    ): Flow<FlowBlockchainLog> = channelFlow {
-        block.collectionGuarantees.forEach { collectionGuarantee ->
-            val collection = checkNotNull(
-                api.getCollectionById(collectionGuarantee.id).await()
-            ) { "Unable to get collection with id: ${collectionGuarantee.id.base16Value} in block with height: ${block.height}" }
-            collection.transactionIds.forEach { txId ->
-                val txResult = checkNotNull(
-                    api.getTransactionResultById(txId).await()
-                ) { "Unable to get transaction with id: ${txId.base16Value}, in collection with id: ${collectionGuarantee.id.base16Value}, in block with number: ${block.height}" }
+    ): Flow<FlowBlockchainLog> {
+        if (block.collectionGuarantees.isEmpty()) {
+            return emptyFlow()
+        }
 
-                if (txResult.events.isNotEmpty()) {
-                    txResult.events.forEach {
-                        send(
-                            FlowBlockchainLog(
-                                hash = txId.base16Value,
-                                blockHash = block.id.base16Value,
-                                event = it,
-                                errorMessage = null
-                            )
-                        )
-                    }
-                } else if (txResult.errorMessage.isNotEmpty()) {
+        val collections =
+            block.collectionGuarantees.map { api.getCollectionById(it.id).asDeferred() }.awaitAll().filterNotNull()
+        val results = collections.asFlow().flatMapMerge {
+            it.transactionIds.asFlow().map { it to api.getTransactionResultById(it).asDeferred() }.buffer(10).map {
+                it.first to it.second.await()!!
+            }
+        }
+
+        return channelFlow {
+            results.collect {
+                val txId = it.first
+                val res = it.second
+
+                if (res.errorMessage.isNotEmpty()) {
                     send(
                         FlowBlockchainLog(
                             hash = txId.base16Value,
                             blockHash = block.id.base16Value,
-                            errorMessage = txResult.errorMessage,
-                            event = null
+                            event = null,
+                            errorMessage = res.errorMessage
                         )
                     )
+                } else {
+                    res.events.forEach { flowEvent ->
+                        send(
+                            FlowBlockchainLog(
+                                hash = txId.base16Value,
+                                blockHash = block.id.base16Value,
+                                event = flowEvent,
+                                errorMessage = null
+                            )
+                        )
+                    }
                 }
             }
         }

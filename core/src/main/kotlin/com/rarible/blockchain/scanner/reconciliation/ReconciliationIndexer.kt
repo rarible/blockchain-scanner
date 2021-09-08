@@ -55,7 +55,7 @@ class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
     private suspend fun reindexBlock(fullBlock: FullBlock<BB, BL>): List<R> {
         logger.info("Reindexing Block {} with {} Logs", fullBlock.block.hash, fullBlock.logs.size)
         return logEventHandler.handleLogs(fullBlock).onCompletion {
-            blockService.save(blockMapper.map(fullBlock.block))
+            blockService.save(blockMapper.map(fullBlock.block, Block.Status.SUCCESS))
         }.toList()
     }
 

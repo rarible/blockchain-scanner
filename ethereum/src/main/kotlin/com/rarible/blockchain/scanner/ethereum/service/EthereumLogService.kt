@@ -28,38 +28,42 @@ class EthereumLogService(
 
     override suspend fun save(
         descriptor: EthereumDescriptor,
-        record: EthereumLogRecord<*>
-    ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
+        records: List<EthereumLogRecord<*>>
+    ): List<EthereumLogRecord<*>> {
+        return records.map { record ->
+            optimisticLock(properties.optimisticLockRetries) {
 
-        val collection = descriptor.collection
-        val log = record.log!!
+                val collection = descriptor.collection
+                val log = record.log!!
 
-        val found = ethereumLogRepository.findVisibleByKey(
-            collection,
-            log.transactionHash,
-            log.topic,
-            log.index,
-            log.minorLogIndex
-        ) ?: ethereumLogRepository.findByKey(
-            collection,
-            log.transactionHash,
-            log.blockHash!!,
-            log.logIndex!!,
-            log.minorLogIndex
-        )
+                val found = ethereumLogRepository.findVisibleByKey(
+                    collection,
+                    log.transactionHash,
+                    log.topic,
+                    log.index,
+                    log.minorLogIndex
+                ) ?: ethereumLogRepository.findByKey(
+                    collection,
+                    log.transactionHash,
+                    log.blockHash!!,
+                    log.logIndex!!,
+                    log.minorLogIndex
+                )
 
-        if (found != null) {
-            val withCorrectId = record.withIdAndVersion(found.id, found.version)
-            if (withCorrectId != found) {
-                logger.info("Saving changed LogEvent to collection '{}' : [{}]", withCorrectId, collection)
-                ethereumLogRepository.save(collection, withCorrectId)
-            } else {
-                logger.info("LogEvent didn't change: [{}]", withCorrectId)
-                found
+                if (found != null) {
+                    val withCorrectId = record.withIdAndVersion(found.id, found.version)
+                    if (withCorrectId != found) {
+                        logger.info("Saving changed LogEvent to collection '{}' : [{}]", withCorrectId, collection)
+                        ethereumLogRepository.save(collection, withCorrectId)
+                    } else {
+                        logger.info("LogEvent wasn't changed: [{}]", withCorrectId)
+                        found
+                    }
+                } else {
+                    logger.info("Saving new LogEvent: [{}}", record)
+                    ethereumLogRepository.save(collection, record)
+                }
             }
-        } else {
-            logger.info("Saving new LogEvent: [{}}", record)
-            ethereumLogRepository.save(collection, record)
         }
     }
 

@@ -56,7 +56,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     fun `save - new record`() = runBlocking {
         val newLog = randomLogRecord(topic, randomBlockHash())
 
-        ethereumLogService.save(descriptor, newLog)
+        ethereumLogService.save(descriptor, listOf(newLog))
 
         val savedVisibleRecord = findLog(collection, newLog.id) as TestEthereumLogRecord
 
@@ -77,7 +77,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         saveLog(descriptor.collection, visibleRecord)
         // Here we're also checking search by index/minorIndex
-        ethereumLogService.save(descriptor, updatedVisibleRecord)
+        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
 
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
 
@@ -100,7 +100,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         saveLog(descriptor.collection, visibleRecord)
         // Here we're also checking search by blockHash/logIndex
-        ethereumLogService.save(descriptor, updatedVisibleRecord)
+        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
 
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
 
@@ -114,7 +114,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val log = randomLogRecord(topic, randomBlockHash())
 
         val savedLog = saveLog(collection, log)
-        ethereumLogService.save(descriptor, log)
+        ethereumLogService.save(descriptor, listOf(log))
 
         val updatedLog = findLog(collection, log.id) as TestEthereumLogRecord
 

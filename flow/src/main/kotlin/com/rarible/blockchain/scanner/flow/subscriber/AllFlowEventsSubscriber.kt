@@ -9,11 +9,10 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import org.springframework.stereotype.Component
 import java.time.Instant
 
 @ExperimentalCoroutinesApi
-@Component
+//@Component
 class AllFlowEventsSubscriber: FlowLogEventSubscriber {
 
     private val descriptor: FlowDescriptor = FlowDescriptor(id = "BaseAllFlowEventsSubscriber")

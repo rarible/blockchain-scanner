@@ -20,9 +20,9 @@ interface LogService<L : Log, R : LogRecord<L, *>, D : Descriptor> {
     suspend fun delete(descriptor: D, record: R): R
 
     /**
-     * Insert or update LogRecord to the persistent storage.
+     * Insert or update list of LogRecords to the persistent storage.
      */
-    suspend fun save(descriptor: D, record: R): R
+    suspend fun save(descriptor: D, records: List<R>): List<R>
 
     /**
      * Return all logs with status [PENDING][com.rarible.blockchain.scanner.framework.model.Log.Status.PENDING] for
