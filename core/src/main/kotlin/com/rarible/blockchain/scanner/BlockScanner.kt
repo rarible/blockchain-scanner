@@ -18,8 +18,7 @@ import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.util.flatten
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.slf4j.LoggerFactory
 
@@ -76,8 +75,8 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             logger.warn(e.message, e)
             null
         }
-        if (lastKnown == null) {
-            logger.info("Last indexed block not found, will handle only new block: [{}]", newBlock.meta)
+        if (lastKnown == null || lastKnown.id == newBlock.number) {
+            logger.info("Last indexed block not found or equals new block, will handle only new block: [{}]", newBlock.meta)
             flowOf(newBlock)
         } else {
             logger.info("Found last known block with number: {}", lastKnown.id)
@@ -85,11 +84,14 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             if (range.last >= range.first) {
                 logger.info("Range of not-indexed blocks: {}", range)
             }
-            val blockRangeFlow = range.asFlow().map { blockchainClient.getBlock(it) }
-            flowOf(blockRangeFlow, flowOf(newBlock)).flattenConcat()
+            val blockList = range.chunked(10).map { it.map { asyncGet(it) } }.asFlow()
+            flowOf(blockList.flatMapConcat { it.awaitAll().asFlow() }, flowOf(newBlock)).flattenConcat()
         }
     }
 
+    private suspend fun asyncGet(number: Long) = coroutineScope {
+        async {blockchainClient.getBlock(number) }
+    }
     /**
      * when inserting/updating block we need to inspect parent blocks if chain was reorganized
      */

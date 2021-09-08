@@ -54,7 +54,7 @@ object FlowAccessApiClientManager {
             try {
                 sp.asyncClient.getBlockHeaderById(FlowId(hash)).join()
             } catch (e: Exception) {
-                logger.warn(e.message, e)
+                logger.debug(e.message, e)
                 null
             }
         }.first()) { "Unable to find client for block id: $hash" }.height

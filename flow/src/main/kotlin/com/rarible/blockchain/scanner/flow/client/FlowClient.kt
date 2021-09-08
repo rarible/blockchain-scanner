@@ -11,22 +11,18 @@ import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 import org.bouncycastle.util.encoders.Hex
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import javax.annotation.PreDestroy
 
 /**
  * Client for Flow blockchain
  */
+@FlowPreview
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 @Component
@@ -43,19 +39,19 @@ class FlowClient(
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
         val client = FlowAccessApiClientManager.async(number, chainId)
-        val a = client.getBlockByHeight(number).join() ?: throw IllegalStateException("Block [$number] not found!")
+        val a = client.getBlockByHeight(number).await() ?: throw IllegalStateException("Block [$number] not found!")
         return FlowBlockchainBlock(a)
     }
 
 
     override suspend fun getBlock(hash: String): FlowBlockchainBlock {
         val client = FlowAccessApiClientManager.async(hash, chainId)
-        val b = client.getBlockById(FlowId(hash)).join() ?: throw IllegalStateException("Block [$hash] not found!")
+        val b = client.getBlockById(FlowId(hash)).await() ?: throw IllegalStateException("Block [$hash] not found!")
         return FlowBlockchainBlock(b)
     }
 
     override suspend fun getLastBlockNumber(): Long =
-        FlowAccessApiClientManager.asyncForCurrentSpork(chainId).getLatestBlockHeader().join().height
+        FlowAccessApiClientManager.asyncForCurrentSpork(chainId).getLatestBlockHeader().await().height
 
 
     override suspend fun getBlockEvents(
@@ -64,25 +60,31 @@ class FlowClient(
     ): List<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
         val client = FlowAccessApiClientManager.async(range, chainId)
 
-        return range.map {
-            val block = checkNotNull(client.getBlockByHeight(it).await()) { "Unable to get block with height: $it" }
-            val logs = blockEvents(block, client).toList()
-            FullBlock(
-                block = FlowBlockchainBlock(block),
-                logs = logs
-            )
-        }
+        return range.chunked(10).map {
+            it.map {
+                client.getBlockByHeight(it).asDeferred()
+            }
+        }.asFlow().flatMapConcat {
+            it.awaitAll().asFlow()
+        }.map {
+            checkNotNull(it) { "Block must be not null!!" }
+            FullBlock(block = FlowBlockchainBlock(it), logs = blockEvents(it, client).toList())
+        }.toList()
+
+//        return range.map {
+//            val block = checkNotNull(client.getBlockByHeight(it).await()) { "Unable to get block with height: $it" }
+//            val logs = blockEvents(block, client).toList()
+//            FullBlock(
+//                block = FlowBlockchainBlock(block),
+//                logs = logs
+//            )
+//        }
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         val client = FlowAccessApiClientManager.asyncByTxHAsh(transactionHash, chainId)
-        val tx = client.getTransactionById(FlowId(transactionHash)).join() ?: return null
+        val tx = client.getTransactionById(FlowId(transactionHash)).await() ?: return null
         return TransactionMeta(hash = transactionHash, blockHash = Hex.toHexString(tx.referenceBlockId.bytes))
-    }
-
-    @PreDestroy
-    fun stopListenNewBlocks() {
-        poller.cancel()
     }
 
     override suspend fun getBlockEvents(
@@ -90,9 +92,7 @@ class FlowClient(
         block: FlowBlockchainBlock
     ): List<FlowBlockchainLog> {
         val client = FlowAccessApiClientManager.async(block.number, chainId)
-        val chainBlock =
-            checkNotNull(client.getBlockByHeight(block.number).await()) { "Unable to get block with height: ${block.number}" }
-        return blockEvents(block = chainBlock, api = client).toList()
+        return blockEvents(block = block.block, api = client).toList()
     }
 
     private suspend fun blockEvents(
@@ -100,6 +100,7 @@ class FlowClient(
         api: AsyncFlowAccessApi
     ): Flow<FlowBlockchainLog> = channelFlow {
         block.collectionGuarantees.forEach { collectionGuarantee ->
+            //TODO get all collections async
             val collection = checkNotNull(
                 api.getCollectionById(collectionGuarantee.id).await()
             ) { "Unable to get collection with id: ${collectionGuarantee.id.base16Value} in block with height: ${block.height}" }
