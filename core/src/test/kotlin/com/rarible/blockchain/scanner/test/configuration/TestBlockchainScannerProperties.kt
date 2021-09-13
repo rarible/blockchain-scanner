@@ -10,14 +10,13 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConstructorBinding
 @ConfigurationProperties(prefix = "blockchain.scanner.test")
 data class TestBlockchainScannerProperties(
-
     override val retryPolicy: RetryPolicyProperties,
     override val job: JobProperties,
     override val monitoring: MonitoringProperties,
-    override val blockBufferSize: Int = 10
-
 ) : BlockchainScannerProperties {
 
     override val blockchain: String = "test"
+
+    override val blockBufferSize: Int = 10
 
 }
