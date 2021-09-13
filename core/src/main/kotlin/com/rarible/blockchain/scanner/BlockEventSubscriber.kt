@@ -18,6 +18,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -49,7 +50,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
     }
 
     private fun processBlock(originalBlock: BB): Flow<R> = flatten {
-        val events = blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock)
+        val events = blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
         logHandler.handleLogs(FullBlock(originalBlock, events))
     }
 

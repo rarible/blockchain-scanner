@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.flow.client
 
 import com.nftco.flow.sdk.AsyncFlowAccessApi
 import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
+import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowId
 import com.rarible.blockchain.scanner.data.FullBlock
@@ -18,6 +19,7 @@ import kotlinx.coroutines.future.await
 import org.bouncycastle.util.encoders.Hex
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.util.concurrent.Executors
 
 /**
  * Client for Flow blockchain
@@ -33,19 +35,21 @@ class FlowClient(
     private val lastReadBlock: LastReadBlock
 ) : BlockchainClient<FlowBlockchainBlock, FlowBlockchainLog, FlowDescriptor> {
 
+    private val dispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
+
     override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = runBlocking {
         poller.poll(lastReadBlock.lastReadBlockHeight).map { FlowBlockchainBlock(it) }
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
-        val client = FlowAccessApiClientManager.async(number, chainId)
+        val client = FlowAccessApiClientManager.async(number, chainId).asyncClient
         val a = client.getBlockByHeight(number).await() ?: throw IllegalStateException("Block [$number] not found!")
         return FlowBlockchainBlock(a)
     }
 
 
     override suspend fun getBlock(hash: String): FlowBlockchainBlock {
-        val client = FlowAccessApiClientManager.async(hash, chainId)
+        val client = FlowAccessApiClientManager.async(hash, chainId).asyncClient
         val b = client.getBlockById(FlowId(hash)).await() ?: throw IllegalStateException("Block [$hash] not found!")
         return FlowBlockchainBlock(b)
     }
@@ -57,21 +61,35 @@ class FlowClient(
     override suspend fun getBlockEvents(
         descriptor: FlowDescriptor,
         range: LongRange
-    ): List<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
-        val client = FlowAccessApiClientManager.async(range, chainId)
-
-        return range.map {
-            val block = checkNotNull(client.getBlockByHeight(it).await()) { "Unable to get block with height: $it" }
-            val logs = blockEvents(block, client).toList()
-            FullBlock(
-                block = FlowBlockchainBlock(block),
-                logs = logs
-            )
+    ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
+        val sporks = FlowAccessApiClientManager.async(range, chainId).toList()
+        return range.chunked(10).asFlow().flowOn(dispatcher).map {
+            val def = it.map { num ->
+                val client = sporks.first { it.containsBlock(num) }.asyncClient
+                client.getBlockByHeight(num).asDeferred()
+            }
+            def.awaitAll().filterNotNull()
+        }.flatMapMerge {
+            it.asFlow().map { fb ->
+                val client = sporks.first { it.containsBlock(fb.height) }.asyncClient
+                fullBlock(fb, client)
+            }
         }
+
     }
 
+
+    private suspend fun fullBlock(
+        block: FlowBlock,
+        client: AsyncFlowAccessApi
+    ): FullBlock<FlowBlockchainBlock, FlowBlockchainLog> =
+        FullBlock(
+            block = FlowBlockchainBlock(block),
+            logs = blockEvents(block, client).toList()
+        )
+
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
-        val client = FlowAccessApiClientManager.asyncByTxHAsh(transactionHash, chainId)
+        val client = FlowAccessApiClientManager.asyncByTxHash(transactionHash, chainId).asyncClient
         val tx = client.getTransactionById(FlowId(transactionHash)).await() ?: return null
         return TransactionMeta(hash = transactionHash, blockHash = Hex.toHexString(tx.referenceBlockId.bytes))
     }
@@ -79,13 +97,13 @@ class FlowClient(
     override suspend fun getBlockEvents(
         descriptor: FlowDescriptor,
         block: FlowBlockchainBlock
-    ): List<FlowBlockchainLog> {
-        val client = FlowAccessApiClientManager.async(block.number, chainId)
-        return blockEvents(block = block.block, api = client).toList()
+    ): Flow<FlowBlockchainLog> {
+        val client = FlowAccessApiClientManager.async(block.number, chainId).asyncClient
+        return blockEvents(block = block.block, api = client)
     }
 
     private suspend fun blockEvents(
-        block: com.nftco.flow.sdk.FlowBlock,
+        block: FlowBlock,
         api: AsyncFlowAccessApi
     ): Flow<FlowBlockchainLog> {
         if (block.collectionGuarantees.isEmpty()) {
@@ -95,9 +113,10 @@ class FlowClient(
         val collections =
             block.collectionGuarantees.map { api.getCollectionById(it.id).asDeferred() }.awaitAll().filterNotNull()
         val results = collections.asFlow().flatMapMerge {
-            it.transactionIds.asFlow().map { it to api.getTransactionResultById(it).asDeferred() }.buffer(10).map {
-                it.first to it.second.await()!!
-            }
+            it.transactionIds.asFlow().map { it to api.getTransactionResultById(it).asDeferred() }.buffer(10)
+                .flowOn(dispatcher).map {
+                    it.first to it.second.await()!!
+                }
         }
 
         return channelFlow {

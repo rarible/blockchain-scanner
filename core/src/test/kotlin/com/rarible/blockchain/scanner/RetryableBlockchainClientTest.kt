@@ -7,6 +7,8 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import io.mockk.*
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -102,14 +104,14 @@ class RetryableBlockchainClientTest {
         coEvery { client.getBlockEvents(descriptor, block) }
             .throws(NullPointerException())
             .andThenThrows(IOException())
-            .andThen(listOf(log))
+            .andThen(flowOf(log))
 
         val result = retryableClient.getBlockEvents(descriptor, block)
 
         // Wrapped by retryable, 3 attempts should be there
         coVerify(exactly = 3) { client.getBlockEvents(descriptor, block) }
-        assertEquals(1, result.size)
-        assertEquals(log, result[0])
+        assertEquals(1, result.toList().size)
+        assertEquals(log, result.toList()[0])
     }
 
     @Test
