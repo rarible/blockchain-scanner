@@ -39,7 +39,7 @@ class FlowNetNewBlockPoller(
             while (!isClosedForSend) {
                 val startNumber = start.get()
                 log.debug("try to read block $startNumber")
-                val client = FlowAccessApiClientManager.async(startNumber, chainId)
+                val client = FlowAccessApiClientManager.async(startNumber, chainId).asyncClient
                 val latest = client.getLatestBlock(true).asDeferred().await()
                 if (latest.height <= startNumber) {
                     log.debug("Latest height on chain greater than need [${latest.height} <= $startNumber]")

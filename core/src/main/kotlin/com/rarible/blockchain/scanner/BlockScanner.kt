@@ -31,13 +31,12 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
-    private val retryPolicy: ScanRetryPolicyProperties
+    private val retryPolicy: ScanRetryPolicyProperties,
+    // This buffer will be filled only with deferred objects, so memory consumption should be insignificant
+    private val blockBufferSize: Int
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
-
-    // This buffer will be filled only with deferred objects, so memory consumption should be insignificant
-    private val blockBufferSize = 8 * 1024
 
     private val delay = retryPolicy.reconnectDelay.toMillis()
     private val attempts = if (retryPolicy.reconnectAttempts > 0) {

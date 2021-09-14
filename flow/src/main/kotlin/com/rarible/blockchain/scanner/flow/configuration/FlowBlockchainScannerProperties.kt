@@ -15,7 +15,8 @@ data class FlowBlockchainScannerProperties(
     override val blockchain: String = "flow",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(
-        worker = DaemonWorkerProperties(pollingPeriod = Duration.ofMillis(200L), errorDelay = Duration.ofSeconds(1L), backpressureSize = 100, buffer = false)
+        worker = DaemonWorkerProperties(pollingPeriod = Duration.ofMillis(200L), errorDelay = Duration.ofSeconds(1L), backpressureSize = 100, buffer = true)
     ),
-    override val job: JobProperties = JobProperties()
+    override val job: JobProperties = JobProperties(),
+    override val blockBufferSize: Int = 8 * 1024
 ): BlockchainScannerProperties

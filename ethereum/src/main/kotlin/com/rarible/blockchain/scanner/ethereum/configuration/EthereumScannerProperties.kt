@@ -14,7 +14,8 @@ data class EthereumScannerProperties(
     val optimisticLockRetries: Long = 3,
     override val retryPolicy: RetryPolicyProperties,
     override val job: JobProperties,
-    override val monitoring: MonitoringProperties
+    override val monitoring: MonitoringProperties,
+    override val blockBufferSize: Int = 10
 
 ) : BlockchainScannerProperties {
 

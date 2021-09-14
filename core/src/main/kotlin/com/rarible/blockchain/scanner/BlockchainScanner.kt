@@ -51,7 +51,8 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         retryableBlockchainClient,
         blockMapper,
         blockService,
-        properties.retryPolicy.scan
+        properties.retryPolicy.scan,
+        properties.blockBufferSize
     )
 
     private val logEventPublisher = LogEventPublisher(

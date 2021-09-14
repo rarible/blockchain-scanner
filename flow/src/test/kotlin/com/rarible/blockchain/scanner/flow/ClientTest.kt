@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.core.test.containers.KGenericContainer
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
@@ -16,6 +17,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
 
+@FlowPreview
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 @Testcontainers

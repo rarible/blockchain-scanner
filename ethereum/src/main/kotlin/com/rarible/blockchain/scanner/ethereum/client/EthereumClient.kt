@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.LoggerFactory
@@ -66,7 +67,7 @@ class EthereumClient(
     override suspend fun getBlockEvents(
         descriptor: EthereumDescriptor,
         block: EthereumBlockchainBlock
-    ): List<EthereumBlockchainLog> {
+    ): Flow<EthereumBlockchainLog> {
         val filter = LogFilter
             .apply(TopicFilter.simple(descriptor.topic))
             .address(*descriptor.contracts.toTypedArray())
@@ -74,7 +75,7 @@ class EthereumClient(
 
         return ethereum.ethGetLogsJava(filter)
             .map { orderByTransaction(it).map { log -> EthereumBlockchainLog(log) } }
-            .awaitFirst()
+            .awaitFirst().asFlow()
     }
 
     //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
@@ -82,7 +83,7 @@ class EthereumClient(
     override suspend fun getBlockEvents(
         descriptor: EthereumDescriptor,
         range: LongRange
-    ): List<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
+    ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
@@ -106,7 +107,7 @@ class EthereumClient(
                         FullBlock(originalBlock, orderedLogs.map { EthereumBlockchainLog(it) })
                     }
                 }
-            }.concatMap { it }.collectList().awaitFirst()
+            }.concatMap { it }.collectList().awaitFirst().asFlow()
     }
 
     private fun orderByTransaction(logs: List<Log>): List<Log> {

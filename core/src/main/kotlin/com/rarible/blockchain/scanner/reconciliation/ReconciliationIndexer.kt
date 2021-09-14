@@ -44,7 +44,7 @@ class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
         logger.info("Scanning for Logs in batches from={} to={} with batchSize={}", from, to, batchSize)
         return BlockRanges.getRanges(from, to, batchSize).onEach { range ->
             val descriptor = logEventHandler.subscriber.getDescriptor()
-            blockchainClient.getBlockEvents(descriptor, range).onEach {
+            blockchainClient.getBlockEvents(descriptor, range).toList().onEach {
                 val processedLogs = reindexBlock(it)
                 val blockEvent = BlockEvent(Source.REINDEX, it.block)
                 logEventPublisher.onBlockProcessed(blockEvent, processedLogs)
