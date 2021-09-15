@@ -63,13 +63,13 @@ class FlowClient(
         range: LongRange
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
         val sporks = FlowAccessApiClientManager.async(range, chainId).toList()
-        return range.chunked(10).asFlow().flowOn(dispatcher).map {
+        return range.chunked(10).asFlow().map {
             val def = it.map { num ->
                 val client = sporks.first { it.containsBlock(num) }.asyncClient
                 client.getBlockByHeight(num).asDeferred()
             }
             def.awaitAll().filterNotNull()
-        }.flatMapMerge {
+        }.buffer().flatMapMerge {
             it.asFlow().map { fb ->
                 val client = sporks.first { it.containsBlock(fb.height) }.asyncClient
                 fullBlock(fb, client)
@@ -113,8 +113,8 @@ class FlowClient(
         val collections =
             block.collectionGuarantees.map { api.getCollectionById(it.id).asDeferred() }.awaitAll().filterNotNull()
         val results = collections.asFlow().flatMapMerge {
-            it.transactionIds.asFlow().map { it to api.getTransactionResultById(it).asDeferred() }.buffer(10)
-                .flowOn(dispatcher).map {
+            it.transactionIds.asFlow().map { it to api.getTransactionResultById(it).asDeferred() }.buffer()
+                .map {
                     it.first to it.second.await()!!
                 }
         }

@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.service.BlockService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
 
 @Service
@@ -19,9 +20,8 @@ class FlowBlockService(
     }
 
     override suspend fun updateStatus(id: Long, status: Block.Status) {
-        blockRepository.findById(id).subscribe {
-            blockRepository.save(it.copy(status = status))
-        }
+        val block = blockRepository.findById(id).awaitSingle()
+        save(block.copy(status = status))
     }
 
     override suspend fun save(block: FlowBlock) {
