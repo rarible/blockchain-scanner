@@ -12,8 +12,22 @@ import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.future.await
 import org.bouncycastle.util.encoders.Hex
@@ -37,8 +51,8 @@ class FlowClient(
 
     private val dispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
 
-    override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = runBlocking {
-        poller.poll(lastReadBlock.lastReadBlockHeight).map { FlowBlockchainBlock(it) }
+    override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = flow {
+        emitAll(poller.poll(lastReadBlock.getLastReadBlockHeight()).map { FlowBlockchainBlock(it) })
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {

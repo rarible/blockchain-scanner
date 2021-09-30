@@ -4,7 +4,6 @@ import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.FlowAccessApiClientManager
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.Instant
@@ -18,27 +17,24 @@ class LastReadBlock(
     private val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID,
 ) {
 
-    val lastReadBlockHeight
-        get() = runBlocking {
-            val api = FlowAccessApiClientManager.asyncForCurrentSpork(chainId)
-            val lastBlockInDb = blockService.getLastBlock()
-            val lastBlockOnChain = api.getLatestBlock(true).await()
+    suspend fun getLastReadBlockHeight(): Long {
+        val api = FlowAccessApiClientManager.asyncForCurrentSpork(chainId)
+        val lastBlockInDb = blockService.getLastBlock()
+        val lastBlockOnChain = api.getLatestBlock(true).await()
 
-            if (lastBlockInDb != null) {
-                val diff = ChronoUnit.SECONDS.between(
-                    Instant.ofEpochSecond(lastBlockInDb.timestamp), lastBlockOnChain.timestamp.toInstant(
-                        ZoneOffset.UTC
-                    )
+        return if (lastBlockInDb != null) {
+            val diff = ChronoUnit.SECONDS.between(
+                Instant.ofEpochSecond(lastBlockInDb.timestamp), lastBlockOnChain.timestamp.toInstant(
+                    ZoneOffset.UTC
                 )
-                if (diff >= 60L) {
-                    lastBlockOnChain.height - 1
-                } else {
-                    lastBlockInDb.id
-                }
-            } else {
+            )
+            if (diff >= 60L) {
                 lastBlockOnChain.height - 1
+            } else {
+                lastBlockInDb.id
             }
-
-
+        } else {
+            lastBlockOnChain.height - 1
         }
+    }
 }

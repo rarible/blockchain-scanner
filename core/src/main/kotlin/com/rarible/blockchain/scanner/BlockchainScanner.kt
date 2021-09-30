@@ -104,11 +104,11 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         return blockListener.onBlockEvent(event)
     }
 
-    override fun checkPendingLogs() {
+    override suspend fun checkPendingLogs() {
         pendingLogChecker.checkPendingLogs()
     }
 
-    override fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
+    override suspend fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
         pendingBlockChecker.checkPendingBlocks(pendingBlockAgeToCheck)
     }
 

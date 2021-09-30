@@ -5,9 +5,7 @@ import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowId
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 
 object FlowAccessApiClientManager {
 
@@ -17,16 +15,16 @@ object FlowAccessApiClientManager {
 
         fun containsBlock(blockHeight: Long): Boolean = blockHeight in from..to
 
-        fun containsBlock(blockHash: String): Boolean = runBlocking(Dispatchers.IO) {
-            try {
+        suspend fun containsBlock(blockHash: String): Boolean {
+            return try {
                 asyncClient.getBlockHeaderById(FlowId(blockHash)).await() != null
             } catch (e: Exception) {
                 false
             }
         }
 
-        fun containsTransaction(txHash: String): Boolean = runBlocking(Dispatchers.IO) {
-            try {
+        suspend fun containsTransaction(txHash: String): Boolean {
+            return try {
                 asyncClient.getTransactionById(FlowId(txHash)).await() != null
             } catch (e: Exception) {
                 false
@@ -73,10 +71,10 @@ object FlowAccessApiClientManager {
     /**
      * This is bottle-neck!!!
      */
-    fun async(hash: String, chainId: FlowChainId = DEFAULT_CHAIN_ID): Spork =
+    suspend fun async(hash: String, chainId: FlowChainId = DEFAULT_CHAIN_ID): Spork =
         sporks[chainId]!!.first { it.containsBlock(blockHash = hash) }
 
-    fun asyncByTxHash(transactionHash: String, chainId: FlowChainId): Spork {
+    suspend fun asyncByTxHash(transactionHash: String, chainId: FlowChainId): Spork {
         return sporks[chainId]!!.first { it.containsTransaction(transactionHash) }
     }
 

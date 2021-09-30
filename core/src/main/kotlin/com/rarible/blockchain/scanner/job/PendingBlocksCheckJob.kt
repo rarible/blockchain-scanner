@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.job
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.pending.PendingBlockChecker
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.scheduling.annotation.Scheduled
@@ -21,7 +22,9 @@ class PendingBlocksCheckJob(
         initialDelayString = "#{blockchainScannerPropertiesProvider.properties.job.pendingBlocks.initialDelay}"
     )
     fun job() {
-        logger.info("Started job to check pending blocks")
-        pendingBlockChecker.checkPendingBlocks(properties.job.pendingBlocks.pendingBlockAgeToCheck)
+        runBlocking {
+            logger.info("Started job to check pending blocks")
+            pendingBlockChecker.checkPendingBlocks(properties.job.pendingBlocks.pendingBlockAgeToCheck)
+        }
     }
 }

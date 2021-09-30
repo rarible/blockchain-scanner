@@ -4,6 +4,6 @@ import java.time.Duration
 
 interface PendingBlockChecker {
 
-    fun checkPendingBlocks(pendingBlockAgeToCheck: Duration)
+    suspend fun checkPendingBlocks(pendingBlockAgeToCheck: Duration)
 
 }

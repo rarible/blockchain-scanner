@@ -11,8 +11,11 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -27,20 +30,18 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
 
     private val logger = LoggerFactory.getLogger(DefaultPendingBlockChecker::class.java)
 
-    override fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
-        runBlocking {
-            logger.info("Starting to check pending blocks with min block age: {}", pendingBlockAgeToCheck)
-            try {
-                flowOf(
-                    blockService.findByStatus(Block.Status.PENDING).filter { isOldEnough(it, pendingBlockAgeToCheck) },
-                    blockService.findByStatus(Block.Status.ERROR)
-                ).flattenConcat().map {
-                    reindexPendingBlock(it)
-                }.collect()
-                logger.info("Finished checking pending blocks")
-            } catch (e: Exception) {
-                logger.error("Unexpected error during reindexing pending blocks:", e)
-            }
+    override suspend fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
+        logger.info("Starting to check pending blocks with min block age: {}", pendingBlockAgeToCheck)
+        try {
+            flowOf(
+                blockService.findByStatus(Block.Status.PENDING).filter { isOldEnough(it, pendingBlockAgeToCheck) },
+                blockService.findByStatus(Block.Status.ERROR)
+            ).flattenConcat().map {
+                reindexPendingBlock(it)
+            }.collect()
+            logger.info("Finished checking pending blocks")
+        } catch (e: Exception) {
+            logger.error("Unexpected error during reindexing pending blocks:", e)
         }
     }
 

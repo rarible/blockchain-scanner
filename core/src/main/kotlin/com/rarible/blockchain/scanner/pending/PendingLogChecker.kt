@@ -2,6 +2,6 @@ package com.rarible.blockchain.scanner.pending
 
 interface PendingLogChecker {
 
-    fun checkPendingLogs()
+    suspend fun checkPendingLogs()
 
 }
