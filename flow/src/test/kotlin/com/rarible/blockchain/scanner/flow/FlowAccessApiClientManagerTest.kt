@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowChainId
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
@@ -21,7 +22,7 @@ class FlowAccessApiClientManagerTest {
     @ParameterizedTest
     @MethodSource("sporkByBlockHashTestArguments")
     internal fun sporkByBlockHashTest(blockHash: String, expectedSpork: FlowAccessApiClientManager.Spork) {
-        val actualSpork = FlowAccessApiClientManager.async(blockHash, FlowChainId.MAINNET)
+        val actualSpork = runBlocking { FlowAccessApiClientManager.async(blockHash, FlowChainId.MAINNET) }
         Assertions.assertEquals(expectedSpork, actualSpork)
     }
 

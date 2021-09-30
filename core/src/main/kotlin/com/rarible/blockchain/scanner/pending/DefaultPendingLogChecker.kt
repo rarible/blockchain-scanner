@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toCollection
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -30,20 +29,18 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
 
     private val logger = LoggerFactory.getLogger(DefaultPendingLogChecker::class.java)
 
-    override fun checkPendingLogs() {
-        runBlocking {
-            val collections = descriptors.asFlow().flatMapConcat { descriptors ->
-                logService.findPendingLogs(descriptors)
-                    .mapNotNull { processLog(descriptors, it) }
-            }.toCollection(mutableListOf())
+    suspend override fun checkPendingLogs() {
+        val collections = descriptors.asFlow().flatMapConcat { descriptors ->
+            logService.findPendingLogs(descriptors)
+                .mapNotNull { processLog(descriptors, it) }
+        }.toCollection(mutableListOf())
 
 
-            val droppedLogs = collections.mapNotNull { it.first }
-            val newBlocks = collections.mapNotNull { it.second }.distinctBy { it.hash }
+        val droppedLogs = collections.mapNotNull { it.first }
+        val newBlocks = collections.mapNotNull { it.second }.distinctBy { it.hash }
 
-            onDroppedLogs(droppedLogs)
-            onNewBlocks(newBlocks)
-        }
+        onDroppedLogs(droppedLogs)
+        onNewBlocks(newBlocks)
     }
 
     private suspend fun onDroppedLogs(droppedLogs: List<R>) {
