@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.test
 
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -22,6 +23,7 @@ import kotlinx.coroutines.FlowPreview
 @ExperimentalCoroutinesApi
 @FlowPreview
 class TestBlockchainScanner(
+    metrics: Metrics,
     blockchainClient: TestBlockchainClient,
     subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor>>,
     blockMapper: TestBlockMapper,
@@ -32,6 +34,7 @@ class TestBlockchainScanner(
     logEventListeners: List<LogEventListener<TestLog, TestLogRecord<*>>>,
     properties: BlockchainScannerProperties
 ) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord<*>, TestDescriptor>(
+    metrics,
     blockchainClient,
     subscribers,
     blockMapper,
