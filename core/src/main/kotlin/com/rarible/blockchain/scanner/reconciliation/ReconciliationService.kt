@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.flow
 @FlowPreview
 @ExperimentalCoroutinesApi
 class ReconciliationService<BB : BlockchainBlock, B: Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+    private val metrics: Metrics,
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
@@ -65,6 +67,7 @@ class ReconciliationService<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
         blockMapper: BlockMapper<BB, B>
     ): ReconciliationIndexer<BB, B, BL, L, R, D> {
         return ReconciliationIndexer(
+            metrics,
             blockchainClient = blockchainClient,
             logEventHandler = logEventHandler,
             logEventPublisher = logEventPublisher,

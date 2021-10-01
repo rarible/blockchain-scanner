@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
+import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory
 @FlowPreview
 @ExperimentalCoroutinesApi
 class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+    metrics: Metrics,
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logEventHandler: LogEventHandler<BB, BL, L, R, D>,
     private val logEventPublisher: LogEventPublisher<L, R>,
@@ -40,14 +42,25 @@ class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
 
     private val logger = LoggerFactory.getLogger(logEventHandler.subscriber.javaClass)
 
+    private val processTimer = metrics.timed("scanner.reconciliation.batch.process")
+    private val loadTimer = metrics.timed("scanner.reconciliation.batch.load")
+    private val processSingleTimer = metrics.timed("scanner.reconciliation.block.process")
+
     fun reindex(from: Long, to: Long, batchSize: Long): Flow<LongRange> {
         logger.info("Scanning for Logs in batches from={} to={} with batchSize={}", from, to, batchSize)
         return BlockRanges.getRanges(from, to, batchSize).onEach { range ->
-            val descriptor = logEventHandler.subscriber.getDescriptor()
-            blockchainClient.getBlockEvents(descriptor, range).toList().onEach {
-                val processedLogs = reindexBlock(it)
-                val blockEvent = BlockEvent(Source.REINDEX, it.block)
-                logEventPublisher.onBlockProcessed(blockEvent, processedLogs)
+            processTimer.record {
+                val descriptor = logEventHandler.subscriber.getDescriptor()
+                val events = loadTimer.record {
+                    blockchainClient.getBlockEvents(descriptor, range).toList()
+                }
+                events.onEach {
+                    processSingleTimer.record {
+                        val processedLogs = reindexBlock(it)
+                        val blockEvent = BlockEvent(Source.REINDEX, it.block)
+                        logEventPublisher.onBlockProcessed(blockEvent, processedLogs)
+                    }
+                }
             }
         }
     }

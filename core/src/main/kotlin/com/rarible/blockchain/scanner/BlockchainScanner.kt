@@ -87,6 +87,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     )
 
     private val reconciliationService = ReconciliationService(
+        metrics,
         blockchainClient = retryableBlockchainClient,
         subscribers = subscribers,
         logMapper = logMapper,
