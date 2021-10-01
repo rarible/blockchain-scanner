@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.flow.service.FlowBlockService
 import com.rarible.blockchain.scanner.flow.service.FlowLogService
 import com.rarible.blockchain.scanner.flow.service.FlowPendingLogService
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
+import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Component
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 class FlowBlockchainScanner(
+    metrics: Metrics,
     blockchainClient: FlowClient,
     subscribers: List<FlowLogEventSubscriber>,
     blockMapper: FlowBlockMapper,
@@ -40,6 +42,7 @@ class FlowBlockchainScanner(
     logEventListeners: List<LogEventListener<FlowLog, FlowLogRecord>>,
     properties: BlockchainScannerProperties
 ) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowBlock, FlowLog, FlowLogRecord, FlowDescriptor>(
+    metrics,
     blockchainClient,
     subscribers,
     blockMapper,

@@ -17,6 +17,7 @@ import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
+import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory
 @FlowPreview
 @ExperimentalCoroutinesApi
 class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Descriptor>(
+    metrics: Metrics,
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
@@ -37,6 +39,9 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
+
+    private val blockTimer = metrics.timed("scanner.block.process")
+    private val blockSaveTimer = metrics.timed("scanner.block.save")
 
     private val delay = retryPolicy.reconnectDelay.toMillis()
     private val attempts = if (retryPolicy.reconnectAttempts > 0) {
@@ -57,7 +62,9 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             val blockFlow = getEventFlow()
             logger.info("Connected to blockchain, starting to receive events")
             blockFlow.map {
-                blockListener.onBlockEvent(it)
+                blockTimer.record {
+                    blockListener.onBlockEvent(it)
+                }
             }.collect()
             throw IllegalStateException("Disconnected from Blockchain, event flow completed")
         }
@@ -65,8 +72,8 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
 
     private fun getEventFlow(): Flow<BlockEvent> = flatten {
         blockchainClient.listenNewBlocks().flatMapConcat { newBlock ->
-            getNewBlocks(newBlock).flatMapConcat { blockToUpdate ->
-                saveBlock(blockToUpdate)
+            blockSaveTimer.record {
+                getNewBlocks(newBlock).flatMapConcat { saveBlock(it) }
             }
         }
     }
@@ -115,19 +122,19 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             parentBlock.hash == newBlock.parentHash -> {
                 logger.info(
                     "Parent is the same for new Block and indexed Block [{}] -> '{}', " +
-                            "stopping to retrieve chain of changes", newBlock.meta, parentBlock
+                        "stopping to retrieve chain of changes", newBlock.meta, parentBlock
                 )
                 emptyFlow()
             }
 
             //fetch parent block and save it if parent block hash changed
             else -> {
-                val parentBlock = blockchainClient.getBlock(newBlock.number - 1)
+                val internalParentBlock = blockchainClient.getBlock(newBlock.number - 1)
                 logger.info(
                     "Going to save parent Block [{}], current chain depth is {}",
-                    parentBlock.meta, depth
+                    internalParentBlock.meta, depth
                 )
-                saveBlock(parentBlock, depth + 1)
+                saveBlock(internalParentBlock, depth + 1)
             }
         }
 
