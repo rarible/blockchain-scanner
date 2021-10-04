@@ -50,8 +50,9 @@ object FlowAccessApiClientManager {
             Spork(from = 14892104L, to = 15791890L, nodeUrl = "access-001.mainnet9.nodes.onflow.org"),
             Spork(from = 15791891L, to = 16755601L, nodeUrl = "access-001.mainnet10.nodes.onflow.org"),
             Spork(from = 16755602L, to = 17544522L, nodeUrl = "access-001.mainnet11.nodes.onflow.org"),
-            Spork(from = 17544523L, nodeUrl = "access.mainnet.nodes.onflow.org"),
-        )
+            Spork(from = 17544523L, to = 18587477L, nodeUrl = "access-001.mainnet12.nodes.onflow.org"),
+            Spork(from = 18587478L, nodeUrl = "access.mainnet.nodes.onflow.org"),
+        ).reversed()
     )
 
     fun async(blockHeight: Long, chainId: FlowChainId = DEFAULT_CHAIN_ID): Spork =
@@ -71,14 +72,13 @@ object FlowAccessApiClientManager {
     /**
      * This is bottle-neck!!!
      */
-    suspend fun async(hash: String, chainId: FlowChainId = DEFAULT_CHAIN_ID): Spork =
-        sporks[chainId]!!.first { it.containsBlock(blockHash = hash) }
+    suspend fun async(hash: String, chainId: FlowChainId = DEFAULT_CHAIN_ID): Spork = sporks[chainId]!!.first { it.containsBlock(hash) }
 
     suspend fun asyncByTxHash(transactionHash: String, chainId: FlowChainId): Spork {
         return sporks[chainId]!!.first { it.containsTransaction(transactionHash) }
     }
 
-    fun asyncForCurrentSpork(chainId: FlowChainId): AsyncFlowAccessApi = sporks[chainId]!!.last().asyncClient
+    fun asyncForCurrentSpork(chainId: FlowChainId): AsyncFlowAccessApi = sporks[chainId]!!.first().asyncClient
 
     private fun sporkByBlockHeight(blockHeight: Long, chainId: FlowChainId): Spork =
         sporks[chainId]?.find { blockHeight in it.from..it.to }

@@ -55,7 +55,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
     }
 
 
-    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> {
+    suspend fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> {
         if (fullBlock.logs.isEmpty()) {
             return emptyFlow()
         }
@@ -63,15 +63,14 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         val processedLogs = fullBlock.logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
             onLog(fullBlock.block, idx, log)
         }
-
-        return processedLogs
+        return logService.save(descriptor, processedLogs.toList()).asFlow()
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun onLog(block: BB, index: Int, log: BL): Flow<R> = flatten {
         logger.info("Handling single Log: [{}]", log.hash)
 
-        val logs = subscriber.getEventRecords(block, log)
+        subscriber.getEventRecords(block, log)
             .withIndex()
             .map { indexed ->
                 val record = indexed.value
@@ -84,11 +83,6 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
                     subscriber.getDescriptor()
                 )
                 record.withLog(recordLog) as R
-            }.toList()
-
-        logger.info("Saving {} log events for descriptor [{}] from log [{}]", logs.size, descriptor, log.hash)
-
-        // We expect small amount of subscriber's records per LogEvent, so it's ok to use List here
-        logService.save(descriptor, logs).asFlow()
+            }
     }
 }
