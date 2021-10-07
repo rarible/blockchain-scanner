@@ -8,41 +8,41 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
 @Service
 class FlowLogService(
     private val logRepository: FlowLogRepository
-): LogService<FlowLog, FlowLogRecord, FlowDescriptor> {
-    override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord): FlowLogRecord =
-        logRepository.delete(record).thenReturn(record).awaitSingle()
+) : LogService<FlowLog, FlowLogRecord<*>, FlowDescriptor> {
+    override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord<*>): FlowLogRecord<*> =
+        logRepository.delete(descriptor.collection, record)
 
 
-    override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord>): List<FlowLogRecord> {
-        return logRepository.saveAll(records).collectList().awaitSingle()
+    override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord<*>>): List<FlowLogRecord<*>> {
+        return logRepository.saveAll(descriptor.collection, records).toList()
     }
 
-    override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord> {
-        return emptyFlow()
+    override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord<*>> {
+        return logRepository.findPendingLogs(descriptor.collection, descriptor.event)
     }
 
-    override fun findAndRevert(descriptor: FlowDescriptor, blockHash: String): Flow<FlowLogRecord> {
-        return emptyFlow()
+    override fun findAndRevert(descriptor: FlowDescriptor, blockHash: String): Flow<FlowLogRecord<*>> {
+        return logRepository.findAndRevert(descriptor.collection, descriptor.event, blockHash)
     }
 
     override fun findAndDelete(
         descriptor: FlowDescriptor,
         blockHash: String,
         status: Log.Status?
-    ): Flow<FlowLogRecord> {
+    ): Flow<FlowLogRecord<*>> {
         return emptyFlow()
     }
 
     override suspend fun updateStatus(
         descriptor: FlowDescriptor,
-        record: FlowLogRecord,
+        record: FlowLogRecord<*>,
         status: Log.Status
-    ): FlowLogRecord =
-        logRepository.save(record.withLog(record.log.copy(status = status))).awaitSingle()
+    ): FlowLogRecord<*> =
+        logRepository.save(descriptor.collection, record.withLog(record.log.copy(status = status)))
 }

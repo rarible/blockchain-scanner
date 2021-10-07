@@ -28,27 +28,28 @@ class TestConfig {
     @Bean
     fun allEventsSubscriber(): FlowLogEventSubscriber = object : FlowLogEventSubscriber {
 
-        private val descriptor: FlowDescriptor = FlowDescriptor(id = "BaseAllFlowEventsSubscriber")
+        private val descriptor: FlowDescriptor = FlowDescriptor(event = "A.f8d6e0586b0a20c7.ExampleNFT.Mint", collection = "test_history")
 
         override fun getDescriptor(): FlowDescriptor = descriptor
 
-        override fun getEventRecords(block: FlowBlockchainBlock, log: FlowBlockchainLog): Flow<FlowLogRecord> =
+        override fun getEventRecords(block: FlowBlockchainBlock, log: FlowBlockchainLog): Flow<FlowLogRecord<*>> =
             channelFlow {
-                send(
-                    FlowLogRecord(
-                        FlowLog(
-                            transactionHash = log.hash,
-                            status = Log.Status.CONFIRMED,
-                            txIndex = log.event?.transactionIndex,
-                            eventIndex = log.event?.eventIndex,
-                            type = log.event?.type,
-                            payload = log.event?.payload?.stringValue,
-                            timestamp = Instant.ofEpochSecond(block.timestamp),
-                            blockHeight = block.number,
-                            errorMessage = log.errorMessage
+                if (descriptor.event == log.event.type) {
+                    send(
+                        TestFlowLogRecord(
+                            log = FlowLog(
+                                transactionHash = log.hash,
+                                status = Log.Status.CONFIRMED,
+                                timestamp = Instant.ofEpochSecond(block.timestamp),
+                                blockHeight = block.number,
+                                blockHash = block.hash,
+                                eventIndex = log.event.eventIndex,
+                                eventType = log.event.type
+                            ),
+                            data = log.event.payload.stringValue
                         )
                     )
-                )
+                }
             }
     }
 

@@ -8,4 +8,4 @@ import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 
 interface FlowLogEventSubscriber :
-    LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLog, FlowLogRecord, FlowDescriptor>
+    LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLog, FlowLogRecord<*>, FlowDescriptor>

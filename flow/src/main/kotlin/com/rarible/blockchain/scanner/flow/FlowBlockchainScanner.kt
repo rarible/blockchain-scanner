@@ -39,9 +39,9 @@ class FlowBlockchainScanner(
     logMapper: FlowLogMapper,
     logService: FlowLogService,
     pendingLogService: FlowPendingLogService,
-    logEventListeners: List<LogEventListener<FlowLog, FlowLogRecord>>,
+    logEventListeners: List<LogEventListener<FlowLog, FlowLogRecord<*>>>,
     properties: BlockchainScannerProperties
-) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowBlock, FlowLog, FlowLogRecord, FlowDescriptor>(
+) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowBlock, FlowLog, FlowLogRecord<*>, FlowDescriptor>(
     metrics,
     blockchainClient,
     subscribers,

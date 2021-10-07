@@ -1,23 +1,18 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
-import com.nftco.flow.sdk.cadence.StringField
 import com.nftco.flow.sdk.crypto.Crypto
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
+import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.core.test.containers.KGenericContainer
 import com.rarible.core.test.ext.MongoCleanup
 import com.rarible.core.test.ext.MongoTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.reactive.awaitFirstOrNull
-import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ContextConfiguration
@@ -42,19 +37,23 @@ import kotlin.time.ExperimentalTime
 @MongoTest
 @ExperimentalCoroutinesApi
 @Testcontainers
+@Disabled
 class FlowScannerTest {
 
     private lateinit var accessApi: FlowAccessApi
     private val latestBlockID: FlowId get() = accessApi.getLatestBlockHeader().id
     @Autowired
     private lateinit var logRepository: FlowLogRepository
+    @Autowired
+    private lateinit var allFlowLogEventSubscriber: FlowLogEventSubscriber
+
+
 
     companion object {
         @Container
         private val flowEmulator: KGenericContainer = KGenericContainer(
             "zolt85/flow-cli-emulator:27"
         ).withEnv("FLOW_BLOCKTIME", "300ms")
-//            .withEnv("FLOW_VERBOSE", "true")
             .withCopyFileToContainer(
                 MountableFile.forClasspathResource("com/rarible/blockchain/scanner/flow/contracts"),
                 "/home/flow/contracts"
@@ -78,9 +77,6 @@ class FlowScannerTest {
             println(flowEmulator.execInContainer("flow", "accounts", "create", "--key", EmulatorUser.Patrick.pubHex).stdout)
             println(flowEmulator.execInContainer("flow", "accounts", "create", "--key", EmulatorUser.Squidward.pubHex).stdout)
             println(flowEmulator.execInContainer("flow", "accounts", "create", "--key", EmulatorUser.Gary.pubHex).stdout)
-            FlowAccessApiClientManager.sporks[FlowChainId.EMULATOR] = listOf(
-                FlowAccessApiClientManager.Spork(from = 0L, nodeUrl = flowEmulator.host, port = flowEmulator.getMappedPort(3569))
-            )
         }
     }
 
@@ -93,7 +89,6 @@ class FlowScannerTest {
     internal fun `scanner test`() = runBlocking {
         var proposalKey = getAccountKey(EmulatorUser.Emulator.address)
         var authKey = getAccountKey(EmulatorUser.Patrick.address)
-
         var initTx = FlowTransaction(
             script = FlowScript("""
                 import ExampleNFT from ${EmulatorUser.Emulator.address.formatted}
@@ -203,60 +198,13 @@ class FlowScannerTest {
         Assertions.assertEquals(txId, FlowId(event.log.transactionHash), "Transactions are not equals")
     }
 
-    @Test
-    internal fun `check error messages`() = runBlocking {
-        val proposalKey = getAccountKey(EmulatorUser.Emulator.address)
-        val panicMsg = "Some error message!"
-        var errorTx = FlowTransaction(
-            script = FlowScript(
-                """
-                    transaction(panicMsg: String) {
-                        
-                        prepare() {}
-                        
-                        execute {
-                            panic(panicMsg)
-                        }
-                    }
-                """.trimIndent()
-            ),
-            arguments = listOf(FlowArgument(jsonCadence = StringField(panicMsg))),
-            referenceBlockId = latestBlockID,
-            gasLimit = 100L,
-            proposalKey = FlowTransactionProposalKey(
-                address = EmulatorUser.Emulator.address,
-                keyIndex = proposalKey.id,
-                sequenceNumber = proposalKey.sequenceNumber.toLong()
-            ),
-            payerAddress = EmulatorUser.Emulator.address,
-            authorizers = listOf()
-        )
-
-        val signer = Crypto.getSigner(privateKey = Crypto.decodePrivateKey(EmulatorUser.Emulator.keyHex), hashAlgo = proposalKey.hashAlgo)
-        errorTx = errorTx.addEnvelopeSignature(EmulatorUser.Emulator.address, proposalKey.id, signer = signer)
-
-        val txId = accessApi.sendTransaction(transaction = errorTx)
-        val errorEvent = awaitErrorEvent()
-        Assertions.assertEquals(txId, FlowId(errorEvent.log.transactionHash))
-        Assertions.assertNotNull(errorEvent.log.errorMessage)
-        Assertions.assertTrue(errorEvent.log.errorMessage!!.contains(panicMsg))
-    }
-
-    private suspend fun awaitErrorEvent(): FlowLogRecord {
-        var founded: FlowLogRecord? = null
-        while (founded == null) {
-            founded = logRepository.findByExistsLogErrorMessage().awaitFirstOrNull()
-        }
-        return founded
-    }
-
-    private suspend fun awaitMintEvent(): FlowLogRecord {
-        var founded: FlowLogRecord? = null
+    private suspend fun awaitMintEvent(): FlowLogRecord<*> {
+        var founded: FlowLogRecord<*>? = null
         Assertions.assertTimeout(Duration.ofSeconds(10L)) {
             runBlocking {
                 while (founded == null) {
                     founded = try {
-                        logRepository.findByLogType(type = "A.f8d6e0586b0a20c7.ExampleNFT.Mint").awaitSingle()
+                        logRepository.findByLogEventType(collection = allFlowLogEventSubscriber.getDescriptor().collection, eventType = "A.f8d6e0586b0a20c7.ExampleNFT.Mint")
                     } catch (e: Exception) {
                         when (e) {
                             is IllegalArgumentException -> Assertions.fail("More than one mint log founded!")

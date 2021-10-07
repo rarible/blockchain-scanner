@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import org.springframework.stereotype.Service
 
 @Service
-class FlowPendingLogService: PendingLogService<FlowBlockchainBlock, FlowLog, FlowLogRecord, FlowDescriptor> {
+class FlowPendingLogService: PendingLogService<FlowBlockchainBlock, FlowLog, FlowLogRecord<*>, FlowDescriptor> {
     override fun getInactive(
         block: FlowBlockchainBlock,
-        records: List<LogEvent<FlowLog, FlowLogRecord, FlowDescriptor>>
-    ): Flow<LogEventStatusUpdate<FlowLog, FlowLogRecord, FlowDescriptor>> = emptyFlow()
+        records: List<LogEvent<FlowLog, FlowLogRecord<*>, FlowDescriptor>>
+    ): Flow<LogEventStatusUpdate<FlowLog, FlowLogRecord<*>, FlowDescriptor>> = emptyFlow()
 }

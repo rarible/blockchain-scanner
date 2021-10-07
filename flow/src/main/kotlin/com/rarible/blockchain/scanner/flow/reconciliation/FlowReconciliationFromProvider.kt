@@ -13,7 +13,7 @@ class FlowReconciliationFromProvider(
 
     override fun initialFrom(): Long = when(chainId) {
         FlowChainId.MAINNET -> 7601063L
-        FlowChainId.TESTNET -> 45051578L
+        FlowChainId.TESTNET -> 47330084L
         FlowChainId.EMULATOR -> 0L
         else -> throw IllegalArgumentException("Unsupported chain-id : $chainId")
     }
