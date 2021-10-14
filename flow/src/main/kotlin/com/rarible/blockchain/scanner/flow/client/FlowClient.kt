@@ -74,6 +74,7 @@ class FlowClient(
                 async { api.eventsByBlockRange(it, sl) }
             }.awaitAll()
                 .flatMap { it.toList() }
+                .filter { it.events.isNotEmpty() }
                 .forEach {
                     send(it.toFullBlock())
                 }
