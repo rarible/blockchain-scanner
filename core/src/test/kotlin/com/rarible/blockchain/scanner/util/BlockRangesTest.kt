@@ -14,7 +14,7 @@ internal class BlockRangesTest {
         assertEquals(listOf(1L..10L, 11L..11L), range(1, 11, 10))
     }
 
-    private suspend fun range(from: Long, to: Long, step: Long): List<LongRange> {
+    private suspend fun range(from: Long, to: Long, step: Int): List<LongRange> {
         return BlockRanges.getRanges(from, to, step).toCollection(mutableListOf())
     }
 

@@ -6,7 +6,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.future.await
 import net.devh.boot.grpc.client.inject.GrpcClient
 import org.onflow.protobuf.access.AccessAPIGrpc
@@ -53,11 +52,9 @@ class DefaultFlowGrpcApi : FlowGrpcApi {
     override suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> =
         api.getEventsForHeightRange(type, range).await().asFlow()
 
-    override suspend fun blockEvents(type: String, block: FlowBlock): Flow<FlowEventResult> {
-        if (block.collectionGuarantees.isEmpty()) {
-            return emptyFlow()
-        }
-
-        return api.getEventsForBlockIds(type, setOf(block.id)).await().asFlow()
+    override suspend fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> {
+        return api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
     }
+
+    override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? = api.getBlockHeaderByHeight(height).await()
 }

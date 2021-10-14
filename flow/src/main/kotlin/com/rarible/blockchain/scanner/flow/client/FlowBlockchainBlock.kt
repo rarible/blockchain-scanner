@@ -1,20 +1,17 @@
 package com.rarible.blockchain.scanner.flow.client
 
+import com.nftco.flow.sdk.FlowBlock
 import com.rarible.blockchain.scanner.data.BlockMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import org.bouncycastle.util.encoders.Hex
-import com.nftco.flow.sdk.FlowBlock
 import java.time.ZoneOffset
 
 class FlowBlockchainBlock(
-    val block: FlowBlock
-) : BlockchainBlock {
-
     override val meta: BlockMeta
-        get() = BlockMeta(
-            number = block.height,
-            hash = Hex.toHexString(block.id.bytes),
-            parentHash = Hex.toHexString(block.parentId.bytes),
-            timestamp = block.timestamp.toEpochSecond(ZoneOffset.UTC)
-        )
-}
+) : BlockchainBlock
+
+fun FlowBlock.blockMeta(): BlockMeta = BlockMeta(
+    number = this.height,
+    hash = this.id.base16Value,
+    parentHash = this.parentId.base16Value,
+    timestamp = this.timestamp.toInstant(ZoneOffset.UTC).toEpochMilli()
+)

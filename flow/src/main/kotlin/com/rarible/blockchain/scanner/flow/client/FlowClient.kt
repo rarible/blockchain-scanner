@@ -2,6 +2,8 @@ package com.rarible.blockchain.scanner.flow.client
 
 import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
 import com.nftco.flow.sdk.FlowChainId
+import com.nftco.flow.sdk.FlowEventResult
+import com.nftco.flow.sdk.FlowId
 import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.flow.FlowGrpcApi
@@ -9,15 +11,14 @@ import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.bouncycastle.util.encoders.Hex
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.time.ZoneOffset
 
 /**
  * Client for Flow blockchain
@@ -37,18 +38,18 @@ class FlowClient(
     private val logger: Logger = LoggerFactory.getLogger(FlowClient::class.java)
 
     override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = flow {
-        emitAll(poller.poll(lastReadBlock.getLastReadBlockHeight()).map { FlowBlockchainBlock(it) })
+        emitAll(poller.poll(lastReadBlock.getLastReadBlockHeight()).map { FlowBlockchainBlock(it.blockMeta()) })
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
         val a = api.blockByHeight(number) ?: throw IllegalStateException("Block [$number] not found!")
-        return FlowBlockchainBlock(a)
+        return FlowBlockchainBlock(a.blockMeta())
     }
 
 
     override suspend fun getBlock(hash: String): FlowBlockchainBlock {
         val b = api.blockById(hash) ?: throw IllegalStateException("Block [$hash] not found!")
-        return FlowBlockchainBlock(b)
+        return FlowBlockchainBlock(b.blockMeta())
     }
 
     override suspend fun getLastBlockNumber(): Long =
@@ -68,27 +69,13 @@ class FlowClient(
         logger.info("Block's dia is $chunkSize")
         range.chunked(chunkSize) {
             LongRange(it.first(), it.last())
-        }.forEach { smallRange ->
-                val events =
-                    api.eventsByBlockRange(descriptor.event, smallRange)
-                events.map { eventResult ->
-                    val logs = eventResult.events.map { flowEvent ->
-                        FlowBlockchainLog(
-                            hash = flowEvent.transactionId.base16Value,
-                            blockHash = eventResult.blockId.base16Value,
-                            event = flowEvent
-                        )
-                    }
-                    if (logs.isNotEmpty()) {
-                        logger.info("Received ${logs.size} events for type: ${descriptor.event} on range ${smallRange.first}..${smallRange.last}")
-                        val block = api.blockById(eventResult.blockId)!!
-                        send(
-                            FullBlock(
-                                block = FlowBlockchainBlock(block),
-                                logs = logs
-                            )
-                        )
-                    }
+        }.asFlow().collect { sl ->
+            descriptor.events.map {
+                async { api.eventsByBlockRange(it, sl) }
+            }.awaitAll()
+                .flatMap { it.toList() }
+                .forEach {
+                    send(it.toFullBlock())
                 }
         }
     }
@@ -101,15 +88,37 @@ class FlowClient(
     override suspend fun getBlockEvents(
         descriptor: FlowDescriptor,
         block: FlowBlockchainBlock
-    ): Flow<FlowBlockchainLog> {
-        return api.blockEvents(type = descriptor.event, block = block.block).flatMapConcat {
-            it.events.asFlow().map {
-                FlowBlockchainLog(
-                    hash = Hex.toHexString(it.transactionId.bytes),
-                    blockHash = block.hash,
-                    event = it
-                )
-            }
-        }
+    ): Flow<FlowBlockchainLog> =
+        descriptor.events.asFlow().flatMapMerge {
+            api.blockEvents(it, FlowId(block.hash))
+        }.toList()
+            .filter { it.events.isNotEmpty() }
+            .flatMap {
+                it.toFullBlock().logs
+            }.asFlow()
+
+}
+
+private fun FlowEventResult.toFullBlock(): FullBlock<FlowBlockchainBlock, FlowBlockchainLog> {
+    val logs = this.events.map { flowEvent ->
+        FlowBlockchainLog(
+            hash = flowEvent.transactionId.base16Value,
+            blockHash = this.blockId.base16Value,
+            event = flowEvent
+        )
     }
+
+    return FullBlock(
+        block = FlowBlockchainBlock(
+            meta = com.rarible.blockchain.scanner.data.BlockMeta(
+                number = this.blockHeight,
+                hash = this.blockId.base16Value,
+                timestamp = this.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),
+                parentHash = null
+            )
+        ),
+        logs = logs
+    )
+
+
 }

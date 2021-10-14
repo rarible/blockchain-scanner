@@ -1,9 +1,6 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.FlowBlock
-import com.nftco.flow.sdk.FlowEventResult
-import com.nftco.flow.sdk.FlowId
-import com.nftco.flow.sdk.FlowTransaction
+import com.nftco.flow.sdk.*
 import kotlinx.coroutines.flow.Flow
 
 interface FlowGrpcApi {
@@ -22,6 +19,8 @@ interface FlowGrpcApi {
 
     suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult>
 
-    suspend fun blockEvents(type: String, block: FlowBlock): Flow<FlowEventResult>
+    suspend fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult>
+
+    suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader?
 
 }

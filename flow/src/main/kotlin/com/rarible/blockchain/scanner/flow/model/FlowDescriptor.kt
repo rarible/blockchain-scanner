@@ -3,9 +3,8 @@ package com.rarible.blockchain.scanner.flow.model
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 
 class FlowDescriptor(
-    val event: String,
-    val collection: String
-): Descriptor {
-
-    override val id: String = event
-}
+    override val id: String,
+    val events: Set<String>,
+    val collection: String,
+    val startFrom: Long? = null
+): Descriptor

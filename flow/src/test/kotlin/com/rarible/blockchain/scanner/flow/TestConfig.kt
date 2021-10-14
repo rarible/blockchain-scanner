@@ -28,13 +28,13 @@ class TestConfig {
     @Bean
     fun allEventsSubscriber(): FlowLogEventSubscriber = object : FlowLogEventSubscriber {
 
-        private val descriptor: FlowDescriptor = FlowDescriptor(event = "A.f8d6e0586b0a20c7.ExampleNFT.Mint", collection = "test_history")
+        private val descriptor: FlowDescriptor = FlowDescriptor(id = "ExampleNFTDescriptor", events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"), collection = "test_history")
 
         override fun getDescriptor(): FlowDescriptor = descriptor
 
         override fun getEventRecords(block: FlowBlockchainBlock, log: FlowBlockchainLog): Flow<FlowLogRecord<*>> =
             channelFlow {
-                if (descriptor.event == log.event.type) {
+                if (descriptor.events.contains(log.event.type)) {
                     send(
                         TestFlowLogRecord(
                             log = FlowLog(

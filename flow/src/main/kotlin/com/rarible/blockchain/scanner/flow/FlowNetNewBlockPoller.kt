@@ -1,9 +1,7 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowBlock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -37,6 +35,7 @@ class FlowNetNewBlockPoller(
                 val latest = api.latestBlock()
                 if (latest.height <= startNumber) {
                     log.debug("Latest height on chain greater than need [${latest.height} <= $startNumber]")
+                    delay(polledDelay)
                     continue
                 }
                 val range = (startNumber .. latest.height).asFlow()
@@ -53,11 +52,11 @@ class FlowNetNewBlockPoller(
                 delay(polledDelay)
             }
         }.retry {
-                if (log.isDebugEnabled) {
-                    log.debug("Error in poll function: ${it.message}", it)
-                }
-                delay(polledDelay)
-                true
+            if (log.isDebugEnabled) {
+                log.debug("Error in poll function: ${it.message}", it)
             }
+            delay(polledDelay)
+            true
+        }
     }
 }

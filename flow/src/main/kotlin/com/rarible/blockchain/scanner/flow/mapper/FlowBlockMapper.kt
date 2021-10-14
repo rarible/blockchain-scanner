@@ -13,7 +13,7 @@ class FlowBlockMapper: BlockMapper<FlowBlockchainBlock, FlowBlock> {
         return FlowBlock(
             id = originalBlock.number,
             hash = originalBlock.hash,
-            parentHash = originalBlock.parentHash!!,
+            parentHash = originalBlock.parentHash.orEmpty(),
             timestamp = originalBlock.timestamp,
             status = status
         )
