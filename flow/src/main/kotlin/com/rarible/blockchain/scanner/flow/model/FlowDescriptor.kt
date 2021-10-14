@@ -1,8 +1,10 @@
 package com.rarible.blockchain.scanner.flow.model
 
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import java.util.*
 
 class FlowDescriptor(
-    override val id: String = UUID.randomUUID().toString()
+    override val id: String,
+    val events: Set<String>,
+    val collection: String,
+    val startFrom: Long? = null
 ): Descriptor

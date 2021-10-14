@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import org.springframework.stereotype.Component
-import java.time.ZoneOffset
+import java.time.Instant
 
 @Component
 class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> {
@@ -18,18 +18,14 @@ class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> 
         minorIndex: Int,
         descriptor: Descriptor
     ): FlowLog {
-
-        val event = log.event
         return FlowLog(
-            transactionHash = log.hash,
             status = Log.Status.CONFIRMED,
-            txIndex = event?.transactionIndex,
-            eventIndex = event?.eventIndex,
-            type = event?.type,
-            payload = event?.payload?.byteStringValue?.toStringUtf8(),
-            timestamp = block.block.timestamp.toInstant(ZoneOffset.UTC),
+            transactionHash = log.hash,
+            eventIndex = log.event.eventIndex,
+            eventType = log.event.type,
+            timestamp = Instant.ofEpochSecond(block.timestamp),
             blockHeight = block.number,
-            errorMessage = log.errorMessage
+            blockHash = block.hash
         )
     }
 }
