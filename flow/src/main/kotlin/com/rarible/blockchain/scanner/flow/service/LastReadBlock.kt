@@ -14,9 +14,6 @@ class LastReadBlock(
 
 
     suspend fun getLastReadBlockHeight(): Long {
-        if (!api.isAlive()) {
-            throw RuntimeException("Network is unavailable!")
-        }
         val lastBlockInDb = blockService.getLastBlock()
         val lastBlockOnChain = api.latestBlock()
 
