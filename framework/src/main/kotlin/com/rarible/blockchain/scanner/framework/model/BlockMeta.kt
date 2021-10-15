@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.data
+package com.rarible.blockchain.scanner.framework.model
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 

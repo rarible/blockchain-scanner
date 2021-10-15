@@ -1,8 +1,8 @@
 package com.rarible.blockchain.scanner.flow.client
 
 import com.nftco.flow.sdk.FlowBlock
-import com.rarible.blockchain.scanner.data.BlockMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.model.BlockMeta
 import java.time.ZoneOffset
 
 class FlowBlockchainBlock(

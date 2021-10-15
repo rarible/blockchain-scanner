@@ -2,12 +2,12 @@ package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.LogEventHandler
 import com.rarible.blockchain.scanner.LogEventPublisher
-import com.rarible.blockchain.scanner.data.BlockEvent
-import com.rarible.blockchain.scanner.data.FullBlock
-import com.rarible.blockchain.scanner.data.Source
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor

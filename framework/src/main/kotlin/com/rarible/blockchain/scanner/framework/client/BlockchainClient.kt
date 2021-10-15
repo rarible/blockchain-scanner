@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.framework.client
 
-import com.rarible.blockchain.scanner.data.FullBlock
-import com.rarible.blockchain.scanner.data.TransactionMeta
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.flow.Flow
 

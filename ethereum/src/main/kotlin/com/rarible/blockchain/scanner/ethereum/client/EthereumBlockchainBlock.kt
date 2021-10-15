@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-import com.rarible.blockchain.scanner.data.BlockMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.model.BlockMeta
 import io.daonomic.rpc.domain.Word
 import scalether.domain.response.Block
 

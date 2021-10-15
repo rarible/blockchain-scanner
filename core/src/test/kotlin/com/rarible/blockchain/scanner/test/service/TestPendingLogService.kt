@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.test.service
 
-import com.rarible.blockchain.scanner.data.LogEvent
-import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
+import com.rarible.blockchain.scanner.framework.data.LogEvent
+import com.rarible.blockchain.scanner.framework.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock

@@ -73,6 +73,18 @@
             </dependency>
 
             <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-flow-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-framework</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>net.java.dev.jna</groupId>
                 <artifactId>jna</artifactId>
                 <version>5.7.0</version>
@@ -94,8 +106,10 @@
     </build>
 
     <modules>
+        <module>framework</module>
         <module>core</module>
         <module>ethereum</module>
+        <module>flow-model</module>
         <module>flow</module>
         <module>test-coverage</module>
     </modules>

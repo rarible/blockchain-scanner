@@ -1,8 +1,8 @@
 package com.rarible.blockchain.scanner.pending
 
-import com.rarible.blockchain.scanner.data.LogEvent
-import com.rarible.blockchain.scanner.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.data.LogEvent
+import com.rarible.blockchain.scanner.framework.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord

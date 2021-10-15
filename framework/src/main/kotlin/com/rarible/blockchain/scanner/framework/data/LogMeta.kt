@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.data
+package com.rarible.blockchain.scanner.framework.data
 
 data class LogMeta(
 

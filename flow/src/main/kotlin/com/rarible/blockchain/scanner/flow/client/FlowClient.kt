@@ -4,13 +4,14 @@ import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
-import com.rarible.blockchain.scanner.data.FullBlock
-import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.flow.FlowGrpcApi
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.TransactionMeta
+import com.rarible.blockchain.scanner.framework.model.BlockMeta
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.bouncycastle.util.encoders.Hex
@@ -111,7 +112,7 @@ private fun FlowEventResult.toFullBlock(): FullBlock<FlowBlockchainBlock, FlowBl
 
     return FullBlock(
         block = FlowBlockchainBlock(
-            meta = com.rarible.blockchain.scanner.data.BlockMeta(
+            meta = BlockMeta(
                 number = this.blockHeight,
                 hash = this.blockId.base16Value,
                 timestamp = this.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),

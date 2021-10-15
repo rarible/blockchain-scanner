@@ -1,7 +1,8 @@
-package com.rarible.blockchain.scanner.data
+package com.rarible.blockchain.scanner.framework.data
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.model.BlockMeta
 
 data class BlockEvent(
     val eventSource: Source,

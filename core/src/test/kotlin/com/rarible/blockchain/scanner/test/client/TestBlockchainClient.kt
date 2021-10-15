@@ -1,8 +1,8 @@
 package com.rarible.blockchain.scanner.test.client
 
-import com.rarible.blockchain.scanner.data.FullBlock
-import com.rarible.blockchain.scanner.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import kotlinx.coroutines.flow.Flow

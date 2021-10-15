@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.pending
 
 import com.rarible.blockchain.scanner.BlockListener
-import com.rarible.blockchain.scanner.data.Source
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient

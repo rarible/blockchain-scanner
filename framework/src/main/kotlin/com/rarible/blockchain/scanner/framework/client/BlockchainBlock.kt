@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.framework.client
 
-import com.rarible.blockchain.scanner.data.BlockMeta
+import com.rarible.blockchain.scanner.framework.model.BlockMeta
 
 /**
  * Simple wrapper for original Blockchain Block, provided by Blockchain Client.

@@ -32,6 +32,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.rarible.blockchain.scanner</groupId>
+            <artifactId>rarible-blockchain-scanner-flow-model</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.nftco</groupId>
             <artifactId>flow-jvm-sdk</artifactId>
             <version>0.5.0</version>

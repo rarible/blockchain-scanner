@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
-import com.rarible.blockchain.scanner.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord

@@ -1,9 +1,9 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.data.BlockEvent
-import com.rarible.blockchain.scanner.data.FullBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -49,7 +49,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
             logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
             flowOf(
                 deletedAndReverted,
-                logService.findAndRevert(descriptor, event.reverted.hash)
+                logService.findAndRevert(descriptor, event.reverted!!.hash)
             ).flattenConcat()
         }
     }

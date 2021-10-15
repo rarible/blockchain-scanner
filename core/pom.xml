@@ -72,7 +72,10 @@
             <artifactId>kotlin-retry</artifactId>
             <version>1.0.8</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.rarible.blockchain.scanner</groupId>
+            <artifactId>rarible-blockchain-scanner-framework</artifactId>
+        </dependency>
 
         <!-- ================== Test ===================== -->
         <dependency>

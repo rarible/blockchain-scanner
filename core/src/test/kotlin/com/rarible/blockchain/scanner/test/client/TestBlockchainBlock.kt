@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.test.client
 
-import com.rarible.blockchain.scanner.data.BlockMeta
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.model.BlockMeta
 
 data class TestBlockchainBlock(val testOriginalBlock: TestOriginalBlock) : BlockchainBlock {
 

@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.framework.client
 
-import com.rarible.blockchain.scanner.data.LogMeta
+import com.rarible.blockchain.scanner.framework.data.LogMeta
 
 /**
  * Simple wrapper for original Blockchain Log, provided by Blockchain Client.
