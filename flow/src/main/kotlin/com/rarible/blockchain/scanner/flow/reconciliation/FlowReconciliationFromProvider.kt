@@ -17,7 +17,7 @@ class FlowReconciliationFromProvider(
         val sub = subscribers.first { descriptorId == it.getDescriptor().id }
         return sub.getDescriptor().startFrom ?: when(chainId) {
             FlowChainId.MAINNET -> 7601063L
-            FlowChainId.TESTNET -> 47330084L
+            FlowChainId.TESTNET -> 48148361L
             FlowChainId.EMULATOR -> 0L
             else -> throw IllegalArgumentException("Unsupported chain-id : $chainId")
         }
