@@ -7,12 +7,15 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.ProcessedBlockEvent
+import com.rarible.blockchain.scanner.util.logTime
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 
+@ExperimentalCoroutinesApi
 class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
     private val logEventListeners: List<LogEventListener<L, R>>,
     private val retryPolicy: ScanRetryPolicyProperties
@@ -21,17 +24,19 @@ class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
     private val logger = LoggerFactory.getLogger(LogEventPublisher::class.java)
 
     suspend fun onBlockProcessed(event: BlockEvent, logs: List<R>): Block.Status {
-        val status = try {
-            logger.debug(
-                "Starting to notify all listeners for {} Logs of BlockEvent [{}] for {} post-processors",
-                logs.size, event, logEventListeners.size
-            )
+        val status = logTime("onBlockProcessed [${event.block.number}]") {
+            try {
+                logger.debug(
+                    "Starting to notify all listeners for {} Logs of BlockEvent [{}] for {} post-processors",
+                    logs.size, event, logEventListeners.size
+                )
 
-            withTimeout(retryPolicy.maxProcessTime.toMillis()) { onLogsProcessed(event, logs) }
-            Block.Status.SUCCESS
-        } catch (ex: Throwable) {
-            logger.error("Unable to handle event [$event]", ex)
-            Block.Status.ERROR
+                withTimeout(retryPolicy.maxProcessTime.toMillis()) { onLogsProcessed(event, logs) }
+                Block.Status.SUCCESS
+            } catch (ex: Throwable) {
+                logger.error("Unable to handle event [$event]", ex)
+                Block.Status.ERROR
+            }
         }
 
         logger.info("Finished BlockEvent [{}] processing, block status is: {}", event, status)

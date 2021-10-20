@@ -8,11 +8,9 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ContextConfiguration
 import org.testcontainers.junit.jupiter.Testcontainers
-import kotlin.time.ExperimentalTime
 
 
 @ObsoleteCoroutinesApi
-@ExperimentalTime
 @FlowPreview
 @SpringBootTest(properties = [
     "rarible.task.initialDelay=0",

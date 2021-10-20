@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.flatten
+import com.rarible.blockchain.scanner.util.logTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -36,22 +37,32 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService)
 
     fun onBlockEvent(event: BlockEvent): Flow<R> = flatten {
-        val start = logHandler.beforeHandleBlock(event)
+        val start = logTime("logHandler.beforeHandleBlock [${event.block.number}]") {
+            logHandler.beforeHandleBlock(event)
+        }
         val descriptor = subscriber.getDescriptor()
         logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
 
-        val block = blockchainClient.getBlock(event.block.hash)
+        val block = logTime("Get block [${event.block.number}] from handler") {
+            blockchainClient.getBlock(event.block.number)
+        }
 
         flowOf(
             start,
-            pendingLogMarker.markInactive(block, descriptor),
+            logTime("pendingLogMarker.markInactive [${event.block.number}]") {
+                pendingLogMarker.markInactive(block, descriptor)
+            },
             processBlock(block)
         ).flattenConcat()
     }
 
     private fun processBlock(originalBlock: BB): Flow<R> = flatten {
-        val events = blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
-        logHandler.handleLogs(FullBlock(originalBlock, events))
+        val events = logTime("blockchainClient::getBlockEvents [${originalBlock.number}]") {
+            blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
+        }
+        logTime("logHandler::handleLogs [${originalBlock.number}]") {
+            logHandler.handleLogs(FullBlock(originalBlock, events))
+        }
     }
 
     override fun toString(): String {

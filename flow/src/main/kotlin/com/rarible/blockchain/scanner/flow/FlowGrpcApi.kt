@@ -23,4 +23,7 @@ interface FlowGrpcApi {
 
     suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader?
 
+    suspend fun chunk(range: LongRange): Flow<LongRange>
+
+    suspend fun blockEvents(height: Long): Flow<FlowEvent>
 }

@@ -21,10 +21,8 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
 import java.time.Duration
-import kotlin.time.ExperimentalTime
 
 @ObsoleteCoroutinesApi
-@ExperimentalTime
 @FlowPreview
 @SpringBootTest(properties = [
     "rarible.task.initialDelay=0",

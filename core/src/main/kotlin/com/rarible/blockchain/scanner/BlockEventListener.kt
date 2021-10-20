@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.util.logTime
 import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -55,7 +56,9 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
     }
 
     private suspend fun processBlock(event: BlockEvent): List<R> {
-        val logs = blockEventHandler.onBlockEvent(event).toList()
+        val logs = logTime("BlockEventListener::processBlockEvent [${event.block.number}]") {
+            blockEventHandler.onBlockEvent(event).toList()
+        }
         logger.info("BlockEvent [{}] processed, {} Logs gathered", event, logs.size)
         return logs
     }

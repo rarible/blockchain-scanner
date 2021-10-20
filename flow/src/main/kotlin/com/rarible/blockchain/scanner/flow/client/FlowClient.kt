@@ -1,13 +1,9 @@
 package com.rarible.blockchain.scanner.flow.client
 
-import com.nftco.flow.sdk.Flow.DEFAULT_CHAIN_ID
-import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowEventResult
-import com.nftco.flow.sdk.FlowId
 import com.rarible.blockchain.scanner.flow.FlowGrpcApi
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
-import com.rarible.blockchain.scanner.flow.service.LastReadBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
@@ -17,7 +13,6 @@ import kotlinx.coroutines.flow.*
 import org.bouncycastle.util.encoders.Hex
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.ZoneOffset
 
@@ -29,17 +24,14 @@ import java.time.ZoneOffset
 @ExperimentalCoroutinesApi
 @Component
 class FlowClient(
-    @Value("\${blockchain.scanner.flow.chainId}")
-    private val chainId: FlowChainId = DEFAULT_CHAIN_ID,
     private val poller: FlowNetNewBlockPoller,
-    private val lastReadBlock: LastReadBlock,
     private val api: FlowGrpcApi
 ) : BlockchainClient<FlowBlockchainBlock, FlowBlockchainLog, FlowDescriptor> {
 
     private val logger: Logger = LoggerFactory.getLogger(FlowClient::class.java)
 
     override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = flow {
-        emitAll(poller.poll(lastReadBlock.getLastReadBlockHeight()).map { FlowBlockchainBlock(it.blockMeta()) })
+        emitAll(poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it.blockMeta()) })
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
@@ -62,15 +54,7 @@ class FlowClient(
         range: LongRange
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> = channelFlow {
         logger.info("Get events from block range ${range.first}..${range.last}")
-        val chunkSize = when (chainId) {
-            FlowChainId.MAINNET -> 250
-            FlowChainId.TESTNET -> 25
-            else -> 10
-        }
-        logger.info("Block's dia is $chunkSize")
-        range.chunked(chunkSize) {
-            LongRange(it.first(), it.last())
-        }.asFlow().collect { sl ->
+        api.chunk(range).collect { sl ->
             descriptor.events.map {
                 async { api.eventsByBlockRange(it, sl) }
             }.awaitAll()
@@ -90,14 +74,16 @@ class FlowClient(
     override suspend fun getBlockEvents(
         descriptor: FlowDescriptor,
         block: FlowBlockchainBlock
-    ): Flow<FlowBlockchainLog> =
-        descriptor.events.asFlow().flatMapMerge {
-            api.blockEvents(it, FlowId(block.hash))
-        }.toList()
-            .filter { it.events.isNotEmpty() }
-            .flatMap {
-                it.toFullBlock().logs
-            }.asFlow()
+    ): Flow<FlowBlockchainLog> {
+        return api.blockEvents(height = block.number).filter { descriptor.events.contains(it.id) }.map {
+            FlowBlockchainLog(
+                hash = it.transactionId.base16Value,
+                blockHash = block.hash,
+                event = it
+            )
+        }
+    }
+
 
 }
 

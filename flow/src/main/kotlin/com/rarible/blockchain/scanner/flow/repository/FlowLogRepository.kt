@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.flow.repository
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -33,7 +32,4 @@ class FlowLogRepository(
     suspend fun save(collection: String, record: FlowLogRecord<*>): FlowLogRecord<*> =
         mongo.save(record, collection).awaitSingle()
 
-    fun findPendingLogs(collection: String, event: String): Flow<FlowLogRecord<*>> = emptyFlow()
-
-    fun findAndRevert(collection: String, event: String, blockHash: String): Flow<FlowLogRecord<*>> = emptyFlow()
 }

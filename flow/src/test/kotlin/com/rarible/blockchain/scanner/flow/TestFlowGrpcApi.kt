@@ -1,11 +1,13 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.future.await
 
 
+@ExperimentalCoroutinesApi
 class TestFlowGrpcApi(private val api: AsyncFlowAccessApi): FlowGrpcApi {
     override suspend fun isAlive(): Boolean = true
 
@@ -26,7 +28,27 @@ class TestFlowGrpcApi(private val api: AsyncFlowAccessApi): FlowGrpcApi {
         return api.getBlockHeaderByHeight(height).await()
     }
 
+    override suspend fun chunk(range: LongRange): Flow<LongRange> = flowOf(range)
+
     override suspend fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> {
         return api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
+    }
+
+    override suspend fun blockEvents(height: Long): Flow<FlowEvent> {
+        val block = api.getBlockByHeight(height).await()!!
+        if (block.collectionGuarantees.isEmpty()) {
+            return emptyFlow()
+        }
+
+        return channelFlow {
+            block.collectionGuarantees.forEach {
+                val c = api.getCollectionById(it.id).await() ?: throw IllegalStateException("Not found collection guarantee [${it.id}]")
+                c.transactionIds.mapNotNull { txId ->
+                    api.getTransactionResultById(txId).await()
+                }.flatMap { it.events }.forEach {
+                    send(it)
+                }
+            }
+        }
     }
 }

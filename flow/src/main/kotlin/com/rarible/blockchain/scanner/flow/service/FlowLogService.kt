@@ -7,7 +7,9 @@ import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
 @FlowPreview
@@ -23,18 +25,9 @@ class FlowLogService(
         return logRepository.saveAll(descriptor.collection, records).toList()
     }
 
-    override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord<*>> {
-        return descriptor.events.asFlow().flatMapMerge {
-            logRepository.findPendingLogs(descriptor.collection, it)
-        }
+    override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord<*>> = emptyFlow()
 
-    }
-
-    override fun findAndRevert(descriptor: FlowDescriptor, blockHash: String): Flow<FlowLogRecord<*>> {
-        return descriptor.events.asFlow().flatMapMerge {
-            logRepository.findAndRevert(descriptor.collection, it, blockHash)
-        }
-    }
+    override fun findAndRevert(descriptor: FlowDescriptor, blockHash: String): Flow<FlowLogRecord<*>> = emptyFlow()
 
     override fun findAndDelete(
         descriptor: FlowDescriptor,

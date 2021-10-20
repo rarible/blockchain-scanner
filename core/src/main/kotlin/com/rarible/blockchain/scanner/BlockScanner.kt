@@ -61,7 +61,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             logger.info("Connecting to blockchain...")
             val blockFlow = getEventFlow()
             logger.info("Connected to blockchain, starting to receive events")
-            blockFlow.map {
+            blockFlow.onEach {
                 blockTimer.record {
                     blockListener.onBlockEvent(it)
                 }

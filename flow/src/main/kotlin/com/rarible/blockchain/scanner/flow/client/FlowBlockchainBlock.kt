@@ -5,7 +5,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.model.BlockMeta
 import java.time.ZoneOffset
 
-class FlowBlockchainBlock(
+data class FlowBlockchainBlock(
     override val meta: BlockMeta
 ) : BlockchainBlock
 
