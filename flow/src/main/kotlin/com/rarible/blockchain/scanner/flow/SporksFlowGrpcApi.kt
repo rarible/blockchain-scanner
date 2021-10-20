@@ -4,8 +4,10 @@ import com.nftco.flow.sdk.*
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.future.await
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -30,6 +32,8 @@ class SporksFlowGrpcApi(
     private val transactionsById: WeakHashMap<FlowId, FlowTransaction> = WeakHashMap()
 
     private val headerByHeight: WeakHashMap<Long, FlowBlockHeader> = WeakHashMap()
+
+    private val eventsByHeight: WeakHashMap<Long, List<FlowEvent>> = WeakHashMap()
 
     override suspend fun isAlive(): Boolean = try {
         sporkService.currentSpork().api.ping()
@@ -72,22 +76,17 @@ class SporksFlowGrpcApi(
         sporkService.spork(blockId).api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
 
     override suspend fun blockEvents(height: Long): Flow<FlowEvent> {
-        val api = sporkService.spork(height).api
-        val block = api.getBlockByHeight(height).await()!!
-        if (block.collectionGuarantees.isEmpty()) {
-            return emptyFlow()
-        }
-
-        return channelFlow {
-            block.collectionGuarantees.forEach {
-                val c = api.getCollectionById(it.id).await() ?: throw IllegalStateException("Not found collection guarantee [${it.id}]")
-                c.transactionIds.mapNotNull { txId ->
-                    api.getTransactionResultById(txId).await()
-                }.flatMap { it.events }.forEach {
-                    send(it)
-                }
+        return eventsByHeight.getOrPut(height) {
+            val api = sporkService.spork(height).api
+            val block = blockByHeight(height)!!
+            if (block.collectionGuarantees.isEmpty()) {
+                emptyList()
+            } else {
+                val g = block.collectionGuarantees.mapNotNull { api.getCollectionById(it.id).await() }
+                val tx = g.map { it.transactionIds.mapNotNull { api.getTransactionResultById(it).await() } }.flatten()
+                tx.flatMap { it.events }
             }
-        }
+        }.asFlow()
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? =
