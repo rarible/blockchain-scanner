@@ -2,6 +2,8 @@ package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
 import com.rarible.blockchain.scanner.flow.service.SporkService
+import io.grpc.Status
+import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -67,8 +69,20 @@ class SporksFlowGrpcApi(
     }
 
     override suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
-        return sporkService.sporks(range).flatMapConcat {
-            it.api.getEventsForHeightRange(type, it.trim(range)).await().asFlow()
+        return sporkService.sporks(range).flatMapConcat { spork ->
+            try {
+                spork.api.getEventsForHeightRange(type, spork.trim(range)).await().asFlow()
+            } catch (e: StatusRuntimeException) {
+                if (e.status.code == Status.INTERNAL.code) {
+                    range.chunked(25) {
+                        it.first()..it.last()
+                    }.map { smallRange ->
+                        spork.api.getEventsForHeightRange(type, spork.trim(smallRange)).await()
+                    }.flatten().asFlow()
+                } else {
+                    throw e
+                }
+            }
         }
     }
 
