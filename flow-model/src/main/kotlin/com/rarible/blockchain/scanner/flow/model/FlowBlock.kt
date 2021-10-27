@@ -1,13 +1,11 @@
 package com.rarible.blockchain.scanner.flow.model
 
-import com.nftco.flow.sdk.FlowBlock
 import com.rarible.blockchain.scanner.framework.model.Block
-import org.bouncycastle.util.encoders.Hex
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.mapping.FieldType
 import org.springframework.data.mongodb.core.mapping.MongoId
-import java.time.ZoneOffset
+import java.time.Instant
 
 @Document
 data class FlowBlock(
@@ -22,11 +20,5 @@ data class FlowBlock(
     override val status: Block.Status
 ): Block {
 
-    constructor(block: FlowBlock): this(
-        id = block.height,
-        hash = Hex.toHexString(block.id.bytes),
-        parentHash = Hex.toHexString(block.parentId.bytes),
-        timestamp = block.timestamp.toEpochSecond(ZoneOffset.UTC),
-        status = Block.Status.SUCCESS
-    )
+    override fun timestamp(): Instant = Instant.ofEpochMilli(timestamp)
 }

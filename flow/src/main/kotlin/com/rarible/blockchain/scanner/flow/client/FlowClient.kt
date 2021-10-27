@@ -75,13 +75,17 @@ class FlowClient(
         descriptor: FlowDescriptor,
         block: FlowBlockchainBlock
     ): Flow<FlowBlockchainLog> {
-        return api.blockEvents(height = block.number).filter { descriptor.events.contains(it.id) }.map {
-            FlowBlockchainLog(
-                hash = it.transactionId.base16Value,
-                blockHash = block.hash,
-                event = it
-            )
-        }
+        return api.blockEvents(height = block.number)
+            .filter {
+                descriptor.events.contains(it.type)
+            }
+            .map {
+                FlowBlockchainLog(
+                    hash = it.transactionId.base16Value,
+                    blockHash = block.hash,
+                    event = it
+                )
+            }
     }
 
 

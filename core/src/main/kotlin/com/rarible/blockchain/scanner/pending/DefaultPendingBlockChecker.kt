@@ -42,7 +42,7 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
     }
 
     private fun isOldEnough(block: B, pendingBlockAgeToCheck: Duration): Boolean {
-        val createdAt = Instant.ofEpochSecond(block.timestamp)
+        val createdAt = block.timestamp()
         val sinceCreated = Duration.between(createdAt, Instant.now())
         return !sinceCreated.minus(pendingBlockAgeToCheck).isNegative
     }

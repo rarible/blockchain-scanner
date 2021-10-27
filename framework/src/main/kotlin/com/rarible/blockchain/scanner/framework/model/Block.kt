@@ -1,5 +1,7 @@
 package com.rarible.blockchain.scanner.framework.model
 
+import java.time.Instant
+
 /**
  * Basic data class for blockchain block data to be stored in persistent storage.
  */
@@ -16,4 +18,6 @@ interface Block {
         SUCCESS,
         ERROR
     }
+
+    fun timestamp(): Instant = Instant.ofEpochSecond(timestamp)
 }
