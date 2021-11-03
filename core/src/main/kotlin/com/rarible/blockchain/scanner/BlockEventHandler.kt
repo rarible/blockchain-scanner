@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -58,7 +59,11 @@ class BlockEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : L
     fun onBlockEvent(event: BlockEvent): Flow<R> {
         logger.debug("Triggered block event for [{}] subscribers: {}", subscribers.size, event)
         return subscribers.asFlow()
-            .flatMapConcat { it.onBlockEvent(event) }
+            .flatMapConcat {
+                withSpan("processSingleSubscriber", labels = listOf("subscriber" to it.subscriber.javaClass.name)) {
+                    it.onBlockEvent(event)
+                }
+            }
     }
 
 }

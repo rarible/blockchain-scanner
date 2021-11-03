@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.logTime
+import com.rarible.core.apm.withSpan
 import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -49,9 +50,15 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         event.contextParams.forEach { (key, value) -> MDC.put(key, value) }
 
         withContext(RaribleMDCContext()) {
-            val logs = processBlock(event)
-            val status = logEventPublisher.onBlockProcessed(event, logs)
-            updateBlockStatus(event, status)
+            val logs = withSpan("process") {
+                processBlock(event)
+            }
+            val status = withSpan("onBlockProcessed") {
+                logEventPublisher.onBlockProcessed(event, logs)
+            }
+            withSpan("updateBlockStatus", type = "db") {
+                updateBlockStatus(event, status)
+            }
         }
     }
 

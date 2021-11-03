@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.blockchain.scanner.util.logTime
+import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -38,19 +39,21 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
 
     fun onBlockEvent(event: BlockEvent): Flow<R> = flatten {
         val start = logTime("logHandler.beforeHandleBlock [${event.block.number}]") {
-            logHandler.beforeHandleBlock(event)
+            withSpan("beforeHandleBlock") {
+                logHandler.beforeHandleBlock(event)
+            }
         }
         val descriptor = subscriber.getDescriptor()
         logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
 
         val block = logTime("Get block [${event.block.number}] from handler") {
-            blockchainClient.getBlock(event.block.number)
+            withSpan("getBlock") { blockchainClient.getBlock(event.block.number) }
         }
 
         flowOf(
             start,
             logTime("pendingLogMarker.markInactive [${event.block.number}]") {
-                pendingLogMarker.markInactive(block, descriptor)
+                withSpan("markInactive") { pendingLogMarker.markInactive(block, descriptor) }
             },
             processBlock(block)
         ).flattenConcat()
@@ -58,10 +61,12 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
 
     private fun processBlock(originalBlock: BB): Flow<R> = flatten {
         val events = logTime("blockchainClient::getBlockEvents [${originalBlock.number}]") {
-            blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
+            withSpan("getBlockEvents") {
+                blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
+            }
         }
         logTime("logHandler::handleLogs [${originalBlock.number}]") {
-            logHandler.handleLogs(FullBlock(originalBlock, events))
+            withSpan("handleLogs") { logHandler.handleLogs(FullBlock(originalBlock, events)) }
         }
     }
 
