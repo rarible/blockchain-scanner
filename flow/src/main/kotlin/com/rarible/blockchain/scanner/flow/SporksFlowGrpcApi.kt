@@ -16,17 +16,16 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
+import reactor.kotlin.core.publisher.toFlux
+import reactor.kotlin.core.publisher.toMono
 import java.util.WeakHashMap
 
 @ExperimentalCoroutinesApi
@@ -105,13 +104,14 @@ class SporksFlowGrpcApi(
         return eventsByHeight.getOrPut(height) {
             val api = logTime("sporkService") { sporkService.spork(height).api }
             val block = logTime("block") { blockByHeight(height)!! }
-            block.collectionGuarantees.asFlow()
-                .map { api.getCollectionById(it.id) }
-                .mapNotNull { it.await() }
-                .flatMapMerge { it.transactionIds.asFlow() }
-                .map { api.getTransactionResultById(it) }
-                .mapNotNull { it.await() }
-                .flatMapMerge { it.events.asFlow() }
+            block.collectionGuarantees.toFlux()
+                .flatMap {
+                    api.getCollectionById(it.id).toMono()
+                }
+                .flatMap { it.transactionIds.toFlux() }
+                .flatMap { api.getTransactionResultById(it).toMono() }
+                .flatMap { it.events.toFlux() }
+                .asFlow()
                 .toList()
         }.asFlow()
     }
