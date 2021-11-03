@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.flatten
+import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -54,7 +55,6 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         }
     }
 
-
     suspend fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> {
         if (fullBlock.logs.isEmpty()) {
             return emptyFlow()
@@ -63,7 +63,9 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         val processedLogs = fullBlock.logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
             onLog(fullBlock.block, idx, log)
         }
-        return logService.save(descriptor, processedLogs.toList()).asFlow()
+        return withSpan("saveLogs", "db") {
+            logService.save(descriptor, processedLogs.toList())
+        }.asFlow()
     }
 
     @Suppress("UNCHECKED_CAST")

@@ -47,13 +47,13 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
         logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
 
         val block = logTime("Get block [${event.block.number}] from handler") {
-            withSpan("getBlock") { blockchainClient.getBlock(event.block.number) }
+            withSpan("getBlock", "network") { blockchainClient.getBlock(event.block.number) }
         }
 
         flowOf(
             start,
             logTime("pendingLogMarker.markInactive [${event.block.number}]") {
-                withSpan("markInactive") { pendingLogMarker.markInactive(block, descriptor) }
+                withSpan("markInactive", "db") { pendingLogMarker.markInactive(block, descriptor) }
             },
             processBlock(block)
         ).flattenConcat()
@@ -61,7 +61,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
 
     private fun processBlock(originalBlock: BB): Flow<R> = flatten {
         val events = logTime("blockchainClient::getBlockEvents [${originalBlock.number}]") {
-            withSpan("getBlockEvents") {
+            withSpan("getBlockEvents", "network") {
                 blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
             }
         }
