@@ -1,7 +1,14 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.*
+import com.nftco.flow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlockHeader
+import com.nftco.flow.sdk.FlowChainId
+import com.nftco.flow.sdk.FlowEvent
+import com.nftco.flow.sdk.FlowEventResult
+import com.nftco.flow.sdk.FlowId
+import com.nftco.flow.sdk.FlowTransaction
 import com.rarible.blockchain.scanner.flow.service.SporkService
+import com.rarible.blockchain.scanner.util.logTime
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -9,13 +16,18 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
-import java.util.*
+import java.util.WeakHashMap
 
 @ExperimentalCoroutinesApi
 @FlowPreview
@@ -91,15 +103,16 @@ class SporksFlowGrpcApi(
 
     override suspend fun blockEvents(height: Long): Flow<FlowEvent> {
         return eventsByHeight.getOrPut(height) {
-            val api = sporkService.spork(height).api
-            val block = blockByHeight(height)!!
-            if (block.collectionGuarantees.isEmpty()) {
-                emptyList()
-            } else {
-                val g = block.collectionGuarantees.mapNotNull { api.getCollectionById(it.id).await() }
-                val tx = g.map { it.transactionIds.mapNotNull { api.getTransactionResultById(it).await() } }.flatten()
-                tx.flatMap { it.events }
-            }
+            val api = logTime("sporkService") { sporkService.spork(height).api }
+            val block = logTime("block") { blockByHeight(height)!! }
+            block.collectionGuarantees.asFlow()
+                .map { api.getCollectionById(it.id) }
+                .mapNotNull { it.await() }
+                .flatMapMerge { it.transactionIds.asFlow() }
+                .map { api.getTransactionResultById(it) }
+                .mapNotNull { it.await() }
+                .flatMapMerge { it.events.asFlow() }
+                .toList()
         }.asFlow()
     }
 
@@ -113,6 +126,15 @@ class SporksFlowGrpcApi(
             FlowChainId.MAINNET -> range.chunked(250) { it.first()..it.last() }.asFlow()
             FlowChainId.TESTNET -> range.chunked(25) { it.first()..it.last() }.asFlow()
             else -> flowOf(range)
+        }
+    }
+}
+
+fun main() {
+    val grpc = SporksFlowGrpcApi(SporkService(FlowChainId.MAINNET))
+    runBlocking {
+        logTime("awd") {
+            println(grpc.blockEvents(19968859L))
         }
     }
 }
