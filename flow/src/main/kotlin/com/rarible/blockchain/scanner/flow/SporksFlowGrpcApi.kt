@@ -129,12 +129,3 @@ class SporksFlowGrpcApi(
         }
     }
 }
-
-fun main() {
-    val grpc = SporksFlowGrpcApi(SporkService(FlowChainId.MAINNET))
-    runBlocking {
-        logTime("awd") {
-            println(grpc.blockEvents(19968859L))
-        }
-    }
-}
