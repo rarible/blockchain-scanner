@@ -88,7 +88,6 @@ class TestScannerConfiguration {
 
     @Bean
     fun testScanner() = TestBlockchainScanner(
-        metrics,
         blockchainClient = testBlockchainClient(),
         subscribers = listOf(testSubscriber1(), testSubscriber2()),
         blockMapper = testBlockMapper(),

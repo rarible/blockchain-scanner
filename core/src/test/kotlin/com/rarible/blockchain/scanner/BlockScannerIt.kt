@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.framework.model.Block
-import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -171,7 +170,6 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
         testBlockchainData: TestBlockchainData
     ): BlockScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestDescriptor> {
         return BlockScanner(
-            Metrics(null),
             TestBlockchainClient(testBlockchainData),
             testBlockMapper,
             testBlockService,

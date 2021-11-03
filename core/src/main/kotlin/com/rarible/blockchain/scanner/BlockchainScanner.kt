@@ -14,7 +14,6 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
-import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.pending.DefaultPendingBlockChecker
 import com.rarible.blockchain.scanner.pending.DefaultPendingLogChecker
 import com.rarible.blockchain.scanner.pending.PendingBlockChecker
@@ -31,7 +30,6 @@ import java.time.Duration
 @FlowPreview
 @ExperimentalCoroutinesApi
 open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L, *>, D : Descriptor>(
-    metrics: Metrics,
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,
@@ -49,7 +47,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     )
 
     private val blockScanner = BlockScanner(
-        metrics,
         retryableBlockchainClient,
         blockMapper,
         blockService,
@@ -87,7 +84,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     )
 
     private val reconciliationService = ReconciliationService(
-        metrics,
         blockchainClient = retryableBlockchainClient,
         subscribers = subscribers,
         logMapper = logMapper,

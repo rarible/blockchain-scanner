@@ -17,19 +17,28 @@ import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.BlockMeta
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
-import com.rarible.blockchain.scanner.metrics.Metrics
 import com.rarible.blockchain.scanner.util.flatten
+import com.rarible.core.apm.withTransaction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
 class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Descriptor>(
-    metrics: Metrics,
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
@@ -39,9 +48,6 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
-
-    private val blockTimer = metrics.timed("scanner.block.process")
-    private val blockSaveTimer = metrics.timed("scanner.block.save")
 
     private val delay = retryPolicy.reconnectDelay.toMillis()
     private val attempts = if (retryPolicy.reconnectAttempts > 0) {
@@ -62,7 +68,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
             val blockFlow = getEventFlow()
             logger.info("Connected to blockchain, starting to receive events")
             blockFlow.onEach {
-                blockTimer.record {
+                withTransaction("block", listOf("blockNumber" to it.block.number)) {
                     blockListener.onBlockEvent(it)
                 }
             }.collect()
@@ -72,7 +78,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
 
     private fun getEventFlow(): Flow<BlockEvent> = flatten {
         blockchainClient.listenNewBlocks().flatMapConcat { newBlock ->
-            blockSaveTimer.record {
+            withTransaction("blockSave", listOf("blockNumber" to newBlock.number)) {
                 getNewBlocks(newBlock).flatMapConcat { saveBlock(it) }
             }
         }
