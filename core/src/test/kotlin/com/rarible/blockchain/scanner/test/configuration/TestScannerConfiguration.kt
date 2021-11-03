@@ -45,9 +45,6 @@ class TestScannerConfiguration {
     @Autowired
     lateinit var mongo: ReactiveMongoOperations
 
-    @Autowired
-    lateinit var metrics: com.rarible.blockchain.scanner.metrics.Metrics
-
     @Bean
     fun testBlockchainClient() = TestBlockchainClient(
         randomBlockchainData(
