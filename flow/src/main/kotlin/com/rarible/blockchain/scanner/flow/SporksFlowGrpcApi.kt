@@ -8,7 +8,6 @@ import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
 import com.rarible.blockchain.scanner.flow.service.SporkService
-import com.rarible.blockchain.scanner.util.logTime
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
