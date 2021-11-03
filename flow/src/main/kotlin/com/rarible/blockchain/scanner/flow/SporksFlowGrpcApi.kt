@@ -102,12 +102,10 @@ class SporksFlowGrpcApi(
 
     override suspend fun blockEvents(height: Long): Flow<FlowEvent> {
         return eventsByHeight.getOrPut(height) {
-            val api = logTime("sporkService") { sporkService.spork(height).api }
-            val block = logTime("block") { blockByHeight(height)!! }
+            val api = sporkService.spork(height).api
+            val block = blockByHeight(height)!!
             block.collectionGuarantees.toFlux()
-                .flatMap {
-                    api.getCollectionById(it.id).toMono()
-                }
+                .flatMap { api.getCollectionById(it.id).toMono() }
                 .flatMap { it.transactionIds.toFlux() }
                 .flatMap { api.getTransactionResultById(it).toMono() }
                 .flatMap { it.events.toFlux() }
