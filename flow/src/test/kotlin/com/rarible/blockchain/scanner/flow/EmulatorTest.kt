@@ -1,3 +1,4 @@
+/*
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
@@ -196,3 +197,4 @@ internal class EmulatorTest {
 
     private fun getAccount(address: FlowAddress): FlowAccount = accessApi.getAccountAtLatestBlock(address)!!
 }
+*/
