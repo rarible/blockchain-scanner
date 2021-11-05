@@ -83,7 +83,7 @@ class SporksFlowGrpcApi(
             try {
                 spork.api.getEventsForHeightRange(type, spork.trim(range)).await().asFlow()
             } catch (e: StatusRuntimeException) {
-                if (e.status.code == Status.INTERNAL.code) {
+                if (e.status.code in arrayOf(Status.INTERNAL.code, Status.UNKNOWN.code)) {
                     range.chunked(25) {
                         it.first()..it.last()
                     }.map { smallRange ->
