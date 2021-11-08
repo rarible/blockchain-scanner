@@ -23,7 +23,7 @@ class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> 
             transactionHash = log.hash,
             eventIndex = log.event.eventIndex,
             eventType = log.event.type,
-            timestamp = Instant.ofEpochSecond(block.timestamp),
+            timestamp = Instant.ofEpochMilli(block.timestamp),
             blockHeight = block.number,
             blockHash = block.hash
         )
