@@ -20,7 +20,7 @@ class TestBidSubscriber : EthereumLogEventSubscriber {
         )
     }
 
-    override fun getEventRecords(
+    override suspend fun getEventRecords(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog
     ): Flow<EthereumLogRecord<*>> {

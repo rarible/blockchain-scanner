@@ -32,7 +32,7 @@ class TestConfig {
 
         override fun getDescriptor(): FlowDescriptor = descriptor
 
-        override fun getEventRecords(block: FlowBlockchainBlock, log: FlowBlockchainLog): Flow<FlowLogRecord<*>> =
+        override suspend fun getEventRecords(block: FlowBlockchainBlock, log: FlowBlockchainLog): Flow<FlowLogRecord<*>> =
             channelFlow {
                 if (descriptor.events.contains(log.event.type)) {
                     send(
