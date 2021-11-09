@@ -19,7 +19,7 @@ class SporkService(
     data class Spork(val from: Long, val to: Long = Long.MAX_VALUE, val nodeUrl: String, val port: Int = 9000) {
 
         @Suppress("PrivatePropertyName")
-        private val DEFAULT_MESSAGE_SIZE: Int = 16777216 //16 Mb
+        private val DEFAULT_MESSAGE_SIZE: Int = 33554432 //32 Mb
 
         val api by lazy {
             val channel = ManagedChannelBuilder.forAddress(nodeUrl, port)
