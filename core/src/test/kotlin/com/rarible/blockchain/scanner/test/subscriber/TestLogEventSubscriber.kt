@@ -21,7 +21,7 @@ class TestLogEventSubscriber(
         return descriptor
     }
 
-    override suspend fun getEventRecords(block: TestBlockchainBlock, log: TestBlockchainLog): Flow<TestLogRecord<*>> {
+    override fun getEventRecords(block: TestBlockchainBlock, log: TestBlockchainLog): Flow<TestLogRecord<*>> {
         val eventDataList = ArrayList<TestLogRecord<*>>(eventDataCount)
         for (i in 0 until eventDataCount) {
             val record = TestCustomLogRecord(

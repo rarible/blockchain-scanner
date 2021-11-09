@@ -31,6 +31,6 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, 
      * storage and all of them will be marked with minorLogIndex, based on order in returned flow
      * (first - 0, second - 2 etc.)
      */
-    suspend fun getEventRecords(block: BB, log: BL): Flow<R>
+    fun getEventRecords(block: BB, log: BL): Flow<R>
 
 }
