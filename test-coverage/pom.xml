@@ -13,6 +13,10 @@
     <packaging>pom</packaging>
     <version>${project.parent.version}</version>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <!-- ============ Internal dependencies ============ -->
         <dependency>
