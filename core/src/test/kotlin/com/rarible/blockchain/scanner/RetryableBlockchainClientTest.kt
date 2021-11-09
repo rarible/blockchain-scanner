@@ -6,15 +6,18 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
-import io.mockk.*
-import kotlinx.coroutines.flow.flowOf
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.IOException
 import java.time.Duration
 
 class RetryableBlockchainClientTest {
@@ -86,14 +89,19 @@ class RetryableBlockchainClientTest {
     fun `get block events - all attempts failed`() = runBlocking {
         val descriptor = testDescriptor1()
         val range = LongRange.EMPTY
-        coEvery { client.getBlockEvents(descriptor, range) } throws Exception()
+        var count = 0
+        coEvery { client.getBlockEvents(descriptor, range) } returns flow {
+            count++
+            throw Exception()
+        }
 
         assertThrows(Exception::class.java) {
-            runBlocking { retryableClient.getBlockEvents(descriptor, range) }
+            runBlocking { retryableClient.getBlockEvents(descriptor, range).toList() }
         }
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 3) { client.getBlockEvents(descriptor, range) }
+        coVerify(exactly = 1) { client.getBlockEvents(descriptor, range) }
+        assertEquals(3, count)
     }
 
     @Test
@@ -101,17 +109,23 @@ class RetryableBlockchainClientTest {
         val descriptor = testDescriptor1()
         val block = randomBlockchainBlock()
         val log = randomBlockchainLog(block, randomString())
-        coEvery { client.getBlockEvents(descriptor, block) }
-            .throws(NullPointerException())
-            .andThenThrows(IOException())
-            .andThen(flowOf(log))
+        var count = 0
+        coEvery { client.getBlockEvents(descriptor, block) } returns flow {
+            count++
+            if (count < 3) {
+                error("not yet ready")
+            }
+            emit(log)
+        }
 
         val result = retryableClient.getBlockEvents(descriptor, block)
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 3) { client.getBlockEvents(descriptor, block) }
-        assertEquals(1, result.toList().size)
-        assertEquals(log, result.toList()[0])
+        coVerify(exactly = 1) { client.getBlockEvents(descriptor, block) }
+        val list = result.toList()
+        assertEquals(1, list.size)
+        assertEquals(3, count)
+        assertEquals(log, list[0])
     }
 
     @Test

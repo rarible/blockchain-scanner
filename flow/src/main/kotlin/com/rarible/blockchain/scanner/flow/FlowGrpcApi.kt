@@ -17,13 +17,13 @@ interface FlowGrpcApi {
 
     suspend fun txById(id: String): FlowTransaction?
 
-    suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult>
+    fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult>
 
-    suspend fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult>
+    fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult>
 
     suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader?
 
-    suspend fun chunk(range: LongRange): Flow<LongRange>
+    fun chunk(range: LongRange): Flow<LongRange>
 
-    suspend fun blockEvents(height: Long): Flow<FlowEvent>
+    fun blockEvents(height: Long): Flow<FlowEvent>
 }

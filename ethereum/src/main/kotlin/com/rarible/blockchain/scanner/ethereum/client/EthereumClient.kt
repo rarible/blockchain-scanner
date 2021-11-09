@@ -6,12 +6,12 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toFlux
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
@@ -64,7 +64,7 @@ class EthereumClient(
         }
     }
 
-    override suspend fun getBlockEvents(
+    override fun getBlockEvents(
         descriptor: EthereumDescriptor,
         block: EthereumBlockchainBlock
     ): Flow<EthereumBlockchainLog> {
@@ -75,12 +75,13 @@ class EthereumClient(
 
         return ethereum.ethGetLogsJava(filter)
             .map { orderByTransaction(it).map { log -> EthereumBlockchainLog(log) } }
-            .awaitFirst().asFlow()
+            .flatMapMany { it.toFlux() }
+            .asFlow()
     }
 
     //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
     //todo (уникальный чтобы считался внутри транзакции, topic, address). это ты учел тут?
-    override suspend fun getBlockEvents(
+    override fun getBlockEvents(
         descriptor: EthereumDescriptor,
         range: LongRange
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
@@ -107,7 +108,7 @@ class EthereumClient(
                         FullBlock(originalBlock, orderedLogs.map { EthereumBlockchainLog(it) })
                     }
                 }
-            }.concatMap { it }.collectList().awaitFirst().asFlow()
+            }.concatMap { it }.asFlow()
     }
 
     private fun orderByTransaction(logs: List<Log>): List<Log> {
