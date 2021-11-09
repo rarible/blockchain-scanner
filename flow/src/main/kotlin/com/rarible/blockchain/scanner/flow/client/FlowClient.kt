@@ -49,7 +49,7 @@ class FlowClient(
         api.latestBlock().height
 
 
-    override suspend fun getBlockEvents(
+    override fun getBlockEvents(
         descriptor: FlowDescriptor,
         range: LongRange
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> = channelFlow {
@@ -71,7 +71,7 @@ class FlowClient(
         return TransactionMeta(hash = transactionHash, blockHash = Hex.toHexString(tx.referenceBlockId.bytes))
     }
 
-    override suspend fun getBlockEvents(
+    override fun getBlockEvents(
         descriptor: FlowDescriptor,
         block: FlowBlockchainBlock
     ): Flow<FlowBlockchainLog> {

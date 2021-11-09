@@ -7,6 +7,8 @@ import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 
@@ -37,20 +39,22 @@ class TestBlockchainClient(
         return lastBlock!!.number
     }
 
-    override suspend fun getBlockEvents(
+    override fun getBlockEvents(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
     ): Flow<TestBlockchainLog> {
         return logsByBlock[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }.asFlow()
     }
 
-    override suspend fun getBlockEvents(
+    override fun getBlockEvents(
         descriptor: TestDescriptor,
         range: LongRange
-    ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
-        return blocksByNumber.values.filter { range.contains(it.number) }
-            .sortedBy { it.number }
-            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it)).toList()) }.asFlow()
+    ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> = flow {
+        emitAll(
+            blocksByNumber.values.filter { range.contains(it.number) }
+                .sortedBy { it.number }
+                .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it)).toList()) }.asFlow()
+        )
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {

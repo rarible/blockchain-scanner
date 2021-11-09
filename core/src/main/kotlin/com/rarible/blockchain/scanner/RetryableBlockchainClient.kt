@@ -11,7 +11,9 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.model.Descriptor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.retry
 import org.slf4j.LoggerFactory
 
 class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor>(
@@ -47,22 +49,28 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         }
     }
 
-    override suspend fun getBlockEvents(descriptor: D, block: BB): Flow<BL> {
-        return wrapWithRetry("getBlockEvents", block, descriptor) {
-            original.getBlockEvents(descriptor, block)
-        }
+    override fun getBlockEvents(descriptor: D, block: BB): Flow<BL> {
+        return original.getBlockEvents(descriptor, block)
+            .wrapWithRetry()
     }
 
-    override suspend fun getBlockEvents(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>> {
-        return wrapWithRetry("getBlockEvents", descriptor, range) {
-            original.getBlockEvents(descriptor, range)
-        }
+    override fun getBlockEvents(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>> {
+        return original.getBlockEvents(descriptor, range)
+            .wrapWithRetry()
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         return wrapWithRetry("getTransactionMeta", transactionHash) {
             original.getTransactionMeta(transactionHash)
         }
+    }
+
+    private fun <T> Flow<T>.wrapWithRetry(): Flow<T> {
+        return this
+            .retry(retries = (attempts - 1).toLong()) {
+                delay(delay)
+                true
+            }
     }
 
     private suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {

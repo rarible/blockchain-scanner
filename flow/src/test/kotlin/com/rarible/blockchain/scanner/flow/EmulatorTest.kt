@@ -1,4 +1,3 @@
-/*
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
@@ -24,7 +23,6 @@ internal class EmulatorTest {
     private var userPublicKeyHex: String = ""
     private lateinit var accessApi: FlowAccessApi
     private val latestBlockID: FlowId get() = accessApi.getLatestBlockHeader().id
-
 
     companion object {
 
@@ -197,4 +195,3 @@ internal class EmulatorTest {
 
     private fun getAccount(address: FlowAddress): FlowAccount = accessApi.getAccountAtLatestBlock(address)!!
 }
-*/

@@ -55,17 +55,18 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         }
     }
 
-    suspend fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> {
-        if (fullBlock.logs.isEmpty()) {
-            return emptyFlow()
+    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> = flow {
+        if (fullBlock.logs.isNotEmpty()) {
+            logger.info("Handling {} Logs from block: [{}]", fullBlock.logs.size, fullBlock.block.meta)
+            val processedLogs = fullBlock.logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
+                onLog(fullBlock.block, idx, log)
+            }
+            emitAll(
+                withSpan("saveLogs", "db") {
+                    logService.save(descriptor, processedLogs.toList())
+                }.asFlow()
+            )
         }
-        logger.info("Handling {} Logs from block: [{}]", fullBlock.logs.size, fullBlock.block.meta)
-        val processedLogs = fullBlock.logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
-            onLog(fullBlock.block, idx, log)
-        }
-        return withSpan("saveLogs", "db") {
-            logService.save(descriptor, processedLogs.toList())
-        }.asFlow()
     }
 
     @Suppress("UNCHECKED_CAST")

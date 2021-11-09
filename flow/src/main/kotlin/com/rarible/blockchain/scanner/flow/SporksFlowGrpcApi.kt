@@ -14,7 +14,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
@@ -78,7 +80,7 @@ class SporksFlowGrpcApi(
         }
     }
 
-    override suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
+    override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
         return sporkService.sporks(range).flatMapConcat { spork ->
             try {
                 spork.api.getEventsForHeightRange(type, spork.trim(range)).await().asFlow()
@@ -96,21 +98,24 @@ class SporksFlowGrpcApi(
         }
     }
 
-    override suspend fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> =
-        sporkService.spork(blockId).api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
+    override fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> = flow {
+        emitAll(sporkService.spork(blockId).api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow())
+    }
 
-    override suspend fun blockEvents(height: Long): Flow<FlowEvent> {
-        return eventsByHeight.getOrPut(height) {
-            val api = sporkService.spork(height).api
-            val block = blockByHeight(height)!!
-            block.collectionGuarantees.toFlux()
-                .flatMap { api.getCollectionById(it.id).toMono() }
-                .flatMap { it.transactionIds.toFlux() }
-                .flatMap { api.getTransactionResultById(it).toMono() }
-                .flatMap { it.events.toFlux() }
-                .asFlow()
-                .toList()
-        }.asFlow()
+    override fun blockEvents(height: Long): Flow<FlowEvent> = flow {
+        emitAll(
+            eventsByHeight.getOrPut(height) {
+                val api = sporkService.spork(height).api
+                val block = blockByHeight(height)!!
+                block.collectionGuarantees.toFlux()
+                    .flatMap { api.getCollectionById(it.id).toMono() }
+                    .flatMap { it.transactionIds.toFlux() }
+                    .flatMap { api.getTransactionResultById(it).toMono() }
+                    .flatMap { it.events.toFlux() }
+                    .asFlow()
+                    .toList()
+            }.asFlow()
+        )
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? =
@@ -118,7 +123,7 @@ class SporksFlowGrpcApi(
             sporkService.spork(height).api.getBlockHeaderByHeight(height).await()
         }
 
-    override suspend fun chunk(range: LongRange): Flow<LongRange> {
+    override fun chunk(range: LongRange): Flow<LongRange> {
         return when(sporkService.chainId) {
             FlowChainId.MAINNET -> range.chunked(250) { it.first()..it.last() }.asFlow()
             FlowChainId.TESTNET -> range.chunked(25) { it.first()..it.last() }.asFlow()
