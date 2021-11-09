@@ -55,7 +55,7 @@ class SporkService(
 
     val allSporks = mutableMapOf(
         FlowChainId.TESTNET to listOf(
-            Spork(from = 50540411L, nodeUrl = "access.devnet.nodes.onflow.org"),
+            Spork(from = 50540412L, nodeUrl = "access.devnet.nodes.onflow.org"),
         ),
         FlowChainId.MAINNET to listOf(
             Spork(from = 7601063L, to = 8742958L, nodeUrl = "access-001.mainnet1.nodes.onflow.org"),

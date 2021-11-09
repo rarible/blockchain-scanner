@@ -1,24 +1,13 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.FlowBlock
-import com.nftco.flow.sdk.FlowBlockHeader
-import com.nftco.flow.sdk.FlowChainId
-import com.nftco.flow.sdk.FlowEvent
-import com.nftco.flow.sdk.FlowEventResult
-import com.nftco.flow.sdk.FlowId
-import com.nftco.flow.sdk.FlowTransaction
+import com.nftco.flow.sdk.*
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.Logger
@@ -27,7 +16,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
-import java.util.WeakHashMap
+import java.util.*
 
 @ExperimentalCoroutinesApi
 @FlowPreview
@@ -86,7 +75,7 @@ class SporksFlowGrpcApi(
                 spork.api.getEventsForHeightRange(type, spork.trim(range)).await().asFlow()
             } catch (e: StatusRuntimeException) {
                 if (e.status.code in arrayOf(Status.INTERNAL.code, Status.UNKNOWN.code)) {
-                    range.chunked(25) {
+                    range.chunked(5) {
                         it.first()..it.last()
                     }.map { smallRange ->
                         spork.api.getEventsForHeightRange(type, spork.trim(smallRange)).await()
