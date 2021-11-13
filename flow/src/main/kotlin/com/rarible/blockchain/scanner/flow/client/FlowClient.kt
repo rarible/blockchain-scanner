@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.flow.client
 
-import com.nftco.flow.sdk.FlowEventResult
 import com.rarible.blockchain.scanner.flow.FlowGrpcApi
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
@@ -60,8 +59,29 @@ class FlowClient(
             }.awaitAll()
                 .flatMap { it.toList() }
                 .filter { it.events.isNotEmpty() }
-                .forEach {
-                    send(it.toFullBlock())
+                .groupBy {
+                    BlockMeta(
+                        number = it.blockHeight,
+                        hash = it.blockId.base16Value,
+                        timestamp = it.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),
+                        parentHash = null)
+                }.forEach { entry ->
+                    val logs = entry.value.flatMap {
+                        it.events
+                    }.map { flowEvent ->
+                        FlowBlockchainLog(
+                            hash = flowEvent.transactionId.base16Value,
+                            blockHash = entry.key.hash,
+                            event = flowEvent
+                        )
+                    }.sortedBy { it.hash }.sortedBy { it.event.eventIndex }
+
+                    send(
+                        FullBlock(
+                            block = FlowBlockchainBlock(meta = entry.key),
+                            logs = logs
+                        )
+                    )
                 }
         }
     }
@@ -87,30 +107,6 @@ class FlowClient(
                 )
             }
     }
-
-
-}
-
-private fun FlowEventResult.toFullBlock(): FullBlock<FlowBlockchainBlock, FlowBlockchainLog> {
-    val logs = this.events.map { flowEvent ->
-        FlowBlockchainLog(
-            hash = flowEvent.transactionId.base16Value,
-            blockHash = this.blockId.base16Value,
-            event = flowEvent
-        )
-    }
-
-    return FullBlock(
-        block = FlowBlockchainBlock(
-            meta = BlockMeta(
-                number = this.blockHeight,
-                hash = this.blockId.base16Value,
-                timestamp = this.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),
-                parentHash = null
-            )
-        ),
-        logs = logs
-    )
 
 
 }
