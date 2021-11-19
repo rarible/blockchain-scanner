@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
+import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.Flow
@@ -32,8 +33,8 @@ class TestFlowGrpcApi(private val api: AsyncFlowAccessApi): FlowGrpcApi {
 
     override fun chunk(range: LongRange): Flow<LongRange> = flowOf(range)
 
-    override fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> = flow {
-        emitAll(api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow())
+    override fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> = flatten {
+        api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
     }
 
     override fun blockEvents(height: Long): Flow<FlowEvent> = flow {

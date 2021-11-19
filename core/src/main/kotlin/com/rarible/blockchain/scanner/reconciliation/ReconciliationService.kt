@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -43,9 +44,9 @@ class ReconciliationService<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
         it.subscriber.getDescriptor().id to createIndexer(it, logEventPublisher, blockService, blockMapper)
     }
 
-    fun reindex(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> = flow {
+    fun reindex(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> = flatten {
         val lastBlockNumber = blockchainClient.getLastBlockNumber()
-        emitAll(reindex(descriptorId, from, lastBlockNumber, batchSize))
+        reindex(descriptorId, from, lastBlockNumber, batchSize)
     }
 
     private fun reindex(descriptorId: String?, from: Long, to: Long, batchSize: Long): Flow<LongRange> {

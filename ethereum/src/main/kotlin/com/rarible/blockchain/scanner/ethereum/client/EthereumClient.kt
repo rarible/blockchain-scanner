@@ -25,17 +25,15 @@ import java.time.Duration
 @Component
 class EthereumClient(
     private val ethereum: MonoEthereum,
-    private val ethPubSub: EthPubSub
+    ethPubSub: EthPubSub
 ) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
 
     private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
-    override fun listenNewBlocks(): Flow<EthereumBlockchainBlock> {
-        return ethPubSub.newHeads()
-            .map { EthereumBlockchainBlock(it) }
-            .timeout(Duration.ofMinutes(5))
-            .asFlow()
-    }
+    override val newBlocks: Flow<EthereumBlockchainBlock> = ethPubSub.newHeads()
+        .map { EthereumBlockchainBlock(it) }
+        .timeout(Duration.ofMinutes(5))
+        .asFlow()
 
     override suspend fun getBlock(hash: String): EthereumBlockchainBlock {
         return getBlock(Word.apply(hash)).awaitFirst()

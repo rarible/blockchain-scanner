@@ -13,7 +13,7 @@ interface BlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descrip
     /**
      * Listen to new block events (poll or subscribe via websocket for example)
      */
-    fun listenNewBlocks(): Flow<BB>
+    val newBlocks: Flow<BB>
 
     /**
      * Get single block by block number

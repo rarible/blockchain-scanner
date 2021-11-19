@@ -55,17 +55,17 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         }
     }
 
-    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> = flow {
+    fun handleLogs(fullBlock: FullBlock<BB, BL>): Flow<R> = flatten {
         if (fullBlock.logs.isNotEmpty()) {
             logger.info("Handling {} Logs from block: [{}]", fullBlock.logs.size, fullBlock.block.meta)
             val processedLogs = fullBlock.logs.withIndex().asFlow().flatMapConcat { (idx, log) ->
                 onLog(fullBlock.block, idx, log)
             }
-            emitAll(
-                withSpan("saveLogs", "db") {
-                    logService.save(descriptor, processedLogs.toList())
-                }.asFlow()
-            )
+            withSpan("saveLogs", "db") {
+                logService.save(descriptor, processedLogs.toList())
+            }.asFlow()
+        } else {
+            emptyFlow()
         }
     }
 

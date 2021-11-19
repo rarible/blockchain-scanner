@@ -26,10 +26,8 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
     private val delay = retryPolicy.delay.toMillis()
     private val attempts = retryPolicy.attempts
 
-
-    override fun listenNewBlocks(): Flow<BB> {
-        return original.listenNewBlocks()
-    }
+    override val newBlocks: Flow<BB> =
+        original.newBlocks
 
     override suspend fun getBlock(number: Long): BB {
         return wrapWithRetry("getBlock", number) {

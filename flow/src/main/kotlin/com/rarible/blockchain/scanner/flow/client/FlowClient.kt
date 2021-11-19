@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.framework.model.BlockMeta
+import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.bouncycastle.util.encoders.Hex
@@ -29,8 +30,8 @@ class FlowClient(
 
     private val logger: Logger = LoggerFactory.getLogger(FlowClient::class.java)
 
-    override fun listenNewBlocks(): Flow<FlowBlockchainBlock> = flow {
-        emitAll(poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it.blockMeta()) })
+    override val newBlocks = flatten {
+        poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it.blockMeta()) }
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {

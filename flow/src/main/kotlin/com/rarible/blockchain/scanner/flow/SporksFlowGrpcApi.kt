@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.*
 import com.rarible.blockchain.scanner.flow.service.SporkService
+import com.rarible.blockchain.scanner.util.flatten
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -87,24 +88,22 @@ class SporksFlowGrpcApi(
         }
     }
 
-    override fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> = flow {
-        emitAll(sporkService.spork(blockId).api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow())
+    override fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> = flatten {
+        sporkService.spork(blockId).api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
     }
 
-    override fun blockEvents(height: Long): Flow<FlowEvent> = flow {
-        emitAll(
-            eventsByHeight.getOrPut(height) {
-                val api = sporkService.spork(height).api
-                val block = blockByHeight(height)!!
-                block.collectionGuarantees.toFlux()
-                    .flatMap { api.getCollectionById(it.id).toMono() }
-                    .flatMap { it.transactionIds.toFlux() }
-                    .flatMap { api.getTransactionResultById(it).toMono() }
-                    .flatMap { it.events.toFlux() }
-                    .asFlow()
-                    .toList()
-            }.asFlow()
-        )
+    override fun blockEvents(height: Long): Flow<FlowEvent> = flatten {
+        eventsByHeight.getOrPut(height) {
+            val api = sporkService.spork(height).api
+            val block = blockByHeight(height)!!
+            block.collectionGuarantees.toFlux()
+                .flatMap { api.getCollectionById(it.id).toMono() }
+                .flatMap { it.transactionIds.toFlux() }
+                .flatMap { api.getTransactionResultById(it).toMono() }
+                .flatMap { it.events.toFlux() }
+                .asFlow()
+                .toList()
+        }.asFlow()
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? =

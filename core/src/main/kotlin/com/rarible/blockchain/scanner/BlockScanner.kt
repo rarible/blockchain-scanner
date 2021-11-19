@@ -65,9 +65,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
 
         retry(retryOnFlowCompleted + limitAttempts(attempts) + constantDelay(delay)) {
             logger.info("Connecting to blockchain...")
-            val blockFlow = getEventFlow()
-            logger.info("Connected to blockchain, starting to receive events")
-            blockFlow.onEach {
+            eventFlow.onEach {
                 withTransaction("block", listOf("blockNumber" to it.block.number)) {
                     blockListener.onBlockEvent(it)
                 }
@@ -76,11 +74,9 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
         }
     }
 
-    private fun getEventFlow(): Flow<BlockEvent> = flatten {
-        blockchainClient.listenNewBlocks().flatMapConcat { newBlock ->
-            withTransaction("blockSave", listOf("blockNumber" to newBlock.number)) {
-                getNewBlocks(newBlock).flatMapConcat { saveBlock(it) }
-            }
+    private val eventFlow = blockchainClient.newBlocks.flatMapConcat { newBlock ->
+        withTransaction("blockSave", listOf("blockNumber" to newBlock.number)) {
+            getNewBlocks(newBlock).flatMapConcat { saveBlock(it) }
         }
     }
 

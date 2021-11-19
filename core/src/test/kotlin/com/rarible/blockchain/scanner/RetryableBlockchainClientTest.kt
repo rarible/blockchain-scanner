@@ -1,16 +1,20 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
+import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
+import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -27,23 +31,13 @@ class RetryableBlockchainClientTest {
         attempts = 3
     )
     private val client: TestBlockchainClient = mockk()
-    private val retryableClient = RetryableBlockchainClient(client, retryPolicy)
+    private lateinit var retryableClient: BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor>
 
     @BeforeEach
     fun beforeEach() {
         clearMocks(client)
-    }
-
-    @Test
-    fun `listen new blocks - failed after first attempt`() = runBlocking {
-        every { client.listenNewBlocks() } throws Exception()
-
-        assertThrows(Exception::class.java) {
-            runBlocking { retryableClient.listenNewBlocks() }
-        }
-
-        // For listening new blocks retry implemented outside retryable client
-        coVerify(exactly = 1) { client.listenNewBlocks() }
+        coEvery { client.newBlocks } returns emptyFlow()
+        retryableClient = RetryableBlockchainClient(client, retryPolicy)
     }
 
     @Test
