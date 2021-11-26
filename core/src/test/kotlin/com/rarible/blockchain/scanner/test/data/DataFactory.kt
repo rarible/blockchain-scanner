@@ -46,11 +46,12 @@ fun randomBlockchainBlock() = TestBlockchainBlock(randomOriginalBlock())
 
 fun randomOriginalBlock() = randomOriginalBlock(randomPositiveLong())
 fun randomOriginalBlock(number: Long) = randomOriginalBlock(randomBlockHash(), number)
-fun randomOriginalBlock(hash: String, number: Long): TestOriginalBlock {
+fun randomOriginalBlock(hash: String, number: Long) = randomOriginalBlock(hash, number, randomBlockHash())
+fun randomOriginalBlock(hash: String, number: Long, parentHash: String?): TestOriginalBlock {
     return TestOriginalBlock(
         number,
         hash,
-        randomBlockHash(),
+        parentHash,
         randomPositiveLong(nowMillis().epochSecond),
         randomString(16)
     )

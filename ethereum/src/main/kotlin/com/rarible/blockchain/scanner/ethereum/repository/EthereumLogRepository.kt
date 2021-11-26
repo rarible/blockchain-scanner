@@ -89,6 +89,7 @@ class EthereumLogRepository(
             .where("log.blockHash").isEqualTo(blockHash)
             .and("log.topic").isEqualTo(topic)
 
+        // TODO we may use update and find queries here instead of updating one-by-one
         return mongo.find(
             Query(criteria),
             EthereumLogRecord::class.java,

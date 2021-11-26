@@ -3,14 +3,12 @@ package com.rarible.blockchain.scanner
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
-import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.data.assertOriginalBlockAndBlockEquals
 import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.blockchain.scanner.test.model.TestBlock
-import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -168,8 +166,8 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
     private fun createBlockScanner(
         testBlockchainData: TestBlockchainData
-    ): BlockScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestDescriptor> {
-        return BlockScanner(
+    ): BlockScannerV1<TestBlockchainBlock, TestBlock> {
+        return BlockScannerV1(
             TestBlockchainClient(testBlockchainData),
             testBlockMapper,
             testBlockService,

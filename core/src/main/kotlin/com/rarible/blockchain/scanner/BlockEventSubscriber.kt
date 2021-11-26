@@ -62,6 +62,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
     private fun processBlock(originalBlock: BB): Flow<R> = flatten {
         val events = logTime("blockchainClient::getBlockEvents [${originalBlock.number}]") {
             withSpan("getBlockEvents", "network") {
+                // TODO may be launched async while we gathering reverted/pending logs
                 blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
             }
         }

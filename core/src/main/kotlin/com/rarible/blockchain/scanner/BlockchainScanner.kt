@@ -46,7 +46,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties.retryPolicy.client
     )
 
-    private val blockScanner = BlockScanner(
+    private val blockScanner = BlockScannerV1(
         retryableBlockchainClient,
         blockMapper,
         blockService,

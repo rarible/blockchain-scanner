@@ -58,6 +58,7 @@ class BlockEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : L
 
     fun onBlockEvent(event: BlockEvent): Flow<R> {
         logger.debug("Triggered block event for [{}] subscribers: {}", subscribers.size, event)
+        // TODO maybe call it async?
         return subscribers.asFlow()
             .flatMapConcat {
                 withSpan("processSingleSubscriber", labels = listOf("subscriber" to it.subscriber.javaClass.name)) {

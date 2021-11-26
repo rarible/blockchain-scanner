@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.test.configuration
 
 import com.rarible.blockchain.scanner.BlockListener
-import com.rarible.blockchain.scanner.BlockScanner
+import com.rarible.blockchain.scanner.BlockScannerV1
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
@@ -96,7 +96,7 @@ abstract class AbstractIntegrationTest {
         )
     }
 
-    protected suspend fun scanOnce(blockScanner: BlockScanner<*, *, *, *>, blockListener: BlockListener) {
+    protected suspend fun scanOnce(blockScanner: BlockScannerV1<*, *, *, *>, blockListener: BlockListener) {
         try {
             blockScanner.scan(blockListener)
         } catch (e: IllegalStateException) {

@@ -8,7 +8,12 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.data.*
+import com.rarible.blockchain.scanner.test.data.assertRecordAndLogEquals
+import com.rarible.blockchain.scanner.test.data.randomBlockHash
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
+import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
+import com.rarible.blockchain.scanner.test.data.randomTestLogRecord
+import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
@@ -94,12 +99,15 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         testLogRepository.saveAll(collection, log1, log2)
 
         val deleted = handler.beforeHandleBlock(BlockEvent(Source.BLOCKCHAIN, block)).toCollection(mutableListOf())
-        assertEquals(0, deleted.size)
+        assertEquals(1, deleted.size)
 
         // This log is still alive
         assertNotNull(findLog(collection, log1.id))
+
         // This log should be deleted since it's status is REVERTED
         assertNull(findLog(collection, log2.id))
+        assertEquals(log2.id, deleted[0].id)
+        assertEquals(Log.Status.REVERTED, deleted[0].log!!.status)
     }
 
     @Test
@@ -110,33 +118,35 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         val reverted = randomBlockchainBlock()
         val event = BlockEvent(Source.BLOCKCHAIN, block.meta, reverted.meta)
 
-        val log1 = randomTestLogRecord(topic, reverted.hash, Log.Status.CONFIRMED)
-        val log2 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
+        val log1 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
+        val log2 = randomTestLogRecord(topic, reverted.hash, Log.Status.CONFIRMED)
         val log3 = randomTestLogRecord(topic, block.hash, Log.Status.CONFIRMED)
         val log4 = randomTestLogRecord(topic, randomBlockHash(), Log.Status.REVERTED)
 
-        testLogRepository.saveAll(collection, log1, log2, log3, log4)
+        testLogRepository.saveAll(collection, log2, log1, log3, log4)
 
         val revertedLogs = handler.beforeHandleBlock(event).toCollection(mutableListOf())
-        assertEquals(1, revertedLogs.size)
+        assertEquals(2, revertedLogs.size)
 
-        val log1FromDb = findLog(collection, log1.id)!!
-        val log2FromDb = findLog(collection, log2.id)
+        val log1FromDb = findLog(collection, log1.id)
+        val log2FromDb = findLog(collection, log2.id)!!
         val log3FromDb = findLog(collection, log3.id)!!
         val log4FromDb = findLog(collection, log4.id)!!
 
-        // Ensure we got change event for reverted log1
+        // This log should be deleted since it's status is REVERTED, and it should be returned
+        assertNull(log1FromDb)
         assertEquals(log1.id, revertedLogs[0].id)
-        assertFalse(revertedLogs[0].log!!.visible)
         assertEquals(Log.Status.REVERTED, revertedLogs[0].log!!.status)
 
-        // This log is still alive, and it's status changed to REVERTED
-        assertNotNull(log1FromDb)
-        assertEquals(Log.Status.REVERTED, log1FromDb.log!!.status)
-        assertFalse(log1FromDb.log!!.visible)
+        // Ensure we got change event for reverted log1, it should follow after deleted one
+        assertEquals(log2.id, revertedLogs[1].id)
+        assertFalse(revertedLogs[1].log!!.visible)
+        assertEquals(Log.Status.REVERTED, revertedLogs[1].log!!.status)
 
-        // This log should be deleted since it's status is REVERTED
-        assertNull(log2FromDb)
+        // This log is still alive, and it's status changed to REVERTED
+        assertNotNull(log2FromDb)
+        assertEquals(Log.Status.REVERTED, log2FromDb.log!!.status)
+        assertFalse(log2FromDb.log!!.visible)
 
         // This log should not be changed since it has status CONFIRMED
         assertNotNull(log3FromDb)

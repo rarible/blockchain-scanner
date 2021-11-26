@@ -20,4 +20,13 @@ interface Block {
     }
 
     fun timestamp(): Instant = Instant.ofEpochSecond(timestamp)
+
+    fun getMeta(): BlockMeta {
+        return BlockMeta(
+            number = this.id,
+            hash = this.hash,
+            parentHash = this.parentHash,
+            timestamp = this.timestamp
+        )
+    }
 }

@@ -14,7 +14,15 @@ import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.withIndex
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -41,15 +49,14 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
             event, descriptor
         )
 
-        val deletedAndReverted = logService.findAndDelete(descriptor, event.block.hash, Log.Status.REVERTED)
-            .dropWhile { true }
+        val deleted = logService.findAndDelete(descriptor, event.block.hash, Log.Status.REVERTED)
 
         return if (event.reverted == null) {
-            deletedAndReverted
+            deleted
         } else {
             logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.reverted)
             flowOf(
-                deletedAndReverted,
+                deleted,
                 logService.findAndRevert(descriptor, event.reverted!!.hash)
             ).flattenConcat()
         }

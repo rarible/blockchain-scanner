@@ -8,14 +8,12 @@ import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.BlockMeta
-import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.apm.withTransaction
@@ -38,8 +36,8 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Descriptor>(
-    private val blockchainClient: BlockchainClient<BB, BL, D>,
+class BlockScannerV1<BB : BlockchainBlock, B : Block>(
+    private val blockClient: BlockchainBlockClient<BB>,
     private val blockMapper: BlockMapper<BB, B>,
     private val blockService: BlockService<B>,
     private val retryPolicy: ScanRetryPolicyProperties,
@@ -47,7 +45,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     private val blockBufferSize: Int
 ) {
 
-    private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
+    private val logger = LoggerFactory.getLogger(BlockScannerV1::class.java)
 
     private val delay = retryPolicy.reconnectDelay.toMillis()
     private val attempts = if (retryPolicy.reconnectAttempts > 0) {
@@ -74,14 +72,14 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
         }
     }
 
-    private val eventFlow = blockchainClient.newBlocks.flatMapConcat { newBlock ->
+    private val eventFlow = blockClient.newBlocks.flatMapConcat { newBlock ->
         withTransaction("blockSave", listOf("blockNumber" to newBlock.number)) {
             getNewBlocks(newBlock).flatMapConcat { saveBlock(it) }
         }
     }
 
     private fun getNewBlocks(newBlock: BB): Flow<BB> = flatten {
-        logger.info("Checking for not-indexed blocks previous to new on with number: {}", newBlock.number)
+        logger.info("Checking for not-indexed blocks previous to new one with number: {}", newBlock.number)
 
         val lastKnown = try {
             blockService.getLastBlock()
@@ -101,7 +99,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
     }
 
     private suspend fun getBlockAsync(number: Long) = coroutineScope {
-        async { blockchainClient.getBlock(number) }
+        async { blockClient.getBlock(number) }
     }
 
     /**
@@ -131,7 +129,7 @@ class BlockScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, D : Desc
 
             //fetch parent block and save it if parent block hash changed
             else -> {
-                val internalParentBlock = blockchainClient.getBlock(newBlock.number - 1)
+                val internalParentBlock = blockClient.getBlock(newBlock.number - 1)
                 logger.info(
                     "Going to save parent Block [{}], current chain depth is {}",
                     internalParentBlock.meta, depth
