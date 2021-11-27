@@ -20,10 +20,17 @@ class NewBlockScanner(
             return lastKnown
         }
 
+        /**
+         * Checks if it's needed to revert any blocks
+         * @param startStateBlock the latest block from the state
+         * @param startBlockchainBlock block from the blockchain with the same number
+         * @return list of pairs (state block, blockchain block) to revert. blocks are sorted from new to old
+         */
         suspend fun findBlocksToRevert(
             startStateBlock: Block,
             startBlockchainBlock: Block
         ): MutableList<Pair<Block, Block>> {
+            assert(startBlockchainBlock.number == startStateBlock.number)
             val revert = mutableListOf<Pair<Block, Block>>()
             var stateBlock = startStateBlock
             var blockchainBlock = startBlockchainBlock
@@ -32,25 +39,32 @@ class NewBlockScanner(
                 stateBlock = blockService.getBlockByNumber(stateBlock.number - 1)
                     ?: error("never happens: block with number ${stateBlock.number - 1} not found in state")
                 blockchainBlock =
-                    client.getBlockByHash(blockchainBlock.parentHash ?: throw IllegalStateException("root block reached"))
+                    client.getBlockByHash(
+                        blockchainBlock.parentHash ?: throw IllegalStateException("root block reached")
+                    )
                         ?: error("never happens: block with hash ${blockchainBlock.parentHash} not found in the blockchain")
             }
             return revert
         }
 
         /**
-         * Checks if is needed to revert blocks (by comparing block hashes)
+         * Checks if it's needed to revert blocks (by comparing block hashes)
          * @param startStateBlock block saved in the state currently
          * @param startBlockchainBlock block got from the blockchain with the save block number
          * @return correct block saved into the state after reverting
          */
         suspend fun checkAndRevert(startStateBlock: Block, startBlockchainBlock: Block): Block {
-            val reverted = findBlocksToRevert(startStateBlock, startBlockchainBlock)
-            return if (reverted.isNotEmpty()) {
-                reverted.forEach { (_, blockchain) ->
+            val toRevert = findBlocksToRevert(startStateBlock, startBlockchainBlock)
+            return if (toRevert.isNotEmpty()) {
+                toRevert.forEach { (state, _) ->
+                    emit(BlockEvent.RevertedBlockEvent(state))
+                    blockService.removeBlock(state)
+                }
+                toRevert.asReversed().forEach { (_, blockchain) ->
+                    emit(BlockEvent.NewBlockEvent(blockchain))
                     blockService.saveBlock(blockchain)
                 }
-                reverted.last().second
+                toRevert.first().second
             } else {
                 startStateBlock
             }
@@ -76,7 +90,7 @@ class NewBlockScanner(
                 }
 
                 blockchainBlock = nextBlockchainBlock
-                emit(BlockEvent.NewBlockEvent(blockchainBlock.number, blockchainBlock.hash))
+                emit(BlockEvent.NewBlockEvent(blockchainBlock))
                 blockService.saveBlock(blockchainBlock)
                 stateBlock = blockchainBlock
             }
@@ -90,8 +104,13 @@ class NewBlockScanner(
 }
 
 sealed class BlockEvent {
-    data class NewBlockEvent(val number: Long, val hash: String) : BlockEvent()
-    data class RevertedBlockEvent(val number: Long, val hash: String) : BlockEvent()
+    data class NewBlockEvent(val number: Long, val hash: String) : BlockEvent() {
+        constructor(block: Block) : this(block.number, block.hash)
+    }
+
+    data class RevertedBlockEvent(val number: Long, val hash: String) : BlockEvent() {
+        constructor(block: Block) : this(block.number, block.hash)
+    }
 }
 
 data class Block(
@@ -110,4 +129,5 @@ interface BlockService {
     suspend fun getLastKnownBlock(): Block?
     suspend fun getBlockByNumber(blockNumber: Long): Block?
     suspend fun saveBlock(block: Block)
+    suspend fun removeBlock(block: Block)
 }
