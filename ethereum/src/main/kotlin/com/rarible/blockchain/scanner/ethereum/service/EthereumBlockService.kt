@@ -33,4 +33,8 @@ class EthereumBlockService(
     override suspend fun save(block: EthereumBlock) {
         blockRepository.saveR(block).awaitFirstOrNull()
     }
+
+    override suspend fun remove(id: Long) {
+        return blockRepository.remove(id)
+    }
 }

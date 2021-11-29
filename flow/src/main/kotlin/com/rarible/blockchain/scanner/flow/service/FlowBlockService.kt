@@ -35,4 +35,8 @@ class FlowBlockService(
     override fun findByStatus(status: Block.Status): Flow<FlowBlock> {
         return blockRepository.findAllByStatus(status).asFlow()
     }
+
+    override suspend fun remove(id: Long) {
+        blockRepository.deleteById(id).awaitFirstOrNull()
+    }
 }

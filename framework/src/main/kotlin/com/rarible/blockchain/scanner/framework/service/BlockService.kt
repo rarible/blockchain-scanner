@@ -29,6 +29,8 @@ interface BlockService<B : Block> {
      */
     suspend fun save(block: B)
 
+    suspend fun remove(id: Long)
+
     fun findByStatus(status: Block.Status): Flow<B>
 
 }

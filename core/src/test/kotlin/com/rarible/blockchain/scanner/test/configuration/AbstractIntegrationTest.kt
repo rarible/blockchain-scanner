@@ -96,7 +96,7 @@ abstract class AbstractIntegrationTest {
         )
     }
 
-    protected suspend fun scanOnce(blockScanner: BlockScannerV1<*, *, *, *>, blockListener: BlockListener) {
+    protected suspend fun scanOnce(blockScanner: BlockScannerV1<*, *>, blockListener: BlockListener) {
         try {
             blockScanner.scan(blockListener)
         } catch (e: IllegalStateException) {

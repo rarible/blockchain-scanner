@@ -6,41 +6,47 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
-import kotlinx.coroutines.flow.FlowCollector
+import com.rarible.blockchain.scanner.v2.event.NewBlockEvent
+import com.rarible.blockchain.scanner.v2.event.RevertedBlockEvent
 import org.slf4j.LoggerFactory
 
-class BlockHandler<BB : BlockchainBlock, B : Block>(
+class BlockHandlerV2<BB : BlockchainBlock, B : Block>(
     private val blockMapper: BlockMapper<BB, B>,
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService<B>,
-    private val emitter: FlowCollector<BlockEvent>
+    private val publisher: BlockEventPublisher
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockListener::class.java)
 
     suspend fun onNewBlock(newBlockchainBlock: BB) {
-        val lastKnownBlock = getLastKnownBlock()
-        val lastBlockchainBlock = blockClient.getBlock(lastKnownBlock.id)
+        logger.info("Received new Blockchain Block: #{}", newBlockchainBlock.number)
 
-        var blockchainBlock = blockMapper.map(lastBlockchainBlock)
-        var stateBlock = checkAndRevert(lastKnownBlock, blockchainBlock)
+        val lastKnownStateBlock = getLastKnownBlock()
+        logger.info("Last known block: #{}", newBlockchainBlock.number)
 
-        val newBlock = blockMapper.map(newBlockchainBlock)
-        while (blockchainBlock.id < newBlock.id) {
-            val nextBlockchainBlock = blockClient.getBlock(blockchainBlock.id + 1) ?: break
+        var blockchainBlock = fetchBlock(lastKnownStateBlock.id)
+
+        var stateBlock = checkAndRevert(lastKnownStateBlock, blockchainBlock)
+
+        while (blockchainBlock.id < newBlockchainBlock.number) {
+            val nextBlockNumber = blockchainBlock.id + 1
+            val nextBlockchainBlock = fetchBlock(nextBlockNumber)
+
+            // There could be situation when blockchain reorganized while we're handling events,
+            // so checking chain consistency for all forward-going blocks
             while (nextBlockchainBlock.parentHash != stateBlock.hash) {
-                // chain reorg happened, revert blocks and update state
                 val parentHash = nextBlockchainBlock.parentHash
                     ?: error("never happens: parent hash of the next block should not be blank")
-                val prevBlockchainBlock = blockClient.getBlock(parentHash)
-                    ?: error("never happens: block with hash $parentHash not found in the blockchain")
-                stateBlock = checkAndRevert(stateBlock, blockMapper.map(prevBlockchainBlock)) //status = PENDING
+
+                val prevBlockchainBlock = fetchBlock(parentHash)
+                stateBlock = checkAndRevert(stateBlock, prevBlockchainBlock)
             }
 
-            blockchainBlock = blockMapper.map(nextBlockchainBlock) // status = PENDING
-            emitter.emit(NewBlockEvent(blockchainBlock.id, blockchainBlock.hash))
-            blockService.save(blockchainBlock)
+            blockchainBlock = nextBlockchainBlock
             stateBlock = blockchainBlock
+
+            updateBlock(blockchainBlock)
         }
     }
 
@@ -50,13 +56,11 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
             return lastKnownBlock
         }
         logger.info("There is no last know block, retrieving first one")
-        val blockchainBlock = blockClient.getBlock(0)
-        val block = blockMapper.map(blockchainBlock)
+        val blockchainBlock = fetchBlock(0)
 
-        logger.info("Found first block in chain: {}", block)
-        blockService.save(block)
-        notifyNewBlock(block)
-        return block
+        logger.info("Found first block in chain: {}", blockchainBlock)
+        updateBlock(blockchainBlock)
+        return blockchainBlock
     }
 
 
@@ -68,11 +72,19 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
      */
     private suspend fun checkAndRevert(startStateBlock: B, startBlockchainBlock: B): B {
         val startBlockPair = BlockPair(startStateBlock, startBlockchainBlock)
+        // Ordered number DESC
         val reverted = findBlocksToRevert(startBlockPair)
         reverted.forEach { revertBlock(it) }
-        return reverted.lastOrNull()?.blockchainBlock ?: startStateBlock
+        reverted.reversed().forEach { updateBlock(it.blockchainBlock) }
+
+        return reverted.firstOrNull()?.blockchainBlock ?: startStateBlock
     }
 
+    /**
+     * Checks if it's needed to revert any blocks
+     * @param startBlockPair the latest block pair from the state
+     * @return list of pairs (state block, blockchain block) to revert. blocks are sorted from new to old
+     */
     private suspend fun findBlocksToRevert(startBlockPair: BlockPair<B>): MutableList<BlockPair<B>> {
         val toRevert = mutableListOf<BlockPair<B>>()
         var blockPair = startBlockPair
@@ -86,7 +98,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
     private suspend fun getParentBlockPair(blockPair: BlockPair<B>): BlockPair<B> {
         val blockchainBlock = blockPair.blockchainBlock
 
-        val parentStateBlock = blockService.getBlock(blockPair.number)
+        val parentStateBlock = blockService.getBlock(blockPair.number - 1)
         // Should never happen
             ?: error("Block with number ${blockPair.number} not found in state")
 
@@ -95,26 +107,40 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
             error("Root block reached, child block was: #${blockchainBlock.id}, hash=${blockchainBlock.hash}")
         }
 
-        val blockchainParentBlock = blockClient.getBlock(blockchainBlock.parentHash!!)
-        return BlockPair(parentStateBlock, blockMapper.map(blockchainParentBlock))
+        val blockchainParentBlock = fetchBlock(blockchainBlock.parentHash!!)
+        return BlockPair(parentStateBlock, blockchainParentBlock)
     }
 
     private suspend fun revertBlock(blockPair: BlockPair<B>) {
-        val revertedBlock = blockPair.stateBlock
-        blockService.save(blockPair.blockchainBlock)
-        notifyRevertedBlock(revertedBlock)
-        logger.info(
-            "Block reverted #{}, hash: {} -> {}",
-            revertedBlock.id, revertedBlock.hash, blockPair.blockchainBlock.hash
-        )
+        val reverted = blockPair.stateBlock
+        val updated = blockPair.blockchainBlock
+        blockService.remove(updated.id)
+        logger.info("Block #{} reverted, hash: {} -> {}", reverted.id, reverted.hash, updated.hash)
+        notifyRevertedBlock(reverted)
+    }
+
+    private suspend fun updateBlock(block: B) {
+        blockService.save(block)
+        logger.info("Block #{} saved, hash={}, ts={}", block.id, block.hash, block.timestamp)
+        notifyNewBlock(block)
+    }
+
+    private suspend fun fetchBlock(number: Long): B {
+        val blockchainBlock = blockClient.getBlock(number)
+        return blockMapper.map(blockchainBlock)
+    }
+
+    private suspend fun fetchBlock(hash: String): B {
+        val blockchainBlock = blockClient.getBlock(hash)
+        return blockMapper.map(blockchainBlock)
     }
 
     private suspend fun notifyNewBlock(block: B) {
-        emitter.emit(NewBlockEvent(block.id, block.hash))
+        publisher.emit(NewBlockEvent(block.id, block.hash))
     }
 
     private suspend fun notifyRevertedBlock(block: B) {
-        emitter.emit(RevertedBlockEvent(block.id, block.hash))
+        publisher.emit(RevertedBlockEvent(block.id, block.hash))
     }
 
     private data class BlockPair<B : Block>(

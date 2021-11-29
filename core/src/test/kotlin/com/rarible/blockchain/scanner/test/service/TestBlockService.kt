@@ -33,4 +33,7 @@ class TestBlockService(
         blockRepository.saveR(block).awaitFirstOrNull()
     }
 
+    override suspend fun remove(id: Long) {
+        blockRepository.remove(id)
+    }
 }

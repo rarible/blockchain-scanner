@@ -41,6 +41,10 @@ class EthereumBlockRepository(
         ).awaitFirstOrNull()
     }
 
+    suspend fun remove(id: Long) {
+        mongo.remove(Query(EthereumBlock::id isEqualTo id)).awaitFirstOrNull()
+    }
+
     fun findFirstByIdAsc(): Mono<EthereumBlock> =
         mongo.findOne(Query().with(Sort.by(Sort.Direction.ASC, EthereumBlock::id.name)))
 

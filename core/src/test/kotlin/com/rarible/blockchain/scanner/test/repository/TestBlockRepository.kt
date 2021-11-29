@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.test.repository
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.core.mongo.repository.AbstractMongoRepository
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.find
@@ -30,6 +31,10 @@ class TestBlockRepository(
             Update().set(TestBlock::status.name, status),
             TestBlock::class.java
         ).then()
+    }
+
+    suspend fun remove(id: Long) {
+        mongo.remove(Query(TestBlock::id isEqualTo id)).awaitFirstOrNull()
     }
 
 }
