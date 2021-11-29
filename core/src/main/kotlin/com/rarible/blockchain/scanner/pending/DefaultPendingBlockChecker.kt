@@ -4,14 +4,18 @@ import com.rarible.blockchain.scanner.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -50,7 +54,7 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
     private suspend fun reindexPendingBlock(block: B) {
         logger.info("Reindexing pending block: [{}]", block)
         val originalBlock = blockchainClient.getBlock(block.id)
-        val event = BlockEvent(Source.PENDING, originalBlock)
+        val event = NewBlockEvent(Source.PENDING, originalBlock.number, originalBlock.hash)
         blockListener.onBlockEvent(event)
     }
 }

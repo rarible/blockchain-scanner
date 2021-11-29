@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -8,7 +8,11 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.data.*
+import com.rarible.blockchain.scanner.test.data.TestBlockchainData
+import com.rarible.blockchain.scanner.test.data.assertOriginalBlockAndBlockEquals
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
+import com.rarible.blockchain.scanner.test.data.randomOriginalLog
+import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
@@ -44,7 +48,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
             TestBlockchainClient(TestBlockchainData(listOf(block.testOriginalBlock), listOf(log)))
         val blockEventListener = createBlockListener(testBlockchainClient, publisher, subscriber)
 
-        val event = BlockEvent(Source.BLOCKCHAIN, block)
+        val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
 
         blockEventListener.onBlockEvent(event)
 

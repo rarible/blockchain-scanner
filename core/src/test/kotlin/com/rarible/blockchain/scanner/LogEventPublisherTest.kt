@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.subscriber.ProcessedBlockEvent
@@ -31,7 +31,8 @@ internal class LogEventPublisherTest {
         val listener2 = spyk(TestLogEventListener())
         val publisher = LogEventPublisher(listOf(listener1, listener2), properties)
 
-        val blockEvent = BlockEvent(Source.BLOCKCHAIN, randomBlockchainBlock())
+        val block = randomBlockchainBlock()
+        val blockEvent = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
         val events: List<TestLogRecord<*>> = listOf(randomTestLogRecord(), randomTestLogRecord())
         val processedBlockEvent = ProcessedBlockEvent(blockEvent, events)
 
@@ -50,7 +51,8 @@ internal class LogEventPublisherTest {
         val listener3 = spyk(TestLogEventListener())
         val publisher = LogEventPublisher(listOf(listener1, listener2, listener3), properties)
 
-        val blockEvent = BlockEvent(Source.BLOCKCHAIN, randomBlockchainBlock())
+        val block = randomBlockchainBlock()
+        val blockEvent = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
         val events: List<TestLogRecord<*>> = listOf(randomTestLogRecord(), randomTestLogRecord())
         val processedBlockEvent = ProcessedBlockEvent(blockEvent, events)
 
@@ -72,7 +74,8 @@ internal class LogEventPublisherTest {
 
         val publisher = LogEventPublisher(listOf(slowListener), strictProperties)
 
-        val blockEvent = BlockEvent(Source.BLOCKCHAIN, randomBlockchainBlock())
+        val block = randomBlockchainBlock()
+        val blockEvent = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
         val events: List<TestLogRecord<*>> = listOf(randomTestLogRecord())
         val processedBlockEvent = ProcessedBlockEvent(blockEvent, events)
 

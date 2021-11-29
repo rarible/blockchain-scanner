@@ -1,11 +1,12 @@
 package com.rarible.blockchain.scanner.test.configuration
 
-import com.rarible.blockchain.scanner.BlockListener
-import com.rarible.blockchain.scanner.BlockScannerV1
+import com.rarible.blockchain.scanner.BlockScanner
 import com.rarible.blockchain.scanner.BlockchainScanner
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
@@ -84,21 +85,23 @@ abstract class AbstractIntegrationTest {
         return testLogRepository.save(collection, logRecord).awaitFirst()
     }
 
-    protected fun blockEvent(
+    protected fun newBlockEvent(
         block: TestOriginalBlock,
-        reverted: TestOriginalBlock? = null,
         source: Source = Source.BLOCKCHAIN
-    ): BlockEvent {
-        return BlockEvent(
-            source,
-            TestBlockchainBlock(block).meta,
-            reverted?.let { TestBlockchainBlock(reverted).meta }
-        )
+    ): NewBlockEvent {
+        return NewBlockEvent(source, block.number, block.hash)
     }
 
-    protected suspend fun scanOnce(blockScanner: BlockScannerV1<*, *>, blockListener: BlockListener) {
+    protected fun revertedBlockEvent(
+        block: TestOriginalBlock,
+        source: Source = Source.BLOCKCHAIN
+    ): RevertedBlockEvent {
+        return RevertedBlockEvent(source, block.number, block.hash)
+    }
+
+    protected suspend fun scanOnce(blockScanner: BlockScanner<*, *>, publisher: BlockEventPublisher) {
         try {
-            blockScanner.scan(blockListener)
+            blockScanner.scan(publisher)
         } catch (e: IllegalStateException) {
             // Do nothing, in prod there will be infinite attempts count
         }

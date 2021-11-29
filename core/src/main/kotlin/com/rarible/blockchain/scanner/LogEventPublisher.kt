@@ -24,7 +24,7 @@ class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
     private val logger = LoggerFactory.getLogger(LogEventPublisher::class.java)
 
     suspend fun onBlockProcessed(event: BlockEvent, logs: List<R>): Block.Status {
-        val status = logTime("onBlockProcessed [${event.block.number}]") {
+        val status = logTime("onBlockProcessed [${event.number}]") {
             try {
                 logger.debug(
                     "Starting to notify all listeners for {} Logs of BlockEvent [{}] for {} post-processors",

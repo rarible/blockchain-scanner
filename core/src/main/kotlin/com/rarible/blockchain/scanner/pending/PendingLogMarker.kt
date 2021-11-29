@@ -8,9 +8,10 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
-import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -21,26 +22,26 @@ class PendingLogMarker<BB : BlockchainBlock, L : Log, R : LogRecord<L, *>, D : D
 
     private val logger = LoggerFactory.getLogger(PendingLogService::class.java)
 
-    fun markInactive(block: BB, descriptor: D): Flow<R> = flatten {
+    suspend fun markInactive(block: BB, descriptor: D): List<R> {
         val pendingLogs = logService.findPendingLogs(descriptor)
             .map { LogEvent(it, descriptor) }
             .toCollection(mutableListOf())
 
-        pendingLogService.getInactive(block, pendingLogs)
-            .flatMapConcat { markInactive(it) }
+        return pendingLogService.getInactive(block, pendingLogs).toList()
+            .flatMap { markInactive(it) }.toList()
     }
 
-    private fun markInactive(logsToMark: LogEventStatusUpdate<L, R, D>): Flow<R> {
+    private suspend fun markInactive(logsToMark: LogEventStatusUpdate<L, R, D>): List<R> {
         val logs = logsToMark.logs
         val status = logsToMark.status
         return if (logs.isNotEmpty()) {
             logger.info("Marking with status '{}' {} log records", status, logs.size)
-            logs.asFlow().map {
+            logs.map {
                 logger.info("Marking with status '{}' log record: [{}]", status, it.record)
                 logService.updateStatus(it.descriptor, it.record, status)
             }
         } else {
-            emptyFlow()
+            emptyList()
         }
     }
 }

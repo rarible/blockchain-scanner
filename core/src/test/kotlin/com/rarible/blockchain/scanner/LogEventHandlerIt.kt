@@ -1,7 +1,8 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -21,7 +22,6 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -89,7 +89,7 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `before handle block - without reverted block`() = runBlocking {
+    fun `before handle block - new block`() = runBlocking {
         val handler = createHandler(TestLogEventSubscriber(descriptor))
 
         val block = randomBlockchainBlock()
@@ -98,7 +98,7 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
 
         testLogRepository.saveAll(collection, log1, log2)
 
-        val deleted = handler.beforeHandleBlock(BlockEvent(Source.BLOCKCHAIN, block)).toCollection(mutableListOf())
+        val deleted = handler.beforeHandleBlock(NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash))
         assertEquals(1, deleted.size)
 
         // This log is still alive
@@ -111,27 +111,24 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `before handle block - with reverted block`() = runBlocking {
+    fun `before handle block - reverted block event`() = runBlocking {
         val handler = createHandler(TestLogEventSubscriber(descriptor))
 
-        val block = randomBlockchainBlock()
         val reverted = randomBlockchainBlock()
-        val event = BlockEvent(Source.BLOCKCHAIN, block.meta, reverted.meta)
+        val event = RevertedBlockEvent(Source.BLOCKCHAIN, reverted.number, reverted.hash)
 
-        val log1 = randomTestLogRecord(topic, block.hash, Log.Status.REVERTED)
+        val log1 = randomTestLogRecord(topic, reverted.hash, Log.Status.REVERTED)
         val log2 = randomTestLogRecord(topic, reverted.hash, Log.Status.CONFIRMED)
-        val log3 = randomTestLogRecord(topic, block.hash, Log.Status.CONFIRMED)
-        val log4 = randomTestLogRecord(topic, randomBlockHash(), Log.Status.REVERTED)
+        val log3 = randomTestLogRecord(topic, randomBlockHash(), Log.Status.REVERTED)
 
-        testLogRepository.saveAll(collection, log2, log1, log3, log4)
+        testLogRepository.saveAll(collection, log2, log1, log3)
 
         val revertedLogs = handler.beforeHandleBlock(event).toCollection(mutableListOf())
         assertEquals(2, revertedLogs.size)
 
         val log1FromDb = findLog(collection, log1.id)
         val log2FromDb = findLog(collection, log2.id)!!
-        val log3FromDb = findLog(collection, log3.id)!!
-        val log4FromDb = findLog(collection, log4.id)!!
+        val log4FromDb = findLog(collection, log3.id)!!
 
         // This log should be deleted since it's status is REVERTED, and it should be returned
         assertNull(log1FromDb)
@@ -148,13 +145,9 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         assertEquals(Log.Status.REVERTED, log2FromDb.log!!.status)
         assertFalse(log2FromDb.log!!.visible)
 
-        // This log should not be changed since it has status CONFIRMED
-        assertNotNull(log3FromDb)
-        assertEquals(log3.log!!.status, log3FromDb.log!!.status)
-
         // This log should not be changed since it related to another block
         assertNotNull(log4FromDb)
-        assertEquals(log4.log!!.status, log4FromDb.log!!.status)
+        assertEquals(log3.log!!.status, log4FromDb.log!!.status)
     }
 
     private fun createHandler(

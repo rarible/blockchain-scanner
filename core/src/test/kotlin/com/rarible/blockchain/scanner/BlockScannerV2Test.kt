@@ -2,14 +2,16 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.service.BlockService
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
-import com.rarible.blockchain.scanner.v2.BlockScannerV2
-import com.rarible.blockchain.scanner.v2.event.NewBlockEvent
-import com.rarible.blockchain.scanner.v2.event.RevertedBlockEvent
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -18,7 +20,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -30,7 +31,7 @@ class BlockScannerV2Test {
     private val mapper = TestBlockMapper()
     private val client = mockk<BlockchainBlockClient<TestBlockchainBlock>>()
     private val service = mockk<BlockService<TestBlock>>()
-    private val scanner = BlockScannerV2(mapper, client, service, ScanRetryPolicyProperties())
+    private val scanner = BlockScanner(mapper, client, service, ScanRetryPolicyProperties(reconnectAttempts = 1))
 
     @BeforeEach
     fun beforeEach() {
@@ -51,11 +52,12 @@ class BlockScannerV2Test {
         coEvery { service.getLastBlock() } returns null
         coEvery { service.save(any()) } answers { }
 
-        val events = scanner.blockEvents.toList()
+        val events = scanOnce()
+
         assertThat(events).isEqualTo(
             listOf(
-                NewBlockEvent(block0),
-                NewBlockEvent(block1)
+                NewBlockEvent(Source.BLOCKCHAIN, block0.number, block0.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
             )
         )
 
@@ -82,11 +84,11 @@ class BlockScannerV2Test {
         coEvery { service.getLastBlock() } returns mapper.map(block0)
         coEvery { service.save(any()) } answers { }
 
-        val events = scanner.blockEvents.toList()
+        val events = scanOnce()
         assertThat(events).isEqualTo(
             listOf(
-                NewBlockEvent(block1),
-                NewBlockEvent(block2)
+                NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
             )
         )
 
@@ -123,14 +125,14 @@ class BlockScannerV2Test {
         coEvery { service.save(any()) } answers { }
         coEvery { service.remove(any()) } answers {}
 
-        val events = scanner.blockEvents.toList()
+        val events = scanOnce()
         assertThat(events).isEqualTo(
             listOf(
-                RevertedBlockEvent(block2Reorg),
-                RevertedBlockEvent(block1Reorg),
-                NewBlockEvent(block1),
-                NewBlockEvent(block2),
-                NewBlockEvent(block3)
+                RevertedBlockEvent(Source.BLOCKCHAIN, block2Reorg.number, block2Reorg.hash),
+                RevertedBlockEvent(Source.BLOCKCHAIN, block1Reorg.number, block1Reorg.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block3.number, block3.hash),
             )
         )
 
@@ -170,12 +172,13 @@ class BlockScannerV2Test {
         coEvery { service.getBlock(0) } returns mapper.map(block0)
         coEvery { service.remove(any()) } answers { }
 
-        val events = scanner.blockEvents.toList()
+        val events = scanOnce()
+
         assertThat(events).isEqualTo(
             listOf(
-                RevertedBlockEvent(block1),
-                NewBlockEvent(block1New),
-                NewBlockEvent(block2)
+                RevertedBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block1New.number, block1New.hash),
+                NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
             )
         )
 
@@ -191,5 +194,24 @@ class BlockScannerV2Test {
         coVerify(exactly = 1) { service.getBlock(0) }
         coVerify(exactly = 1) { service.remove(block1.number) }
         confirmVerified(client, service)
+    }
+
+    private class CollectionBlockEventPublisher : BlockEventPublisher {
+
+        val events = mutableListOf<BlockEvent>()
+
+        override suspend fun publish(event: BlockEvent) {
+            events.add(event)
+        }
+    }
+
+    private suspend fun scanOnce(): List<BlockEvent> {
+        val listener = CollectionBlockEventPublisher()
+        try {
+            scanner.scan(listener)
+        } catch (e: IllegalStateException) {
+            // Do nothing, in prod there will be infinite attempts count
+        }
+        return listener.events
     }
 }

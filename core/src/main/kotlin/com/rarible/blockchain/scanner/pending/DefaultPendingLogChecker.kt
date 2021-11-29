@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -55,7 +55,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
 
     private suspend fun onNewBlocks(newBlocks: List<BlockchainBlock>) {
         newBlocks.forEach {
-            blockListener.onBlockEvent(BlockEvent(Source.PENDING, it))
+            blockListener.onBlockEvent(NewBlockEvent(Source.PENDING, it.number, it.hash))
         }
     }
 

@@ -8,13 +8,22 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.data.*
+import com.rarible.blockchain.scanner.test.data.TestBlockchainData
+import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
+import com.rarible.blockchain.scanner.test.data.randomOriginalLog
+import com.rarible.blockchain.scanner.test.data.randomTestLogRecord
+import com.rarible.blockchain.scanner.test.data.testDescriptor1
+import com.rarible.blockchain.scanner.test.data.testDescriptor2
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventListener
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import io.mockk.*
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
@@ -94,7 +103,7 @@ class DefaultPendingLogCheckerIt : AbstractIntegrationTest() {
 
         // Only block contains pending events must be reindexed
         coVerify(exactly = 1) { blockListener.onBlockEvent(any()) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(blockEvent(block1, null, Source.PENDING)) }
+        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(block1, Source.PENDING)) }
 
         // Listener notified about dropped logs
         coVerify(exactly = 1) {

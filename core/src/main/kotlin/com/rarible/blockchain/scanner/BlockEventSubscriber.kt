@@ -12,14 +12,10 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
-import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.blockchain.scanner.util.logTime
 import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flattenConcat
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
@@ -37,8 +33,8 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService)
 
-    fun onBlockEvent(event: BlockEvent): Flow<R> = flatten {
-        val start = logTime("logHandler.beforeHandleBlock [${event.block.number}]") {
+    suspend fun onBlockEvent(event: BlockEvent): List<R> {
+        val start = logTime("logHandler.beforeHandleBlock [${event.number}]") {
             withSpan("beforeHandleBlock") {
                 logHandler.beforeHandleBlock(event)
             }
@@ -46,27 +42,26 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
         val descriptor = subscriber.getDescriptor()
         logger.debug("Handling BlockEvent [{}] for subscriber with descriptor: [{}]", event, descriptor)
 
-        val block = logTime("Get block [${event.block.number}] from handler") {
-            withSpan("getBlock", "network") { blockchainClient.getBlock(event.block.number) }
+        val block = logTime("Get block [${event.number}] from handler") {
+            withSpan("getBlock", "network") { blockchainClient.getBlock(event.number) }
         }
 
-        flowOf(
-            start,
-            logTime("pendingLogMarker.markInactive [${event.block.number}]") {
-                withSpan("markInactive", "db") { pendingLogMarker.markInactive(block, descriptor) }
-            },
-            processBlock(block)
-        ).flattenConcat()
+        val pending = logTime("pendingLogMarker.markInactive [${event.number}]") {
+            withSpan("markInactive", "db") { pendingLogMarker.markInactive(block, descriptor) }
+        }
+
+        return start + pending + processBlock(block)
+
     }
 
-    private fun processBlock(originalBlock: BB): Flow<R> = flatten {
+    private suspend fun processBlock(originalBlock: BB): List<R> {
         val events = logTime("blockchainClient::getBlockEvents [${originalBlock.number}]") {
             withSpan("getBlockEvents", "network") {
                 // TODO may be launched async while we gathering reverted/pending logs
                 blockchainClient.getBlockEvents(subscriber.getDescriptor(), originalBlock).toList()
             }
         }
-        logTime("logHandler::handleLogs [${originalBlock.number}]") {
+        return logTime("logHandler::handleLogs [${originalBlock.number}]") {
             withSpan("handleLogs") { logHandler.handleLogs(FullBlock(originalBlock, events)) }
         }
     }

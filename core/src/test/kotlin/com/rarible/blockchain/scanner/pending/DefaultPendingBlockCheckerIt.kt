@@ -64,9 +64,9 @@ class DefaultPendingBlockCheckerIt : AbstractIntegrationTest() {
 
         // 3 events should be emitted in total
         coVerify(exactly = 3) { blockListener.onBlockEvent(any()) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(blockEvent(pendingOldBlock, null, Source.PENDING)) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(blockEvent(failedOldBlock, null, Source.PENDING)) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(blockEvent(failedNewBlock, null, Source.PENDING)) }
+        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(pendingOldBlock, Source.PENDING)) }
+        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(failedOldBlock, Source.PENDING)) }
+        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(failedNewBlock, Source.PENDING)) }
     }
 
     private fun createPendingBlockChecker(

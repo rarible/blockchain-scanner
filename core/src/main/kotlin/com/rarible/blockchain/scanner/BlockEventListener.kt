@@ -18,10 +18,8 @@ import com.rarible.core.apm.withSpan
 import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
-import org.slf4j.MDC
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -45,9 +43,10 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         pendingLogService
     )
 
+    // TODO make it list
     override suspend fun onBlockEvent(event: BlockEvent) {
         logger.info("Received BlockEvent [{}]", event)
-        event.contextParams.forEach { (key, value) -> MDC.put(key, value) }
+        //event.contextParams.forEach { (key, value) -> MDC.put(key, value) }
 
         withContext(RaribleMDCContext()) {
             val logs = withSpan("process") {
@@ -63,7 +62,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
     }
 
     private suspend fun processBlock(event: BlockEvent): List<R> {
-        val logs = logTime("BlockEventListener::processBlockEvent [${event.block.number}]") {
+        val logs = logTime("BlockEventListener::processBlockEvent [${event.number}]") {
             blockEventHandler.onBlockEvent(event).toList()
         }
         logger.info("BlockEvent [{}] processed, {} Logs gathered", event, logs.size)
@@ -72,7 +71,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
 
     private suspend fun updateBlockStatus(event: BlockEvent, status: Block.Status) {
         try {
-            blockService.updateStatus(event.block.number, status)
+            blockService.updateStatus(event.number, status)
         } catch (ex: Throwable) {
             logger.error("Unable to save Block from BlockEvent [{}] with status {}", event, status, ex)
         }

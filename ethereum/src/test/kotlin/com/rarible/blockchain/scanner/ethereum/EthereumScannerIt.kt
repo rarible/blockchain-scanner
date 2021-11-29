@@ -5,7 +5,11 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
-import com.rarible.blockchain.scanner.ethereum.test.data.*
+import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
+import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
+import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
+import com.rarible.blockchain.scanner.ethereum.test.data.randomString
+import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -89,7 +93,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         coVerify(exactly = 1) {
             testLogEventListener.onBlockLogsProcessed(match {
-                assertEquals(receipt.blockHash().toString(), it.event.block.hash)
+                assertEquals(receipt.blockHash().toString(), it.event.hash)
                 assertEquals(1, it.records.size)
                 true
             })
@@ -276,7 +280,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         // We should get here 2 events - first from initial BlockEvent, second - from indexing pending Block
         coVerify(exactly = 2) {
             testLogEventListener.onBlockLogsProcessed(match {
-                assertEquals(receipt.blockHash().toString(), it.event.block.hash)
+                assertEquals(receipt.blockHash().toString(), it.event.hash)
                 assertEquals(1, it.records.size)
                 true
             })

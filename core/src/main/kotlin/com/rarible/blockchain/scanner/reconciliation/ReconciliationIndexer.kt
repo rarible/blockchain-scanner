@@ -5,8 +5,8 @@ import com.rarible.blockchain.scanner.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
@@ -20,7 +20,6 @@ import com.rarible.core.apm.withTransaction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
@@ -32,7 +31,7 @@ import org.slf4j.LoggerFactory
  */
 @FlowPreview
 @ExperimentalCoroutinesApi
-class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logEventHandler: LogEventHandler<BB, BL, L, R, D>,
     private val logEventPublisher: LogEventPublisher<L, R>,
@@ -54,7 +53,7 @@ class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
                 events.onEach {
                     withSpan("processBlock", labels = listOf("blockNumber" to it.block.number)) {
                         val processedLogs = reindexBlock(it)
-                        val blockEvent = BlockEvent(Source.REINDEX, it.block)
+                        val blockEvent = NewBlockEvent(Source.REINDEX, it.block.number, it.block.hash)
                         logEventPublisher.onBlockProcessed(blockEvent, processedLogs)
                     }
                 }
@@ -64,9 +63,9 @@ class ReconciliationIndexer<BB : BlockchainBlock, B: Block, BL : BlockchainLog, 
 
     private suspend fun reindexBlock(fullBlock: FullBlock<BB, BL>): List<R> {
         logger.info("Reindexing Block {} with {} Logs", fullBlock.block.hash, fullBlock.logs.size)
-        return logEventHandler.handleLogs(fullBlock).onCompletion {
-            blockService.save(blockMapper.map(fullBlock.block, Block.Status.SUCCESS))
-        }.toList()
+        val result = logEventHandler.handleLogs(fullBlock)
+        blockService.save(blockMapper.map(fullBlock.block, Block.Status.SUCCESS))
+        return result
     }
 
 }

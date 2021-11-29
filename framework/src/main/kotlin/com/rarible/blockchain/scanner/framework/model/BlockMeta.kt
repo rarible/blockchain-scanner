@@ -17,6 +17,14 @@ data class BlockMeta(
                 parentHash = block.parentHash,
                 timestamp = block.timestamp
             )
+
+    constructor(block: Block) :
+            this(
+                number = block.id,
+                hash = block.hash,
+                parentHash = block.parentHash,
+                timestamp = block.timestamp
+            )
 }
 
 

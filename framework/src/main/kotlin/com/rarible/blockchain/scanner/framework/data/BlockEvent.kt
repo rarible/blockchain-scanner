@@ -1,17 +1,23 @@
 package com.rarible.blockchain.scanner.framework.data
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.model.BlockMeta
+sealed class BlockEvent {
+    abstract val source: Source
+    abstract val number: Long
+    abstract val hash: String
+}
 
-data class BlockEvent(
-    val eventSource: Source,
-    val block: BlockMeta,
-    val reverted: BlockMeta? = null
-) {
+data class NewBlockEvent(
+    override val source: Source,
+    override val number: Long,
+    override val hash: String
+) : BlockEvent()
 
-    constructor(eventSource: Source, blockchainBlock: BlockchainBlock) : this(eventSource, BlockMeta(blockchainBlock))
-
+data class RevertedBlockEvent(
+    override val source: Source,
+    override val number: Long,
+    override val hash: String
+) : BlockEvent()
+/*
     @get:JsonIgnore
     val contextParams: Map<String, String>
         get() = mapOf(
@@ -19,7 +25,7 @@ data class BlockEvent(
             "blockHash" to block.hash,
             "eventType" to "newBlock"
         ) + if (reverted != null) mapOf("reverted" to reverted.hash) else emptyMap()
-}
+}*/
 
 enum class Source {
     BLOCKCHAIN,

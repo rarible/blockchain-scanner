@@ -1,23 +1,24 @@
-package com.rarible.blockchain.scanner.v2
+package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
-import com.rarible.blockchain.scanner.v2.event.NewBlockEvent
-import com.rarible.blockchain.scanner.v2.event.RevertedBlockEvent
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import org.slf4j.LoggerFactory
 
-class BlockHandlerV2<BB : BlockchainBlock, B : Block>(
+class BlockHandler<BB : BlockchainBlock, B : Block>(
     private val blockMapper: BlockMapper<BB, B>,
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService<B>,
-    private val publisher: BlockEventPublisher
+    private val blockListener: BlockEventPublisher
 ) {
 
-    private val logger = LoggerFactory.getLogger(BlockListener::class.java)
+    private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
     suspend fun onNewBlock(newBlockchainBlock: BB) {
         logger.info("Received new Blockchain Block: #{}", newBlockchainBlock.number)
@@ -143,11 +144,11 @@ class BlockHandlerV2<BB : BlockchainBlock, B : Block>(
     }
 
     private suspend fun notifyNewBlock(block: B) {
-        publisher.emit(NewBlockEvent(block.id, block.hash))
+        blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
     }
 
     private suspend fun notifyRevertedBlock(block: B) {
-        publisher.emit(RevertedBlockEvent(block.id, block.hash))
+        blockListener.publish(RevertedBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
     }
 
     private data class BlockPair<B : Block>(

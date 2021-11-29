@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.pending.PendingLogMarker
@@ -9,7 +9,12 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.data.*
+import com.rarible.blockchain.scanner.test.data.TestBlockchainData
+import com.rarible.blockchain.scanner.test.data.assertOriginalLogAndLogEquals
+import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
+import com.rarible.blockchain.scanner.test.data.randomOriginalLog
+import com.rarible.blockchain.scanner.test.data.randomTestLogRecord
+import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -18,8 +23,6 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -44,11 +47,11 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor>>()
         coEvery {
             pendingLogMarker.markInactive(TestBlockchainBlock(block), subscriber.getDescriptor())
-        } returns listOf(pendingRecord).asFlow()
+        } returns listOf(pendingRecord)
 
         val blockSubscriber = createBlockSubscriber(testBlockchainClient, subscriber, pendingLogMarker)
 
-        val event = BlockEvent(Source.BLOCKCHAIN, TestBlockchainBlock(block))
+        val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
         val logEvents = blockSubscriber.onBlockEvent(event).toCollection(mutableListOf())
 
         // We are expecting here event from pending logs and then event from new block
