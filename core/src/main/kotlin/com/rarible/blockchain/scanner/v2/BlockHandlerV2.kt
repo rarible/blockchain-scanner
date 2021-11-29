@@ -27,19 +27,24 @@ class BlockHandlerV2<BB : BlockchainBlock, B : Block>(
 
         var blockchainBlock = fetchBlock(lastKnownStateBlock.id)
 
+        // Current "head" in DB
         var stateBlock = checkAndRevert(lastKnownStateBlock, blockchainBlock)
 
         while (blockchainBlock.id < newBlockchainBlock.number) {
             val nextBlockNumber = blockchainBlock.id + 1
             val nextBlockchainBlock = fetchBlock(nextBlockNumber)
+            val expectedParentHash = nextBlockchainBlock.parentHash!!
 
             // There could be situation when blockchain reorganized while we're handling events,
             // so checking chain consistency for all forward-going blocks
-            while (nextBlockchainBlock.parentHash != stateBlock.hash) {
-                val parentHash = nextBlockchainBlock.parentHash
-                    ?: error("never happens: parent hash of the next block should not be blank")
+            while (expectedParentHash != stateBlock.hash) {
+                // In such case we have head block in DB with wrong hash, reverting it
+                logger.info(
+                    "Found Block #{} with changed hash: {} -> {}",
+                    stateBlock.id, stateBlock.hash, expectedParentHash
+                )
 
-                val prevBlockchainBlock = fetchBlock(parentHash)
+                val prevBlockchainBlock = fetchBlock(expectedParentHash)
                 stateBlock = checkAndRevert(stateBlock, prevBlockchainBlock)
             }
 
@@ -74,7 +79,9 @@ class BlockHandlerV2<BB : BlockchainBlock, B : Block>(
         val startBlockPair = BlockPair(startStateBlock, startBlockchainBlock)
         // Ordered number DESC
         val reverted = findBlocksToRevert(startBlockPair)
+        // Deleting reverted blocks in DESC order
         reverted.forEach { revertBlock(it) }
+        // Inserting actual blocks in ASC order
         reverted.reversed().forEach { updateBlock(it.blockchainBlock) }
 
         return reverted.firstOrNull()?.blockchainBlock ?: startStateBlock
