@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner
 
+import com.rarible.blockchain.scanner.event.log.BlockEventProcessor
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -18,6 +19,7 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -39,7 +41,7 @@ class BlockEventHandlerIt : AbstractIntegrationTest() {
         val blockEventHandler = createBlockHandler(testBlockchainClient, subscriber1, subscriber2)
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockEventHandler.onBlockEvent(event).toCollection(mutableListOf())
+        val logEvents = blockEventHandler.onBlockEvents(listOf(event)).toList().flatMap { it.values.flatten() }
 
         assertEquals(2, logEvents.size)
 
@@ -51,8 +53,8 @@ class BlockEventHandlerIt : AbstractIntegrationTest() {
     private fun createBlockHandler(
         testBlockchainClient: TestBlockchainClient,
         vararg subscribers: TestLogEventSubscriber
-    ): BlockEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
-        return BlockEventHandler(
+    ): BlockEventProcessor<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+        return BlockEventProcessor(
             testBlockchainClient,
             subscribers.asList(),
             testLogMapper,

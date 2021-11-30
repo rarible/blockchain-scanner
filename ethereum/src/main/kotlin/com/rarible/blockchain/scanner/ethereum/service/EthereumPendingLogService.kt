@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
-import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
@@ -8,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
+import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.reactive.asFlow
@@ -19,10 +19,10 @@ import scalether.java.Lists
 @Component
 class EthereumPendingLogService(
     private val monoEthereum: MonoEthereum
-) : PendingLogService<EthereumBlockchainBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
+) : PendingLogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
     override fun getInactive(
-        block: EthereumBlockchainBlock,
+        blockHash: String,
         records: List<LogEvent<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>>
     ): Flow<LogEventStatusUpdate<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>> {
         if (records.isEmpty()) {
@@ -30,7 +30,7 @@ class EthereumPendingLogService(
         }
         val byTxHash = records.groupBy { it.record.log!!.transactionHash }
         val byFromNonce = records.groupBy { Pair(it.record.log!!.from, it.record.log!!.nonce) }
-        val fullBlock = monoEthereum.ethGetFullBlockByHash(block.ethBlock.hash())
+        val fullBlock = monoEthereum.ethGetFullBlockByHash(Word.apply(blockHash))
         return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
             .flatMap { tx ->
                 val first = byTxHash[tx.hash().toString()] ?: emptyList()

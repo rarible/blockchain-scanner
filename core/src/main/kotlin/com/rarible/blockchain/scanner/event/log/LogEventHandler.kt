@@ -1,10 +1,10 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.log
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -29,33 +29,41 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
 
     private val logger = LoggerFactory.getLogger(subscriber.javaClass)
     private val descriptor: D = subscriber.getDescriptor()
+    private val name = subscriber.javaClass.simpleName
 
     init {
-        logger.info("Creating LogEventProcessor for ${subscriber.javaClass.simpleName}")
+        logger.info("Creating LogEventHandler for {}", name)
     }
 
     suspend fun beforeHandleBlock(event: BlockEvent): List<R> {
-        logger.info(
-            "Deleting all reverted logs before handling block event [{}] by descriptor: [{}]",
-            event, descriptor
-        )
-
-        val deleted = logService.findAndDelete(descriptor, event.hash, Log.Status.REVERTED).toList()
-
-        return if (event is NewBlockEvent) {
-            deleted
+        val deleted = delete(event)
+        return if (event is RevertedBlockEvent) {
+            deleted + revert(event)
         } else {
-            logger.info("BlockEvent has reverted Block: [{}], reverting it in indexer", event.hash)
-            val reverted = logService.findAndRevert(descriptor, event.hash).toList()
-            deleted + reverted
+            deleted
         }
     }
 
+    private suspend fun delete(blockEvent: BlockEvent): List<R> {
+        val deleted = logService.findAndDelete(descriptor, blockEvent.hash, Log.Status.REVERTED).toList()
+        logger.info("Deleted {} reverted Logs for Block [{}], subscriber {}", deleted.size, blockEvent, name)
+        return deleted
+    }
+
+    private suspend fun revert(blockEvent: RevertedBlockEvent): List<R> {
+        val reverted = logService.findAndRevert(descriptor, blockEvent.hash).toList()
+        logger.info("Reverted {} Logs for Block [{}], subscriber {}", reverted.size, blockEvent, name)
+        return reverted
+    }
+
     suspend fun handleLogs(fullBlock: FullBlock<BB, BL>): List<R> {
-        return if (fullBlock.logs.isNotEmpty()) {
-            logger.info("Handling {} Logs from block: [{}]", fullBlock.logs.size, fullBlock.block.meta)
-            val processedLogs = fullBlock.logs.withIndex().flatMap { (idx, log) ->
-                onLog(fullBlock.block, idx, log)
+        val block = fullBlock.block
+        val logs = fullBlock.logs
+
+        return if (logs.isNotEmpty()) {
+            logger.info("Handling {} Logs of Block [{}:{}], subscriber {} ", logs.size, block.number, block.hash, name)
+            val processedLogs = logs.withIndex().flatMap { (idx, log) ->
+                onLog(block, idx, log)
             }
             withSpan("saveLogs", "db") {
                 logService.save(descriptor, processedLogs)
@@ -67,8 +75,6 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun onLog(block: BB, index: Int, log: BL): List<R> {
-        logger.info("Handling single Log: [{}]", log.hash)
-
         return subscriber.getEventRecords(block, log)
             .withIndex()
             .map { indexed ->

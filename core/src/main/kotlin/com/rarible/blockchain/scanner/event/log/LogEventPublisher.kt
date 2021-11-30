@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.log
 
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
@@ -9,9 +9,6 @@ import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.ProcessedBlockEvent
 import com.rarible.blockchain.scanner.util.logTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 
@@ -39,17 +36,17 @@ class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
             }
         }
 
-        logger.info("Finished BlockEvent [{}] processing, block status is: {}", event, status)
+        logger.info("Finished BlockEvent [{}] processing, block status: {}", event, status)
         return status
     }
 
     private suspend fun onLogsProcessed(event: BlockEvent, logs: List<R>) {
-        return (logEventListeners).asFlow().map {
+        logEventListeners.map {
             try {
                 it.onBlockLogsProcessed(ProcessedBlockEvent(event, logs))
             } catch (th: Throwable) {
                 throw Exception("Logs post-processing failed in ${it.javaClass.name}", th)
             }
-        }.collect()
+        }
     }
 }

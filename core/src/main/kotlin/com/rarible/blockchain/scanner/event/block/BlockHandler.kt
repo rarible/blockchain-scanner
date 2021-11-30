@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.block
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
@@ -20,19 +20,39 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
+    // We can cache lastKnown block in order to avoid huge amount of DB requests in
+    // regular case of block processing
+    private var lastBlock: B? = null
+
     suspend fun onNewBlock(newBlockchainBlock: BB) {
-        logger.info("Received new Blockchain Block: #{}", newBlockchainBlock.number)
+        logger.info("Received new Block [{}:{}]", newBlockchainBlock.number, newBlockchainBlock.hash)
+        val newBlock = blockMapper.map(newBlockchainBlock)
 
-        val lastKnownStateBlock = getLastKnownBlock()
-        logger.info("Last known block: #{}", newBlockchainBlock.number)
+        val lastStateBlock = getLastKnownBlock()
+        logger.info(
+            "Last known Block [{}:{}], parentHash: {}",
+            lastStateBlock.id, lastStateBlock.hash, lastStateBlock.parentHash
+        )
 
-        var blockchainBlock = fetchBlock(lastKnownStateBlock.id)
+        // If new block's parent hash is the same as hash of last known block, we could omit blockchain reorg check
+        if (newBlockchainBlock.parentHash == lastStateBlock.hash) {
+            updateBlock(newBlock)
+            lastBlock = newBlock
+            return
+        }
+
+        // Otherwise, chain has been reorganized, syncing all reverted blocks
+        lastBlock = checkBlockchainReorganization(lastStateBlock, newBlock)
+    }
+
+    private suspend fun checkBlockchainReorganization(lastStateBlock: B, newBlock: B): B {
+        var fetchedBlock = fetchBlock(lastStateBlock.id)
 
         // Current "head" in DB
-        var stateBlock = checkAndRevert(lastKnownStateBlock, blockchainBlock)
+        var stateBlock = checkAndRevert(lastStateBlock, fetchedBlock)
 
-        while (blockchainBlock.id < newBlockchainBlock.number) {
-            val nextBlockNumber = blockchainBlock.id + 1
+        while (fetchedBlock.id < newBlock.id) {
+            val nextBlockNumber = fetchedBlock.id + 1
             val nextBlockchainBlock = fetchBlock(nextBlockNumber)
             val expectedParentHash = nextBlockchainBlock.parentHash!!
 
@@ -41,7 +61,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
             while (expectedParentHash != stateBlock.hash) {
                 // In such case we have head block in DB with wrong hash, reverting it
                 logger.info(
-                    "Found Block #{} with changed hash: {} -> {}",
+                    "Found Block [{}:{}] with changed hash: {}",
                     stateBlock.id, stateBlock.hash, expectedParentHash
                 )
 
@@ -49,23 +69,31 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
                 stateBlock = checkAndRevert(stateBlock, prevBlockchainBlock)
             }
 
-            blockchainBlock = nextBlockchainBlock
-            stateBlock = blockchainBlock
+            fetchedBlock = nextBlockchainBlock
+            stateBlock = fetchedBlock
 
-            updateBlock(blockchainBlock)
+            updateBlock(fetchedBlock)
         }
+        return fetchedBlock
     }
 
     private suspend fun getLastKnownBlock(): B {
+        if (lastBlock != null) {
+            return lastBlock!!
+        }
         val lastKnownBlock = blockService.getLastBlock()
         if (lastKnownBlock != null) {
+            lastBlock = lastKnownBlock
             return lastKnownBlock
         }
-        logger.info("There is no last know block, retrieving first one")
+
+        logger.info("There is no last know Block, retrieving first one")
         val blockchainBlock = fetchBlock(0)
 
-        logger.info("Found first block in chain: {}", blockchainBlock)
+        logger.info("Found first Block in chain [{}:{}]", blockchainBlock.id, blockchainBlock.hash)
         updateBlock(blockchainBlock)
+
+        lastBlock = blockchainBlock
         return blockchainBlock
     }
 
@@ -108,11 +136,11 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
 
         val parentStateBlock = blockService.getBlock(blockPair.number - 1)
         // Should never happen
-            ?: error("Block with number ${blockPair.number} not found in state")
+            ?: error("Block #${blockPair.number} not found in state")
 
         if (blockchainBlock.parentHash == null) {
             // Should never happen
-            error("Root block reached, child block was: #${blockchainBlock.id}, hash=${blockchainBlock.hash}")
+            error("Root Block reached, child Block was: [${blockchainBlock.id}:${blockchainBlock.hash}]")
         }
 
         val blockchainParentBlock = fetchBlock(blockchainBlock.parentHash!!)
@@ -123,13 +151,13 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
         val reverted = blockPair.stateBlock
         val updated = blockPair.blockchainBlock
         blockService.remove(updated.id)
-        logger.info("Block #{} reverted, hash: {} -> {}", reverted.id, reverted.hash, updated.hash)
+        logger.info("Block [{}:{}] reverted, hash: {}", reverted.id, reverted.hash, updated.hash)
         notifyRevertedBlock(reverted)
     }
 
     private suspend fun updateBlock(block: B) {
         blockService.save(block)
-        logger.info("Block #{} saved, hash={}, ts={}", block.id, block.hash, block.timestamp)
+        logger.info("Block [{}:{}] saved", block.id, block.hash)
         notifyNewBlock(block)
     }
 

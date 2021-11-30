@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.pending
 
-import com.rarible.blockchain.scanner.BlockListener
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -34,7 +34,7 @@ class DefaultPendingBlockCheckerIt : AbstractIntegrationTest() {
     @BeforeEach
     fun beforeEach() {
         clearMocks(blockListener)
-        coEvery { blockListener.onBlockEvent(any()) } returns Unit
+        coEvery { blockListener.onBlockEvents(any()) } returns Unit
     }
 
     @Test
@@ -63,10 +63,10 @@ class DefaultPendingBlockCheckerIt : AbstractIntegrationTest() {
         checker.checkPendingBlocks(Duration.ofMinutes(1))
 
         // 3 events should be emitted in total
-        coVerify(exactly = 3) { blockListener.onBlockEvent(any()) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(pendingOldBlock, Source.PENDING)) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(failedOldBlock, Source.PENDING)) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(failedNewBlock, Source.PENDING)) }
+        coVerify(exactly = 3) { blockListener.onBlockEvents(any()) }
+        coVerify(exactly = 1) { blockListener.onBlockEvents(listOf(newBlockEvent(pendingOldBlock, Source.PENDING))) }
+        coVerify(exactly = 1) { blockListener.onBlockEvents(listOf(newBlockEvent(failedOldBlock, Source.PENDING))) }
+        coVerify(exactly = 1) { blockListener.onBlockEvents(listOf(newBlockEvent(failedNewBlock, Source.PENDING))) }
     }
 
     private fun createPendingBlockChecker(

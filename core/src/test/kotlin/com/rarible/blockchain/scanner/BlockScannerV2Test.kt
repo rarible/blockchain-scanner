@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
+import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
@@ -64,8 +65,9 @@ class BlockScannerV2Test {
         coVerify(exactly = 1) { service.save(mapper.map(block0)) }
         coVerify(exactly = 1) { service.save(mapper.map(block1)) }
         coVerify(exactly = 1) { service.getLastBlock() }
-        coVerify(exactly = 2) { client.getBlock(0) }
-        coVerify(exactly = 1) { client.getBlock(1) }
+        coVerify(exactly = 1) { client.getBlock(0) }
+        // We don't need to call here getBlock because we just received it in event
+        coVerify(exactly = 0) { client.getBlock(1) }
         verify(exactly = 1) { client.newBlocks }
         confirmVerified(client, service)
     }

@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.pending
 
-import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.framework.model.Descriptor
@@ -15,19 +14,19 @@ import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class PendingLogMarker<BB : BlockchainBlock, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class PendingLogMarker<L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val logService: LogService<L, R, D>,
-    private val pendingLogService: PendingLogService<BB, L, R, D>
+    private val pendingLogService: PendingLogService<L, R, D>
 ) {
 
     private val logger = LoggerFactory.getLogger(PendingLogService::class.java)
 
-    suspend fun markInactive(block: BB, descriptor: D): List<R> {
+    suspend fun markInactive(blockHash: String, descriptor: D): List<R> {
         val pendingLogs = logService.findPendingLogs(descriptor)
             .map { LogEvent(it, descriptor) }
             .toCollection(mutableListOf())
 
-        return pendingLogService.getInactive(block, pendingLogs).toList()
+        return pendingLogService.getInactive(blockHash, pendingLogs).toList()
             .flatMap { markInactive(it) }.toList()
     }
 
@@ -35,7 +34,6 @@ class PendingLogMarker<BB : BlockchainBlock, L : Log, R : LogRecord<L, *>, D : D
         val logs = logsToMark.logs
         val status = logsToMark.status
         return if (logs.isNotEmpty()) {
-            logger.info("Marking with status '{}' {} log records", status, logs.size)
             logs.map {
                 logger.info("Marking with status '{}' log record: [{}]", status, it.record)
                 logService.updateStatus(it.descriptor, it.record, status)

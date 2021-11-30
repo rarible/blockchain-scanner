@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.LogEventHandler
-import com.rarible.blockchain.scanner.LogEventPublisher
+import com.rarible.blockchain.scanner.event.log.LogEventHandler
+import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -43,7 +43,7 @@ class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
 
 
     fun reindex(from: Long, to: Long, batchSize: Long): Flow<LongRange> {
-        logger.info("Scanning for Logs in batches from={} to={} with batchSize={}", from, to, batchSize)
+        logger.info("Scanning for Logs in batches from {} to {} with batchSize {}", from, to, batchSize)
         return BlockRanges.getRanges(from, to, batchSize.toInt()).onEach { range ->
             withTransaction("reindex", listOf("range" to range.toString())) {
                 val descriptor = logEventHandler.subscriber.getDescriptor()
@@ -62,7 +62,8 @@ class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
     }
 
     private suspend fun reindexBlock(fullBlock: FullBlock<BB, BL>): List<R> {
-        logger.info("Reindexing Block {} with {} Logs", fullBlock.block.hash, fullBlock.logs.size)
+        val block = fullBlock.block
+        logger.info("Reindexing Block [{}:{}] with {} Logs", block.number, block.hash, fullBlock.logs.size)
         val result = logEventHandler.handleLogs(fullBlock)
         blockService.save(blockMapper.map(fullBlock.block, Block.Status.SUCCESS))
         return result

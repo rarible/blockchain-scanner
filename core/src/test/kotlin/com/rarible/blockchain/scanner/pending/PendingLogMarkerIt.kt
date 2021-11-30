@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.pending
 
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
@@ -13,7 +12,6 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -43,7 +41,7 @@ class PendingLogMarkerIt : AbstractIntegrationTest() {
 
         val marker = createMarker(pendingLogService)
 
-        marker.markInactive(block, descriptor).toList()
+        marker.markInactive(block.hash, descriptor).toList()
 
         // LogRecords specified in PendingLogService should be dropped/deactivated, other LogRecords should be the same
         assertEquals(Log.Status.DROPPED, findLog(collection, logToBeDropped.id)!!.log!!.status)
@@ -60,7 +58,7 @@ class PendingLogMarkerIt : AbstractIntegrationTest() {
         val pendingLogService = TestPendingLogService()
         val marker = createMarker(pendingLogService)
 
-        marker.markInactive(block, descriptor).toList()
+        marker.markInactive(block.hash, descriptor).toList()
 
         // No LogRecords found to update status - nothing should be updated
         assertEquals(Log.Status.PENDING, findLog(collection, pendingLog.id)!!.log!!.status)
@@ -68,7 +66,7 @@ class PendingLogMarkerIt : AbstractIntegrationTest() {
 
     private fun createMarker(
         pendingLogService: TestPendingLogService
-    ): PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor> {
+    ): PendingLogMarker<TestLog, TestLogRecord<*>, TestDescriptor> {
         return PendingLogMarker(
             logService = testLogService,
             pendingLogService = pendingLogService

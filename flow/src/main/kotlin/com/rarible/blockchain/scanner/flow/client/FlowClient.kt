@@ -6,10 +6,18 @@ import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
-import com.rarible.blockchain.scanner.framework.model.BlockMeta
 import com.rarible.blockchain.scanner.util.flatten
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import org.bouncycastle.util.encoders.Hex
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -31,18 +39,18 @@ class FlowClient(
     private val logger: Logger = LoggerFactory.getLogger(FlowClient::class.java)
 
     override val newBlocks = flatten {
-        poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it.blockMeta()) }
+        poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it) }
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
         val a = api.blockByHeight(number) ?: throw IllegalStateException("Block [$number] not found!")
-        return FlowBlockchainBlock(a.blockMeta())
+        return FlowBlockchainBlock(a)
     }
 
 
     override suspend fun getBlock(hash: String): FlowBlockchainBlock {
         val b = api.blockById(hash) ?: throw IllegalStateException("Block [$hash] not found!")
-        return FlowBlockchainBlock(b.blockMeta())
+        return FlowBlockchainBlock(b)
     }
 
     override suspend fun getLastBlockNumber(): Long =
@@ -61,11 +69,12 @@ class FlowClient(
                 .flatMap { it.toList() }
                 .filter { it.events.isNotEmpty() }
                 .groupBy {
-                    BlockMeta(
+                    FlowBlockchainBlock(
                         number = it.blockHeight,
                         hash = it.blockId.base16Value,
                         timestamp = it.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),
-                        parentHash = null)
+                        parentHash = null
+                    )
                 }.forEach { entry ->
                     val logs = entry.value.flatMap {
                         it.events
@@ -79,7 +88,7 @@ class FlowClient(
 
                     send(
                         FullBlock(
-                            block = FlowBlockchainBlock(meta = entry.key),
+                            block = entry.key,
                             logs = logs
                         )
                     )

@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.flow.service
 
-import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
@@ -12,9 +11,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import org.springframework.stereotype.Service
 
 @Service
-class FlowPendingLogService: PendingLogService<FlowBlockchainBlock, FlowLog, FlowLogRecord<*>, FlowDescriptor> {
+class FlowPendingLogService : PendingLogService<FlowLog, FlowLogRecord<*>, FlowDescriptor> {
     override fun getInactive(
-        block: FlowBlockchainBlock,
+        blockHash: String,
         records: List<LogEvent<FlowLog, FlowLogRecord<*>, FlowDescriptor>>
     ): Flow<LogEventStatusUpdate<FlowLog, FlowLogRecord<*>, FlowDescriptor>> = emptyFlow()
 }

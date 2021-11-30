@@ -127,5 +127,5 @@ class EthereumClient(
 }
 
 private fun BigInteger.encodeForFilter(): String {
-    return "0x${Hex.to(this.toByteArray()).trimStart('0')}"
+    return if (this == BigInteger.ZERO) "0x0" else "0x${Hex.to(this.toByteArray()).trimStart('0')}"
 }

@@ -2,6 +2,9 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.DefaultBlockEventConsumer
+import com.rarible.blockchain.scanner.event.block.BlockScanner
+import com.rarible.blockchain.scanner.event.log.BlockEventListener
+import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -37,7 +40,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    pendingLogService: PendingLogService<BB, L, R, D>,
+    pendingLogService: PendingLogService<L, R, D>,
     logEventListeners: List<LogEventListener<L, R>>,
     properties: BlockchainScannerProperties
 ) : PendingLogChecker, PendingBlockChecker, ReconciliationExecutor {

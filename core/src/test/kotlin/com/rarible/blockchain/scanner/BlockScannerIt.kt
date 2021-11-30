@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner
 
+import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock

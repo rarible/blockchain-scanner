@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner
 
+import com.rarible.blockchain.scanner.event.log.BlockEventSubscriber
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -44,15 +45,15 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
 
-        val pendingLogMarker = mockk<PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor>>()
+        val pendingLogMarker = mockk<PendingLogMarker<TestLog, TestLogRecord<*>, TestDescriptor>>()
         coEvery {
-            pendingLogMarker.markInactive(TestBlockchainBlock(block), subscriber.getDescriptor())
+            pendingLogMarker.markInactive(block.hash, subscriber.getDescriptor())
         } returns listOf(pendingRecord)
 
         val blockSubscriber = createBlockSubscriber(testBlockchainClient, subscriber, pendingLogMarker)
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockSubscriber.onBlockEvent(event).toCollection(mutableListOf())
+        val logEvents = blockSubscriber.onNewBlockEvents(listOf(event)).values.flatten()
 
         // We are expecting here event from pending logs and then event from new block
         assertEquals(2, logEvents.size)
@@ -64,7 +65,7 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
     private fun createBlockSubscriber(
         testBlockchainClient: TestBlockchainClient,
         subscriber: TestLogEventSubscriber,
-        pendingLogMarker: PendingLogMarker<TestBlockchainBlock, TestLog, TestLogRecord<*>, TestDescriptor>
+        pendingLogMarker: PendingLogMarker<TestLog, TestLogRecord<*>, TestDescriptor>
     ): BlockEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return BlockEventSubscriber(
             testBlockchainClient,

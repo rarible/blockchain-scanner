@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.pending
 
-import com.rarible.blockchain.scanner.BlockListener
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -30,6 +30,7 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
 
     private val logger = LoggerFactory.getLogger(DefaultPendingBlockChecker::class.java)
 
+    // TODO make it in batches
     override suspend fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
         logger.info("Starting to check pending blocks with min block age: {}", pendingBlockAgeToCheck)
         try {
@@ -52,10 +53,10 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
     }
 
     private suspend fun reindexPendingBlock(block: B) {
-        logger.info("Reindexing pending block: [{}]", block)
+        logger.info("Reindexing pending block: [{}:{}]", block.id, block.hash)
         val originalBlock = blockchainClient.getBlock(block.id)
         val event = NewBlockEvent(Source.PENDING, originalBlock.number, originalBlock.hash)
-        blockListener.onBlockEvent(event)
+        blockListener.onBlockEvents(listOf(event))
     }
 }
 

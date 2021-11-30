@@ -7,14 +7,14 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import kotlinx.coroutines.flow.Flow
 
-interface PendingLogService<BB, L : Log, R : LogRecord<L, *>, D : Descriptor> {
+interface PendingLogService<L : Log, R : LogRecord<L, *>, D : Descriptor> {
 
     /**
      * Finds log events to mark inactive
-     * @param block block received
+     * @param blockHash hash of received block
      * @param records list of pending logs currently found
      * @return LogEventStatusUpdate's - what log events need to change status
      */
-    fun getInactive(block: BB, records: List<LogEvent<L, R, D>>): Flow<LogEventStatusUpdate<L, R, D>>
+    fun getInactive(blockHash: String, records: List<LogEvent<L, R, D>>): Flow<LogEventStatusUpdate<L, R, D>>
 
 }

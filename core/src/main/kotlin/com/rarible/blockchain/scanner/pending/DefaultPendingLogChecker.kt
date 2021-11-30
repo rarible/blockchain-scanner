@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.pending
 
-import com.rarible.blockchain.scanner.BlockListener
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -29,7 +29,7 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
 
     private val logger = LoggerFactory.getLogger(DefaultPendingLogChecker::class.java)
 
-    suspend override fun checkPendingLogs() {
+    override suspend fun checkPendingLogs() {
         val collections = descriptors.asFlow().flatMapConcat { descriptors ->
             logService.findPendingLogs(descriptors)
                 .mapNotNull { processLog(descriptors, it) }
@@ -48,15 +48,15 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
             try {
                 it.onPendingLogsDropped(droppedLogs)
             } catch (ex: Throwable) {
-                logger.error("caught exception while onDroppedLogs logs of listener: {}", it.javaClass, ex)
+                logger.error("Caught exception while onDroppedLogs logs of listener: {}", it.javaClass, ex)
             }
         }
     }
 
     private suspend fun onNewBlocks(newBlocks: List<BlockchainBlock>) {
-        newBlocks.forEach {
-            blockListener.onBlockEvent(NewBlockEvent(Source.PENDING, it.number, it.hash))
-        }
+        blockListener.onBlockEvents(newBlocks.map {
+            NewBlockEvent(Source.PENDING, it.number, it.hash)
+        })
     }
 
     private suspend fun processLog(descriptor: D, record: R): Pair<R?, BlockchainBlock?>? {
@@ -69,11 +69,14 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
         } else {
             val blockHash = tx.blockHash
             if (blockHash == null) {
-                logger.info("for log $record\nfound transaction $tx\nit's pending. skip it")
+                logger.info("Found pending transaction [{}] for log [{}], skipping", tx, record)
                 return null
             }
-            logger.info("for log $record\nfound transaction $tx\nit's confirmed. update logs for its block")
             val block = blockchainClient.getBlock(blockHash)
+            logger.info(
+                "Found confirmed transaction [{}] for log [{}], updating entire block [{}:{}]",
+                tx, record, block.number, blockHash
+            )
             return Pair(null, block)
         }
     }

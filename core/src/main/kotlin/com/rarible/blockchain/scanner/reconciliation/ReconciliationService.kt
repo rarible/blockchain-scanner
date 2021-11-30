@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.LogEventHandler
-import com.rarible.blockchain.scanner.LogEventPublisher
+import com.rarible.blockchain.scanner.event.log.LogEventHandler
+import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -18,8 +18,6 @@ import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 
 /**
  * Reconciliation service contains set of single Reconciliation Indexers(one per subscriber) and

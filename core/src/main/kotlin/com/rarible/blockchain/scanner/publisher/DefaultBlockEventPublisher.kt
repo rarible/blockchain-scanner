@@ -9,6 +9,6 @@ class DefaultBlockEventPublisher(
 ) : BlockEventPublisher {
 
     override suspend fun publish(event: BlockEvent) {
-        consumer.handler.onBlockEvent(event)
+        consumer.handler.onBlockEvents(listOf(event))
     }
 }

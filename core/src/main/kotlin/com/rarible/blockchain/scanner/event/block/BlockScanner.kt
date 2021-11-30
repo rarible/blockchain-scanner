@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.block
 
 import com.github.michaelbull.retry.ContinueRetrying
 import com.github.michaelbull.retry.policy.RetryPolicy

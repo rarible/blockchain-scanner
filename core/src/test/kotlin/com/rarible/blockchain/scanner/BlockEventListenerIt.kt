@@ -1,5 +1,7 @@
 package com.rarible.blockchain.scanner
 
+import com.rarible.blockchain.scanner.event.log.BlockEventListener
+import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Block
@@ -50,7 +52,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
 
-        blockEventListener.onBlockEvent(event)
+        blockEventListener.onBlockEvents(listOf(event))
 
         // LogEvents processed, publisher notified listeners
         coVerify(exactly = 1) {

@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.consumer
 
-import com.rarible.blockchain.scanner.BlockListener
+import com.rarible.blockchain.scanner.event.block.BlockListener
 
 // TODO for intermediate compatibility, remove later
 class DefaultBlockEventConsumer() : BlockEventConsumer {

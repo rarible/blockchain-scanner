@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.pending
 
-import com.rarible.blockchain.scanner.BlockListener
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -58,7 +58,7 @@ class DefaultPendingLogCheckerIt : AbstractIntegrationTest() {
     fun beforeEach() {
         clearMocks(blockListener)
         clearMocks(listener)
-        coEvery { blockListener.onBlockEvent(any()) } returns Unit
+        coEvery { blockListener.onBlockEvents(any()) } returns Unit
         coEvery { listener.onPendingLogsDropped(any()) } returns Unit
 
         topic1 = subscriber1.getDescriptor().topic
@@ -102,8 +102,8 @@ class DefaultPendingLogCheckerIt : AbstractIntegrationTest() {
         assertEquals(findLog(collection2, logRecord4.id)!!.log!!.status, Log.Status.PENDING)
 
         // Only block contains pending events must be reindexed
-        coVerify(exactly = 1) { blockListener.onBlockEvent(any()) }
-        coVerify(exactly = 1) { blockListener.onBlockEvent(newBlockEvent(block1, Source.PENDING)) }
+        coVerify(exactly = 1) { blockListener.onBlockEvents(any()) }
+        coVerify(exactly = 1) { blockListener.onBlockEvents(listOf(newBlockEvent(block1, Source.PENDING))) }
 
         // Listener notified about dropped logs
         coVerify(exactly = 1) {

@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.test.configuration
 
-import com.rarible.blockchain.scanner.BlockScanner
 import com.rarible.blockchain.scanner.BlockchainScanner
+import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source

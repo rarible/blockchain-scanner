@@ -1,5 +1,6 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.log
 
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -15,10 +16,11 @@ import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.logTime
 import com.rarible.core.apm.withSpan
-import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -29,13 +31,13 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
     private val blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    pendingLogService: PendingLogService<BB, L, R, D>,
+    pendingLogService: PendingLogService<L, R, D>,
     private val logEventPublisher: LogEventPublisher<L, R>
 ) : BlockListener {
 
     private val logger = LoggerFactory.getLogger(BlockListener::class.java)
 
-    private val blockEventHandler: BlockEventHandler<BB, BL, L, R, D> = BlockEventHandler(
+    private val blockEventProcessor: BlockEventProcessor<BB, BL, L, R, D> = BlockEventProcessor(
         blockchainClient,
         subscribers,
         logMapper,
@@ -43,37 +45,42 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         pendingLogService
     )
 
-    // TODO make it list
-    override suspend fun onBlockEvent(event: BlockEvent) {
-        logger.info("Received BlockEvent [{}]", event)
-        //event.contextParams.forEach { (key, value) -> MDC.put(key, value) }
-
-        withContext(RaribleMDCContext()) {
-            val logs = withSpan("process") {
-                processBlock(event)
-            }
-            val status = withSpan("onBlockProcessed") {
-                logEventPublisher.onBlockProcessed(event, logs)
-            }
-            withSpan("updateBlockStatus", type = "db") {
+    override suspend fun onBlockEvents(events: List<BlockEvent>) {
+        logger.info("Received BlockEvents: {}", events)
+        val logFlow = processBlocks(events)
+        logFlow.onEach { blockLogs ->
+            blockLogs.onEach {
+                val event = it.key
+                val logEvents = it.value
+                val status = publishLogEvents(event, logEvents)
                 updateBlockStatus(event, status)
+                logger.info("BlockEvent [{}] handled, status updated: {}", event, status)
             }
+        }.collect()
+    }
+
+    private suspend fun processBlocks(events: List<BlockEvent>): Flow<Map<BlockEvent, List<R>>> {
+        return withSpan("process") {
+            val logs = logTime("BlockEventListener::processBlockEvents") {
+                blockEventProcessor.onBlockEvents(events)
+            }
+            logs
         }
     }
 
-    private suspend fun processBlock(event: BlockEvent): List<R> {
-        val logs = logTime("BlockEventListener::processBlockEvent [${event.number}]") {
-            blockEventHandler.onBlockEvent(event).toList()
+    private suspend fun publishLogEvents(event: BlockEvent, logs: List<R>): Block.Status {
+        return withSpan("onBlockProcessed") {
+            logEventPublisher.onBlockProcessed(event, logs)
         }
-        logger.info("BlockEvent [{}] processed, {} Logs gathered", event, logs.size)
-        return logs
     }
 
     private suspend fun updateBlockStatus(event: BlockEvent, status: Block.Status) {
-        try {
-            blockService.updateStatus(event.number, status)
-        } catch (ex: Throwable) {
-            logger.error("Unable to save Block from BlockEvent [{}] with status {}", event, status, ex)
+        withSpan("updateBlockStatus", type = "db") {
+            try {
+                blockService.updateStatus(event.number, status)
+            } catch (ex: Throwable) {
+                logger.error("Unable to save Block from BlockEvent [{}] with status {}", event, status, ex)
+            }
         }
     }
 

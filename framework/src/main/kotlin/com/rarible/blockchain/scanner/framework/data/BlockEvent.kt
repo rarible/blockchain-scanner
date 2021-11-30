@@ -4,6 +4,10 @@ sealed class BlockEvent {
     abstract val source: Source
     abstract val number: Long
     abstract val hash: String
+
+    override fun toString(): String {
+        return "$number:$hash"
+    }
 }
 
 data class NewBlockEvent(
@@ -17,15 +21,6 @@ data class RevertedBlockEvent(
     override val number: Long,
     override val hash: String
 ) : BlockEvent()
-/*
-    @get:JsonIgnore
-    val contextParams: Map<String, String>
-        get() = mapOf(
-            "blockNumber" to block.number.toString(),
-            "blockHash" to block.hash,
-            "eventType" to "newBlock"
-        ) + if (reverted != null) mapOf("reverted" to reverted.hash) else emptyMap()
-}*/
 
 enum class Source {
     BLOCKCHAIN,
