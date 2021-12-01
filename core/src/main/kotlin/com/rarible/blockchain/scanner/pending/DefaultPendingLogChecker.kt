@@ -67,17 +67,17 @@ class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log
             val updatedLog = markLogAsDropped(record, descriptor)
             return Pair(updatedLog, null)
         } else {
-            val blockHash = tx.blockHash
-            if (blockHash == null) {
-                logger.info("Found pending transaction [{}] for log [{}], skipping", tx, record)
-                return null
-            }
-            val block = blockchainClient.getBlock(blockHash)
-            logger.info(
-                "Found confirmed transaction [{}] for log [{}], updating entire block [{}:{}]",
-                tx, record, block.number, blockHash
-            )
-            return Pair(null, block)
+//            val blockHash = tx.blockHash
+//            if (blockHash == null) {
+//                logger.info("Found pending transaction [{}] for log [{}], skipping", tx, record)
+//                return null
+//            }
+//            val block = blockchainClient.getBlock(blockHash)
+//            logger.info(
+//                "Found confirmed transaction [{}] for log [{}], updating entire block [{}:{}]",
+//                tx, record, block.number, blockHash
+//            ) todo check this change
+            return Pair(null, null)
         }
     }
 

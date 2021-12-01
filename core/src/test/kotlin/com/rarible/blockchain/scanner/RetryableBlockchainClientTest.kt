@@ -53,21 +53,6 @@ class RetryableBlockchainClientTest {
     }
 
     @Test
-    fun `get block - last attempt succeed`() = runBlocking {
-        val block = randomBlockchainBlock()
-        coEvery { client.getBlock(block.hash) }
-            .throws(Exception())
-            .andThenThrows(RuntimeException())
-            .andThen(block)
-
-        val result = retryableClient.getBlock(block.hash)
-
-        // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 3) { client.getBlock(block.hash) }
-        assertEquals(block, result)
-    }
-
-    @Test
     fun `get block last number - all attempts failed`() = runBlocking {
         coEvery { client.getLastBlockNumber() } throws Exception()
 
