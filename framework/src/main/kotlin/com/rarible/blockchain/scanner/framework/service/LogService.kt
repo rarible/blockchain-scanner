@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
  * For example, each subscriber has it own collection/table to store data. In such case descriptor can provide
  * name of the collection current operation should be executed to.
  */
-interface LogService<L : Log, R : LogRecord<L, *>, D : Descriptor> {
+interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
 
     /**
      * Delete LogRecord from persistent storage.
@@ -30,14 +30,6 @@ interface LogService<L : Log, R : LogRecord<L, *>, D : Descriptor> {
      *
      */
     fun findPendingLogs(descriptor: D): Flow<R>
-
-    /**
-     * Set [PENDING][com.rarible.blockchain.scanner.framework.model.Log.Status.REVERTED]
-     * for all Log Records of specified block.
-     *
-     * @return updated LogRecords
-     */
-    fun findAndRevert(descriptor: D, blockHash: String): Flow<R>
 
     /**
      * Delete all LogRecords of specified block and with specified status.

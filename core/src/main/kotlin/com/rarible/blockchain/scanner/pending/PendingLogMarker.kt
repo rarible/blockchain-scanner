@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class PendingLogMarker<L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class PendingLogMarker<L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val logService: LogService<L, R, D>,
     private val pendingLogService: PendingLogService<L, R, D>
 ) {

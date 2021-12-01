@@ -54,10 +54,6 @@ class TestLogService(
         return testLogRepository.findPendingLogs(descriptor.collection).asFlow()
     }
 
-    override fun findAndRevert(descriptor: TestDescriptor, blockHash: String): Flow<TestLogRecord<*>> {
-        return testLogRepository.findAndRevert(descriptor.collection, blockHash, descriptor.topic).asFlow()
-    }
-
     override fun findAndDelete(
         descriptor: TestDescriptor,
         blockHash: String,

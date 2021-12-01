@@ -10,7 +10,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
  * BlockchainScanner implementation as part of LogRecord. At the end implementation, it could be stored as nested object
  * or in some other way.
  */
-interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log> {
+interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>> {
 
     /**
      * Convert original Blockchain Log to persistent Log data

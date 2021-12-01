@@ -14,7 +14,10 @@ import kotlinx.coroutines.flow.Flow
  * implementations. Also, subscriber must provide way to generate custom event data from original
  * Blockchain Block and Log.
  */
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor> {
+
+// TODO should be grouped
+// Inside of group logs should be processed together
+interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
 
     /**
      * This descriptor will be used in Blockchain scanner implementation to define how to build various queries and

@@ -53,18 +53,6 @@ class TestLogRepository(
         return mongo.findById(id, TestLogRecord::class.java, collection)
     }
 
-    fun findAndRevert(collection: String, blockHash: String, topic: String): Flux<TestLogRecord<*>> {
-        val query = Query().apply {
-            addCriteria(Criteria.where("log.blockHash").isEqualTo(blockHash))
-            addCriteria(Criteria.where("log.topic").isEqualTo(topic))
-        }
-        return mongo.find(query, TestLogRecord::class.java, collection)
-            .map {
-                it.withLog(it.log!!.copy(status = Log.Status.REVERTED, visible = false))
-            }
-            .flatMap { mongo.save(it, collection) }
-    }
-
     fun findAndDelete(
         collection: String,
         blockHash: String,

@@ -11,4 +11,9 @@ data class FlowLog(
     val timestamp: Instant,
     val blockHeight: Long,
     val blockHash: String
-): Log
+) : Log<FlowLog> {
+
+    override fun withStatus(status: Log.Status): FlowLog {
+        return this.copy(status = status)
+    }
+}

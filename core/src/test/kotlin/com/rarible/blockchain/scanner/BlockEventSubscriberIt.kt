@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.event.log.BlockEventSubscriber
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.pending.PendingLogMarker
+import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -19,11 +19,11 @@ import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import io.mockk.coEvery
-import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -38,19 +38,19 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
 
     @Test
     fun `on block event`() = runBlocking {
-        val subscriber = TestLogEventSubscriber(testDescriptor1())
+        val subscriber = TestLogEventSubscriber(descriptor)
         val block = randomOriginalBlock()
         val log = randomOriginalLog(block.hash, topic)
-        val pendingRecord = randomTestLogRecord(topic, block.hash, Log.Status.PENDING)
+
+        val pendingRecord = testLogRepository.save(
+            descriptor.collection,
+            randomTestLogRecord(topic, block.hash, Log.Status.PENDING)
+        ).awaitFirst()
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
+        val testPendingLogService = TestPendingLogService(listOf(pendingRecord.log!!.transactionHash))
 
-        val pendingLogMarker = mockk<PendingLogMarker<TestLog, TestLogRecord<*>, TestDescriptor>>()
-        coEvery {
-            pendingLogMarker.markInactive(block.hash, subscriber.getDescriptor())
-        } returns listOf(pendingRecord)
-
-        val blockSubscriber = createBlockSubscriber(testBlockchainClient, subscriber, pendingLogMarker)
+        val blockSubscriber = createBlockSubscriber(testBlockchainClient, subscriber, testPendingLogService)
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
         val logEvents = blockSubscriber.onNewBlockEvents(listOf(event)).values.flatten()
@@ -58,21 +58,23 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         // We are expecting here event from pending logs and then event from new block
         assertEquals(2, logEvents.size)
 
-        assertEquals(pendingRecord, logEvents[0])
+        assertEquals(pendingRecord.id, logEvents[0].id)
+        assertEquals(Log.Status.DROPPED, logEvents[0].log!!.status)
+        assertEquals(false, logEvents[0].log!!.visible)
         assertOriginalLogAndLogEquals(log, logEvents[1].log!!)
     }
 
     private fun createBlockSubscriber(
         testBlockchainClient: TestBlockchainClient,
         subscriber: TestLogEventSubscriber,
-        pendingLogMarker: PendingLogMarker<TestLog, TestLogRecord<*>, TestDescriptor>
+        pendingLogService: PendingLogService<TestLog, TestLogRecord<*>, TestDescriptor>
     ): BlockEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return BlockEventSubscriber(
             testBlockchainClient,
             subscriber,
             testLogMapper,
             testLogService,
-            pendingLogMarker
+            pendingLogService
         )
     }
 }

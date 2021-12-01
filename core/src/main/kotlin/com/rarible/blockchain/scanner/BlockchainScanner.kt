@@ -33,7 +33,7 @@ import java.time.Duration
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,

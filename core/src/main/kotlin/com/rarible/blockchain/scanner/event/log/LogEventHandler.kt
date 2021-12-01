@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.event.log
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     private val logMapper: LogMapper<BB, BL, L>,
     private val logService: LogService<L, R, D>
@@ -35,23 +34,9 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : Log
         logger.info("Creating LogEventHandler for {}", name)
     }
 
-    suspend fun beforeHandleBlock(event: BlockEvent): List<R> {
-        val deleted = delete(event)
-        return if (event is RevertedBlockEvent) {
-            deleted + revert(event)
-        } else {
-            deleted
-        }
-    }
-
-    private suspend fun delete(blockEvent: BlockEvent): List<R> {
-        val deleted = logService.findAndDelete(descriptor, blockEvent.hash, Log.Status.REVERTED).toList()
-        logger.info("Deleted {} reverted Logs for Block [{}], subscriber {}", deleted.size, blockEvent, name)
-        return deleted
-    }
-
-    private suspend fun revert(blockEvent: RevertedBlockEvent): List<R> {
-        val reverted = logService.findAndRevert(descriptor, blockEvent.hash).toList()
+    suspend fun revert(blockEvent: RevertedBlockEvent): List<R> {
+        val reverted = logService.findAndDelete(descriptor, blockEvent.hash).toList()
+            .map { it.withLog(it.log!!.withStatus(Log.Status.REVERTED)) as R }
         logger.info("Reverted {} Logs for Block [{}], subscriber {}", reverted.size, blockEvent, name)
         return reverted
     }

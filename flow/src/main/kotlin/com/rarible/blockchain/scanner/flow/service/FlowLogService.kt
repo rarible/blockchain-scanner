@@ -27,8 +27,6 @@ class FlowLogService(
 
     override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord<*>> = emptyFlow()
 
-    override fun findAndRevert(descriptor: FlowDescriptor, blockHash: String): Flow<FlowLogRecord<*>> = emptyFlow()
-
     override fun findAndDelete(
         descriptor: FlowDescriptor,
         blockHash: String,

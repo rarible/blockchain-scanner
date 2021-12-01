@@ -15,4 +15,8 @@ data class TestLog(
     val extra: String,
     val visible: Boolean = true
 
-) : Log
+) : Log<TestLog> {
+    override fun withStatus(status: Log.Status): TestLog {
+        return this.copy(status = status)
+    }
+}

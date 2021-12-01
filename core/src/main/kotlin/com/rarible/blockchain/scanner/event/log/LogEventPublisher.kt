@@ -13,7 +13,7 @@ import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 
 @ExperimentalCoroutinesApi
-class LogEventPublisher<L : Log, R : LogRecord<L, *>>(
+class LogEventPublisher<L : Log<L>, R : LogRecord<L, *>>(
     private val logEventListeners: List<LogEventListener<L, R>>,
     private val retryPolicy: ScanRetryPolicyProperties
 ) {

@@ -71,14 +71,6 @@ class EthereumLogService(
         return ethereumLogRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
     }
 
-    override fun findAndRevert(descriptor: EthereumDescriptor, blockHash: String): Flow<EthereumLogRecord<*>> {
-        return ethereumLogRepository.findAndRevert(
-            descriptor.collection,
-            Word.apply(blockHash),
-            descriptor.topic
-        ).asFlow()
-    }
-
     override fun findAndDelete(
         descriptor: EthereumDescriptor,
         blockHash: String,

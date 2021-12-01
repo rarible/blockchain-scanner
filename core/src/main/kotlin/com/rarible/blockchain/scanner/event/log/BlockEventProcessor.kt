@@ -12,7 +12,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
-import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +25,7 @@ import org.slf4j.LoggerFactory
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
@@ -38,11 +37,6 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R :
 
     private val subscribers = ArrayList<BlockEventSubscriber<BB, BL, L, R, D>>()
 
-    private val pendingLogMarker = PendingLogMarker(
-        logService,
-        pendingLogService
-    )
-
     init {
         logger.info("Injecting {} subscribers", subscribers.size)
 
@@ -52,7 +46,7 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R :
                 subscriber,
                 logMapper,
                 logService,
-                pendingLogMarker
+                pendingLogService
             )
             this.subscribers.add(blockEventSubscriber)
 

@@ -20,5 +20,11 @@ data class EthereumLog(
     val logIndex: Int? = null,
     val visible: Boolean = true
 
-) : Log
+) : Log<EthereumLog> {
+
+    override fun withStatus(status: Log.Status): EthereumLog {
+        return this.copy(status = status)
+    }
+
+}
 

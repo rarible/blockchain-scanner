@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.toCollection
 import org.slf4j.LoggerFactory
 
 @FlowPreview
-class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class DefaultPendingLogChecker<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logService: LogService<L, R, D>,
     private val descriptors: List<D>,

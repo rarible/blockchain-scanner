@@ -3,7 +3,11 @@ package com.rarible.blockchain.scanner.ethereum.service
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
-import com.rarible.blockchain.scanner.ethereum.test.data.*
+import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
+import com.rarible.blockchain.scanner.ethereum.test.data.randomLog
+import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
+import com.rarible.blockchain.scanner.ethereum.test.data.randomString
+import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.mockk.mockk
@@ -136,30 +140,6 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         assertEquals(1, pendingLogs.size)
         assertEquals(pendingLog, pendingLogs[0])
-    }
-
-    @Test
-    fun `find and revert records`() = runBlocking {
-        val anotherCollection = testBidSubscriber.getDescriptor().collection
-        val blockHash = randomBlockHash()
-
-        val reverted = saveLog(collection, randomLogRecord(topic, blockHash))
-        val wrongBlockHash = saveLog(collection, randomLogRecord(topic, randomBlockHash()))
-        val wrongTopic = saveLog(collection, randomLogRecord(randomWord(), blockHash))
-        val wrongCollection = saveLog(anotherCollection, randomLogRecord(topic, blockHash))
-
-        val revertedLogs = ethereumLogService.findAndRevert(descriptor, blockHash.toString()).toList()
-
-        assertEquals(1, revertedLogs.size)
-        assertEquals(reverted.id, revertedLogs[0].id)
-
-        val savedRevertedLog = findLog(collection, reverted.id)
-        assertEquals(false, savedRevertedLog!!.log!!.visible)
-        assertEquals(Log.Status.REVERTED, savedRevertedLog.log!!.status)
-
-        assertEquals(Log.Status.CONFIRMED, findLog(collection, wrongBlockHash.id)!!.log!!.status)
-        assertEquals(Log.Status.CONFIRMED, findLog(collection, wrongTopic.id)!!.log!!.status)
-        assertEquals(Log.Status.CONFIRMED, findLog(anotherCollection, wrongCollection.id)!!.log!!.status)
     }
 
     @Test

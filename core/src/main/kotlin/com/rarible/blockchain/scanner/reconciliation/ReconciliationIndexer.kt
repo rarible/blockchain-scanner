@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory
  */
 @FlowPreview
 @ExperimentalCoroutinesApi
-class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logEventHandler: LogEventHandler<BB, BL, L, R, D>,
     private val logEventPublisher: LogEventPublisher<L, R>,

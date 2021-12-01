@@ -84,22 +84,26 @@ class EthereumLogRepository(
         )
     }
 
-    fun findAndRevert(collection: String, blockHash: Word, topic: Word): Flux<EthereumLogRecord<*>> {
+    fun findAndDeleteWithStatus(
+        collection: String,
+        blockHash: Word,
+        topic: Word,
+        status: Log.Status
+    ): Flux<EthereumLogRecord<*>> {
         val criteria = Criteria
             .where("log.blockHash").isEqualTo(blockHash)
             .and("log.topic").isEqualTo(topic)
 
-        // TODO we may use update and find queries here instead of updating one-by-one
         return mongo.find(
             Query(criteria),
             EthereumLogRecord::class.java,
             collection
         ).map {
-            logger.info("Reverting EthereumLogRecord: [{}]", it)
-            val updatedLog = it.log!!.copy(status = Log.Status.REVERTED, visible = false)
+            logger.info("Deleting EthereumLogRecord: [{}]", it)
+            val updatedLog = it.log!!.copy(status = status, visible = false)
             it.withLog(updatedLog)
-        }.flatMap {
-            mongo.save(it, collection)
+        }.doOnEach {
+            mongo.remove(it, collection)
         }
     }
 

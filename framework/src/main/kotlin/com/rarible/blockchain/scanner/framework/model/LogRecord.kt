@@ -4,7 +4,7 @@ package com.rarible.blockchain.scanner.framework.model
  * LogRecord is an entity contain custom data, defined by subscribers and Log data, used for indexed search.
  * Root entity to be stored in persistent storage.
  */
-interface LogRecord<L : Log, LR : LogRecord<L, LR>> {
+interface LogRecord<L : Log<L>, LR : LogRecord<L, LR>> {
 
     /**
      * Log data intrinsic for specific Blockchain. Should be set by Scanner framework,

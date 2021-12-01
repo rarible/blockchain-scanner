@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * External listeners of all LogEvents. Any change of any log will be posted to
  * such listener.
  */
-interface LogEventListener<L : Log, R : LogRecord<L, *>> {
+interface LogEventListener<L : Log<L>, R : LogRecord<L, *>> {
 
     /**
      * Triggered when entire block processed. Changes of for all logs of the block will be published here.
