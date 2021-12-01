@@ -1,7 +1,16 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.*
+import com.nftco.flow.sdk.Flow
+import com.nftco.flow.sdk.FlowAccessApi
+import com.nftco.flow.sdk.FlowAccount
+import com.nftco.flow.sdk.FlowAccountKey
+import com.nftco.flow.sdk.FlowAddress
+import com.nftco.flow.sdk.FlowId
+import com.nftco.flow.sdk.FlowScript
+import com.nftco.flow.sdk.FlowTransaction
+import com.nftco.flow.sdk.FlowTransactionProposalKey
 import com.nftco.flow.sdk.crypto.Crypto
+import com.nftco.flow.sdk.waitForSeal
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
@@ -12,7 +21,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ContextConfiguration
@@ -24,12 +37,21 @@ import java.time.Duration
 
 @ObsoleteCoroutinesApi
 @FlowPreview
-@SpringBootTest(properties = [
-    "rarible.task.initialDelay=0",
-    "blockchain.scanner.flow.chainId=EMULATOR",
-    "blockchain.scanner.flow.poller.delay=200",
+@SpringBootTest(
+    properties = [
+        "application.environment = test",
+        "spring.application.name = test-flow-scanner",
+        "spring.cloud.consul.config.enabled = false",
+        "spring.cloud.service-registry.auto-registration.enabled = false",
+        "spring.cloud.discovery.enabled = false",
+        "logging.logstash.tcp-socket.enabled = false",
+        "rarible.task.initialDelay=0",
+        "blockchain.scanner.flow.chainId=EMULATOR",
+        "blockchain.scanner.flow.poller.delay=200",
 /*    "spring.data.mongodb.database=test",
-    "logging.level.com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller=DEBUG"*/])
+    "logging.level.com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller=DEBUG"*/
+    ]
+)
 @ContextConfiguration(classes = [TestConfig::class])
 @MongoCleanup
 @MongoTest
@@ -40,11 +62,12 @@ class FlowScannerTest {
 
     private lateinit var accessApi: FlowAccessApi
     private val latestBlockID: FlowId get() = accessApi.getLatestBlockHeader().id
+
     @Autowired
     private lateinit var logRepository: FlowLogRepository
+
     @Autowired
     private lateinit var allFlowLogEventSubscriber: FlowLogEventSubscriber
-
 
 
     companion object {
@@ -72,9 +95,33 @@ class FlowScannerTest {
         @JvmStatic
         internal fun setup() {
             println(flowEmulator.execInContainer("flow", "project", "deploy").stdout)
-            println(flowEmulator.execInContainer("flow", "accounts", "create", "--key", EmulatorUser.Patrick.pubHex).stdout)
-            println(flowEmulator.execInContainer("flow", "accounts", "create", "--key", EmulatorUser.Squidward.pubHex).stdout)
-            println(flowEmulator.execInContainer("flow", "accounts", "create", "--key", EmulatorUser.Gary.pubHex).stdout)
+            println(
+                flowEmulator.execInContainer(
+                    "flow",
+                    "accounts",
+                    "create",
+                    "--key",
+                    EmulatorUser.Patrick.pubHex
+                ).stdout
+            )
+            println(
+                flowEmulator.execInContainer(
+                    "flow",
+                    "accounts",
+                    "create",
+                    "--key",
+                    EmulatorUser.Squidward.pubHex
+                ).stdout
+            )
+            println(
+                flowEmulator.execInContainer(
+                    "flow",
+                    "accounts",
+                    "create",
+                    "--key",
+                    EmulatorUser.Gary.pubHex
+                ).stdout
+            )
         }
     }
 
@@ -88,7 +135,8 @@ class FlowScannerTest {
         var proposalKey = getAccountKey(EmulatorUser.Emulator.address)
         var authKey = getAccountKey(EmulatorUser.Patrick.address)
         var initTx = FlowTransaction(
-            script = FlowScript("""
+            script = FlowScript(
+                """
                 import ExampleNFT from ${EmulatorUser.Emulator.address.formatted}
 
                 // This transaction configures a user's account
@@ -111,7 +159,8 @@ class FlowScannerTest {
                         log("Capability created")
                     }
                 }
-            """.trimIndent()),
+            """.trimIndent()
+            ),
             arguments = listOf(),
             referenceBlockId = latestBlockID,
             gasLimit = 100L,
@@ -124,10 +173,24 @@ class FlowScannerTest {
             authorizers = listOf(EmulatorUser.Patrick.address),
         )
 
-        val payerSigner = Crypto.getSigner(privateKey = Crypto.decodePrivateKey(EmulatorUser.Emulator.keyHex), hashAlgo = proposalKey.hashAlgo)
-        val authSigner = Crypto.getSigner(privateKey = Crypto.decodePrivateKey(EmulatorUser.Patrick.keyHex), hashAlgo = authKey.hashAlgo)
-        initTx = initTx.addPayloadSignature(address = EmulatorUser.Patrick.address, keyIndex = authKey.id, signer = authSigner)
-        initTx = initTx.addEnvelopeSignature(address = EmulatorUser.Emulator.address, keyIndex = proposalKey.id, signer = payerSigner)
+        val payerSigner = Crypto.getSigner(
+            privateKey = Crypto.decodePrivateKey(EmulatorUser.Emulator.keyHex),
+            hashAlgo = proposalKey.hashAlgo
+        )
+        val authSigner = Crypto.getSigner(
+            privateKey = Crypto.decodePrivateKey(EmulatorUser.Patrick.keyHex),
+            hashAlgo = authKey.hashAlgo
+        )
+        initTx = initTx.addPayloadSignature(
+            address = EmulatorUser.Patrick.address,
+            keyIndex = authKey.id,
+            signer = authSigner
+        )
+        initTx = initTx.addEnvelopeSignature(
+            address = EmulatorUser.Emulator.address,
+            keyIndex = proposalKey.id,
+            signer = payerSigner
+        )
 
         var txId = accessApi.sendTransaction(initTx)
         val txResult = waitForSeal(api = accessApi, transactionId = txId)
@@ -138,7 +201,8 @@ class FlowScannerTest {
         authKey = getAccountKey(EmulatorUser.Patrick.address)
 
         var mintTx = FlowTransaction(
-            script = FlowScript("""
+            script = FlowScript(
+                """
                 // Transaction2.cdc
 
                 import ExampleNFT from ${EmulatorUser.Emulator.address.formatted}
@@ -175,7 +239,8 @@ class FlowScannerTest {
                         log("NFT Minted and deposited to Account 2's Collection")
                     }
                 }
-            """.trimIndent()),
+            """.trimIndent()
+            ),
             arguments = listOf(),
             referenceBlockId = latestBlockID,
             gasLimit = 100L,
@@ -188,8 +253,16 @@ class FlowScannerTest {
             authorizers = listOf(EmulatorUser.Patrick.address, EmulatorUser.Emulator.address)
         )
 
-        mintTx = mintTx.addPayloadSignature(address = EmulatorUser.Patrick.address, keyIndex = authKey.id, signer = authSigner)
-        mintTx = mintTx.addEnvelopeSignature(address = EmulatorUser.Emulator.address, keyIndex = proposalKey.id, signer = payerSigner)
+        mintTx = mintTx.addPayloadSignature(
+            address = EmulatorUser.Patrick.address,
+            keyIndex = authKey.id,
+            signer = authSigner
+        )
+        mintTx = mintTx.addEnvelopeSignature(
+            address = EmulatorUser.Emulator.address,
+            keyIndex = proposalKey.id,
+            signer = payerSigner
+        )
 
         txId = accessApi.sendTransaction(mintTx)
         val event = awaitMintEvent()
@@ -202,7 +275,10 @@ class FlowScannerTest {
             runBlocking {
                 while (founded == null) {
                     founded = try {
-                        logRepository.findByLogEventType(collection = allFlowLogEventSubscriber.getDescriptor().collection, eventType = "A.f8d6e0586b0a20c7.ExampleNFT.Mint")
+                        logRepository.findByLogEventType(
+                            collection = allFlowLogEventSubscriber.getDescriptor().collection,
+                            eventType = "A.f8d6e0586b0a20c7.ExampleNFT.Mint"
+                        )
                     } catch (e: Exception) {
                         when (e) {
                             is IllegalArgumentException -> Assertions.fail("More than one mint log founded!")

@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.flow
 
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.client.FlowClient
@@ -15,6 +16,7 @@ import com.rarible.blockchain.scanner.flow.service.FlowBlockService
 import com.rarible.blockchain.scanner.flow.service.FlowLogService
 import com.rarible.blockchain.scanner.flow.service.FlowPendingLogService
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -38,7 +40,10 @@ class FlowBlockchainScanner(
     logService: FlowLogService,
     pendingLogService: FlowPendingLogService,
     logEventListeners: List<LogEventListener<FlowLog, FlowLogRecord<*>>>,
-    properties: BlockchainScannerProperties
+    properties: BlockchainScannerProperties,
+    // Autowired from core
+    blockEventPublisher: BlockEventPublisher,
+    blockEventConsumer: BlockEventConsumer
 ) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowBlock, FlowLog, FlowLogRecord<*>, FlowDescriptor>(
     blockchainClient,
     subscribers,
@@ -48,7 +53,9 @@ class FlowBlockchainScanner(
     logService,
     pendingLogService,
     logEventListeners,
-    properties
+    properties,
+    blockEventPublisher,
+    blockEventConsumer
 ) {
 
     @EventListener(ApplicationReadyEvent::class)

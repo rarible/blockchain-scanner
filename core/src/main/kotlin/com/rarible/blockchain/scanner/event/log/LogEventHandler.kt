@@ -34,6 +34,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : 
         logger.info("Creating LogEventHandler for {}", name)
     }
 
+    @Suppress("UNCHECKED_CAST")
     suspend fun revert(blockEvent: RevertedBlockEvent): List<R> {
         val reverted = logService.findAndDelete(descriptor, blockEvent.hash).toList()
             .map { it.withLog(it.log!!.withStatus(Log.Status.REVERTED)) as R }

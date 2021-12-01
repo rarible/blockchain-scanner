@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
@@ -15,6 +16,7 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -36,7 +38,10 @@ class EthereumScanner(
     logService: EthereumLogService,
     pendingLogService: EthereumPendingLogService,
     logEventListeners: List<LogEventListener<EthereumLog, EthereumLogRecord<*>>>,
-    properties: BlockchainScannerProperties
+    properties: BlockchainScannerProperties,
+    // Autowired from core
+    blockEventPublisher: BlockEventPublisher,
+    blockEventConsumer: BlockEventConsumer
 ) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>(
     blockchainClient,
     subscribers,
@@ -46,7 +51,9 @@ class EthereumScanner(
     logService,
     pendingLogService,
     logEventListeners,
-    properties
+    properties,
+    blockEventPublisher,
+    blockEventConsumer
 ) {
 
     private val logger = LoggerFactory.getLogger(EthereumScanner::class.java)

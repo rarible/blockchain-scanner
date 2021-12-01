@@ -6,6 +6,7 @@ import scalether.domain.Address
 
 class EthereumDescriptor(
     val topic: Word,
+    override val groupId: String,
     val collection: String,
     val contracts: List<Address>
 ) : Descriptor {

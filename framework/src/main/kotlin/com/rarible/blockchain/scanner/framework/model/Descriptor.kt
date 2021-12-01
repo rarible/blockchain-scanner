@@ -10,4 +10,6 @@ interface Descriptor {
      * Identifier of descriptor without specific format, should be unique across application instance
      */
     val id: String
+
+    val groupId: String
 }

@@ -8,6 +8,7 @@ class TestDescriptor(
     val contracts: List<String>
 ) : Descriptor {
     override val id: String get() = topic
+    override val groupId: String get() = topic
 }
 
 
