@@ -11,3 +11,7 @@ suspend fun <T> logTime(label: String, f: suspend () -> T): T {
         println("____ $label time: ${System.currentTimeMillis() - start}ms")
     }
 }
+
+fun getBlockTopic(environment: String, service: String, blockchain: String): String {
+    return "protocol.$environment.$blockchain.blockchain-scanner.$service"
+}

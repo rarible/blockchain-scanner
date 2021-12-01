@@ -2,6 +2,8 @@ package com.rarible.blockchain.scanner.test
 
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -30,7 +32,10 @@ class TestBlockchainScanner(
     logService: TestLogService,
     pendingLogService: TestPendingLogService,
     logEventListeners: List<LogEventListener<TestLog, TestLogRecord<*>>>,
-    properties: BlockchainScannerProperties
+    properties: BlockchainScannerProperties,
+    // Autowired from core
+    blockEventPublisher: BlockEventPublisher,
+    blockEventConsumer: BlockEventConsumer
 ) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord<*>, TestDescriptor>(
     blockchainClient,
     subscribers,
@@ -40,5 +45,7 @@ class TestBlockchainScanner(
     logService,
     pendingLogService,
     logEventListeners,
-    properties
+    properties,
+    blockEventPublisher,
+    blockEventConsumer
 )

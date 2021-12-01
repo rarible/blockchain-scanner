@@ -28,7 +28,12 @@ class TestConfig {
     @Bean
     fun allEventsSubscriber(): FlowLogEventSubscriber = object : FlowLogEventSubscriber {
 
-        private val descriptor: FlowDescriptor = FlowDescriptor(id = "ExampleNFTDescriptor", events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"), collection = "test_history")
+        private val descriptor: FlowDescriptor = FlowDescriptor(
+            id = "ExampleNFTDescriptor",
+            groupId = "NFT",
+            events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"),
+            collection = "test_history"
+        )
 
         override fun getDescriptor(): FlowDescriptor = descriptor
 

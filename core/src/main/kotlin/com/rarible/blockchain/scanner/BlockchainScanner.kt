@@ -1,13 +1,15 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.consumer.DefaultBlockEventConsumer
+import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
@@ -21,7 +23,7 @@ import com.rarible.blockchain.scanner.pending.DefaultPendingBlockChecker
 import com.rarible.blockchain.scanner.pending.DefaultPendingLogChecker
 import com.rarible.blockchain.scanner.pending.PendingBlockChecker
 import com.rarible.blockchain.scanner.pending.PendingLogChecker
-import com.rarible.blockchain.scanner.publisher.DefaultBlockEventPublisher
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
@@ -42,8 +44,10 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     logService: LogService<L, R, D>,
     pendingLogService: PendingLogService<L, R, D>,
     logEventListeners: List<LogEventListener<L, R>>,
-    properties: BlockchainScannerProperties
-) : PendingLogChecker, PendingBlockChecker, ReconciliationExecutor {
+    properties: BlockchainScannerProperties,
+    private val blockEventPublisher: BlockEventPublisher,
+    private val blockEventConsumer: BlockEventConsumer
+) : PendingLogChecker, PendingBlockChecker, ReconciliationExecutor, BlockListener {
 
     private val retryableBlockchainClient = RetryableBlockchainClient(
         blockchainClient,
@@ -62,9 +66,19 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties.retryPolicy.scan
     )
 
-    // TODO replace with Kafka
-    private val blockEventConsumer = DefaultBlockEventConsumer()
-    private val blockEventPublisher = DefaultBlockEventPublisher(blockEventConsumer)
+    private val blockEventListeners = subscribers
+        .groupBy { it.getDescriptor().groupId }
+        .map {
+            it.key to BlockEventListener(
+                retryableBlockchainClient,
+                it.value,
+                blockService,
+                logMapper,
+                logService,
+                pendingLogService,
+                logEventPublisher
+            )
+        }.associateBy({ it.first }, { it.second })
 
     private val blockEventListener = BlockEventListener(
         retryableBlockchainClient,
@@ -103,8 +117,12 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
 
     suspend fun scan() {
-        blockEventConsumer.start(blockEventListener)
+        blockEventConsumer.start(blockEventListeners)
         blockScanner.scan(blockEventPublisher)
+    }
+
+    override suspend fun onBlockEvents(events: List<BlockEvent>) {
+        blockEventListener.onBlockEvents(events)
     }
 
     override suspend fun checkPendingLogs() {

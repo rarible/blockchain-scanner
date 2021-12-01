@@ -150,15 +150,15 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(
     private suspend fun revertBlock(blockPair: BlockPair<B>) {
         val reverted = blockPair.stateBlock
         val updated = blockPair.blockchainBlock
+        notifyRevertedBlock(reverted)
         blockService.remove(updated.id)
         logger.info("Block [{}:{}] reverted, hash: {}", reverted.id, reverted.hash, updated.hash)
-        notifyRevertedBlock(reverted)
     }
 
     private suspend fun updateBlock(block: B) {
+        notifyNewBlock(block)
         blockService.save(block)
         logger.info("Block [{}:{}] saved", block.id, block.hash)
-        notifyNewBlock(block)
     }
 
     private suspend fun fetchBlock(number: Long): B {

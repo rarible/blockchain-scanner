@@ -1,5 +1,7 @@
 package com.rarible.blockchain.scanner.test.configuration
 
+import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
+import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -84,7 +86,7 @@ class TestScannerConfiguration {
     fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 2)
 
     @Bean
-    fun testScanner() = TestBlockchainScanner(
+    fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher) = TestBlockchainScanner(
         blockchainClient = testBlockchainClient(),
         subscribers = listOf(testSubscriber1(), testSubscriber2()),
         blockMapper = testBlockMapper(),
@@ -93,7 +95,9 @@ class TestScannerConfiguration {
         logService = testLogService(),
         pendingLogService = testPendingLogService(),
         logEventListeners = listOf(),
-        properties = properties
+        properties = properties,
+        blockEventConsumer = consumer,
+        blockEventPublisher = publisher
     )
 
     @Bean

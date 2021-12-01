@@ -5,9 +5,9 @@ import com.rarible.blockchain.scanner.event.block.BlockListener
 // TODO for intermediate compatibility, remove later
 class DefaultBlockEventConsumer() : BlockEventConsumer {
 
-    lateinit var handler: BlockListener
+    lateinit var handlers: List<BlockListener>
 
-    override suspend fun start(handler: BlockListener) {
-        this.handler = handler
+    override suspend fun start(handlers: Map<String, BlockListener>) {
+        this.handlers = handlers.values.toList()
     }
 }

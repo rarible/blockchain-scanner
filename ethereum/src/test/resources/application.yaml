@@ -1,5 +1,13 @@
+spring:
+  application:
+    name: test-eth-scanner
+
 blockchain:
   scanner:
+    kafka:
+      enabled: true
+      broker-replica-set: ${kafka.hosts}
+      maxPollRecords: 10
     ethereum:
       optimisticLockRetries: 3
       retryPolicy:

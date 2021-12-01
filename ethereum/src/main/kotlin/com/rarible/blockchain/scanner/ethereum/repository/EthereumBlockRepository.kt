@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -42,7 +43,10 @@ class EthereumBlockRepository(
     }
 
     suspend fun remove(id: Long) {
-        mongo.remove(Query(EthereumBlock::id isEqualTo id)).awaitFirstOrNull()
+        mongo.remove(
+            Query(Criteria.where("_id").isEqualTo(id)),
+            EthereumBlock::class.java
+        ).awaitFirstOrNull()
     }
 
     fun findFirstByIdAsc(): Mono<EthereumBlock> =
