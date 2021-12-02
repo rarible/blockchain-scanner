@@ -9,6 +9,5 @@ data class EthereumBlock(
 
     override val hash: String,
     override val parentHash: String?,
-    override val timestamp: Long,
-    override val status: Block.Status
+    override val timestamp: Long
 ) : Block

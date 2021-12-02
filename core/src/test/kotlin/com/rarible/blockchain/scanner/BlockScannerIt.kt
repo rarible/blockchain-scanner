@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.event.block.BlockScanner
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -18,7 +17,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -49,7 +47,6 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         // New block saved with status PENDING, listener notified with single event
         assertOriginalBlockAndBlockEquals(block, savedBlock!!)
-        assertEquals(Block.Status.PENDING, savedBlock.status)
         coVerify(exactly = 1) { blockEventPublisher.publish(any()) }
     }
 
@@ -69,7 +66,6 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
         // New block saved with status PENDING, listener notified with single event
         // existing block should not emit event
         assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
-        assertEquals(Block.Status.PENDING, savedNewBlock.status)
         coVerify(exactly = 1) { blockEventPublisher.publish(any()) }
         coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }
         coVerify(exactly = 0) { blockEventPublisher.publish(newBlockEvent(existingBlock)) }
@@ -92,7 +88,6 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         // Missed block and new block saved with status PENDING, listener notified with 2 events
         assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
-        assertEquals(Block.Status.PENDING, savedNewBlock.status)
         coVerify(exactly = 2) { blockEventPublisher.publish(any()) }
         coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }
         coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(missedBlock)) }
@@ -127,21 +122,12 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         // Now we need to ensure all changed blocks are stored in DB and root was not changed
         assertOriginalBlockAndBlockEquals(existingRoot, savedRoot)
-        assertEquals(Block.Status.SUCCESS, savedRoot.status)
-
-        // Changed blocks should have status PENDING
         assertOriginalBlockAndBlockEquals(newGrandParent, savedNewGrandparent)
-        assertEquals(Block.Status.PENDING, savedNewGrandparent.status)
-
         assertOriginalBlockAndBlockEquals(newParent, savedNewParent)
-        assertEquals(Block.Status.PENDING, savedNewParent.status)
-
         assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock)
-        assertEquals(Block.Status.PENDING, savedNewBlock.status)
 
         // Changed blocks should emit new events along with new block event, event for root block should not be emitted
         // reverted block events should contain metadata of reverted blocks
-        // TODO in reverted blocks there is timestamp of new block, not sure is this correct
         coVerify(exactly = 5) { blockEventPublisher.publish(any()) }
         coVerify(exactly = 1) { blockEventPublisher.publish(revertedBlockEvent(existingGrandParent)) }
         coVerify(exactly = 1) { blockEventPublisher.publish(revertedBlockEvent(existingParent)) }
@@ -153,7 +139,7 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `block event - existing block received`() = runBlocking {
-        val existingBlock = saveBlock(randomOriginalBlock(4), Block.Status.SUCCESS)
+        val existingBlock = saveBlock(randomOriginalBlock(4))
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(existingBlock),
             newBlocks = listOf(existingBlock)
@@ -165,7 +151,6 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         // Existing block should not be changed, no events should be emitted
         assertOriginalBlockAndBlockEquals(existingBlock, storedExistingBlock)
-        assertEquals(Block.Status.SUCCESS, storedExistingBlock.status)
         coVerify(exactly = 0) { blockEventPublisher.publish(any()) }
     }
 

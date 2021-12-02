@@ -65,7 +65,7 @@ class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
         val block = fullBlock.block
         logger.info("Reindexing Block [{}:{}] with {} Logs", block.number, block.hash, fullBlock.logs.size)
         val result = logEventHandler.handleLogs(fullBlock)
-        blockService.save(blockMapper.map(fullBlock.block, Block.Status.SUCCESS))
+        blockService.save(blockMapper.map(fullBlock.block))
         return result
     }
 

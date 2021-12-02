@@ -10,6 +10,5 @@ data class TestBlock(
     override val hash: String,
     override val parentHash: String?,
     override val timestamp: Long,
-    override val status: Block.Status,
     val extra: String
 ) : Block

@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
@@ -74,10 +73,9 @@ abstract class AbstractIntegrationTest {
     }
 
     protected suspend fun saveBlock(
-        block: TestOriginalBlock,
-        status: Block.Status = Block.Status.SUCCESS
+        block: TestOriginalBlock
     ): TestOriginalBlock {
-        testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block), status))
+        testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block)))
         return block
     }
 

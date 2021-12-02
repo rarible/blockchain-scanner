@@ -12,6 +12,6 @@ interface BlockMapper<BB : BlockchainBlock, B : Block> {
     /**
      * Convert original Blockchain Block to persistent Block data
      */
-    fun map(originalBlock: BB, status: Block.Status = Block.Status.PENDING): B
+    fun map(originalBlock: BB): B
 
 }

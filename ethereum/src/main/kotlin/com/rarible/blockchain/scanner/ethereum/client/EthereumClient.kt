@@ -35,10 +35,6 @@ class EthereumClient(
         .timeout(Duration.ofMinutes(5))
         .asFlow()
 
-    override suspend fun getBlock(hash: String): EthereumBlockchainBlock {
-        return getBlock(Word.apply(hash)).awaitFirst()
-    }
-
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
         return ethereum.ethGetBlockByNumber(BigInteger.valueOf(number)).map {
             EthereumBlockchainBlock(it)

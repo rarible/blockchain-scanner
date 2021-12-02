@@ -11,13 +11,6 @@ interface Block {
     val hash: String
     val parentHash: String?
     val timestamp: Long
-    val status: Status
-
-    enum class Status {
-        PENDING,
-        SUCCESS,
-        ERROR
-    }
 
     fun timestamp(): Instant = Instant.ofEpochSecond(timestamp)
 }

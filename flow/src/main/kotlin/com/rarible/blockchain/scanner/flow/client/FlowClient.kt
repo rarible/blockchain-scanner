@@ -47,12 +47,6 @@ class FlowClient(
         return FlowBlockchainBlock(a)
     }
 
-
-    override suspend fun getBlock(hash: String): FlowBlockchainBlock {
-        val b = api.blockById(hash) ?: throw IllegalStateException("Block [$hash] not found!")
-        return FlowBlockchainBlock(b)
-    }
-
     override suspend fun getLastBlockNumber(): Long =
         api.latestBlock().height
 

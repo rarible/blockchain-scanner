@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.ethereum.test.data
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import org.apache.commons.lang3.RandomStringUtils
@@ -19,8 +18,7 @@ fun randomBlock(): EthereumBlock {
         id = randomPositiveLong(),
         hash = randomBlockHash().toString(),
         parentHash = randomBlockHash().toString(),
-        timestamp = randomPositiveLong(),
-        status = Block.Status.SUCCESS
+        timestamp = randomPositiveLong()
     )
 }
 

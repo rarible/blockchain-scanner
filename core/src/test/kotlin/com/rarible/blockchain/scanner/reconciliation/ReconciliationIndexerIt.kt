@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.event.log.LogEventHandler
 import com.rarible.blockchain.scanner.event.log.LogEventPublisher
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -46,7 +45,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
     @BeforeEach
     fun beforeEach() {
         clearMocks(logEventPublisher)
-        coEvery { logEventPublisher.onBlockProcessed(any(), any()) } returns Block.Status.SUCCESS
+        coEvery { logEventPublisher.onBlockProcessed(any(), any()) } returns Unit
 
         topic = subscriber.getDescriptor().topic
         collection = subscriber.getDescriptor().collection

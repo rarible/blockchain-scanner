@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -66,7 +65,6 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         // Block now have PROCESSED status, nothing else changed
         val savedBlock = testBlockRepository.findById(block.number)
         assertOriginalBlockAndBlockEquals(block.testOriginalBlock, savedBlock!!)
-        assertEquals(Block.Status.SUCCESS, savedBlock.status)
     }
 
     private fun createBlockListener(

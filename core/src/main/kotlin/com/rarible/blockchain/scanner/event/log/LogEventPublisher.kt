@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.event.log
 
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
@@ -20,7 +19,7 @@ class LogEventPublisher<L : Log<L>, R : LogRecord<L, *>>(
 
     private val logger = LoggerFactory.getLogger(LogEventPublisher::class.java)
 
-    suspend fun onBlockProcessed(event: BlockEvent, logs: List<R>): Block.Status {
+    suspend fun onBlockProcessed(event: BlockEvent, logs: List<R>) {
         val status = logTime("onBlockProcessed [${event.number}]") {
             try {
                 logger.debug(
@@ -29,10 +28,8 @@ class LogEventPublisher<L : Log<L>, R : LogRecord<L, *>>(
                 )
 
                 withTimeout(retryPolicy.maxProcessTime.toMillis()) { onLogsProcessed(event, logs) }
-                Block.Status.SUCCESS
             } catch (ex: Throwable) {
                 logger.error("Unable to handle event [$event]", ex)
-                Block.Status.ERROR
             }
         }
 

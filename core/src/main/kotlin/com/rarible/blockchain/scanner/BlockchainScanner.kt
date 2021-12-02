@@ -19,9 +19,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.service.PendingLogService
-import com.rarible.blockchain.scanner.pending.DefaultPendingBlockChecker
 import com.rarible.blockchain.scanner.pending.DefaultPendingLogChecker
-import com.rarible.blockchain.scanner.pending.PendingBlockChecker
 import com.rarible.blockchain.scanner.pending.PendingLogChecker
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
@@ -31,7 +29,6 @@ import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import java.time.Duration
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -47,7 +44,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     properties: BlockchainScannerProperties,
     private val blockEventPublisher: BlockEventPublisher,
     private val blockEventConsumer: BlockEventConsumer
-) : PendingLogChecker, PendingBlockChecker, ReconciliationExecutor, BlockListener {
+) : PendingLogChecker, ReconciliationExecutor, BlockListener {
 
     private val retryableBlockchainClient = RetryableBlockchainClient(
         blockchainClient,
@@ -98,12 +95,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         logEventListeners
     )
 
-    private val pendingBlockChecker = DefaultPendingBlockChecker(
-        retryableBlockchainClient,
-        blockService,
-        blockEventListener
-    )
-
     private val reconciliationService = ReconciliationService(
         blockchainClient = retryableBlockchainClient,
         subscribers = subscribers,
@@ -127,10 +118,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
     override suspend fun checkPendingLogs() {
         pendingLogChecker.checkPendingLogs()
-    }
-
-    override suspend fun checkPendingBlocks(pendingBlockAgeToCheck: Duration) {
-        pendingBlockChecker.checkPendingBlocks(pendingBlockAgeToCheck)
     }
 
     override fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> {

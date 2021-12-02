@@ -53,7 +53,6 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
                 val event = it.key
                 val logEvents = it.value
                 val status = publishLogEvents(event, logEvents)
-                updateBlockStatus(event, status)
                 logger.info("BlockEvent [{}] handled, status updated: {}", event, status)
             }
         }.collect()
@@ -68,20 +67,9 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         }
     }
 
-    private suspend fun publishLogEvents(event: BlockEvent, logs: List<R>): Block.Status {
+    private suspend fun publishLogEvents(event: BlockEvent, logs: List<R>) {
         return withSpan("onBlockProcessed") {
             logEventPublisher.onBlockProcessed(event, logs)
         }
     }
-
-    private suspend fun updateBlockStatus(event: BlockEvent, status: Block.Status) {
-        withSpan("updateBlockStatus", type = "db") {
-            try {
-                blockService.updateStatus(event.number, status)
-            } catch (ex: Throwable) {
-                logger.error("Unable to save Block from BlockEvent [{}] with status {}", event, status, ex)
-            }
-        }
-    }
-
 }

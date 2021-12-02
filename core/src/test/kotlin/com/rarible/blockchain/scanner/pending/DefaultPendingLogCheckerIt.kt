@@ -29,6 +29,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 @FlowPreview
 @ExperimentalCoroutinesApi
 @IntegrationTest
+@Disabled
 class DefaultPendingLogCheckerIt : AbstractIntegrationTest() {
 
     @Autowired

@@ -14,7 +14,6 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventListener
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.core.task.TaskService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -99,10 +98,9 @@ abstract class AbstractIntegrationTest {
     }
 
     protected fun saveBlock(
-        block: EthereumBlock,
-        status: Block.Status = Block.Status.SUCCESS
+        block: EthereumBlock
     ): EthereumBlock {
-        return mono { ethereumBlockRepository.save(block.copy(status = status)) }.block()!!
+        return mono { ethereumBlockRepository.save(block) }.block()!!
     }
 
 }

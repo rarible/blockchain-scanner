@@ -16,8 +16,6 @@ data class FlowBlock(
     @Indexed
     override val parentHash: String,
     override val timestamp: Long,
-    @Indexed
-    override val status: Block.Status
 ): Block {
 
     override fun timestamp(): Instant = Instant.ofEpochMilli(timestamp)

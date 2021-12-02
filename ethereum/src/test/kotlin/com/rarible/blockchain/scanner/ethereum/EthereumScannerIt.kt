@@ -11,12 +11,10 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
-import com.rarible.core.common.nowMillis
 import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
 import com.rarible.core.test.wait.BlockingWait
@@ -81,7 +79,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())!!
             assertEquals(receipt.blockHash().toString(), block.hash)
-            assertEquals(Block.Status.SUCCESS, block.status)
 
             // We expect single LogRecord from our single Subscriber
             val testRecord = findAllLogs(collection)[0] as TestEthereumLogRecord
@@ -143,7 +140,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertEquals(Log.Status.INACTIVE, inactive.log!!.status)
 
             val block = findBlock(tx.blockNumber().toLong())
-            assertEquals(Block.Status.SUCCESS, block!!.status)
+            assertNotNull(block)
         }
     }
 
@@ -239,51 +236,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertEquals(1, tasks.size)
             assertEquals(TaskStatus.COMPLETED, tasks[0].lastStatus)
             assertEquals(beforeCleanupSize, findAllLogs(collection).size)
-        }
-    }
-
-    @Test
-    fun `pending blocks job`() {
-        // Making random mint
-        val beneficiary = randomAddress()
-        val value = randomPositiveBigInt(1000000)
-        val receipt = mintAndVerify(beneficiary, value)
-        assertCollectionSize(collection, 1)
-
-        BlockingWait.waitAssert {
-            // Checking Block is in storage, successfully processed
-            val block = findBlock(receipt.blockNumber().toLong())!!
-            assertEquals(Block.Status.SUCCESS, block.status)
-        }
-
-        mongo.findAllAndRemove<Any>(Query(), collection).collectList().block()!!
-
-        // Saving same block with status PENDING and timestamp old enough
-        val block = findBlock(receipt.blockNumber().toLong())!!
-        val pendingBlock = block.copy(timestamp = nowMillis().minusSeconds(61).epochSecond)
-        saveBlock(pendingBlock, Block.Status.PENDING)
-
-        BlockingWait.waitAssert {
-            // Checking Block is in storage, successfully processed
-            val reProcessedBlock = findBlock(receipt.blockNumber().toLong())!!
-            assertEquals(receipt.blockHash().toString(), reProcessedBlock.hash)
-            assertEquals(Block.Status.SUCCESS, reProcessedBlock.status)
-
-            // Checking records restored successfully
-            val testRecord = findAllLogs(collection)[0] as TestEthereumLogRecord
-            assertEquals(testRecord.log!!.status, Log.Status.CONFIRMED)
-            assertEquals(testRecord.from, Address.ZERO())
-            assertEquals(testRecord.to, beneficiary)
-            assertEquals(testRecord.value, value)
-        }
-
-        // We should get here 2 events - first from initial BlockEvent, second - from indexing pending Block
-        coVerify(exactly = 2) {
-            testLogEventListener.onBlockLogsProcessed(match {
-                assertEquals(receipt.blockHash().toString(), it.event.hash)
-                assertEquals(1, it.records.size)
-                true
-            })
         }
     }
 
