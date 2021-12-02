@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -86,25 +87,27 @@ class RetryableBlockchainClientTest {
     @Test
     fun `get block events - last attempt succeed`() = runBlocking {
         val descriptor = testDescriptor1()
+        val range = LongRange(1, 1)
+        var count = 0
         val block = randomBlockchainBlock()
         val log = randomBlockchainLog(block, randomString())
-        var count = 0
-        coEvery { client.getBlockEvents(descriptor, block) } returns flow {
+        val fullBlock = FullBlock(block, listOf(log))
+        coEvery { client.getBlockEvents(descriptor, range) } returns flow {
             count++
             if (count < 3) {
                 error("not yet ready")
             }
-            emit(log)
+            emit(fullBlock)
         }
 
-        val result = retryableClient.getBlockEvents(descriptor, block)
+        val result = retryableClient.getBlockEvents(descriptor, range)
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 1) { client.getBlockEvents(descriptor, block) }
+        coVerify(exactly = 1) { client.getBlockEvents(descriptor, range) }
         val list = result.toList()
         assertEquals(1, list.size)
         assertEquals(3, count)
-        assertEquals(log, list[0])
+        assertEquals(fullBlock, list[0])
     }
 
     @Test

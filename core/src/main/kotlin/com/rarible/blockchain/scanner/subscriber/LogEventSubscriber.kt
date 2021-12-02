@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
  * Blockchain Block and Log.
  */
 
-// TODO should be grouped
 // Inside of group logs should be processed together
 interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
 

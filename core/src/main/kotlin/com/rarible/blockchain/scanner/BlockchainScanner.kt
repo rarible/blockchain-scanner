@@ -18,9 +18,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.service.PendingLogService
-import com.rarible.blockchain.scanner.pending.DefaultPendingLogChecker
-import com.rarible.blockchain.scanner.pending.PendingLogChecker
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
@@ -39,12 +36,11 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    pendingLogService: PendingLogService<L, R, D>,
     logEventListeners: List<LogEventListener<L, R>>,
     properties: BlockchainScannerProperties,
     private val blockEventPublisher: BlockEventPublisher,
     private val blockEventConsumer: BlockEventConsumer
-) : PendingLogChecker, ReconciliationExecutor, BlockListener {
+) : ReconciliationExecutor, BlockListener {
 
     private val retryableBlockchainClient = RetryableBlockchainClient(
         blockchainClient,
@@ -72,7 +68,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
                 blockService,
                 logMapper,
                 logService,
-                pendingLogService,
                 logEventPublisher
             )
         }.associateBy({ it.first }, { it.second })
@@ -83,16 +78,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         blockService,
         logMapper,
         logService,
-        pendingLogService,
         logEventPublisher
-    )
-
-    private val pendingLogChecker = DefaultPendingLogChecker(
-        retryableBlockchainClient,
-        logService,
-        subscribers.map { it.getDescriptor() },
-        blockEventListener,
-        logEventListeners
     )
 
     private val reconciliationService = ReconciliationService(
@@ -114,10 +100,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
 
     override suspend fun onBlockEvents(events: List<BlockEvent>) {
         blockEventListener.onBlockEvents(events)
-    }
-
-    override suspend fun checkPendingLogs() {
-        pendingLogChecker.checkPendingLogs()
     }
 
     override fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> {

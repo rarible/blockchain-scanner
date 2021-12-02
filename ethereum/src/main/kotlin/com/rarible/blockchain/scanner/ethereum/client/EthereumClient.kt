@@ -11,7 +11,6 @@ import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.toFlux
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
@@ -41,6 +40,10 @@ class EthereumClient(
         }.awaitFirst()
     }
 
+    suspend fun getBlock(hash: String): EthereumBlockchainBlock {
+        return getBlock(Word.apply(hash)).awaitFirst()
+    }
+
     override suspend fun getLastBlockNumber(): Long {
         return ethereum.ethBlockNumber().map { it.toLong() }.awaitFirst()
     }
@@ -56,21 +59,6 @@ class EthereumClient(
                 blockHash = tx.blockHash().toString()
             )
         }
-    }
-
-    override fun getBlockEvents(
-        descriptor: EthereumDescriptor,
-        block: EthereumBlockchainBlock
-    ): Flow<EthereumBlockchainLog> {
-        val filter = LogFilter
-            .apply(TopicFilter.simple(descriptor.topic))
-            .address(*descriptor.contracts.toTypedArray())
-            .blockHash(block.ethBlock.hash())
-
-        return ethereum.ethGetLogsJava(filter)
-            .map { orderByTransaction(it).map { log -> EthereumBlockchainLog(log) } }
-            .flatMapMany { it.toFlux() }
-            .asFlow()
     }
 
     //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?

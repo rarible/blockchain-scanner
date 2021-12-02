@@ -14,7 +14,6 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
-import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.subscriber.LogEventListener
@@ -36,7 +35,6 @@ class EthereumScanner(
     blockService: EthereumBlockService,
     logMapper: EthereumLogMapper,
     logService: EthereumLogService,
-    pendingLogService: EthereumPendingLogService,
     logEventListeners: List<LogEventListener<EthereumLog, EthereumLogRecord<*>>>,
     properties: BlockchainScannerProperties,
     // Autowired from core
@@ -49,7 +47,6 @@ class EthereumScanner(
     blockService,
     logMapper,
     logService,
-    pendingLogService,
     logEventListeners,
     properties,
     blockEventPublisher,

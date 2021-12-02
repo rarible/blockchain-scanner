@@ -8,8 +8,6 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.common.toOptional
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 
 class TestLogService(
@@ -50,24 +48,16 @@ class TestLogService(
         }
     }
 
-    override fun findPendingLogs(descriptor: TestDescriptor): Flow<TestLogRecord<*>> {
-        return testLogRepository.findPendingLogs(descriptor.collection).asFlow()
-    }
-
-    override fun findAndDelete(
+    override suspend fun findAndDelete(
         descriptor: TestDescriptor,
         blockHash: String,
         status: Log.Status?
-    ): Flow<TestLogRecord<*>> {
-        return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.topic, status).asFlow()
+    ): List<TestLogRecord<*>> {
+        return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.topic, status)
+            .collectList().awaitFirst()
     }
 
-    override suspend fun updateStatus(
-        descriptor: TestDescriptor,
-        record: TestLogRecord<*>,
-        status: Log.Status
-    ): TestLogRecord<*> {
-        val copy = record.withLog(record.log!!.copy(status = status, visible = false))
-        return testLogRepository.save(descriptor.collection, copy).awaitFirst()
+    override suspend fun beforeHandleNewBlock(descriptor: TestDescriptor, blockHash: String): List<TestLogRecord<*>> {
+        return emptyList()
     }
 }

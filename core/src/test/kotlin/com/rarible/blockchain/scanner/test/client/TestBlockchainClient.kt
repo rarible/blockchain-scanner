@@ -33,22 +33,23 @@ class TestBlockchainClient(
 
     override fun getBlockEvents(
         descriptor: TestDescriptor,
-        block: TestBlockchainBlock
-    ): Flow<TestBlockchainLog> {
-        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }.asFlow()
-    }
-
-    override fun getBlockEvents(
-        descriptor: TestDescriptor,
         range: LongRange
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> = flatten {
         blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
-            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it)).toList()) }.asFlow()
+            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it)).toList()) }
+            .asFlow()
     }
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         val log = logs.find { it.transactionHash == transactionHash }
         return if (log == null) null else TransactionMeta(log.transactionHash, log.blockHash)
+    }
+
+    private fun getBlockEvents(
+        descriptor: TestDescriptor,
+        block: TestBlockchainBlock
+    ): Flow<TestBlockchainLog> {
+        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }.asFlow()
     }
 }

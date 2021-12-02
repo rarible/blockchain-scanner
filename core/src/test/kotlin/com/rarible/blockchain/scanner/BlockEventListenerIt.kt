@@ -78,7 +78,6 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
             testBlockService,
             testLogMapper,
             testLogService,
-            testPendingLogService,
             testLogEventPublisher
         )
     }

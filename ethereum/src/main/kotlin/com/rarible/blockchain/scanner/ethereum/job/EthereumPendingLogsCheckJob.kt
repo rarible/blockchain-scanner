@@ -1,19 +1,17 @@
-package com.rarible.blockchain.scanner.job
+package com.rarible.blockchain.scanner.ethereum.job
 
-import com.rarible.blockchain.scanner.pending.PendingLogChecker
+import com.rarible.blockchain.scanner.ethereum.pending.PendingLogChecker
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnBean(PendingLogChecker::class)
-class PendingLogsCheckJob(
+class EthereumPendingLogsCheckJob(
     private val pendingLogChecker: PendingLogChecker
 ) {
 
-    private val logger = LoggerFactory.getLogger(PendingLogsCheckJob::class.java)
+    private val logger = LoggerFactory.getLogger(EthereumPendingLogsCheckJob::class.java)
 
     @Scheduled(
         fixedRateString = "#{blockchainScannerPropertiesProvider.properties.job.pendingLogs.interval}",

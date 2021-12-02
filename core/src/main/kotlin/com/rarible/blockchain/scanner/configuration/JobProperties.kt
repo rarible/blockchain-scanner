@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.configuration
 
-data class JobProperties(
-    val pendingLogs: PendingLogsJobProperties = PendingLogsJobProperties(),
+open class JobProperties(
     val reconciliation: ReconciliationJobProperties = ReconciliationJobProperties()
 )

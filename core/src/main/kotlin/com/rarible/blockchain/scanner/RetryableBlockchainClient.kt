@@ -41,11 +41,6 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         }
     }
 
-    override fun getBlockEvents(descriptor: D, block: BB): Flow<BL> {
-        return original.getBlockEvents(descriptor, block)
-            .wrapWithRetry()
-    }
-
     override fun getBlockEvents(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>> {
         return original.getBlockEvents(descriptor, range)
             .wrapWithRetry()

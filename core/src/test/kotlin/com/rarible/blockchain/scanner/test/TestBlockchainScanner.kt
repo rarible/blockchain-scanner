@@ -17,7 +17,6 @@ import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 
@@ -30,7 +29,6 @@ class TestBlockchainScanner(
     blockService: TestBlockService,
     logMapper: TestLogMapper,
     logService: TestLogService,
-    pendingLogService: TestPendingLogService,
     logEventListeners: List<LogEventListener<TestLog, TestLogRecord<*>>>,
     properties: BlockchainScannerProperties,
     // Autowired from core
@@ -43,7 +41,6 @@ class TestBlockchainScanner(
     blockService,
     logMapper,
     logService,
-    pendingLogService,
     logEventListeners,
     properties,
     blockEventPublisher,

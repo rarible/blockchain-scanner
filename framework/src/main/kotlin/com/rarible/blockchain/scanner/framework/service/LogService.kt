@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.framework.service
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Interface describes operations with persistent storage for Log Records. Each Blockchain Scanner implementation
@@ -25,25 +24,20 @@ interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
     suspend fun save(descriptor: D, records: List<R>): List<R>
 
     /**
-     * Return all logs with status [PENDING][com.rarible.blockchain.scanner.framework.model.Log.Status.PENDING] for
-     * specified subscriber's descriptor.
+     * Operation performed before handling NewBlock. For example, here could be implemented
+     * some cleanup of temporary LogEvents (like pending logs). As a result, list of updated events
+     * should be emitted.
      *
+     * @return updated/deleted LogRecords
      */
-    fun findPendingLogs(descriptor: D): Flow<R>
+    suspend fun beforeHandleNewBlock(descriptor: D, blockHash: String): List<R>
 
     /**
      * Delete all LogRecords of specified block and with specified status.
+     * Required to clean up LogRecords of reverted block.
      *
      * @return deleted LogRecords
      */
-    fun findAndDelete(descriptor: D, blockHash: String, status: Log.Status? = null): Flow<R>
-
-    /**
-     * Update status of single LogRecord
-     *
-     * @return updated LogRecord
-     */
-    suspend fun updateStatus(descriptor: D, record: R, status: Log.Status): R
-
+    suspend fun findAndDelete(descriptor: D, blockHash: String, status: Log.Status? = null): List<R>
 
 }

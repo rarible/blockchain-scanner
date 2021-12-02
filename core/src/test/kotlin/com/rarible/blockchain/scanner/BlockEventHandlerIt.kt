@@ -58,8 +58,7 @@ class BlockEventHandlerIt : AbstractIntegrationTest() {
             testBlockchainClient,
             subscribers.asList(),
             testLogMapper,
-            testLogService,
-            testPendingLogService
+            testLogService
         )
     }
 

@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.pending
+package com.rarible.blockchain.scanner.ethereum.pending
 
 interface PendingLogChecker {
 

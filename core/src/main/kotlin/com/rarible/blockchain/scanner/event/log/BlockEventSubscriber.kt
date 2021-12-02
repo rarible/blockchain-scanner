@@ -12,8 +12,6 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.service.PendingLogService
-import com.rarible.blockchain.scanner.pending.PendingLogMarker
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.logTime
@@ -32,14 +30,12 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, R, D>,
-    pendingLogService: PendingLogService<L, R, D>
+    private val logService: LogService<L, R, D>
 ) {
 
     private val logger = LoggerFactory.getLogger(subscriber.javaClass)
 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService)
-    private val pendingLogMarker = PendingLogMarker(logService, pendingLogService)
 
     private val descriptor = subscriber.getDescriptor()
     private val name = subscriber.javaClass.simpleName
@@ -60,7 +56,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         val futureLogs = coroutineScope { async { getLogEvents(events) } }
         // While Logs are fetching, updating pending logs
         val pending = events.associateBy(
-            { it.hash }, { markInactive(it) }
+            { it.hash }, { beforeHandleNewBlock(it) }
         )
         val fetchedLogs = futureLogs.await()
 
@@ -85,13 +81,13 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return reverted
     }
 
-    private suspend fun markInactive(event: NewBlockEvent): List<R> {
+    private suspend fun beforeHandleNewBlock(event: NewBlockEvent): List<R> {
         val pending = logTime("pendingLogMarker.markInactive [${event.number}]") {
             withSpan("markInactive", "db") {
-                pendingLogMarker.markInactive(event.hash, descriptor)
+                logService.beforeHandleNewBlock(descriptor, event.hash)
             }
         }
-        return pending
+        return pending.toList()
     }
 
     private suspend fun processLogs(fullBlock: FullBlock<BB, BL>): List<R> {

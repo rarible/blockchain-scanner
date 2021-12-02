@@ -14,7 +14,6 @@ import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.service.TestPendingLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.micrometer.core.instrument.MeterRegistry
@@ -77,9 +76,6 @@ class TestScannerConfiguration {
     fun testLogService() = TestLogService(testLogRepository())
 
     @Bean
-    fun testPendingLogService() = TestPendingLogService()
-
-    @Bean
     fun testSubscriber1() = TestLogEventSubscriber(testDescriptor1(), 1)
 
     @Bean
@@ -93,7 +89,6 @@ class TestScannerConfiguration {
         blockService = testBlockService(),
         logMapper = testLogMapper(),
         logService = testLogService(),
-        pendingLogService = testPendingLogService(),
         logEventListeners = listOf(),
         properties = properties,
         blockEventConsumer = consumer,

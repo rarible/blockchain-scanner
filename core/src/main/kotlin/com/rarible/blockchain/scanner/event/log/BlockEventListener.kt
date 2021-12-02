@@ -12,7 +12,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.service.PendingLogService
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.logTime
 import com.rarible.core.apm.withSpan
@@ -31,7 +30,6 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
     private val blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    pendingLogService: PendingLogService<L, R, D>,
     private val logEventPublisher: LogEventPublisher<L, R>
 ) : BlockListener {
 
@@ -41,8 +39,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L 
         blockchainClient,
         subscribers,
         logMapper,
-        logService,
-        pendingLogService
+        logService
     )
 
     override suspend fun onBlockEvents(events: List<BlockEvent>) {

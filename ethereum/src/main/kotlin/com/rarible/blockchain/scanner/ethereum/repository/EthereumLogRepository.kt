@@ -84,29 +84,6 @@ class EthereumLogRepository(
         )
     }
 
-    fun findAndDeleteWithStatus(
-        collection: String,
-        blockHash: Word,
-        topic: Word,
-        status: Log.Status
-    ): Flux<EthereumLogRecord<*>> {
-        val criteria = Criteria
-            .where("log.blockHash").isEqualTo(blockHash)
-            .and("log.topic").isEqualTo(topic)
-
-        return mongo.find(
-            Query(criteria),
-            EthereumLogRecord::class.java,
-            collection
-        ).map {
-            logger.info("Deleting EthereumLogRecord: [{}]", it)
-            val updatedLog = it.log!!.copy(status = status, visible = false)
-            it.withLog(updatedLog)
-        }.doOnEach {
-            mongo.remove(it, collection)
-        }
-    }
-
     fun findAndDelete(
         collection: String,
         blockHash: Word,

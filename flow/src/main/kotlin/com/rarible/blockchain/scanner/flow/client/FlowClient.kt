@@ -15,7 +15,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.bouncycastle.util.encoders.Hex
@@ -94,23 +93,4 @@ class FlowClient(
         val tx = api.txById(transactionHash) ?: return null
         return TransactionMeta(hash = transactionHash, blockHash = Hex.toHexString(tx.referenceBlockId.bytes))
     }
-
-    override fun getBlockEvents(
-        descriptor: FlowDescriptor,
-        block: FlowBlockchainBlock
-    ): Flow<FlowBlockchainLog> {
-        return api.blockEvents(height = block.number)
-            .filter {
-                descriptor.events.contains(it.type)
-            }
-            .map {
-                FlowBlockchainLog(
-                    hash = it.transactionId.base16Value,
-                    blockHash = block.hash,
-                    event = it
-                )
-            }
-    }
-
-
 }

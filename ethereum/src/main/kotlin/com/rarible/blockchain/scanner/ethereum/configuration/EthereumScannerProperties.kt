@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.configuration
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.core.daemon.DaemonWorkerProperties
@@ -15,7 +14,7 @@ data class EthereumScannerProperties(
     val optimisticLockRetries: Long = 3,
     override val service: String = "scanner",
     override val retryPolicy: RetryPolicyProperties,
-    override val job: JobProperties,
+    override val job: EthereumScannerJobProperties,
     override val monitoring: MonitoringProperties,
     override val blockBufferSize: Int = 10,
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()

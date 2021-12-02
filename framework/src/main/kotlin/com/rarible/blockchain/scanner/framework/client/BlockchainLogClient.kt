@@ -8,11 +8,6 @@ import kotlinx.coroutines.flow.Flow
 interface BlockchainLogClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor> {
 
     /**
-     * Get events from specific block and by specific descriptor
-     */
-    fun getBlockEvents(descriptor: D, block: BB): Flow<BL>
-
-    /**
      * Get events from block range and by specific descriptor
      */
     fun getBlockEvents(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>>

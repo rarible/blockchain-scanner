@@ -13,7 +13,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -128,21 +127,6 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `find pending logs`() = runBlocking {
-        val anotherCollection = testBidSubscriber.getDescriptor().collection
-
-        val pendingLog = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.CONFIRMED))
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.REVERTED))
-        saveLog(anotherCollection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-
-        val pendingLogs = ethereumLogService.findPendingLogs(descriptor).toList()
-
-        assertEquals(1, pendingLogs.size)
-        assertEquals(pendingLog, pendingLogs[0])
-    }
-
-    @Test
     fun `find and delete records - without status`() = runBlocking {
         val anotherCollection = testBidSubscriber.getDescriptor().collection
         val blockHash = randomBlockHash()
@@ -178,43 +162,5 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         assertNull(findLog(collection, deleted.id))
         assertNotNull(findLog(collection, wrongStatus.id))
-    }
-
-    @Test
-    fun `update status - record exist`() = runBlocking {
-        val record = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-
-        ethereumLogService.updateStatus(descriptor, record, Log.Status.INACTIVE)
-
-        val updatedRecord = findLog(collection, record.id)!!
-
-        assertFalse(updatedRecord.log!!.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
-    }
-
-
-    @Test
-    fun `update status - record doesn't exist`() = runBlocking {
-        val record = randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING)
-
-        ethereumLogService.updateStatus(descriptor, record, Log.Status.INACTIVE)
-
-        val updatedRecord = findLog(collection, record.id)!!
-
-        assertFalse(updatedRecord.log!!.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
-    }
-
-    @Test
-    fun `update status - optimistic lock handled`() = runBlocking {
-        val record = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-        val prevVersion = record.withIdAndVersion(record.id, null)
-
-        ethereumLogService.updateStatus(descriptor, prevVersion, Log.Status.INACTIVE)
-
-        val updatedRecord = findLog(collection, record.id)!!
-
-        assertFalse(updatedRecord.log!!.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
     }
 }
