@@ -8,8 +8,6 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 
@@ -18,8 +16,7 @@ class TestBlockchainClient(
 ) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
 
     private val blocksByNumber = data.blocks.associateBy { it.number }
-    private val blocksByHash = data.blocks.associateBy { it.hash }
-    private val lastBlock = data.blocks.maxBy { it.number }
+    private val lastBlock = data.blocks.maxByOrNull { it.number }
     private val logs = data.logs
     private val logsByBlock = data.logs.filter { it.blockHash != null }.groupBy { it.blockHash }
 

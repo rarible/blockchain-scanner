@@ -29,7 +29,7 @@ class EthereumBlockServiceIt : AbstractIntegrationTest() {
         val block2 = saveBlock(randomBlock())
         val block3 = saveBlock(randomBlock())
 
-        val max = listOf(block1, block2, block3).maxBy { it.id }!!.id
+        val max = listOf(block1, block2, block3).maxByOrNull { it.id }!!.id
 
         val lastBlock = ethereumBlockService.getLastBlock()
 
