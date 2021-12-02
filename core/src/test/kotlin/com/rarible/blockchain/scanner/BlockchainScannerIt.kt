@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.test.configuration.TestScannerConfiguratio
 import com.rarible.blockchain.scanner.test.configuration.TestScannerConfiguration.Companion.TEST_LOG_COUNT_PER_BLOCK
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
+import com.rarible.core.test.wait.BlockingWait
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
@@ -27,17 +28,21 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         scanOnce(testBlockchainScanner)
         val expectedLogCount = TEST_BLOCK_COUNT * TEST_LOG_COUNT_PER_BLOCK
 
-        // Since we have 2 subscribers, there should be 2 collections
-        val allLogs1 = findAllLogs(testDescriptor1().collection)
-        val allLogs2 = findAllLogs(testDescriptor2().collection)
-        val allBlocks = findAllBlocks()
+        BlockingWait.waitAssert {
+            runBlocking {
+                // Since we have 2 subscribers, there should be 2 collections
+                val allLogs1 = findAllLogs(testDescriptor1().collection)
+                val allLogs2 = findAllLogs(testDescriptor2().collection)
+                val allBlocks = findAllBlocks()
 
-        // First subscriber produces 1 event per log
-        assertEquals(expectedLogCount, allLogs1.size)
-        // Second subscriber produces 2 event per log
-        assertEquals(expectedLogCount * 2, allLogs2.size)
-        // We expect all blocks processed
-        assertEquals(TEST_BLOCK_COUNT, allBlocks.size)
+                // First subscriber produces 1 event per log
+                assertEquals(expectedLogCount, allLogs1.size)
+                // Second subscriber produces 2 event per log
+                assertEquals(expectedLogCount * 2, allLogs2.size)
+                // We expect all blocks processed
+                assertEquals(TEST_BLOCK_COUNT, allBlocks.size)
+            }
+        }
     }
 
 }

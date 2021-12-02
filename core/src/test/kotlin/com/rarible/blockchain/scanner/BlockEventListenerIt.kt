@@ -14,7 +14,6 @@ import com.rarible.blockchain.scanner.test.data.assertOriginalBlockAndBlockEqual
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
-import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -71,11 +70,10 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         testBlockchainClient: TestBlockchainClient,
         testLogEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>>,
         vararg subscribers: TestLogEventSubscriber
-    ): BlockEventListener<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord<*>, TestDescriptor> {
+    ): BlockEventListener<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return BlockEventListener(
             testBlockchainClient,
             subscribers.asList(),
-            testBlockService,
             testLogMapper,
             testLogService,
             testLogEventPublisher

@@ -4,6 +4,10 @@ spring:
 
 blockchain:
   scanner:
+    kafka:
+      enabled: true
+      broker-replica-set: ${kafka.hosts}
+      maxPollRecords: 10
     test:
       maxProcessTime: 30000
       reconnectDelay: 2000

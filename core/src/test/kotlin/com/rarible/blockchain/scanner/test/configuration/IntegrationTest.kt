@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.test.configuration
 
 import com.rarible.core.test.ext.EthereumTest
+import com.rarible.core.test.ext.KafkaTest
 import com.rarible.core.test.ext.MongoCleanup
 import com.rarible.core.test.ext.MongoTest
 import kotlinx.coroutines.FlowPreview
@@ -23,4 +24,5 @@ import org.springframework.test.context.ContextConfiguration
 )
 @ActiveProfiles("test")
 @EthereumTest
+@KafkaTest
 annotation class IntegrationTest

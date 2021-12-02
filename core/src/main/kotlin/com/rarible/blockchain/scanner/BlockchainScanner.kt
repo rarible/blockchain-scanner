@@ -2,14 +2,12 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
-import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
@@ -40,7 +38,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     properties: BlockchainScannerProperties,
     private val blockEventPublisher: BlockEventPublisher,
     private val blockEventConsumer: BlockEventConsumer
-) : ReconciliationExecutor, BlockListener {
+) : ReconciliationExecutor {
 
     private val retryableBlockchainClient = RetryableBlockchainClient(
         blockchainClient,
@@ -65,21 +63,11 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
             it.key to BlockEventListener(
                 retryableBlockchainClient,
                 it.value,
-                blockService,
                 logMapper,
                 logService,
                 logEventPublisher
             )
         }.associateBy({ it.first }, { it.second })
-
-    private val blockEventListener = BlockEventListener(
-        retryableBlockchainClient,
-        subscribers,
-        blockService,
-        logMapper,
-        logService,
-        logEventPublisher
-    )
 
     private val reconciliationService = ReconciliationService(
         blockchainClient = retryableBlockchainClient,
@@ -96,10 +84,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     suspend fun scan() {
         blockEventConsumer.start(blockEventListeners)
         blockScanner.scan(blockEventPublisher)
-    }
-
-    override suspend fun onBlockEvents(events: List<BlockEvent>) {
-        blockEventListener.onBlockEvents(events)
     }
 
     override fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> {
