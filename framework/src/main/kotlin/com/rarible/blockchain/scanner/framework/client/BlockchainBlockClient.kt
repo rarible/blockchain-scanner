@@ -12,16 +12,11 @@ interface BlockchainBlockClient<BB : BlockchainBlock> {
     /**
      * Get single block by block number
      */
-    suspend fun getBlock(number: Long): BB
-
-    /**
-     * Get single block by hash
-     */
-    suspend fun getBlock(hash: String): BB
+    suspend fun getBlock(number: Long): BB?
 
     /**
      * Get last known block number
      */
-    suspend fun getLastBlockNumber(): Long
+    suspend fun getLastBlockNumber(): Long //todo remove, not needed
 
 }

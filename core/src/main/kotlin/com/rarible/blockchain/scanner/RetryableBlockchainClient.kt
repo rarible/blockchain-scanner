@@ -29,15 +29,9 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
     override val newBlocks: Flow<BB> =
         original.newBlocks
 
-    override suspend fun getBlock(number: Long): BB {
+    override suspend fun getBlock(number: Long): BB? {
         return wrapWithRetry("getBlock", number) {
             original.getBlock(number)
-        }
-    }
-
-    override suspend fun getBlock(hash: String): BB {
-        return wrapWithRetry("getBlock", hash) {
-            original.getBlock(hash)
         }
     }
 

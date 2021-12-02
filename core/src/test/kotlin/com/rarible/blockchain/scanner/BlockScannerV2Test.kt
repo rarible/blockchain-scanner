@@ -45,7 +45,6 @@ class BlockScannerV2Test {
         val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
 
         every { client.newBlocks } returns flowOf(block1)
-        coEvery { client.getBlock("block1") } returns block0
         coEvery { client.getBlock(0) } returns block0
         coEvery { client.getBlock(1) } returns block1
 
@@ -114,9 +113,7 @@ class BlockScannerV2Test {
         val block3 = TestBlockchainBlock(randomOriginalBlock("block3", 3, "block2"))
 
         every { client.newBlocks } returns flowOf(block3)
-        coEvery { client.getBlock("block0") } returns block0 //todo check if needed
-        coEvery { client.getBlock("block1") } returns block1
-        coEvery { client.getBlock("block2") } returns block2
+        coEvery { client.getBlock(0) } returns block0
         coEvery { client.getBlock(1) } returns block1
         coEvery { client.getBlock(2) } returns block2
         coEvery { client.getBlock(3) } returns block3
@@ -140,9 +137,9 @@ class BlockScannerV2Test {
 
 
         verify(exactly = 1) { client.newBlocks }
-        coVerify(exactly = 1) { client.getBlock("block0") }
-        coVerify(exactly = 1) { client.getBlock("block1") }
-        coVerify(exactly = 1) { client.getBlock(2) }
+        coVerify(exactly = 1) { client.getBlock(0) }
+        coVerify(exactly = 2) { client.getBlock(1) }
+        coVerify(exactly = 2) { client.getBlock(2) }
         coVerify(exactly = 1) { client.getBlock(3) }
 
         coVerify(exactly = 1) { service.getLastBlock() }
@@ -160,14 +157,11 @@ class BlockScannerV2Test {
     fun `reorg happens after start`() = runBlocking {
         val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
         val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
-        val block1New = TestBlockchainBlock(randomOriginalBlock("block1-new", 1, "block0"))
         val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1-new"))
 
         every { client.newBlocks } returns flowOf(block2)
         coEvery { client.getBlock(1) } returns block1
-        coEvery { client.getBlock("block1-new") } returns block1New
         coEvery { client.getBlock(2) } returns block2
-        coEvery { client.getBlock("block0") } returns block0
 
         coEvery { service.getLastBlock() } returns mapper.map(block1)
         coEvery { service.save(any()) } answers { }
@@ -176,25 +170,13 @@ class BlockScannerV2Test {
 
         val events = scanOnce()
 
-        assertThat(events).isEqualTo(
-            listOf(
-                RevertedBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block1New.number, block1New.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
-            )
-        )
+        assertThat(events).isEqualTo(emptyList<BlockEvent>())
 
         verify(exactly = 1) { client.newBlocks }
         coVerify(exactly = 1) { client.getBlock(1) }
-        coVerify(exactly = 1) { client.getBlock("block1-new") }
-        coVerify(exactly = 1) { client.getBlock("block0") }
         coVerify(exactly = 1) { client.getBlock(2) }
 
         coVerify(exactly = 1) { service.getLastBlock() }
-        coVerify(exactly = 1) { service.save(mapper.map(block2)) }
-        coVerify(exactly = 1) { service.save(mapper.map(block1New)) }
-        coVerify(exactly = 1) { service.getBlock(0) }
-        coVerify(exactly = 1) { service.remove(block1.number) }
         confirmVerified(client, service)
     }
 

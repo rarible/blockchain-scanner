@@ -54,7 +54,7 @@ class DefaultPendingBlockChecker<BB : BlockchainBlock, BL : BlockchainLog, B : B
 
     private suspend fun reindexPendingBlock(block: B) {
         logger.info("Reindexing pending block: [{}:{}]", block.id, block.hash)
-        val originalBlock = blockchainClient.getBlock(block.id)
+        val originalBlock = blockchainClient.getBlock(block.id)!! //todo check this change
         val event = NewBlockEvent(Source.PENDING, originalBlock.number, originalBlock.hash)
         blockListener.onBlockEvents(listOf(event))
     }
