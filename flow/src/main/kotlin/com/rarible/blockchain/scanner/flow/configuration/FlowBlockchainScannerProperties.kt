@@ -26,7 +26,6 @@ data class FlowBlockchainScannerProperties(
         )
     ),
     override val job: JobProperties = JobProperties(),
-    override val blockBufferSize: Int = 8 * 1024,
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID
 ): BlockchainScannerProperties

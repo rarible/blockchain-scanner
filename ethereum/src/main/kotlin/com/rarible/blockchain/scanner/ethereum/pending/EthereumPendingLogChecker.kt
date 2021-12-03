@@ -1,20 +1,18 @@
 package com.rarible.blockchain.scanner.ethereum.pending
 
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
-import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventListener
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
@@ -30,19 +28,12 @@ class EthereumPendingLogChecker(
     private val logMapper: EthereumLogMapper,
     private val logService: EthereumLogService,
     private val pendingLogService: EthereumPendingLogService,
-    private val logEventListeners: List<EthereumLogEventListener>,
-    subscribers: List<EthereumLogEventSubscriber>,
-    properties: BlockchainScannerProperties,
+    private val logEventPublisher: LogEventPublisher,
+    subscribers: List<EthereumLogEventSubscriber>
 ) : PendingLogChecker {
 
     private val logger = LoggerFactory.getLogger(EthereumPendingLogChecker::class.java)
     private val descriptors = subscribers.map { it.getDescriptor() }
-
-    // TODO maybe here we can redesign bean structure somehow
-    private val logEventPublisher = LogEventPublisher(
-        logEventListeners,
-        properties.retryPolicy.scan
-    )
 
     private val blockEventListeners = subscribers
         .groupBy { it.getDescriptor().groupId }
@@ -62,27 +53,16 @@ class EthereumPendingLogChecker(
                 .mapNotNull { processLog(descriptors, it) }
         }.toCollection(mutableListOf())
 
-
         val droppedLogs = collections.mapNotNull { it.first }
         val newBlocks = collections.mapNotNull { it.second }.distinctBy { it.hash }
 
-        onDroppedLogs(droppedLogs)
+        logEventPublisher.publish(droppedLogs)
         onNewBlocks(newBlocks)
     }
 
-    private suspend fun onDroppedLogs(droppedLogs: List<EthereumLogRecord<*>>) {
-        logEventListeners.forEach {
-            try {
-                it.onPendingLogsDropped(droppedLogs)
-            } catch (ex: Throwable) {
-                logger.error("Caught exception while onDroppedLogs logs of listener: {}", it.javaClass, ex)
-            }
-        }
-    }
-
     private suspend fun onNewBlocks(newBlocks: List<BlockchainBlock>) {
-        blockEventListeners.forEach {
-            it.value.onBlockEvents(newBlocks.map {
+        blockEventListeners.forEach { listener ->
+            listener.value.onBlockEvents(newBlocks.map {
                 NewBlockEvent(Source.PENDING, it.number, it.hash)
             })
         }

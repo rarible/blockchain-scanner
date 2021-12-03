@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -45,13 +45,13 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
     private var collection1 = ""
     private var topic2 = ""
     private var collection2 = ""
-    private var logEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>> = mockk()
+    private var logEventPublisher: LogEventPublisher = mockk()
     private var batchSize = -1L
 
     @BeforeEach
     fun beforeEach() {
         clearMocks(logEventPublisher)
-        coEvery { logEventPublisher.onBlockProcessed(any(), any()) } returns Unit
+        coEvery { logEventPublisher.publish(any()) } returns Unit
 
         batchSize = properties.job.reconciliation.batchSize
         topic1 = subscriber1.getDescriptor().topic
@@ -80,7 +80,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
         assertEquals(4 * 2 * 2, findAllLogs(collection2).size)
 
         // In total, we should have 7 + 4 published events
-        coVerify(exactly = 11) { logEventPublisher.onBlockProcessed(any(), any()) }
+        coVerify(exactly = 11) { logEventPublisher.publish(any()) }
     }
 
     @Test
@@ -92,7 +92,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
 
         // Nothing should be reindexed
         assertEquals(0, findAllLogs(collection1).size)
-        coVerify(exactly = 0) { logEventPublisher.onBlockProcessed(any(), any()) }
+        coVerify(exactly = 0) { logEventPublisher.publish(any()) }
     }
 
     @Test

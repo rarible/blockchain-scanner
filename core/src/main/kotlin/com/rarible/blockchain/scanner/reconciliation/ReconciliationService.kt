@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.event.log.LogEventHandler
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -13,6 +12,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,8 +30,8 @@ class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    logEventPublisher: LogEventPublisher<L, R>,
-    blockService: BlockService<B>,
+    logEventPublisher: LogEventPublisher,
+    private val blockService: BlockService<B>,
     blockMapper: BlockMapper<BB, B>
 ) {
 
@@ -43,7 +43,7 @@ class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
     }
 
     fun reindex(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> = flatten {
-        val lastBlockNumber = blockchainClient.getLastBlockNumber()
+        val lastBlockNumber = blockService.getLastBlock()?.id ?: 0
         reindex(descriptorId, from, lastBlockNumber, batchSize)
     }
 
@@ -59,7 +59,7 @@ class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
 
     private fun createIndexer(
         logEventHandler: LogEventHandler<BB, BL, L, R, D>,
-        logEventPublisher: LogEventPublisher<L, R>,
+        logEventPublisher: LogEventPublisher,
         blockService: BlockService<B>,
         blockMapper: BlockMapper<BB, B>
     ): ReconciliationIndexer<BB, B, BL, L, R, D> {

@@ -44,10 +44,6 @@ class EthereumClient(
         return getBlock(Word.apply(hash)).awaitFirst()
     }
 
-    override suspend fun getLastBlockNumber(): Long {
-        return ethereum.ethBlockNumber().map { it.toLong() }.awaitFirst()
-    }
-
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
         val opt = ethereum.ethGetTransactionByHash(Word.apply(transactionHash)).awaitFirst()
         return if (opt.isEmpty) {

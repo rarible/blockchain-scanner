@@ -9,7 +9,7 @@ import com.rarible.core.kafka.json.JsonSerializer
 import java.util.*
 
 class KafkaBlockEventPublisher(
-    private val properties: KafkaProperties,
+    properties: KafkaProperties,
     environment: String,
     blockchain: String,
     service: String
@@ -17,7 +17,6 @@ class KafkaBlockEventPublisher(
 
     private val topic = getBlockTopic(environment, service, blockchain)
 
-    // TODO how to create topic with single partition?
     private val kafkaProducer = RaribleKafkaProducer(
         clientId = "$environment.$blockchain.block-event-producer.$service",
         valueSerializerClass = JsonSerializer::class.java,

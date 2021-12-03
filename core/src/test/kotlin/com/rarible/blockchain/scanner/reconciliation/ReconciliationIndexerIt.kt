@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.event.log.LogEventHandler
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -39,13 +39,14 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
 
     private var topic = ""
     private var collection = ""
-    private var logEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>> = mockk()
     private var batchSize = -1L
+
+    private val logEventPublisher: LogEventPublisher = mockk()
 
     @BeforeEach
     fun beforeEach() {
         clearMocks(logEventPublisher)
-        coEvery { logEventPublisher.onBlockProcessed(any(), any()) } returns Unit
+        coEvery { logEventPublisher.publish(any()) } returns Unit
 
         topic = subscriber.getDescriptor().topic
         collection = subscriber.getDescriptor().collection
@@ -71,7 +72,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         assertEquals(12, findAllBlocks().size)
 
         // Since 12 blocks processed, 12 BlockEvents should be published
-        coVerify(exactly = 12) { logEventPublisher.onBlockProcessed(any(), any()) }
+        coVerify(exactly = 12) { logEventPublisher.publish(any()) }
     }
 
     @Test
@@ -97,7 +98,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         assertEquals(8 * 2, allReindexedLogs.size)
 
         // Reconciliation job was launched 3 times, for 5/5/8 blocks, 18 events should be published
-        coVerify(exactly = 5 + 5 + 8) { logEventPublisher.onBlockProcessed(any(), any()) }
+        coVerify(exactly = 5 + 5 + 8) { logEventPublisher.publish(any()) }
     }
 
     @Test
@@ -112,7 +113,7 @@ class ReconciliationIndexerIt : AbstractIntegrationTest() {
         assertEquals(2, newLogs.size)
 
         // Events should be published only for existing blocks
-        coVerify(exactly = 2) { logEventPublisher.onBlockProcessed(any(), any()) }
+        coVerify(exactly = 2) { logEventPublisher.publish(any()) }
     }
 
     private fun createReconciliationIndexer(

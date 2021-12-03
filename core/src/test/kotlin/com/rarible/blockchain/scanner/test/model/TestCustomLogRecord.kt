@@ -21,4 +21,12 @@ data class TestCustomLogRecord(
     override fun withIdAndVersion(id: Long, version: Long?): TestCustomLogRecord {
         return copy(id = id, version = version)
     }
+
+    override fun getKey(): String {
+        return logExtra
+    }
+
+    override fun getTopic(): String {
+        return "test"
+    }
 }

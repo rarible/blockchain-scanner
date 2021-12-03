@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -17,9 +16,9 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
-import com.rarible.blockchain.scanner.subscriber.LogEventListener
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -34,10 +33,11 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    logEventListeners: List<LogEventListener<L, R>>,
     properties: BlockchainScannerProperties,
+    // Autowired beans
     private val blockEventPublisher: BlockEventPublisher,
-    private val blockEventConsumer: BlockEventConsumer
+    private val blockEventConsumer: BlockEventConsumer,
+    logEventPublisher: LogEventPublisher
 ) : ReconciliationExecutor {
 
     private val retryableBlockchainClient = RetryableBlockchainClient(
@@ -49,11 +49,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         blockMapper,
         retryableBlockchainClient,
         blockService,
-        properties.retryPolicy.scan
-    )
-
-    private val logEventPublisher = LogEventPublisher(
-        logEventListeners,
         properties.retryPolicy.scan
     )
 

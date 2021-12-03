@@ -54,18 +54,6 @@ class RetryableBlockchainClientTest {
     }
 
     @Test
-    fun `get block last number - all attempts failed`() = runBlocking {
-        coEvery { client.getLastBlockNumber() } throws Exception()
-
-        assertThrows(Exception::class.java) {
-            runBlocking { retryableClient.getLastBlockNumber() }
-        }
-
-        // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 3) { client.getLastBlockNumber() }
-    }
-
-    @Test
     fun `get block events - all attempts failed`() = runBlocking {
         val descriptor = testDescriptor1()
         val range = LongRange.EMPTY

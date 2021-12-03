@@ -9,7 +9,6 @@ interface BlockchainScannerProperties {
     val retryPolicy: RetryPolicyProperties
     val job: JobProperties
     val monitoring: MonitoringProperties
-    val blockBufferSize: Int // TODO use it
     val daemon: DaemonWorkerProperties
 
 }

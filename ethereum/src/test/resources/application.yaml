@@ -5,14 +5,12 @@ spring:
 blockchain:
   scanner:
     kafka:
-      enabled: true
       broker-replica-set: ${kafka.hosts}
       maxPollRecords: 10
     ethereum:
       optimisticLockRetries: 3
       retryPolicy:
         scan:
-          maxProcessTime: 30s
           reconnectDelay: 2s
           reconnectAttempts: 1
         client:

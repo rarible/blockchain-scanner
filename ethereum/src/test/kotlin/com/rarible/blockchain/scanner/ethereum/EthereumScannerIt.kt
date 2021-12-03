@@ -19,9 +19,6 @@ import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import io.mockk.clearMocks
-import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -58,9 +55,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         collection = descriptor.collection
         topic = descriptor.topic
 
-        clearMocks(testLogEventListener)
-        coEvery { testLogEventListener.onBlockLogsProcessed(any()) } returns Unit
-
         contract = TestERC20.deployAndWait(sender, poller, "NAME", "NM").block()!!
     }
 
@@ -88,13 +82,14 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertEquals(testRecord.value, value)
         }
 
-        coVerify(exactly = 1) {
+        // TODO check Kafka
+        /*coVerify(exactly = 1) {
             testLogEventListener.onBlockLogsProcessed(match {
                 assertEquals(receipt.blockHash().toString(), it.event.hash)
                 assertEquals(1, it.records.size)
                 true
             })
-        }
+        }*/
     }
 
     @Test

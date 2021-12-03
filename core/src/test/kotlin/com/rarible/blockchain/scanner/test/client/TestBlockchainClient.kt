@@ -16,7 +16,6 @@ class TestBlockchainClient(
 ) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
 
     private val blocksByNumber = data.blocks.associateBy { it.number }
-    private val lastBlock = data.blocks.maxByOrNull { it.number }
     private val logs = data.logs
     private val logsByBlock = data.logs.filter { it.blockHash != null }.groupBy { it.blockHash }
 
@@ -25,10 +24,6 @@ class TestBlockchainClient(
 
     override suspend fun getBlock(number: Long): TestBlockchainBlock {
         return TestBlockchainBlock(blocksByNumber[number]!!)
-    }
-
-    override suspend fun getLastBlockNumber(): Long {
-        return lastBlock!!.number
     }
 
     override fun getBlockEvents(

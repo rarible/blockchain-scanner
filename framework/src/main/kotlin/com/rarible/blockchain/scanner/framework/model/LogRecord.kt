@@ -19,4 +19,15 @@ interface LogRecord<L : Log<L>, LR : LogRecord<L, LR>> {
      */
     fun withLog(log: L): LR
 
+    /**
+     * Returns a key of record required to define Kafka partition for the message with this event.
+     * Key should be the same for events, which should be processed in strict order.
+     */
+    fun getKey(): String
+
+    /**
+     * Topic for publishing (could be a single word, prefixes will be added automatically)
+     */
+    fun getTopic(): String
+
 }

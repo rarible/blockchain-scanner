@@ -16,7 +16,6 @@ data class EthereumScannerProperties(
     override val retryPolicy: RetryPolicyProperties,
     override val job: EthereumScannerJobProperties,
     override val monitoring: MonitoringProperties,
-    override val blockBufferSize: Int = 10,
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()
 
 ) : BlockchainScannerProperties {

@@ -46,10 +46,6 @@ class FlowClient(
         return FlowBlockchainBlock(a)
     }
 
-    override suspend fun getLastBlockNumber(): Long =
-        api.latestBlock().height
-
-
     override fun getBlockEvents(
         descriptor: FlowDescriptor,
         range: LongRange

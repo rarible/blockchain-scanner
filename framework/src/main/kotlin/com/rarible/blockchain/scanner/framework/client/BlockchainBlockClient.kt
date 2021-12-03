@@ -14,9 +14,4 @@ interface BlockchainBlockClient<BB : BlockchainBlock> {
      */
     suspend fun getBlock(number: Long): BB?
 
-    /**
-     * Get last known block number
-     */
-    suspend fun getLastBlockNumber(): Long //todo remove, not needed
-
 }

@@ -1,9 +1,9 @@
 package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -17,14 +17,16 @@ import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventListener
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import io.mockk.clearMocks
+import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.spyk
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 @ExperimentalCoroutinesApi
@@ -35,6 +37,14 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
     private val descriptor = testDescriptor1()
     private val topic = descriptor.topic
 
+    private val logEventPublisher: LogEventPublisher = mockk()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(logEventPublisher)
+        coEvery { logEventPublisher.publish(any()) } returns Unit
+    }
+
     @Test
     fun `on block event - event processed`() = runBlocking {
         val subscriber = TestLogEventSubscriber(descriptor)
@@ -43,10 +53,9 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         // Before log handling we have this block with default status = PENDING
         saveBlock(block.testOriginalBlock)
 
-        val publisher = spyk(LogEventPublisher(listOf<TestLogEventListener>(), properties.retryPolicy.scan))
         val testBlockchainClient =
             TestBlockchainClient(TestBlockchainData(listOf(block.testOriginalBlock), listOf(log)))
-        val blockEventListener = createBlockListener(testBlockchainClient, publisher, subscriber)
+        val blockEventListener = createBlockListener(testBlockchainClient, logEventPublisher, subscriber)
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
 
@@ -54,7 +63,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
 
         // LogEvents processed, publisher notified listeners
         coVerify(exactly = 1) {
-            publisher.onBlockProcessed(eq(event), match {
+            logEventPublisher.publish(match {
                 assertEquals(1, it.size)
                 assertEquals(log.transactionHash, it[0].log!!.transactionHash)
                 true
@@ -68,7 +77,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
 
     private fun createBlockListener(
         testBlockchainClient: TestBlockchainClient,
-        testLogEventPublisher: LogEventPublisher<TestLog, TestLogRecord<*>>,
+        testLogEventPublisher: LogEventPublisher,
         vararg subscribers: TestLogEventSubscriber
     ): BlockEventListener<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return BlockEventListener(

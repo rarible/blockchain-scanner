@@ -19,6 +19,5 @@ data class TestBlockchainScannerProperties(
 
     override val service: String = "test"
     override val blockchain: String = "test"
-    override val blockBufferSize: Int = 10
 
 }

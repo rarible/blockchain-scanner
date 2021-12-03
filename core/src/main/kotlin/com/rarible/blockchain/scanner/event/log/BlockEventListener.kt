@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.logTime
 import com.rarible.core.apm.withSpan
@@ -27,7 +28,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
-    private val logEventPublisher: LogEventPublisher<L, R>
+    private val logEventPublisher: LogEventPublisher
 ) : BlockListener {
 
     private val logger = LoggerFactory.getLogger(BlockListener::class.java)
@@ -62,8 +63,9 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     }
 
     private suspend fun publishLogEvents(event: BlockEvent, logs: List<R>) {
+        logger.info("Publishing {} LogEvents for Block [{}]", logs.size, event)
         return withSpan("onBlockProcessed") {
-            logEventPublisher.onBlockProcessed(event, logs)
+            logEventPublisher.publish(logs)
         }
     }
 }

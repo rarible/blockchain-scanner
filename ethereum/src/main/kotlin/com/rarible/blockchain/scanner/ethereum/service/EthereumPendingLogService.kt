@@ -2,11 +2,10 @@ package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.model.EthereumPendingLog
+import com.rarible.blockchain.scanner.ethereum.model.EthereumPendingLogStatusUpdate
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
-import com.rarible.blockchain.scanner.framework.data.LogEvent
-import com.rarible.blockchain.scanner.framework.data.LogEventStatusUpdate
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.core.common.optimisticLock
 import io.daonomic.rpc.domain.Word
@@ -33,7 +32,7 @@ class EthereumPendingLogService(
 
     suspend fun markInactive(blockHash: String, descriptor: EthereumDescriptor): List<EthereumLogRecord<*>> {
         val pendingLogs = findPendingLogs(descriptor)
-            .map { LogEvent(it, descriptor) }
+            .map { EthereumPendingLog(it, descriptor) }
             .toCollection(mutableListOf())
 
         return getInactive(blockHash, pendingLogs).toList()
@@ -46,8 +45,8 @@ class EthereumPendingLogService(
 
     private fun getInactive(
         blockHash: String,
-        records: List<LogEvent<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>>
-    ): Flow<LogEventStatusUpdate<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>> {
+        records: List<EthereumPendingLog>
+    ): Flow<EthereumPendingLogStatusUpdate> {
         if (records.isEmpty()) {
             return emptyFlow()
         }
@@ -59,14 +58,14 @@ class EthereumPendingLogService(
                 val first = byTxHash[tx.hash().toString()] ?: emptyList()
                 val second = (byFromNonce[Pair(tx.from(), tx.nonce().toLong())] ?: emptyList()) - first
                 listOf(
-                    LogEventStatusUpdate(first, Log.Status.INACTIVE),
-                    LogEventStatusUpdate(second, Log.Status.DROPPED)
+                    EthereumPendingLogStatusUpdate(first, Log.Status.INACTIVE),
+                    EthereumPendingLogStatusUpdate(second, Log.Status.DROPPED)
                 ).toFlux()
             }.asFlow()
     }
 
     private suspend fun markInactive(
-        logsToMark: LogEventStatusUpdate<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>
+        logsToMark: EthereumPendingLogStatusUpdate
     ): List<EthereumLogRecord<*>> {
         val logs = logsToMark.logs
         val status = logsToMark.status

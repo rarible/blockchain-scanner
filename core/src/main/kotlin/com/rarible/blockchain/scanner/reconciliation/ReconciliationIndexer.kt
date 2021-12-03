@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.event.log.LogEventHandler
-import com.rarible.blockchain.scanner.event.log.LogEventPublisher
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -14,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory
 class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logEventHandler: LogEventHandler<BB, BL, L, R, D>,
-    private val logEventPublisher: LogEventPublisher<L, R>,
+    private val logEventPublisher: LogEventPublisher,
     private val blockService: BlockService<B>,
     private val blockMapper: BlockMapper<BB, B>
 ) {
@@ -53,8 +53,9 @@ class ReconciliationIndexer<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
                 events.onEach {
                     withSpan("processBlock", labels = listOf("blockNumber" to it.block.number)) {
                         val processedLogs = reindexBlock(it)
+                        // TODO ???
                         val blockEvent = NewBlockEvent(Source.REINDEX, it.block.number, it.block.hash)
-                        logEventPublisher.onBlockProcessed(blockEvent, processedLogs)
+                        logEventPublisher.publish(processedLogs)
                     }
                 }
             }

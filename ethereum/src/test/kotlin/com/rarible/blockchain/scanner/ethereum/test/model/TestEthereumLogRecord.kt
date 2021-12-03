@@ -27,4 +27,12 @@ data class TestEthereumLogRecord(
     override fun withIdAndVersion(id: ObjectId, version: Long?): TestEthereumLogRecord {
         return copy(id = id, version = version)
     }
+
+    override fun getKey(): String {
+        return from.hex()
+    }
+
+    override fun getTopic(): String {
+        return "test-eth"
+    }
 }

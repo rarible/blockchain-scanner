@@ -13,5 +13,10 @@ suspend fun <T> logTime(label: String, f: suspend () -> T): T {
 }
 
 fun getBlockTopic(environment: String, service: String, blockchain: String): String {
-    return "protocol.$environment.$blockchain.blockchain-scanner.$service"
+    return "protocol.$environment.$blockchain.blockchain-scanner.$service.block"
 }
+
+fun getLogTopic(environment: String, service: String, blockchain: String): String {
+    return "protocol.$environment.$blockchain.blockchain-scanner.$service.log"
+}
+

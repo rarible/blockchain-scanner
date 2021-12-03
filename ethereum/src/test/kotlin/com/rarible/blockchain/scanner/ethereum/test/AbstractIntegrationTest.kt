@@ -11,7 +11,6 @@ import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
-import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventListener
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.core.task.TaskService
@@ -74,9 +73,6 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var taskService: TaskService
-
-    @Autowired
-    lateinit var testLogEventListener: EthereumLogEventListener
 
     @Autowired
     lateinit var properties: EthereumScannerProperties
