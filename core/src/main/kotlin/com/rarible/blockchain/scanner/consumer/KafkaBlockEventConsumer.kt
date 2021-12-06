@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.util.getBlockTopic
 import com.rarible.core.daemon.DaemonWorkerProperties
+import com.rarible.core.daemon.RetryProperties
 import com.rarible.core.daemon.sequential.ConsumerBatchEventHandler
 import com.rarible.core.daemon.sequential.ConsumerBatchWorker
 import com.rarible.core.kafka.RaribleKafkaConsumer
@@ -14,6 +15,7 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 class KafkaBlockEventConsumer(
     private val properties: KafkaProperties,
@@ -55,6 +57,8 @@ class KafkaBlockEventConsumer(
         return ConsumerBatchWorker(
             consumer = kafkaConsumer,
             properties = daemonProperties,
+            // Block consumer should NOT skip events, so there is we're using endless retry
+            retryProperties = RetryProperties(attempts = Integer.MAX_VALUE, delay = Duration.ofMillis(1000)),
             eventHandler = BlockEventHandler(listener),
             meterRegistry = meterRegistry,
             workerName = "block-event-consumer-$group"
