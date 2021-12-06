@@ -53,7 +53,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
     fun beforeEach() {
         descriptor = testTransferSubscriber.getDescriptor()
         collection = descriptor.collection
-        topic = descriptor.topic
+        topic = descriptor.ethTopic
 
         contract = TestERC20.deployAndWait(sender, poller, "NAME", "NM").block()!!
     }
@@ -215,7 +215,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         val newTask = Task(
             type = ReconciliationTaskHandler.RECONCILIATION,
-            param = TransferEvent.id().toString(),
+            param = "transfer",
             lastStatus = TaskStatus.NONE,
             state = number + 1,
             running = false
@@ -225,7 +225,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         taskService.readAndRun()
 
-        // Waiting job is completed and our collection have same count of LogRecords as it had before cleanup
+        // Waiting job is completed and our collection have same muber of LogRecords as it had before cleanup
         BlockingWait.waitAssert {
             val tasks = runBlocking { taskService.findTasks(ReconciliationTaskHandler.RECONCILIATION).toList() }
             assertEquals(1, tasks.size)

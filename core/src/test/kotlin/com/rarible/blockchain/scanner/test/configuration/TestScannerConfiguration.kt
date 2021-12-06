@@ -51,7 +51,7 @@ class TestScannerConfiguration {
     fun testBlockchainClient() = TestBlockchainClient(
         randomBlockchainData(
             TEST_BLOCK_COUNT, TEST_LOG_COUNT_PER_BLOCK,
-            testDescriptor1().topic, testDescriptor2().topic
+            testDescriptor1().id, testDescriptor2().id
         )
     )
 

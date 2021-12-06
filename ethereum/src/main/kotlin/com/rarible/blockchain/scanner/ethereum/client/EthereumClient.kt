@@ -66,7 +66,7 @@ class EthereumClient(
 
         val addresses = descriptor.contracts.map { Address.apply(it) }
         val filter = LogFilter
-            .apply(TopicFilter.simple(descriptor.topic))
+            .apply(TopicFilter.simple(descriptor.ethTopic))
             .address(*addresses.toTypedArray())
         val finalFilter = filter.blocks(
             BigInteger.valueOf(range.first).encodeForFilter(),

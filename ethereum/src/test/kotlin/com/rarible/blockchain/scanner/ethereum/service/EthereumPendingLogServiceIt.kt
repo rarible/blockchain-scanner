@@ -30,7 +30,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
     fun beforeEach() {
         descriptor = testTransferSubscriber.getDescriptor()
         collection = descriptor.collection
-        topic = descriptor.topic
+        topic = descriptor.ethTopic
     }
 
     @Test

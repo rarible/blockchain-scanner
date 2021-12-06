@@ -16,10 +16,11 @@ class TestTransferSubscriber : EthereumLogEventSubscriber {
 
     override fun getDescriptor(): EthereumDescriptor {
         return EthereumDescriptor(
-            TransferEvent.id(),
-            "transfers",
-            "transfer",
-            listOf()
+            ethTopic = TransferEvent.id(),
+            groupId = "transfer",
+            topic = "transfers",
+            collection = "transfers",
+            contracts = listOf()
         )
     }
 

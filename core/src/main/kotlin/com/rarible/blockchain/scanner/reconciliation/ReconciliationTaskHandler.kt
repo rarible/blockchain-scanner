@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component
 @ConditionalOnBean(ReconciliationExecutor::class)
 class ReconciliationTaskHandler(
     private val reconciliationExecutor: ReconciliationExecutor,
-    private val properties: BlockchainScannerProperties,
+    properties: BlockchainScannerProperties,
     private val fromProvider: ReconciliationFromProvider
 ) : TaskHandler<Long> {
 
@@ -22,12 +22,11 @@ class ReconciliationTaskHandler(
 
     private val logger = LoggerFactory.getLogger(ReconciliationTaskHandler::class.java)
 
-    override val type: String
-        get() = RECONCILIATION
+    override val type: String = RECONCILIATION
 
     override fun getAutorunParams(): List<RunTask> {
         if (jobProperties.enabled) {
-            return reconciliationExecutor.getDescriptorIds().map {
+            return reconciliationExecutor.getSubscriberGroupIds().map {
                 logger.info("Creating reconciliation task for descriptor with id '{}'", it)
                 RunTask(it, null)
             }
@@ -37,9 +36,12 @@ class ReconciliationTaskHandler(
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    override fun runLongTask(from: Long?, descriptorId: String): Flow<Long> = flatten {
-        reconciliationExecutor.reconcile(descriptorId, from ?: fromProvider.initialFrom(descriptorId), jobProperties.batchSize)
-            .map { it.first }
+    override fun runLongTask(from: Long?, subscriberGroupId: String): Flow<Long> = flatten {
+        reconciliationExecutor.reconcile(
+            subscriberGroupId,
+            from ?: fromProvider.initialFrom(subscriberGroupId),
+            jobProperties.batchSize
+        ).map { it.first }
     }
 
     companion object {

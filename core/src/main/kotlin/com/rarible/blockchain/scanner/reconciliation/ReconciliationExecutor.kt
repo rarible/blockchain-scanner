@@ -10,16 +10,16 @@ interface ReconciliationExecutor {
     /**
      * Start reconciliation for specific descriptor from specified block number.
      *
-     * @param descriptorId identifier of subscriber's descriptor requires reconciliation
+     * @param subscriberGroupId identifier of subscriber's descriptor requires reconciliation
      * @param from number of start block
      *
      * @return range of scanned blocks numbers
      */
-    fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange>
+    fun reconcile(subscriberGroupId: String?, from: Long, batchSize: Long): Flow<LongRange>
 
     /**
      * @return set of descriptors of all registered subscribers
      */
-    fun getDescriptorIds(): Set<String>
+    fun getSubscriberGroupIds(): Set<String>
 
 }

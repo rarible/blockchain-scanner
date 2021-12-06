@@ -52,7 +52,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties.retryPolicy.scan
     )
 
-    private val blockEventListeners = subscribers
+    protected val blockEventListeners = subscribers
         .groupBy { it.getDescriptor().groupId }
         .map {
             it.key to BlockEventListener(
@@ -65,13 +65,8 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         }.associateBy({ it.first }, { it.second })
 
     private val reconciliationService = ReconciliationService(
-        blockchainClient = retryableBlockchainClient,
-        subscribers = subscribers,
-        logMapper = logMapper,
-        logService = logService,
-        logEventPublisher = logEventPublisher,
         blockService = blockService,
-        blockMapper = blockMapper
+        blockEventListeners = blockEventListeners
     )
 
     private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
@@ -81,11 +76,11 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         blockScanner.scan(blockEventPublisher)
     }
 
-    override fun reconcile(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> {
-        return reconciliationService.reindex(descriptorId, from, batchSize)
+    override fun reconcile(subscriberGroupId: String?, from: Long, batchSize: Long): Flow<LongRange> {
+        return reconciliationService.reindex(subscriberGroupId, from, batchSize)
     }
 
-    override fun getDescriptorIds(): Set<String> {
+    override fun getSubscriberGroupIds(): Set<String> {
         return descriptorIds
     }
 }

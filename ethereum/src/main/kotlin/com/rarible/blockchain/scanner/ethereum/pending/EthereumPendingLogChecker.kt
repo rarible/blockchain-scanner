@@ -1,70 +1,65 @@
 package com.rarible.blockchain.scanner.ethereum.pending
 
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
-import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
-import com.rarible.blockchain.scanner.event.log.BlockEventListener
+import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
+import java.util.*
 
 @FlowPreview
-@Component
 class EthereumPendingLogChecker(
     private val blockchainClient: EthereumClient,
-    private val logMapper: EthereumLogMapper,
-    private val logService: EthereumLogService,
     private val pendingLogService: EthereumPendingLogService,
     private val logEventPublisher: LogEventPublisher,
+    private val blockEventListeners: Map<String, BlockListener>,
     subscribers: List<EthereumLogEventSubscriber>
-) : PendingLogChecker {
+) {
 
     private val logger = LoggerFactory.getLogger(EthereumPendingLogChecker::class.java)
     private val descriptors = subscribers.map { it.getDescriptor() }
 
-    private val blockEventListeners = subscribers
-        .groupBy { it.getDescriptor().groupId }
-        .map {
-            it.key to BlockEventListener(
-                blockchainClient,
-                it.value,
-                logMapper,
-                logService,
-                logEventPublisher
-            )
-        }.associateBy({ it.first }, { it.second })
 
-    override suspend fun checkPendingLogs() {
-        val collections = descriptors.asFlow().flatMapConcat { descriptors ->
-            pendingLogService.findPendingLogs(descriptors)
-                .mapNotNull { processLog(descriptors, it) }
-        }.toCollection(mutableListOf())
+    suspend fun checkPendingLogs() {
+        val newBlocks = TreeSet<NewBlockEvent> { b1, b2 -> b1.number.compareTo(b2.number) }
+        val droppedRecords = LinkedHashMap<Descriptor, MutableList<EthereumLogRecord<*>>>()
 
-        val droppedLogs = collections.mapNotNull { it.first }
-        val newBlocks = collections.mapNotNull { it.second }.distinctBy { it.hash }
+        descriptors.forEach { descriptor ->
+            pendingLogService.findPendingLogs(descriptor)
+                .mapNotNull { processLog(descriptor, it) }
+                .toList()
+                .forEach { pair ->
+                    val record = pair.first
+                    val block = pair.second
+                    block?.let { newBlocks.add(NewBlockEvent(Source.PENDING, it.number, it.hash)) }
+                    record?.let { droppedRecords.computeIfAbsent(descriptor) { mutableListOf() }.add(record) }
+                }
+        }
 
-        logEventPublisher.publish(droppedLogs)
-        onNewBlocks(newBlocks)
-    }
+        droppedRecords.forEach {
+            logEventPublisher.publish(it.key, Source.PENDING, it.value)
+        }
 
-    private suspend fun onNewBlocks(newBlocks: List<BlockchainBlock>) {
-        blockEventListeners.forEach { listener ->
-            listener.value.onBlockEvents(newBlocks.map {
-                NewBlockEvent(Source.PENDING, it.number, it.hash)
-            })
+        coroutineScope {
+            blockEventListeners.map { listener ->
+                async {
+                    listener.value.onBlockEvents(newBlocks.toList())
+                }
+            }.awaitAll()
         }
     }
 

@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.reconciliation
 
+import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -54,15 +55,16 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
         coEvery { logEventPublisher.publish(any()) } returns Unit
 
         batchSize = properties.job.reconciliation.batchSize
-        topic1 = subscriber1.getDescriptor().topic
+        topic1 = subscriber1.getDescriptor().id
         collection1 = subscriber1.getDescriptor().collection
-        topic2 = subscriber2.getDescriptor().topic
+        topic2 = subscriber2.getDescriptor().id
         collection2 = subscriber2.getDescriptor().collection
     }
 
     @Test
     fun `reindex - 2 subscribers reindexed`() = runBlocking {
         val blockchainData = randomBlockchainData(7, 2, topic1, topic2)
+        blockchainData.blocks.forEach { saveBlock(it) }
 
         val reconciliationService = createReconciliationService(TestBlockchainClient(blockchainData))
 
@@ -108,15 +110,21 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
     private fun createReconciliationService(
         testBlockchainClient: TestBlockchainClient
     ): ReconciliationService<TestBlockchainBlock, TestBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+        val blockEventListeners = listOf(subscriber1, subscriber2)
+            .groupBy { it.getDescriptor().groupId }
+            .map {
+                it.key to BlockEventListener(
+                    testBlockchainClient,
+                    it.value,
+                    testLogMapper,
+                    testLogService,
+                    logEventPublisher
+                )
+            }.associateBy({ it.first }, { it.second })
 
         return ReconciliationService(
-            testBlockchainClient,
-            listOf(subscriber1, subscriber2),
-            testLogMapper,
-            testLogService,
-            logEventPublisher,
             testBlockService,
-            testBlockMapper
+            blockEventListeners
         )
     }
 

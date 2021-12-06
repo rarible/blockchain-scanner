@@ -14,10 +14,11 @@ class TestBidSubscriber : EthereumLogEventSubscriber {
 
     override fun getDescriptor(): EthereumDescriptor {
         return EthereumDescriptor(
-            randomWord(),
-            "bids",
-            "bid",
-            listOf(randomAddress(), randomAddress())
+            ethTopic = randomWord(),
+            groupId = "bid",
+            topic = "bids",
+            collection = "bids",
+            contracts = listOf(randomAddress(), randomAddress())
         )
     }
 

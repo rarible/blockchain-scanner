@@ -12,4 +12,9 @@ interface Descriptor {
     val id: String
 
     val groupId: String
+
+    /**
+     * Topic for publishing (could be a single word, prefixes will be added automatically)
+     */
+    val topic: String
 }

@@ -40,7 +40,7 @@ class EthereumPendingLogService(
     }
 
     fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {
-        return ethereumLogRepository.findPendingLogs(descriptor.collection, descriptor.topic).asFlow()
+        return ethereumLogRepository.findPendingLogs(descriptor.collection, descriptor.ethTopic).asFlow()
     }
 
     private fun getInactive(

@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -43,17 +44,13 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     override suspend fun onBlockEvents(events: List<BlockEvent>) {
         logger.info("Received BlockEvents: {}", events)
         val logFlow = processBlocks(events)
-        logFlow.onEach { blockLogs ->
-            blockLogs.onEach {
-                val event = it.key
-                val logEvents = it.value
-                val status = publishLogEvents(event, logEvents)
-                logger.info("BlockEvent [{}] handled, status updated: {}", event, status)
-            }
+        logFlow.onEach {
+            publishLogEvents(it)
+            logger.info("BlockEvent [{}] handled", it.blockEvent)
         }.collect()
     }
 
-    private suspend fun processBlocks(events: List<BlockEvent>): Flow<Map<BlockEvent, List<R>>> {
+    private suspend fun processBlocks(events: List<BlockEvent>): Flow<LogEvent> {
         return withSpan("process") {
             val logs = logTime("BlockEventListener::processBlockEvents") {
                 blockEventProcessor.onBlockEvents(events)
@@ -62,10 +59,10 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
         }
     }
 
-    private suspend fun publishLogEvents(event: BlockEvent, logs: List<R>) {
-        logger.info("Publishing {} LogEvents for Block [{}]", logs.size, event)
+    private suspend fun publishLogEvents(event: LogEvent) {
+        logger.info("Publishing {} LogEvents for Block [{}]", event.totalLogSize, event.blockEvent)
         return withSpan("onBlockProcessed") {
-            logEventPublisher.publish(logs)
+            logEventPublisher.publish(event)
         }
     }
 }

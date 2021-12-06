@@ -34,14 +34,15 @@ class BlockEventHandlerIt : AbstractIntegrationTest() {
         val subscriber1 = TestLogEventSubscriber(testDescriptor1())
         val subscriber2 = TestLogEventSubscriber(testDescriptor1())
         val block = randomOriginalBlock()
-        val log = randomOriginalLog(block.hash, subscriber1.getDescriptor().topic)
+        val log = randomOriginalLog(block.hash, subscriber1.getDescriptor().id)
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
 
         val blockEventHandler = createBlockHandler(testBlockchainClient, subscriber1, subscriber2)
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockEventHandler.onBlockEvents(listOf(event)).toList().flatMap { it.values.flatten() }
+        val logEvents = blockEventHandler.onBlockEvents(listOf(event))
+            .toList().flatMap { it.allRecords() } as List<TestLogRecord<*>>
 
         assertEquals(2, logEvents.size)
 

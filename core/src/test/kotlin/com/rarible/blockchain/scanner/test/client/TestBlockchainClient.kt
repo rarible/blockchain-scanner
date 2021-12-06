@@ -45,6 +45,6 @@ class TestBlockchainClient(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
     ): Flow<TestBlockchainLog> {
-        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.topic }.map { TestBlockchainLog(it) }.asFlow()
+        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }.map { TestBlockchainLog(it) }.asFlow()
     }
 }

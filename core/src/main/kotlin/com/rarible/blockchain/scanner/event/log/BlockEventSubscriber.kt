@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
@@ -37,8 +38,29 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
 
     private val logHandler = LogEventHandler(subscriber, logMapper, logService)
 
-    private val descriptor = subscriber.getDescriptor()
+    val descriptor = subscriber.getDescriptor()
     private val name = subscriber.javaClass.simpleName
+
+    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
+        // Fetching Logs by batch of events in background
+        val futureLogs = coroutineScope { async { getLogEvents(events) } }
+        // While Logs are fetching, updating pending logs
+        val pending = events.associateBy(
+            { it }, { beforeHandleNewBlock(it) }
+        )
+        val fetchedLogs = futureLogs.await()
+
+        // Ordering LogEvents by order of incoming events
+        return events.associateBy({ it }, { event ->
+            val beforeHandleLogs = pending.getOrDefault(event, emptyList())
+            val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
+            logger.info(
+                "NewBlockEvent [{}] handled for subscriber {}, {} pending logs and {} new logs has been gathered",
+                event, name, beforeHandleLogs.size, newLogs.size
+            )
+            beforeHandleLogs + newLogs
+        })
+    }
 
     suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): Map<BlockEvent, List<R>> {
         return events.associateBy({ it }, { event ->
@@ -51,30 +73,21 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         })
     }
 
-    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
-        // Fetching Logs by batch of events in background
-        val futureLogs = coroutineScope { async { getLogEvents(events) } }
-        // While Logs are fetching, updating pending logs
-        val pending = events.associateBy(
-            { it.hash }, { beforeHandleNewBlock(it) }
-        )
-        val fetchedLogs = futureLogs.await()
-
-        // Ordering LogEvents by order of incoming events
+    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): Map<BlockEvent, List<R>> {
+        val fetchedLogs = getLogEvents(events)
         return events.associateBy({ it }, { event ->
-            val beforeHandleLogs = pending.getOrDefault(event.hash, emptyList())
-            val newLogs = fetchedLogs[event.hash]?.let { processLogs(it) } ?: emptyList()
+            val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
             logger.info(
-                "NewBlockEvent [{}] handled for subscriber {}, {} pending logs and {} new logs has been gathered",
-                event, name, beforeHandleLogs.size, newLogs.size
+                "ReindexBlockEvent [{}] handled for subscriber {}, {} reindexed logs has been gathered",
+                event, name, newLogs.size
             )
-            beforeHandleLogs + newLogs
+            newLogs
         })
     }
 
     private suspend fun revert(event: RevertedBlockEvent): List<R> {
-        val reverted = logTime("logHandler.beforeHandleBlock [${event.number}]") {
-            withSpan("beforeHandleRevertedBlock") {
+        val reverted = logTime("logHandler.revert [${event.number}]") {
+            withSpan("revert") {
                 logHandler.revert(event)
             }
         }
@@ -82,7 +95,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
     }
 
     private suspend fun beforeHandleNewBlock(event: NewBlockEvent): List<R> {
-        val pending = logTime("pendingLogMarker.markInactive [${event.number}]") {
+        val pending = logTime("logService.beforeHandleNewBlock [${event.number}]") {
             withSpan("markInactive", "db") {
                 logService.beforeHandleNewBlock(descriptor, event.hash)
             }
@@ -96,8 +109,9 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         }
     }
 
-    private suspend fun getLogEvents(events: List<NewBlockEvent>): Map<String, FullBlock<BB, BL>> = coroutineScope {
+    private suspend fun getLogEvents(events: List<BlockEvent>): Map<BlockEvent, FullBlock<BB, BL>> = coroutineScope {
         val blockNumbers = events.map { it.number }
+        val blocksByNumber = events.associateBy { it.number }
 
         // Ideally, we should have here just one range, since events of blocks are ordered in Kafka
         val ranges = BlockRanges.toRanges(blockNumbers)
@@ -114,7 +128,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
                 }
             }.awaitAll().flatten()
         }
-        logEvents.associateBy { it.block.hash }
+        logEvents.associateBy { blocksByNumber[it.block.number]!! }
     }
 
     override fun toString(): String {

@@ -12,8 +12,11 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.pending.EthereumPendingLogChecker
+import com.rarible.blockchain.scanner.ethereum.pending.PendingLogChecker
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
+import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
@@ -39,7 +42,9 @@ class EthereumScanner(
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
     blockEventConsumer: BlockEventConsumer,
-    logEventPublisher: LogEventPublisher
+    logEventPublisher: LogEventPublisher,
+    // Eth-specific beans
+    private val pendingLogService: EthereumPendingLogService,
 ) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>(
     blockchainClient,
     subscribers,
@@ -51,9 +56,21 @@ class EthereumScanner(
     blockEventPublisher,
     blockEventConsumer,
     logEventPublisher,
-) {
+), PendingLogChecker {
 
     private val logger = LoggerFactory.getLogger(EthereumScanner::class.java)
+
+    private val pendingLogChecker = EthereumPendingLogChecker(
+        blockchainClient,
+        pendingLogService,
+        logEventPublisher,
+        blockEventListeners,
+        subscribers
+    )
+
+    override suspend fun checkPendingLogs() {
+        pendingLogChecker.checkPendingLogs()
+    }
 
     @EventListener(ApplicationReadyEvent::class)
     fun start() {

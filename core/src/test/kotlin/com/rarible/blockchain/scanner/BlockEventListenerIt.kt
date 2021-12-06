@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test
 internal class BlockEventListenerIt : AbstractIntegrationTest() {
 
     private val descriptor = testDescriptor1()
-    private val topic = descriptor.topic
+    private val topic = descriptor.id
 
     private val logEventPublisher: LogEventPublisher = mockk()
 
@@ -64,8 +64,8 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         // LogEvents processed, publisher notified listeners
         coVerify(exactly = 1) {
             logEventPublisher.publish(match {
-                assertEquals(1, it.size)
-                assertEquals(log.transactionHash, it[0].log!!.transactionHash)
+                assertEquals(1, it.totalLogSize)
+                assertEquals(log.transactionHash, it.allRecords()[0].log!!.transactionHash)
                 true
             })
         }

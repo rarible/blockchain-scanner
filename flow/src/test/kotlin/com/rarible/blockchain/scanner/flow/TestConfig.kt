@@ -32,7 +32,8 @@ class TestConfig {
             id = "ExampleNFTDescriptor",
             groupId = "NFT",
             events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"),
-            collection = "test_history"
+            collection = "test_history",
+            topic = "test"
         )
 
         override fun getDescriptor(): FlowDescriptor = descriptor

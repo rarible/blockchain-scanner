@@ -5,11 +5,13 @@ import io.daonomic.rpc.domain.Word
 import scalether.domain.Address
 
 class EthereumDescriptor(
-    val topic: Word,
+    val ethTopic: Word,
     override val groupId: String,
+    override val topic: String,
     val collection: String,
     val contracts: List<Address>
 ) : Descriptor {
 
-    override val id: String get() = topic.toString()
+    override val id: String get() = ethTopic.toString()
+
 }

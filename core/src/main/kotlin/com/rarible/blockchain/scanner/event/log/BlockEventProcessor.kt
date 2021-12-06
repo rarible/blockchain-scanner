@@ -4,7 +4,9 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
@@ -51,31 +53,30 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
         }
     }
 
-    suspend fun onBlockEvents(events: List<BlockEvent>): Flow<Map<BlockEvent, List<R>>> = coroutineScope {
+    suspend fun onBlockEvents(events: List<BlockEvent>): Flow<LogEvent> = coroutineScope {
         val batches = toBatches(events)
         logger.info("Split BlockEvents {} into {} batches", events.map { it.number }, batches.size)
 
-        // Batches are ordered in same way as BlockEvents in received List, so we can emit results batch-by-batch
-        batches.map { batch ->
-            val batchLogs = processBlockEventsBatch(batch)
-            // Now we need to combine ALL subscriber's logs, grouped by BlockEvent to emit them in right order
-            batch.associateByTo(LinkedHashMap(), { it }, { batchLogs.getOrDefault(it, emptyList()) })
+        // Processing each batch and flatter them into consequent flow
+        batches.flatMap { batch ->
+            processBlockEventsBatch(batch)
         }.asFlow()
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun processBlockEventsBatch(batch: List<BlockEvent>): Map<BlockEvent, List<R>> = coroutineScope {
+    private suspend fun processBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent> = coroutineScope {
         val blockNumbers = batch.map { it.number }
         logger.info("Processing {} subscribers with BlockEvent batch: {}", subscribers.size, blockNumbers)
 
         val bySubscriber = subscribers.map { subscriber ->
             async {
                 val label = subscriber.subscriber.javaClass.name
-                // TODO how we can change it?
-                withSpan("processSingleSubscriber", labels = listOf("subscriber" to label)) {
+                val descriptor = subscriber.descriptor
+                descriptor to withSpan("processSingleSubscriber", labels = listOf("subscriber" to label)) {
                     when (batch[0]) {
                         is NewBlockEvent -> subscriber.onNewBlockEvents(batch as List<NewBlockEvent>)
                         is RevertedBlockEvent -> subscriber.onRevertedBlockEvents(batch as List<RevertedBlockEvent>)
+                        is ReindexBlockEvent -> subscriber.onReindexBlockEvents(batch as List<ReindexBlockEvent>)
                     }
                 }
             }
@@ -83,13 +84,18 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
 
         logger.info("BlockEvent batch processed: {}", blockNumbers)
 
-        val result = HashMap<BlockEvent, MutableList<R>>()
-        bySubscriber.forEach { subscriberLogs ->
-            subscriberLogs.forEach {
-                result.computeIfAbsent(it.key) { ArrayList() }.addAll(it.value)
+        // Reverting relation "Subscriber -> BlockEvent[]" to "BlockEvent -> Subscriber[]"
+        val byBlock = HashMap<BlockEvent, MutableMap<Descriptor, List<R>>>()
+        bySubscriber.forEach { subscriberLogEvent ->
+            val descriptor = subscriberLogEvent.first
+            val logs = subscriberLogEvent.second
+            logs.forEach {
+                byBlock.computeIfAbsent(it.key) { LinkedHashMap() }[descriptor] = it.value
             }
         }
-        result
+
+        // Ordering by incoming block event order
+        batch.map { LogEvent(it, byBlock[it] ?: emptyMap()) }
     }
 
     private fun toBatches(events: List<BlockEvent>): List<List<BlockEvent>> {

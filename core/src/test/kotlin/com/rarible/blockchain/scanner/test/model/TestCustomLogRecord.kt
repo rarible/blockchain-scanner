@@ -25,8 +25,4 @@ data class TestCustomLogRecord(
     override fun getKey(): String {
         return logExtra
     }
-
-    override fun getTopic(): String {
-        return "test"
-    }
 }

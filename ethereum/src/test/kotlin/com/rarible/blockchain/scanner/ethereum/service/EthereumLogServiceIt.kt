@@ -31,12 +31,12 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     fun beforeEach() {
         descriptor = testTransferSubscriber.getDescriptor()
         collection = descriptor.collection
-        topic = descriptor.topic
+        topic = descriptor.ethTopic
     }
 
     @Test
     fun `delete existing`() = runBlocking {
-        val record = randomLogRecord(descriptor.topic, randomBlockHash())
+        val record = randomLogRecord(descriptor.ethTopic, randomBlockHash())
         val savedRecord = saveLog(collection, record)
 
         assertNotNull(findLog(collection, record.id))
@@ -48,7 +48,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
     @Test
     fun `delete not existing`() = runBlocking {
-        val record = randomLogRecord(descriptor.topic, randomBlockHash())
+        val record = randomLogRecord(descriptor.ethTopic, randomBlockHash())
 
         ethereumLogService.delete(descriptor, record)
 

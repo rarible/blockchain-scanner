@@ -51,7 +51,8 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
 
         while (currentBlock.id < newBlock.id) {
             val nextBlockNumber = currentBlock.id + 1 //todo search for the next available block, do not use +1
-            val nextBlock = fetchBlock(nextBlockNumber) ?: error("should be present") //todo better msg
+            val nextBlock = fetchBlock(nextBlockNumber)
+                ?: error("Block after ${currentBlock.id} is not found in blockchain")
 
             if (nextBlock.parentHash != currentBlock.hash) {
                 // chain reorg occured while we were going forward
@@ -79,7 +80,9 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
             blockService.remove(stateBlock.id)
 
             //todo replace this call with getPreviousBlock(number)
-            stateBlock = blockService.getBlock(stateBlock.id - 1) ?: error("previous block should be found")
+            stateBlock = blockService.getBlock(stateBlock.id - 1)
+                ?: error("Can't find block previous to ${stateBlock.id}")
+
             blockchainBlock = fetchBlock(stateBlock.id)
         }
 

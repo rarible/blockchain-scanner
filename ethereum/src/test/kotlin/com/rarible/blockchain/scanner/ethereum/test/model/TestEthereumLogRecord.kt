@@ -31,8 +31,4 @@ data class TestEthereumLogRecord(
     override fun getKey(): String {
         return from.hex()
     }
-
-    override fun getTopic(): String {
-        return "test-eth"
-    }
 }

@@ -12,7 +12,7 @@ interface Log<L : Log<L>> {
         PENDING,
         CONFIRMED,
 
-        /// TODO should not get into DB
+        // TODO should not get into DB
         REVERTED,
         DROPPED,
         INACTIVE

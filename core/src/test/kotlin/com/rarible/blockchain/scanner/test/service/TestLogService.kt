@@ -53,7 +53,7 @@ class TestLogService(
         blockHash: String,
         status: Log.Status?
     ): List<TestLogRecord<*>> {
-        return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.topic, status)
+        return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.id, status)
             .collectList().awaitFirst()
     }
 

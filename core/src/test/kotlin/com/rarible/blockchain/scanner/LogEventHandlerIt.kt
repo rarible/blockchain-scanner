@@ -33,7 +33,7 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
 
     private val descriptor = testDescriptor1()
     private val collection = descriptor.collection
-    private val topic = descriptor.topic
+    private val topic = descriptor.id
 
     @Test
     fun `handle logs - log saved with minor index`() = runBlocking {

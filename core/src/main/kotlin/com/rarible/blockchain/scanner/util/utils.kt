@@ -16,7 +16,7 @@ fun getBlockTopic(environment: String, service: String, blockchain: String): Str
     return "protocol.$environment.$blockchain.blockchain-scanner.$service.block"
 }
 
-fun getLogTopic(environment: String, service: String, blockchain: String): String {
+fun getLogTopicPrefix(environment: String, service: String, blockchain: String): String {
     return "protocol.$environment.$blockchain.blockchain-scanner.$service.log"
 }
 

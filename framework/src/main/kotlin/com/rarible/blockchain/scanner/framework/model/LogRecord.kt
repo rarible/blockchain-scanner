@@ -25,9 +25,4 @@ interface LogRecord<L : Log<L>, LR : LogRecord<L, LR>> {
      */
     fun getKey(): String
 
-    /**
-     * Topic for publishing (could be a single word, prefixes will be added automatically)
-     */
-    fun getTopic(): String
-
 }

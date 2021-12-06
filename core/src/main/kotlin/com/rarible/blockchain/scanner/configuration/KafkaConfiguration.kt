@@ -8,6 +8,8 @@ import com.rarible.blockchain.scanner.publisher.KafkaLogEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.core.application.ApplicationEnvironmentInfo
 import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,6 +22,8 @@ class KafkaConfiguration(
     private val applicationEnvironmentInfo: ApplicationEnvironmentInfo,
     private val meterRegistry: MeterRegistry
 ) {
+
+    private val logger = LoggerFactory.getLogger(KafkaConfiguration::class.java)
 
     @Bean
     fun kafkaBlockEventConsumer(): BlockEventConsumer {
@@ -45,7 +49,12 @@ class KafkaConfiguration(
     }
 
     @Bean
+    @ConditionalOnMissingBean(LogEventPublisher::class)
     fun kafkaLogEventPublisher(): LogEventPublisher {
+        logger.info(
+            "Custom {} is not configured, using {}",
+            LogEventPublisher::class.java.simpleName, KafkaLogEventPublisher::class.java.name
+        )
         return KafkaLogEventPublisher(
             properties = kafkaProperties,
             environment = applicationEnvironmentInfo.name,

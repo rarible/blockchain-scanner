@@ -13,8 +13,4 @@ data class TestFlowLogRecord(
     override fun getKey(): String {
         return log.eventType
     }
-
-    override fun getTopic(): String {
-        return "test-flow"
-    }
 }

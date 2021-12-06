@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test
 class BlockEventSubscriberIt : AbstractIntegrationTest() {
 
     private val descriptor = testDescriptor1()
-    private val topic = descriptor.topic
+    private val topic = descriptor.id
 
     @Test
     fun `on block event`() = runBlocking {

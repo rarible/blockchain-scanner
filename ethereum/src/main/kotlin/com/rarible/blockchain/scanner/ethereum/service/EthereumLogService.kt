@@ -82,7 +82,7 @@ class EthereumLogService(
         return ethereumLogRepository.findAndDelete(
             descriptor.collection,
             Word.apply(blockHash),
-            descriptor.topic,
+            descriptor.ethTopic,
             status
         ).collectList().awaitFirst()
     }

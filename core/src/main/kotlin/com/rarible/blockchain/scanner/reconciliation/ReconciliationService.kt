@@ -1,23 +1,23 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.event.log.LogEventHandler
+import com.rarible.blockchain.scanner.event.block.BlockListener
+import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
+import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
-import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
-import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
+import com.rarible.core.apm.withTransaction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onEach
+import org.slf4j.LoggerFactory
 
 /**
  * Reconciliation service contains set of single Reconciliation Indexers(one per subscriber) and
@@ -26,49 +26,34 @@ import kotlinx.coroutines.flow.Flow
 @FlowPreview
 @ExperimentalCoroutinesApi
 class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
-    private val blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
-    logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, R, D>,
-    logEventPublisher: LogEventPublisher,
     private val blockService: BlockService<B>,
-    blockMapper: BlockMapper<BB, B>
+    private val blockEventListeners: Map<String, BlockEventListener<BB, BL, L, R, D>>
 ) {
 
-    // Making single LogEventHandler for each subscriber
-    private val indexers = subscribers.map {
-        LogEventHandler(it, logMapper, logService)
-    }.associate {
-        it.subscriber.getDescriptor().id to createIndexer(it, logEventPublisher, blockService, blockMapper)
-    }
+    private val logger = LoggerFactory.getLogger(ReconciliationService::class.java)
 
-    fun reindex(descriptorId: String?, from: Long, batchSize: Long): Flow<LongRange> = flatten {
+    fun reindex(subscriberGroupId: String?, from: Long, batchSize: Long): Flow<LongRange> = flatten {
         val lastBlockNumber = blockService.getLastBlock()?.id ?: 0
-        reindex(descriptorId, from, lastBlockNumber, batchSize)
+        reindex(subscriberGroupId, from, lastBlockNumber, batchSize)
     }
 
-    private fun reindex(descriptorId: String?, from: Long, to: Long, batchSize: Long): Flow<LongRange> {
-        val blockIndexer = indexers[descriptorId]
+    private fun reindex(subscriberGroupId: String?, from: Long, to: Long, batchSize: Long): Flow<LongRange> {
+        val listener = blockEventListeners[subscriberGroupId]
             ?: throw IllegalArgumentException(
-                "BlockIndexer for descriptor '$descriptorId' not found," +
-                        " available descriptors: ${indexers.keys}"
+                "BlockIndexer for subscriber group '$subscriberGroupId' not found," +
+                        " available descriptors: ${blockEventListeners.keys}"
             )
 
-        return blockIndexer.reindex(from, to, batchSize)
+        return reindex(listener, from, to, batchSize)
     }
 
-    private fun createIndexer(
-        logEventHandler: LogEventHandler<BB, BL, L, R, D>,
-        logEventPublisher: LogEventPublisher,
-        blockService: BlockService<B>,
-        blockMapper: BlockMapper<BB, B>
-    ): ReconciliationIndexer<BB, B, BL, L, R, D> {
-        return ReconciliationIndexer(
-            blockchainClient = blockchainClient,
-            logEventHandler = logEventHandler,
-            logEventPublisher = logEventPublisher,
-            blockService = blockService,
-            blockMapper = blockMapper
-        )
+    private fun reindex(blockListener: BlockListener, from: Long, to: Long, batchSize: Long): Flow<LongRange> {
+        logger.info("Scanning for Logs in batches from {} to {} with batchSize {}", from, to, batchSize)
+        return BlockRanges.getRanges(from, to, batchSize.toInt()).onEach { range ->
+            withTransaction("reindex", listOf("range" to range.toString())) {
+                val reindexBlockEvents = range.map { ReindexBlockEvent(number = it) }
+                blockListener.onBlockEvents(reindexBlockEvents)
+            }
+        }
     }
 }
