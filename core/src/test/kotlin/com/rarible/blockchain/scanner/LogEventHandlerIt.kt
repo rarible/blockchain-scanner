@@ -103,6 +103,8 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
 
         val revertedLogs = handler.revert(event).toCollection(mutableListOf())
         assertEquals(2, revertedLogs.size)
+        val log1Event = revertedLogs.find { it.id == log1.id }!!
+        val log2Event = revertedLogs.find { it.id == log2.id }!!
 
         val log1FromDb = findLog(collection, log1.id)
         val log2FromDb = findLog(collection, log2.id)
@@ -110,12 +112,12 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
 
         // Log 1 and 2 should be deleted and published with status REVERTED
         assertNull(log1FromDb)
-        assertEquals(log1.id, revertedLogs[0].id)
-        assertEquals(Log.Status.REVERTED, revertedLogs[0].log!!.status)
+        assertEquals(log1.id, log1Event.id)
+        assertEquals(Log.Status.REVERTED, log1Event.log!!.status)
 
         assertNull(log2FromDb)
-        assertEquals(log2.id, revertedLogs[1].id)
-        assertEquals(Log.Status.REVERTED, revertedLogs[1].log!!.status)
+        assertEquals(log2.id, log2Event.id)
+        assertEquals(Log.Status.REVERTED, log2Event.log!!.status)
 
         // This log should not be changed since it related to another block
         assertEquals(log3.log!!.status, log3FromDb.log!!.status)
