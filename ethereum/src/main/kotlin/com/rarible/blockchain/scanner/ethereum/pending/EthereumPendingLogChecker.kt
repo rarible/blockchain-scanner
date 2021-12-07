@@ -33,7 +33,6 @@ class EthereumPendingLogChecker(
     private val logger = LoggerFactory.getLogger(EthereumPendingLogChecker::class.java)
     private val descriptors = subscribers.map { it.getDescriptor() }
 
-
     suspend fun checkPendingLogs() {
         val newBlocks = TreeSet<NewBlockEvent> { b1, b2 -> b1.number.compareTo(b2.number) }
         val droppedRecords = LinkedHashMap<Descriptor, MutableList<EthereumLogRecord<*>>>()
@@ -49,17 +48,34 @@ class EthereumPendingLogChecker(
                     record?.let { droppedRecords.computeIfAbsent(descriptor) { mutableListOf() }.add(record) }
                 }
         }
+        drop(droppedRecords)
+        reindexBlocks(newBlocks.toList())
+    }
 
-        droppedRecords.forEach {
-            logEventPublisher.publish(it.key, Source.PENDING, it.value)
+    private suspend fun reindexBlocks(blocks: List<NewBlockEvent>) {
+        if (blocks.isEmpty()) {
+            logger.info("Blocks with pending logs not found, nothing to reindex")
+            return
         }
-
+        logger.info("Found blocks with pending logs, should be reindexed: {}", blocks)
         coroutineScope {
             blockEventListeners.map { listener ->
                 async {
-                    listener.value.onBlockEvents(newBlocks.toList())
+                    listener.value.onBlockEvents(blocks)
                 }
             }.awaitAll()
+        }
+    }
+
+    private suspend fun drop(droppedRecords: Map<Descriptor, List<EthereumLogRecord<*>>>) {
+        if (droppedRecords.isEmpty()) {
+            logger.info("Pending logs not found, nothing to publish")
+            return
+        }
+        logger.info("Dropped pending logs for {} descriptors, publishing events now", droppedRecords.size)
+        droppedRecords.forEach {
+            logger.info("Publishing {} events for descriptor {}", it.value.size, it.key.id)
+            logEventPublisher.publish(it.key, Source.PENDING, it.value)
         }
     }
 

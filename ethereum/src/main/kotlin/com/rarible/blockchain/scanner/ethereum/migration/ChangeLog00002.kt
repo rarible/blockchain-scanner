@@ -14,10 +14,6 @@ class ChangeLog00002 {
     fun addBlockIndex(template: MongockTemplate) {
         template.indexOps(EthereumBlock::class.java).ensureIndex(
             Index()
-                .on("status", Sort.Direction.ASC)
-        )
-        template.indexOps(EthereumBlock::class.java).ensureIndex(
-            Index()
                 .on("hash", Sort.Direction.ASC)
         )
     }

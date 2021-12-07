@@ -64,7 +64,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val savedVisibleRecord = findLog(collection, newLog.id) as TestEthereumLogRecord
 
         assertNotNull(savedVisibleRecord)
-        assertEquals(newLog.customData, savedVisibleRecord.customData)
+        assertEquals(newLog.data.customData, savedVisibleRecord.data.customData)
         assertEquals(newLog.log, savedVisibleRecord.log)
     }
 
@@ -76,7 +76,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val visibleLog = randomLog(transactionHash.toString(), topic, blockHash).copy(index = 2, minorLogIndex = 3)
         val visibleRecord = randomLogRecord(visibleLog)
         // Let's change custom data in order to detect changes
-        val updatedVisibleRecord = visibleRecord.copy(customData = randomString())
+        val updatedVisibleRecord = visibleRecord.copy(data = visibleRecord.data.copy(customData = randomString()))
 
         saveLog(descriptor.collection, visibleRecord)
         // Here we're also checking search by index/minorIndex
@@ -85,7 +85,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
 
         assertNotNull(savedVisibleRecord)
-        assertEquals(updatedVisibleRecord.customData, savedVisibleRecord.customData)
+        assertEquals(updatedVisibleRecord.data.customData, savedVisibleRecord.data.customData)
         assertEquals(updatedVisibleRecord.log, savedVisibleRecord.log)
     }
 
@@ -99,7 +99,8 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         // Let's change index in order to make this record unable to be found by findVisibleByKey
         val changedVisibleLog = visibleLog.copy(index = 4)
-        val updatedVisibleRecord = visibleRecord.withLog(changedVisibleLog).copy(customData = randomString())
+        val updatedVisibleRecord = visibleRecord.withLog(changedVisibleLog)
+            .copy(data = visibleRecord.data.copy(customData = randomString()))
 
         saveLog(descriptor.collection, visibleRecord)
         // Here we're also checking search by blockHash/logIndex
@@ -108,7 +109,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
 
         assertNotNull(savedVisibleRecord)
-        assertEquals(updatedVisibleRecord.customData, savedVisibleRecord.customData)
+        assertEquals(updatedVisibleRecord.data.customData, savedVisibleRecord.data.customData)
         assertEquals(updatedVisibleRecord.log, savedVisibleRecord.log)
     }
 

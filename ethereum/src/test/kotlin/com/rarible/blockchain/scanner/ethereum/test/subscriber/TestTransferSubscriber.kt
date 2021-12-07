@@ -2,10 +2,12 @@ package com.rarible.blockchain.scanner.ethereum.test.subscriber
 
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
+import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.contracts.test.erc20.TransferEvent
 import kotlinx.coroutines.flow.Flow
@@ -31,10 +33,13 @@ class TestTransferSubscriber : EthereumLogEventSubscriber {
         return flowOf(
             TestEthereumLogRecord(
                 id = randomString(),
-                customData = randomString(),
-                from = scalether.from(),
-                to = scalether.to(),
-                value = scalether.value()
+                log = EthereumLogMapper().map(block, log, 0, 0, getDescriptor()),
+                data = TestEthereumLogData(
+                    customData = randomString(),
+                    to = scalether.to(),
+                    from = scalether.from(),
+                    value = scalether.value()
+                )
             )
         )
     }

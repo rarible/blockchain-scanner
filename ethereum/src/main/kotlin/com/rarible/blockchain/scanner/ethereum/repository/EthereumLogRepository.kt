@@ -39,11 +39,11 @@ class EthereumLogRepository(
         index: Int,
         minorLogIndex: Int
     ): EthereumLogRecord<*>? {
-        val criteria = Criteria.where("log.transactionHash").isEqualTo(transactionHash)
-            .and("log.topic").isEqualTo(topic)
-            .and("log.index").isEqualTo(index)
-            .and("log.minorLogIndex").isEqualTo(minorLogIndex)
-            .and("log.visible").isEqualTo(true)
+        val criteria = Criteria.where("transactionHash").isEqualTo(transactionHash)
+            .and("topic").isEqualTo(topic)
+            .and("index").isEqualTo(index)
+            .and("minorLogIndex").isEqualTo(minorLogIndex)
+            .and("visible").isEqualTo(true)
         return mongo.findOne(
             Query.query(criteria).withHint(ChangeLog00001.VISIBLE_INDEX_NAME),
             entityType,
@@ -59,10 +59,10 @@ class EthereumLogRepository(
         logIndex: Int,
         minorLogIndex: Int
     ): EthereumLogRecord<*>? {
-        val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
-            .and("log.blockHash").`is`(blockHash)
-            .and("log.logIndex").`is`(logIndex)
-            .and("log.minorLogIndex").`is`(minorLogIndex)
+        val criteria = Criteria.where("transactionHash").`is`(transactionHash)
+            .and("blockHash").`is`(blockHash)
+            .and("logIndex").`is`(logIndex)
+            .and("minorLogIndex").`is`(minorLogIndex)
         return mongo.findOne(
             Query(criteria),
             entityType,
@@ -76,8 +76,8 @@ class EthereumLogRepository(
 
     fun findPendingLogs(entityType: Class<*>, collection: String, topic: Word): Flux<EthereumLogRecord<*>> {
         val criteria = Criteria
-            .where("log.topic").isEqualTo(topic)
-            .and("log.status").`is`(Log.Status.PENDING)
+            .where("topic").isEqualTo(topic)
+            .and("status").`is`(Log.Status.PENDING)
 
         return mongo.find(
             Query(criteria),
@@ -94,11 +94,11 @@ class EthereumLogRepository(
         status: Log.Status? = null
     ): Flux<EthereumLogRecord<*>> {
         var criteria = Criteria
-            .where("log.blockHash").isEqualTo(blockHash)
-            .and("log.topic").isEqualTo(topic)
+            .where("blockHash").isEqualTo(blockHash)
+            .and("topic").isEqualTo(topic)
 
         criteria = status?.let {
-            criteria.and("log.status").isEqualTo(status)
+            criteria.and("status").isEqualTo(status)
         } ?: criteria
 
         val result = mongo.find(Query(criteria), entityType, collection) as Flux<EthereumLogRecord<*>>

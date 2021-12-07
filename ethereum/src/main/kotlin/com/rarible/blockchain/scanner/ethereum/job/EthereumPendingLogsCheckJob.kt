@@ -4,9 +4,9 @@ import com.rarible.blockchain.scanner.ethereum.pending.PendingLogChecker
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 
-@Service
+@Component
 class EthereumPendingLogsCheckJob(
     private val pendingLogChecker: PendingLogChecker
 ) {

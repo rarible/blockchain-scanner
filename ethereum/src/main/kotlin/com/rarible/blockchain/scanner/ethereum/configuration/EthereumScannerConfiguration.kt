@@ -6,6 +6,7 @@ import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import com.rarible.ethereum.converters.EnableScaletherMongoConversions
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -19,4 +20,14 @@ import org.springframework.context.annotation.Configuration
 @EnableScaletherMongoConversions
 @EnableConfigurationProperties(EthereumScannerProperties::class)
 @ComponentScan(basePackageClasses = [EthereumScanner::class])
-class EthereumScannerConfiguration
+class EthereumScannerConfiguration(
+    val properties: EthereumScannerProperties
+) {
+
+    private val logger = LoggerFactory.getLogger(EthereumScannerConfiguration::class.java)
+
+    init {
+        logger.info("Configuring Ethereum Scanner with properties:\n{}", properties)
+    }
+
+}

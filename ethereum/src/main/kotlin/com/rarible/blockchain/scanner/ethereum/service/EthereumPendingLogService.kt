@@ -51,17 +51,13 @@ class EthereumPendingLogService(
         if (records.isEmpty()) {
             return emptyFlow()
         }
+
         val byTxHash = records.groupBy { it.record.log!!.transactionHash }
-        val byFromNonce = records.groupBy { Pair(it.record.log!!.from, it.record.log!!.nonce) }
         val fullBlock = monoEthereum.ethGetFullBlockByHash(Word.apply(blockHash))
         return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
-            .flatMap { tx ->
+            .map { tx ->
                 val first = byTxHash[tx.hash().toString()] ?: emptyList()
-                val second = (byFromNonce[Pair(tx.from(), tx.nonce().toLong())] ?: emptyList()) - first
-                listOf(
-                    EthereumPendingLogStatusUpdate(first, Log.Status.INACTIVE),
-                    EthereumPendingLogStatusUpdate(second, Log.Status.DROPPED)
-                ).toFlux()
+                EthereumPendingLogStatusUpdate(first, Log.Status.INACTIVE)
             }.asFlow()
     }
 
@@ -72,7 +68,6 @@ class EthereumPendingLogService(
         val status = logsToMark.status
         return if (logs.isNotEmpty()) {
             logs.map {
-                logger.info("Marking with status '{}' log record: [{}]", status, it.record)
                 updateStatus(it.descriptor, it.record, status)
             }
         } else {
@@ -90,6 +85,7 @@ class EthereumPendingLogService(
         val copy = exist?.withIdAndVersion(record.id, exist.version)
             ?: record.withIdAndVersion(record.id, null)
 
+        logger.info("Updating status {} -> {} for record: {}", copy.log!!.status, status, copy)
         val updatedCopy = copy.withLog(record.log!!.copy(status = status, visible = false))
         ethereumLogRepository.save(descriptor.collection, updatedCopy)
     }

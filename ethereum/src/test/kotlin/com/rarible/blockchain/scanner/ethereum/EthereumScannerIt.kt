@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
@@ -24,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -58,7 +60,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `scan - new block event handled`() = BlockingWait.waitAssert {
+    fun `scan - new block event handled`() = BlockingWait.waitAssert<Unit> {
 
         // Making random mint
         val beneficiary = randomAddress()
@@ -75,10 +77,10 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
             // We expect single LogRecord from our single Subscriber
             val testRecord = findAllLogs(collection)[0] as TestEthereumLogRecord
-            assertEquals(testRecord.log!!.status, Log.Status.CONFIRMED)
-            assertEquals(testRecord.from, Address.ZERO())
-            assertEquals(testRecord.to, beneficiary)
-            assertEquals(testRecord.value, value)
+            assertThat(testRecord.log.status).isEqualTo(Log.Status.CONFIRMED)
+            assertThat(testRecord.data.from).isEqualTo(Address.ZERO())
+            assertThat(testRecord.data.to).isEqualTo(beneficiary)
+            assertThat(testRecord.data.value).isEqualTo(value)
         }
 
         // TODO check Kafka
@@ -106,7 +108,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         // Artificial PENDING log for transaction already exist
         val tx = ethereum.ethGetTransactionByHash(transferReceipt.transactionHash()).block()!!.get()
-        val log = ethLog(tx.hash().toString(), tx.nonce().toLong())
+        val log = ethLog(tx.hash().toString())
         val record = ethRecord(log, beneficiary, value)
 
         val saved = saveLog(collection, record)
@@ -122,7 +124,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                 it.id != saved.id
             }
             confirmed.forEach {
-                val confirmedLog = it.log!!
+                val confirmedLog = it.log
                 assertEquals(confirmedLog.status, Log.Status.CONFIRMED)
                 assertNotNull(confirmedLog.blockHash)
                 assertNotNull(confirmedLog.blockNumber)
@@ -153,7 +155,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             .execute().verifyError()
 
         // Artificial PENDING LogRecord for failed transfer
-        val log = ethLog(transferReceipt.transactionHash().toString(), 0)
+        val log = ethLog(transferReceipt.transactionHash().toString())
         val record = ethRecord(log, beneficiary, value)
         val saved = saveLog(collection, record)
 
@@ -178,10 +180,9 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         // Second artificial record contains non-existing transaction hash
         val beneficiary = randomAddress()
-        val nonce = ethereum.ethGetTransactionCount(sender.from(), "latest").block()!!.toLong()
         val fakeHash = randomLogHash()
 
-        val log = ethLog(fakeHash, nonce)
+        val log = ethLog(fakeHash)
         val record = ethRecord(log, beneficiary, value)
         val saved = saveLog(collection, record)
 
@@ -238,20 +239,20 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             id = randomString(),
             version = null,
             log = log,
-            customData = randomString(),
-            from = sender.from(),
-            to = beneficiary,
-            value = value
+            TestEthereumLogData(
+                customData = randomString(),
+                from = sender.from(),
+                to = beneficiary,
+                value = value
+            )
         )
     }
 
-    private fun ethLog(transactionHash: String, nonce: Long): EthereumLog {
+    private fun ethLog(transactionHash: String): EthereumLog {
         return EthereumLog(
             address = contract.address(),
             topic = TransferEvent.id(),
             transactionHash = transactionHash,
-            from = sender.from(),
-            nonce = nonce,
             status = Log.Status.PENDING,
             index = 0,
             minorLogIndex = 0,

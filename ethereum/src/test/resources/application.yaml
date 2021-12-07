@@ -17,13 +17,9 @@ blockchain:
           delay: 2s
           attempts: 3
       job:
-        pendingBlocks:
-          interval: 1s
-          initialDelay: 500ms
-          pendingBlockAgeToCheck: 1m
         pendingLogs:
-          interval: 1h
-          initialDelay: 365d
+          interval: 1s
+          initialDelay: 1s
         reconciliation:
           enabled: false
           batchSize: 5
