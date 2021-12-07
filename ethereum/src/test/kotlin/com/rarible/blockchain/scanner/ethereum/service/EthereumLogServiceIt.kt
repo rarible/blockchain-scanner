@@ -84,9 +84,11 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
 
+        val expectedLog = updatedVisibleRecord.log.copy(updatedAt = savedVisibleRecord.log.updatedAt)
+
         assertNotNull(savedVisibleRecord)
         assertEquals(updatedVisibleRecord.data.customData, savedVisibleRecord.data.customData)
-        assertEquals(updatedVisibleRecord.log, savedVisibleRecord.log)
+        assertEquals(expectedLog, savedVisibleRecord.log)
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Word
 import org.springframework.stereotype.Component
 
@@ -30,7 +31,9 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
             logIndex = ethLog.logIndex().toInt(),
             minorLogIndex = minorIndex,
             index = index,
-            visible = true
+            visible = true,
+            createdAt = nowMillis(),
+            updatedAt = nowMillis()
         )
     }
 }

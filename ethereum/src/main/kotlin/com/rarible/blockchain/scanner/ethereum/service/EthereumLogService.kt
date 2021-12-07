@@ -53,7 +53,7 @@ class EthereumLogService(
                 )
 
                 if (found != null) {
-                    val withCorrectId = record.withIdAndVersion(found.id, found.version)
+                    val withCorrectId = record.withIdAndVersion(found.id, found.version, found.updatedAt)
                     if (withCorrectId != found) {
                         logger.info("Saving changed LogEvent to collection '{}' : [{}]", withCorrectId, collection)
                         ethereumLogRepository.save(collection, withCorrectId)

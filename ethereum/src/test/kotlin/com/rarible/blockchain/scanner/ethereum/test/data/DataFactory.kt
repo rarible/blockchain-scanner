@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Word
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
@@ -58,7 +59,9 @@ fun randomLog(
         topic = topic,
         index = randomPositiveInt(),
         logIndex = randomPositiveInt(),
-        minorLogIndex = randomPositiveInt()
+        minorLogIndex = randomPositiveInt(),
+        createdAt = nowMillis(),
+        updatedAt = nowMillis(),
     )
 }
 

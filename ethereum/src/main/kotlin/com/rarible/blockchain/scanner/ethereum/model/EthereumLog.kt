@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.model
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import scalether.domain.Address
+import java.time.Instant
 
 data class EthereumLog(
 
@@ -54,7 +55,10 @@ data class EthereumLog(
     /**
      * Whether this log event should be considered for processing.
      */
-    val visible: Boolean = true
+    val visible: Boolean = true,
+
+    val createdAt: Instant = Instant.EPOCH,
+    val updatedAt: Instant = Instant.EPOCH
 
 ) : Log<EthereumLog> {
 

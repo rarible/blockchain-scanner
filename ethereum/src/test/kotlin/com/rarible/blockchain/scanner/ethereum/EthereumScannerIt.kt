@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
+import com.rarible.core.common.nowMillis
 import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
 import com.rarible.core.test.wait.BlockingWait
@@ -256,7 +257,9 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             status = Log.Status.PENDING,
             index = 0,
             minorLogIndex = 0,
-            visible = true
+            visible = true,
+            createdAt = nowMillis(),
+            updatedAt = nowMillis()
         )
     }
 

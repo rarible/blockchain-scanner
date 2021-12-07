@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.annotation.Version
 import scalether.domain.Address
+import java.time.Instant
 
 /**
  * Test Ethereum log similar to currently used in Ethereum-indexer.
@@ -35,6 +36,9 @@ data class TestEthereumLogRecord(
 
     val visible: Boolean = true,
 
+    override val createdAt: Instant = Instant.EPOCH,
+    override val updatedAt: Instant = Instant.EPOCH,
+
     val data: TestEthereumLogData
 ) : EthereumLogRecord<TestEthereumLogRecord>() {
 
@@ -54,6 +58,9 @@ data class TestEthereumLogRecord(
         logIndex = logIndex,
 
         visible = visible,
+
+        createdAt = createdAt,
+        updatedAt = updatedAt
     )
 
     constructor(id: String, version: Long? = null, log: EthereumLog, data: TestEthereumLogData) : this(
@@ -74,6 +81,10 @@ data class TestEthereumLogRecord(
         logIndex = log.logIndex,
 
         visible = log.visible,
+
+        createdAt = log.createdAt,
+        updatedAt = log.updatedAt,
+
         data = data
     )
 
@@ -81,8 +92,8 @@ data class TestEthereumLogRecord(
         return TestEthereumLogRecord(id, version, log, data)
     }
 
-    override fun withIdAndVersion(id: String, version: Long?): TestEthereumLogRecord {
-        return copy(id = id, version = version)
+    override fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant): TestEthereumLogRecord {
+        return copy(id = id, version = version, updatedAt = updatedAt)
     }
 
     override fun getKey(): String {

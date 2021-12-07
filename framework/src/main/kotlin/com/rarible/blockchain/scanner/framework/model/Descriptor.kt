@@ -15,7 +15,7 @@ interface Descriptor {
      * Name of the group of the descriptors. Subscribers with descriptors of the same group will
      * be handled together and will be published in the same topic (if KafkaPublisher is used).
      * This value will ge used for naming of topic and consumer group, so better to keep it short and
-     * human-redable.
+     * human-readable.
      */
     val groupId: String
 
