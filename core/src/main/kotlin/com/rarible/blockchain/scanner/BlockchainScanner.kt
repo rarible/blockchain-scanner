@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.mapper.LogMapper
@@ -27,7 +26,7 @@ import kotlinx.coroutines.flow.Flow
 @FlowPreview
 @ExperimentalCoroutinesApi
 open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
-    blockchainClient: BlockchainClient<BB, BL, D>,
+    blockchainClient: RetryableBlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
@@ -40,14 +39,9 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     logEventPublisher: LogEventPublisher
 ) : ReconciliationExecutor {
 
-    private val retryableBlockchainClient = RetryableBlockchainClient(
-        blockchainClient,
-        properties.retryPolicy.client
-    )
-
     private val blockScanner = BlockScanner(
         blockMapper,
-        retryableBlockchainClient,
+        blockchainClient,
         blockService,
         properties.retryPolicy.scan
     )
@@ -56,7 +50,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         .groupBy { it.getDescriptor().groupId }
         .map {
             it.key to BlockEventListener(
-                retryableBlockchainClient,
+                blockchainClient,
                 it.value,
                 logMapper,
                 logService,

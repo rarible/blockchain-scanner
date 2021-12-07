@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.pending
 
-import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
@@ -23,7 +23,7 @@ import java.util.*
 
 @FlowPreview
 class EthereumPendingLogChecker(
-    private val blockchainClient: EthereumClient,
+    private val blockchainClient: EthereumBlockchainClient,
     private val pendingLogService: EthereumPendingLogService,
     private val logEventPublisher: LogEventPublisher,
     private val blockEventListeners: Map<String, BlockListener>,

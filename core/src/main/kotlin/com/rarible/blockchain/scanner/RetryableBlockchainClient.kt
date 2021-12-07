@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.retry
 import org.slf4j.LoggerFactory
 
-class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor>(
-    private val original: BlockchainClient<BB, BL, D>,
-    private val retryPolicy: ClientRetryPolicyProperties
+open class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor>(
+    protected val original: BlockchainClient<BB, BL, D>,
+    protected val retryPolicy: ClientRetryPolicyProperties
 ) : BlockchainClient<BB, BL, D> {
 
     private val logger = LoggerFactory.getLogger(BlockchainClient::class.java)
@@ -46,7 +46,7 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         }
     }
 
-    private fun <T> Flow<T>.wrapWithRetry(): Flow<T> {
+    protected fun <T> Flow<T>.wrapWithRetry(): Flow<T> {
         return this
             .retry(retries = (attempts - 1).toLong()) {
                 delay(delay)
@@ -54,7 +54,7 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
             }
     }
 
-    private suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
+    protected suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
             return retry(limitAttempts(attempts) + constantDelay(delay)) {
                 clientCall.invoke()

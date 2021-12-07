@@ -5,7 +5,7 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
-import com.rarible.blockchain.scanner.flow.client.FlowClient
+import com.rarible.blockchain.scanner.flow.client.FlowRetryableClient
 import com.rarible.blockchain.scanner.flow.mapper.FlowBlockMapper
 import com.rarible.blockchain.scanner.flow.mapper.FlowLogMapper
 import com.rarible.blockchain.scanner.flow.model.FlowBlock
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 class FlowBlockchainScanner(
-    blockchainClient: FlowClient,
+    blockchainClient: FlowRetryableClient,
     subscribers: List<FlowLogEventSubscriber>,
     blockMapper: FlowBlockMapper,
     blockService: FlowBlockService,

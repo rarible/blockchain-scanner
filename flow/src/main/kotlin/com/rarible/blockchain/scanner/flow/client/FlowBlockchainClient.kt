@@ -30,12 +30,12 @@ import java.time.ZoneOffset
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 @Component
-class FlowClient(
+class FlowBlockchainClient(
     private val poller: FlowNetNewBlockPoller,
     private val api: FlowGrpcApi
 ) : BlockchainClient<FlowBlockchainBlock, FlowBlockchainLog, FlowDescriptor> {
 
-    private val logger: Logger = LoggerFactory.getLogger(FlowClient::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(FlowBlockchainClient::class.java)
 
     override val newBlocks = flatten {
         poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it) }

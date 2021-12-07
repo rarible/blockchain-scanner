@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
+import com.rarible.blockchain.scanner.test.client.TestRetryableBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
@@ -95,7 +96,7 @@ class TestScannerConfiguration {
             .andThen(Unit)
 
         return TestBlockchainScanner(
-            blockchainClient = testBlockchainClient(),
+            blockchainClient = TestRetryableBlockchainClient(testBlockchainClient()),
             subscribers = listOf(testSubscriber1(), testSubscriber2()),
             blockMapper = testBlockMapper(),
             blockService = testBlockService(),

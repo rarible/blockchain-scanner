@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import io.daonomic.rpc.domain.Word
@@ -25,7 +24,7 @@ import java.time.Duration
 class EthereumClient(
     private val ethereum: MonoEthereum,
     ethPubSub: EthPubSub
-) : BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
+) : EthereumBlockchainClient {
 
     private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
@@ -40,7 +39,7 @@ class EthereumClient(
         }.awaitFirst()
     }
 
-    suspend fun getBlock(hash: String): EthereumBlockchainBlock {
+    override suspend fun getBlock(hash: String): EthereumBlockchainBlock {
         return getBlock(Word.apply(hash)).awaitFirst()
     }
 

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogService(
     private val ethereumLogRepository: EthereumLogRepository,
-    private val pendingLogMarker: EthereumPendingLogService,
+    private val pendingLogService: EthereumPendingLogService,
     private val properties: EthereumScannerProperties
 ) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
 
@@ -73,7 +73,7 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         blockHash: String
     ): List<EthereumLogRecord<*>> {
-        return pendingLogMarker.markInactive(blockHash, descriptor)
+        return pendingLogService.markInactive(blockHash, descriptor)
     }
 
     override suspend fun findAndDelete(

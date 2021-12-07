@@ -26,6 +26,11 @@
             <artifactId>kotlin-reflect</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.michael-bull.kotlin-retry</groupId>
+            <artifactId>kotlin-retry</artifactId>
+            <version>1.0.9</version>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-core</artifactId>
         </dependency>
