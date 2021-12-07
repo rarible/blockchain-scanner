@@ -5,8 +5,8 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 data class FlowDescriptor(
     override val id: String,
     override val groupId: String,
-    override val topic: String,
     val events: Set<String>,
     val collection: String,
-    val startFrom: Long? = null
+    val startFrom: Long? = null,
+    override val entityType: Class<*>
 ) : Descriptor

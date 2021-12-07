@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
 import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
+import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
@@ -19,7 +20,6 @@ import com.rarible.blockchain.scanner.test.service.TestLogService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
-import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
@@ -53,7 +53,7 @@ abstract class AbstractIntegrationTest {
     lateinit var properties: TestBlockchainScannerProperties
 
     protected suspend fun findLog(collection: String, id: Long): TestLogRecord<*>? {
-        return testLogRepository.findLogEvent(collection, id).awaitFirstOrNull()
+        return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
     }
 
     protected suspend fun findBlock(number: Long): TestBlock? {
@@ -73,10 +73,6 @@ abstract class AbstractIntegrationTest {
     ): TestOriginalBlock {
         testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block)))
         return block
-    }
-
-    protected suspend fun saveLog(collection: String, logRecord: TestLogRecord<*>): TestLogRecord<*> {
-        return testLogRepository.save(collection, logRecord).awaitFirst()
     }
 
     protected fun newBlockEvent(

@@ -15,9 +15,9 @@ import org.springframework.stereotype.Service
 class FlowLogService(
     private val logRepository: FlowLogRepository
 ) : LogService<FlowLog, FlowLogRecord<*>, FlowDescriptor> {
+
     override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord<*>): FlowLogRecord<*> =
         logRepository.delete(descriptor.collection, record)
-
 
     override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord<*>>): List<FlowLogRecord<*>> {
         return logRepository.saveAll(descriptor.collection, records).toList()

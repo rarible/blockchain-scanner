@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
-import org.bson.types.ObjectId
 import scalether.domain.AddressFactory
 import java.math.BigInteger
 import java.util.concurrent.ThreadLocalRandom
@@ -28,7 +27,7 @@ fun randomLogRecord(topic: Word, blockHash: Word, status: Log.Status = Log.Statu
 
 fun randomLogRecord(log: EthereumLog): TestEthereumLogRecord {
     return TestEthereumLogRecord(
-        id = ObjectId(),
+        id = randomString(),
         version = null,
         customData = randomString(),
         log = log,

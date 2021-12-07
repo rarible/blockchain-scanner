@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.test.subscriber
 
-import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomPositiveLong

@@ -37,12 +37,14 @@ class EthereumLogService(
                 val log = record.log!!
 
                 val found = ethereumLogRepository.findVisibleByKey(
+                    descriptor.entityType,
                     collection,
                     log.transactionHash,
                     log.topic,
                     log.index,
                     log.minorLogIndex
                 ) ?: ethereumLogRepository.findByKey(
+                    descriptor.entityType,
                     collection,
                     log.transactionHash,
                     log.blockHash!!,
@@ -80,6 +82,7 @@ class EthereumLogService(
         status: Log.Status?
     ): List<EthereumLogRecord<*>> {
         return ethereumLogRepository.findAndDelete(
+            descriptor.entityType,
             descriptor.collection,
             Word.apply(blockHash),
             descriptor.ethTopic,

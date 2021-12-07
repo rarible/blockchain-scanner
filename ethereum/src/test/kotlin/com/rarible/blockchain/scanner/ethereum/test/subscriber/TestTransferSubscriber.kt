@@ -10,17 +10,16 @@ import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.contracts.test.erc20.TransferEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.bson.types.ObjectId
 
 class TestTransferSubscriber : EthereumLogEventSubscriber {
 
     override fun getDescriptor(): EthereumDescriptor {
         return EthereumDescriptor(
             ethTopic = TransferEvent.id(),
-            groupId = "transfer",
-            topic = "transfers",
+            groupId = "transfers",
             collection = "transfers",
-            contracts = listOf()
+            contracts = listOf(),
+            entityType = TestEthereumLogRecord::class.java
         )
     }
 
@@ -31,7 +30,7 @@ class TestTransferSubscriber : EthereumLogEventSubscriber {
         val scalether = TransferEvent.apply(log.ethLog)
         return flowOf(
             TestEthereumLogRecord(
-                id = ObjectId(),
+                id = randomString(),
                 customData = randomString(),
                 from = scalether.from(),
                 to = scalether.to(),

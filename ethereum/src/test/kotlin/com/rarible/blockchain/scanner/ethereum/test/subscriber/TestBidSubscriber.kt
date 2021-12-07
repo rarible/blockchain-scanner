@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -15,10 +16,10 @@ class TestBidSubscriber : EthereumLogEventSubscriber {
     override fun getDescriptor(): EthereumDescriptor {
         return EthereumDescriptor(
             ethTopic = randomWord(),
-            groupId = "bid",
-            topic = "bids",
+            groupId = "bids",
             collection = "bids",
-            contracts = listOf(randomAddress(), randomAddress())
+            contracts = listOf(randomAddress(), randomAddress()),
+            entityType = TestEthereumLogRecord::class.java
         )
     }
 

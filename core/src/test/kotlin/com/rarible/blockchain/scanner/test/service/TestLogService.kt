@@ -6,8 +6,6 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
-import com.rarible.core.common.justOrEmpty
-import com.rarible.core.common.toOptional
 import kotlinx.coroutines.reactive.awaitFirst
 
 class TestLogService(
@@ -25,26 +23,24 @@ class TestLogService(
         return records.map { record ->
             val log = record.log!!
             val opt = testLogRepository.findByKey(
+                descriptor.entityType,
                 descriptor.collection,
                 log.transactionHash,
                 log.blockHash!!,
                 log.logIndex!!,
                 log.minorLogIndex
-            ).toOptional()
+            )
 
-            opt.flatMap {
-                if (it.isPresent) {
-                    val found = it.get()
-                    val withCorrectId = record.withIdAndVersion(found.id, found.version)
-                    if (withCorrectId != found) {
-                        testLogRepository.save(descriptor.collection, withCorrectId)
-                    } else {
-                        found.justOrEmpty()
-                    }
+            if (opt != null) {
+                val withCorrectId = record.withIdAndVersion(opt.id, opt.version)
+                if (withCorrectId != opt) {
+                    testLogRepository.save(descriptor.collection, withCorrectId)
                 } else {
-                    testLogRepository.save(descriptor.collection, record)
+                    opt
                 }
-            }.awaitFirst()
+            } else {
+                testLogRepository.save(descriptor.collection, record)
+            }
         }
     }
 
@@ -53,8 +49,13 @@ class TestLogService(
         blockHash: String,
         status: Log.Status?
     ): List<TestLogRecord<*>> {
-        return testLogRepository.findAndDelete(descriptor.collection, blockHash, descriptor.id, status)
-            .collectList().awaitFirst()
+        return testLogRepository.findAndDelete(
+            descriptor.entityType,
+            descriptor.collection,
+            blockHash,
+            descriptor.id,
+            status
+        ).collectList().awaitFirst()
     }
 
     override suspend fun beforeHandleNewBlock(descriptor: TestDescriptor, blockHash: String): List<TestLogRecord<*>> {

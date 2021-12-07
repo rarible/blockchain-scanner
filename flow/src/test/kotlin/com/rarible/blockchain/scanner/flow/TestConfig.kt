@@ -33,7 +33,7 @@ class TestConfig {
             groupId = "NFT",
             events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"),
             collection = "test_history",
-            topic = "test"
+            entityType = TestFlowLogRecord::class.java
         )
 
         override fun getDescriptor(): FlowDescriptor = descriptor

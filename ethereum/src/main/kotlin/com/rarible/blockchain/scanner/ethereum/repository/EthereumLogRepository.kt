@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
-import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
@@ -16,14 +15,15 @@ import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 
 @Component
+@Suppress("UNCHECKED_CAST")
 class EthereumLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
 
     private val logger = LoggerFactory.getLogger(EthereumLogRepository::class.java)
 
-    suspend fun findLogEvent(collection: String, id: ObjectId): EthereumLogRecord<*>? {
-        return mongo.findById(id, EthereumLogRecord::class.java, collection).awaitFirstOrNull()
+    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: String): EthereumLogRecord<*>? {
+        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as EthereumLogRecord<*>?
     }
 
     suspend fun delete(collection: String, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
@@ -32,6 +32,7 @@ class EthereumLogRepository(
     }
 
     suspend fun findVisibleByKey(
+        entityType: Class<*>,
         collection: String,
         transactionHash: String,
         topic: Word,
@@ -45,12 +46,13 @@ class EthereumLogRepository(
             .and("log.visible").isEqualTo(true)
         return mongo.findOne(
             Query.query(criteria).withHint(ChangeLog00001.VISIBLE_INDEX_NAME),
-            EthereumLogRecord::class.java,
+            entityType,
             collection
-        ).awaitFirstOrNull()
+        ).awaitFirstOrNull() as EthereumLogRecord<*>?
     }
 
     suspend fun findByKey(
+        entityType: Class<*>,
         collection: String,
         transactionHash: String,
         blockHash: Word,
@@ -63,41 +65,45 @@ class EthereumLogRepository(
             .and("log.minorLogIndex").`is`(minorLogIndex)
         return mongo.findOne(
             Query(criteria),
-            EthereumLogRecord::class.java,
+            entityType,
             collection
-        ).awaitFirstOrNull()
+        ).awaitFirstOrNull() as EthereumLogRecord<*>?
     }
 
     suspend fun save(collection: String, event: EthereumLogRecord<*>): EthereumLogRecord<*> {
         return mongo.save(event, collection).awaitFirst()
     }
 
-    fun findPendingLogs(collection: String, topic: Word): Flux<EthereumLogRecord<*>> {
+    fun findPendingLogs(entityType: Class<*>, collection: String, topic: Word): Flux<EthereumLogRecord<*>> {
         val criteria = Criteria
             .where("log.topic").isEqualTo(topic)
             .and("log.status").`is`(Log.Status.PENDING)
 
         return mongo.find(
             Query(criteria),
-            EthereumLogRecord::class.java,
+            entityType,
             collection
-        )
+        ) as Flux<EthereumLogRecord<*>>
     }
 
     fun findAndDelete(
+        entityType: Class<*>,
         collection: String,
         blockHash: Word,
         topic: Word,
         status: Log.Status? = null
     ): Flux<EthereumLogRecord<*>> {
-        val criteria = Criteria
+        var criteria = Criteria
             .where("log.blockHash").isEqualTo(blockHash)
             .and("log.topic").isEqualTo(topic)
-        status?.let {
-            criteria.and("log.status").isEqualTo(status)
-        }
 
-        return mongo.find(Query(criteria), EthereumLogRecord::class.java, collection).flatMap {
+        criteria = status?.let {
+            criteria.and("log.status").isEqualTo(status)
+        } ?: criteria
+
+        val result = mongo.find(Query(criteria), entityType, collection) as Flux<EthereumLogRecord<*>>
+
+        return result.flatMap {
             logger.info(
                 "Deleting EthereumLogRecord: blockHash='{}', status='{}'",
                 it.log!!.blockHash, it.log!!.status

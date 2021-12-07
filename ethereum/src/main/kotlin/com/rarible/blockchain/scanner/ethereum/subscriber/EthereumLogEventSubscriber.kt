@@ -5,7 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 
 interface EthereumLogEventSubscriber :
     LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {

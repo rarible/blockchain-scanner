@@ -24,7 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -215,7 +214,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         val newTask = Task(
             type = ReconciliationTaskHandler.RECONCILIATION,
-            param = "transfer",
+            param = "transfers",
             lastStatus = TaskStatus.NONE,
             state = number + 1,
             running = false
@@ -225,7 +224,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         taskService.readAndRun()
 
-        // Waiting job is completed and our collection have same muber of LogRecords as it had before cleanup
+        // Waiting job is completed and our collection have same number of LogRecords as it had before cleanup
         BlockingWait.waitAssert {
             val tasks = runBlocking { taskService.findTasks(ReconciliationTaskHandler.RECONCILIATION).toList() }
             assertEquals(1, tasks.size)
@@ -236,7 +235,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
     private fun ethRecord(log: EthereumLog, beneficiary: Address, value: BigInteger): TestEthereumLogRecord {
         return TestEthereumLogRecord(
-            id = ObjectId(),
+            id = randomString(),
             version = null,
             log = log,
             customData = randomString(),

@@ -35,7 +35,8 @@ class KafkaLogEventPublisher(
         val byTopic = HashMap<String, MutableList<KafkaMessage<LogRecordEvent<*>>>>()
         val source = logEvent.blockEvent.source
 
-        // Grouping by topic, keep in mind different descriptors could potentially have same topic
+        // In current implementation we're handling here events from single subscriber group,
+        // so there should NOT be different topics, but who knows, maybe one day it will be changed
         logEvent.logEvents.map {
             val descriptor = it.key
             val logs = it.value
@@ -57,7 +58,7 @@ class KafkaLogEventPublisher(
     }
 
     private fun getTopic(descriptor: Descriptor): String {
-        return "$topicPrefix.${descriptor.topic}"
+        return "$topicPrefix.${descriptor.groupId}"
     }
 
     private fun toKafkaMessage(record: LogRecord<*, *>, source: Source): KafkaMessage<LogRecordEvent<*>> {

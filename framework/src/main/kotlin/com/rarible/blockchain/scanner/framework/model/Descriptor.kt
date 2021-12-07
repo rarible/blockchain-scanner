@@ -11,10 +11,18 @@ interface Descriptor {
      */
     val id: String
 
+    /**
+     * Name of the group of the descriptors. Subscribers with descriptors of the same group will
+     * be handled together and will be published in the same topic (if KafkaPublisher is used).
+     * This value will ge used for naming of topic and consumer group, so better to keep it short and
+     * human-redable.
+     */
     val groupId: String
 
     /**
-     * Topic for publishing (could be a single word, prefixes will be added automatically)
+     * Type of objects related to this descriptor. Subscriber should produce LogRecords of this type.
+     * Due to mongo framework specific of dealing with interfaces, we need to specify such types
+     * explicitly in order to avoid unnecessary mongo reflective field checks in queries.
      */
-    val topic: String
+    val entityType: Class<*>
 }

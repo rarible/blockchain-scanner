@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.ethereum.test.model
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 import scalether.domain.Address
@@ -10,7 +9,7 @@ import java.math.BigInteger
 
 data class TestEthereumLogRecord(
     @Id
-    override val id: ObjectId,
+    override val id: String,
     @Version
     override val version: Long? = null,
     override val log: EthereumLog? = null,
@@ -24,7 +23,7 @@ data class TestEthereumLogRecord(
         return copy(log = log)
     }
 
-    override fun withIdAndVersion(id: ObjectId, version: Long?): TestEthereumLogRecord {
+    override fun withIdAndVersion(id: String, version: Long?): TestEthereumLogRecord {
         return copy(id = id, version = version)
     }
 

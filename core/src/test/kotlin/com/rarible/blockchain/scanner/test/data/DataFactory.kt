@@ -22,7 +22,8 @@ fun testDescriptor1(): TestDescriptor {
     return TestDescriptor(
         "test_log_event_1",
         "test_topic_1",
-        listOf("contract-one_1", "contract-two_1")
+        listOf("contract-one_1", "contract-two_1"),
+        TestCustomLogRecord::class.java
     )
 }
 
@@ -30,7 +31,8 @@ fun testDescriptor2(): TestDescriptor {
     return TestDescriptor(
         "test_log_event_2",
         "test_topic_2",
-        listOf("contract-one_2", "contract-two_2")
+        listOf("contract-one_2", "contract-two_2"),
+        TestCustomLogRecord::class.java
     )
 }
 

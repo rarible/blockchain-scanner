@@ -17,9 +17,9 @@ class FlowLogRepository(
     private val mongo: ReactiveMongoTemplate
 ) {
 
-    suspend fun findByLogEventType(collection: String, eventType: String): FlowLogRecord<*>? {
+    suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): FlowLogRecord<*>? {
         val criteria = Criteria.where("log.eventType").isEqualTo(eventType)
-        return mongo.findOne(Query.query(criteria), FlowLogRecord::class.java, collection).awaitSingleOrNull()
+        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull() as FlowLogRecord<*>?
     }
 
     suspend fun delete(collection: String, record: FlowLogRecord<*>): FlowLogRecord<*> {

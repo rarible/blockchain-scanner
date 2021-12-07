@@ -275,8 +275,10 @@ class FlowScannerTest {
             runBlocking {
                 while (founded == null) {
                     founded = try {
+                        val descriptor = allFlowLogEventSubscriber.getDescriptor()
                         logRepository.findByLogEventType(
-                            collection = allFlowLogEventSubscriber.getDescriptor().collection,
+                            entityType = descriptor.entityType,
+                            collection = descriptor.collection,
                             eventType = "A.f8d6e0586b0a20c7.ExampleNFT.Mint"
                         )
                     } catch (e: Exception) {

@@ -11,13 +11,14 @@ import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.core.task.TaskService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactor.mono
-import org.bson.types.ObjectId
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
@@ -77,8 +78,8 @@ abstract class AbstractIntegrationTest {
     @Autowired
     lateinit var properties: EthereumScannerProperties
 
-    protected fun findLog(collection: String, id: ObjectId): EthereumLogRecord<*>? {
-        return mono { ethereumLogRepository.findLogEvent(collection, id) }.block()
+    protected fun findLog(collection: String, id: String): EthereumLogRecord<*>? = runBlocking {
+        ethereumLogRepository.findLogEvent(TestEthereumLogRecord::class.java, collection, id)
     }
 
     protected fun findBlock(number: Long): EthereumBlock? {

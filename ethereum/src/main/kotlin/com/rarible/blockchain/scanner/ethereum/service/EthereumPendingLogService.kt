@@ -40,7 +40,8 @@ class EthereumPendingLogService(
     }
 
     fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {
-        return ethereumLogRepository.findPendingLogs(descriptor.collection, descriptor.ethTopic).asFlow()
+        return ethereumLogRepository.findPendingLogs(descriptor.entityType, descriptor.collection, descriptor.ethTopic)
+            .asFlow()
     }
 
     private fun getInactive(
@@ -84,7 +85,7 @@ class EthereumPendingLogService(
         record: EthereumLogRecord<*>,
         status: Log.Status
     ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
-        val exist = ethereumLogRepository.findLogEvent(descriptor.collection, record.id)
+        val exist = ethereumLogRepository.findLogEvent(descriptor.entityType, descriptor.collection, record.id)
 
         val copy = exist?.withIdAndVersion(record.id, exist.version)
             ?: record.withIdAndVersion(record.id, null)

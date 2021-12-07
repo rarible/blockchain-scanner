@@ -13,7 +13,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.logTime
 import com.rarible.core.apm.withSpan
