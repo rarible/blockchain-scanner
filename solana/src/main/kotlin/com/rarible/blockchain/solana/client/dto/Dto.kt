@@ -12,7 +12,7 @@ abstract class Request(
     val id = 1
 }
 
-class GetSlotRequest : Request(
+object GetSlotRequest : Request(
     method = "getSlot"
 )
 

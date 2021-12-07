@@ -13,7 +13,7 @@ internal class SolanaClientTest {
 
     @Test
     fun testGetBlock() = runBlocking {
-        val slot = client.getLastBlockNumber()
+        val slot = client.getLatestSlot()
         val block = client.getBlock(slot)
 
         assertNotNull(block)

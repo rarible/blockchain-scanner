@@ -15,9 +15,9 @@ class SolanaClient(
     override val newBlocks: Flow<SolanaBlockchainBlock>
         get() = api.getBlockFlow()
 
-    override suspend fun getBlock(number: Long): SolanaBlockchainBlock? = api.getBlock(number)
+    suspend fun getLatestSlot(): Long = api.getLatestSlot()
 
-    override suspend fun getLastBlockNumber(): Long = api.getLatestSlot()
+    override suspend fun getBlock(number: Long): SolanaBlockchainBlock? = api.getBlock(number)
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? =
         api.getTransaction(transactionHash)
