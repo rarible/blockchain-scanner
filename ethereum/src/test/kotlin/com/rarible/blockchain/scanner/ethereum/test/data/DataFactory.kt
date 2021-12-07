@@ -2,8 +2,8 @@ package com.rarible.blockchain.scanner.ethereum.test.data
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Word
@@ -27,8 +27,8 @@ fun randomLogRecord(topic: Word, blockHash: Word, status: Log.Status = Log.Statu
     randomLogRecord(randomLog(topic, blockHash, status))
 
 
-fun randomLogRecord(log: EthereumLog): TestEthereumLogRecord {
-    return TestEthereumLogRecord(
+fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
+    return ReversedEthereumLogRecord(
         id = randomString(),
         version = null,
         log = log,

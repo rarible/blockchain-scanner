@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
+import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
@@ -8,7 +9,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomLog
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
-import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,10 +62,10 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         ethereumLogService.save(descriptor, listOf(newLog))
 
-        val savedVisibleRecord = findLog(collection, newLog.id) as TestEthereumLogRecord
+        val savedVisibleRecord = findLog(collection, newLog.id) as ReversedEthereumLogRecord
 
         assertNotNull(savedVisibleRecord)
-        assertEquals(newLog.data.customData, savedVisibleRecord.data.customData)
+        assertEquals(savedVisibleRecord.data, newLog.data)
         assertEquals(newLog.log, savedVisibleRecord.log)
     }
 
@@ -75,19 +76,21 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         val visibleLog = randomLog(transactionHash.toString(), topic, blockHash).copy(index = 2, minorLogIndex = 3)
         val visibleRecord = randomLogRecord(visibleLog)
+
         // Let's change custom data in order to detect changes
-        val updatedVisibleRecord = visibleRecord.copy(data = visibleRecord.data.copy(customData = randomString()))
+        val visibleRecordData = visibleRecord.data as TestEthereumLogData
+        val updatedVisibleRecord = visibleRecord.copy(data = visibleRecordData.copy(customData = randomString()))
 
         saveLog(descriptor.collection, visibleRecord)
         // Here we're also checking search by index/minorIndex
         ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
 
-        val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
+        val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
 
         val expectedLog = updatedVisibleRecord.log.copy(updatedAt = savedVisibleRecord.log.updatedAt)
 
         assertNotNull(savedVisibleRecord)
-        assertEquals(updatedVisibleRecord.data.customData, savedVisibleRecord.data.customData)
+        assertEquals(updatedVisibleRecord.data, savedVisibleRecord.data)
         assertEquals(expectedLog, savedVisibleRecord.log)
     }
 
@@ -100,18 +103,19 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val visibleRecord = randomLogRecord(visibleLog)
 
         // Let's change index in order to make this record unable to be found by findVisibleByKey
+        val visibleRecordData = visibleRecord.data as TestEthereumLogData
         val changedVisibleLog = visibleLog.copy(index = 4)
         val updatedVisibleRecord = visibleRecord.withLog(changedVisibleLog)
-            .copy(data = visibleRecord.data.copy(customData = randomString()))
+            .copy(data = visibleRecordData.copy(customData = randomString()))
 
         saveLog(descriptor.collection, visibleRecord)
         // Here we're also checking search by blockHash/logIndex
         ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
 
-        val savedVisibleRecord = findLog(collection, visibleRecord.id) as TestEthereumLogRecord
+        val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
 
         assertNotNull(savedVisibleRecord)
-        assertEquals(updatedVisibleRecord.data.customData, savedVisibleRecord.data.customData)
+        assertEquals(updatedVisibleRecord.data, savedVisibleRecord.data)
         assertEquals(updatedVisibleRecord.log, savedVisibleRecord.log)
     }
 
@@ -122,7 +126,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val savedLog = saveLog(collection, log)
         ethereumLogService.save(descriptor, listOf(log))
 
-        val updatedLog = findLog(collection, log.id) as TestEthereumLogRecord
+        val updatedLog = findLog(collection, log.id) as ReversedEthereumLogRecord
 
         assertNotNull(updatedLog)
         assertEquals(savedLog.version, updatedLog.version)

@@ -6,12 +6,12 @@ import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumBlockRepository
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
-import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.core.task.TaskService
@@ -79,7 +79,7 @@ abstract class AbstractIntegrationTest {
     lateinit var properties: EthereumScannerProperties
 
     protected fun findLog(collection: String, id: String): EthereumLogRecord<*>? = runBlocking {
-        ethereumLogRepository.findLogEvent(TestEthereumLogRecord::class.java, collection, id)
+        ethereumLogRepository.findLogEvent(ReversedEthereumLogRecord::class.java, collection, id)
     }
 
     protected fun findBlock(number: Long): EthereumBlock? {

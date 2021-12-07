@@ -1,7 +1,6 @@
-package com.rarible.blockchain.scanner.ethereum.test.model
+package com.rarible.blockchain.scanner.ethereum.model
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import org.springframework.data.annotation.Id
@@ -11,11 +10,11 @@ import scalether.domain.Address
 import java.time.Instant
 
 /**
- * Test Ethereum log similar to currently used in Ethereum-indexer.
+ * Default Ethereum log similar to currently used in Ethereum-indexer.
  * It has reverted structure - Log fields placed in the root of object,
  * custom data are nested object here
  */
-data class TestEthereumLogRecord(
+data class ReversedEthereumLogRecord(
     @Id
     override val id: String,
     @Version
@@ -39,8 +38,8 @@ data class TestEthereumLogRecord(
     override val createdAt: Instant = Instant.EPOCH,
     override val updatedAt: Instant = Instant.EPOCH,
 
-    val data: TestEthereumLogData
-) : EthereumLogRecord<TestEthereumLogRecord>() {
+    val data: EventData
+) : EthereumLogRecord<ReversedEthereumLogRecord>() {
 
     @Transient
     override val log: EthereumLog = EthereumLog(
@@ -63,7 +62,7 @@ data class TestEthereumLogRecord(
         updatedAt = updatedAt
     )
 
-    constructor(id: String, version: Long? = null, log: EthereumLog, data: TestEthereumLogData) : this(
+    constructor(id: String, version: Long? = null, log: EthereumLog, data: EventData) : this(
         id = id,
         version = version,
 
@@ -88,15 +87,19 @@ data class TestEthereumLogRecord(
         data = data
     )
 
-    override fun withLog(log: EthereumLog): TestEthereumLogRecord {
-        return TestEthereumLogRecord(id, version, log, data)
+    override fun withLog(log: EthereumLog): ReversedEthereumLogRecord {
+        return ReversedEthereumLogRecord(id, version, log, data)
     }
 
-    override fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant): TestEthereumLogRecord {
+    override fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant): ReversedEthereumLogRecord {
         return copy(id = id, version = version, updatedAt = updatedAt)
     }
 
     override fun getKey(): String {
         return address.hex()
     }
+
 }
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
+interface EventData

@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
@@ -11,7 +12,6 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
 import com.rarible.contracts.test.erc20.TestERC20
@@ -77,11 +77,12 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertEquals(receipt.blockHash().toString(), block.hash)
 
             // We expect single LogRecord from our single Subscriber
-            val testRecord = findAllLogs(collection)[0] as TestEthereumLogRecord
+            val testRecord = findAllLogs(collection)[0] as ReversedEthereumLogRecord
+            val data = testRecord.data as TestEthereumLogData
             assertThat(testRecord.log.status).isEqualTo(Log.Status.CONFIRMED)
-            assertThat(testRecord.data.from).isEqualTo(Address.ZERO())
-            assertThat(testRecord.data.to).isEqualTo(beneficiary)
-            assertThat(testRecord.data.value).isEqualTo(value)
+            assertThat(data.from).isEqualTo(Address.ZERO())
+            assertThat(data.to).isEqualTo(beneficiary)
+            assertThat(data.value).isEqualTo(value)
         }
 
         // TODO check Kafka
@@ -120,7 +121,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
             // First two records should be in CONFIRMED state, they are correct
             val confirmed = findAllLogs(collection).map {
-                it as TestEthereumLogRecord
+                it as ReversedEthereumLogRecord
             }.filter {
                 it.id != saved.id
             }
@@ -235,8 +236,8 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         }
     }
 
-    private fun ethRecord(log: EthereumLog, beneficiary: Address, value: BigInteger): TestEthereumLogRecord {
-        return TestEthereumLogRecord(
+    private fun ethRecord(log: EthereumLog, beneficiary: Address, value: BigInteger): ReversedEthereumLogRecord {
+        return ReversedEthereumLogRecord(
             id = randomString(),
             version = null,
             log = log,
