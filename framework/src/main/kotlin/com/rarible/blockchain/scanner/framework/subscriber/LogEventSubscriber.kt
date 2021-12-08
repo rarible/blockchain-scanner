@@ -2,10 +2,10 @@ package com.rarible.blockchain.scanner.framework.subscriber
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Subscriber is high-level component, provided from end services, who want to gather Blockchain Log history
@@ -29,10 +29,14 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L
     fun getDescriptor(): D
 
     /**
-     * Produces custom data from single Log. All records, produced by this method will be saved lately to the
-     * storage and all of them will be marked with minorLogIndex, based on order in returned flow
-     * (first - 0, second - 2 etc.)
+     * Produces custom data from single Log. Subscriber responsible to provide minorLogIndex for each log.
+     * This index means order of produced event. For example, if subscriber produces 3 records for
+     * provided log, they should have indices 0,1,2.
+     *
+     * @param block original Blockchain Block
+     * @param log original Blockchain Log
+     * @param index natural index of log for current subscriber in current block (artificial value)
      */
-    fun getEventRecords(block: BB, log: BL): Flow<R>
+    suspend fun getEventRecords(block: BB, log: BL, logMapper: LogMapper<BB, BL, L>, index: Int): List<R>
 
 }

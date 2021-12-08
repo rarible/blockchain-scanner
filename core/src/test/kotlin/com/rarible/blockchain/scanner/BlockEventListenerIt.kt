@@ -65,7 +65,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         coVerify(exactly = 1) {
             logEventPublisher.publish(match {
                 assertEquals(1, it.totalLogSize)
-                assertEquals(log.transactionHash, it.allRecords()[0].log!!.transactionHash)
+                assertEquals(log.transactionHash, it.allRecords()[0].log.transactionHash)
                 true
             })
         }
@@ -85,6 +85,8 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
             subscribers.asList(),
             testLogMapper,
             testLogService,
+            descriptor.groupId,
+            testLogEventComparator,
             testLogEventPublisher
         )
     }

@@ -70,6 +70,7 @@ class FlowBlockchainClient(
                     }.map { flowEvent ->
                         FlowBlockchainLog(
                             hash = flowEvent.transactionId.base16Value,
+                            // TODO FLOW - add transaction index
                             blockHash = entry.key.hash,
                             event = flowEvent
                         )

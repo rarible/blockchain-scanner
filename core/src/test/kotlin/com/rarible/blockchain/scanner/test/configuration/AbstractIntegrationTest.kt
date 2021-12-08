@@ -17,6 +17,7 @@ import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
@@ -48,6 +49,9 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var testLogService: TestLogService
+
+    @Autowired
+    lateinit var testLogEventComparator: TestLogEventComparator
 
     @Autowired
     lateinit var properties: TestBlockchainScannerProperties

@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
-import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
@@ -53,7 +52,7 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
         }
     }
 
-    suspend fun onBlockEvents(events: List<BlockEvent>): Flow<LogEvent> = coroutineScope {
+    suspend fun onBlockEvents(events: List<BlockEvent>): Flow<Pair<BlockEvent, MutableList<R>>> = coroutineScope {
         val batches = toBatches(events)
         logger.info("Split BlockEvents {} into {} batches", events.map { it.number }, batches.size)
 
@@ -64,39 +63,41 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun processBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent> = coroutineScope {
-        val blockNumbers = batch.map { it.number }
-        logger.info("Processing {} subscribers with BlockEvent batch: {}", subscribers.size, blockNumbers)
+    private suspend fun processBlockEventsBatch(batch: List<BlockEvent>): List<Pair<BlockEvent, MutableList<R>>> =
+        coroutineScope {
+            val blockNumbers = batch.map { it.number }
+            logger.info("Processing {} subscribers with BlockEvent batch: {}", subscribers.size, blockNumbers)
 
-        val bySubscriber = subscribers.map { subscriber ->
-            async {
-                val label = subscriber.subscriber.javaClass.name
-                val descriptor = subscriber.descriptor
-                descriptor to withSpan("processSingleSubscriber", labels = listOf("subscriber" to label)) {
-                    when (batch[0]) {
-                        is NewBlockEvent -> subscriber.onNewBlockEvents(batch as List<NewBlockEvent>)
-                        is RevertedBlockEvent -> subscriber.onRevertedBlockEvents(batch as List<RevertedBlockEvent>)
-                        is ReindexBlockEvent -> subscriber.onReindexBlockEvents(batch as List<ReindexBlockEvent>)
+            val bySubscriber = subscribers.map { subscriber ->
+                async {
+                    val label = subscriber.subscriber.javaClass.name
+                    val descriptor = subscriber.descriptor
+                    descriptor to withSpan("processSingleSubscriber", labels = listOf("subscriber" to label)) {
+                        when (batch[0]) {
+                            is NewBlockEvent -> subscriber.onNewBlockEvents(batch as List<NewBlockEvent>)
+                            is RevertedBlockEvent -> subscriber.onRevertedBlockEvents(batch as List<RevertedBlockEvent>)
+                            is ReindexBlockEvent -> subscriber.onReindexBlockEvents(batch as List<ReindexBlockEvent>)
+                        }
                     }
                 }
-            }
-        }.awaitAll()
+            }.awaitAll()
 
-        logger.info("BlockEvent batch processed: {}", blockNumbers)
+            logger.info("BlockEvent batch processed: {}", blockNumbers)
 
-        // Reverting relation "Subscriber -> BlockEvent[]" to "BlockEvent -> Subscriber[]"
-        val byBlock = HashMap<BlockEvent, MutableMap<Descriptor, List<R>>>()
-        bySubscriber.forEach { subscriberLogEvent ->
-            val descriptor = subscriberLogEvent.first
-            val logs = subscriberLogEvent.second
-            logs.forEach {
-                byBlock.computeIfAbsent(it.key) { LinkedHashMap() }[descriptor] = it.value
+            // Reverting relation "Subscriber -> BlockEvent[]" to "BlockEvent -> Subscriber[]"
+            val byBlock = HashMap<BlockEvent, MutableList<R>>()
+            bySubscriber.forEach { subscriberLogEvent ->
+                val logs = subscriberLogEvent.second
+                logs.forEach {
+                    byBlock.computeIfAbsent(it.key) { mutableListOf() }.addAll(it.value)
+                }
             }
+
+            // Ordering batches by BlockEvents
+            val result = ArrayList<Pair<BlockEvent, MutableList<R>>>()
+            batch.forEach { result.add(Pair(it, byBlock.getOrDefault(it, mutableListOf()))) }
+            result
         }
-
-        // Ordering by incoming block event order
-        batch.map { LogEvent(it, byBlock[it] ?: emptyMap()) }
-    }
 
     private fun toBatches(events: List<BlockEvent>): List<List<BlockEvent>> {
         val batches = mutableListOf<List<BlockEvent>>()

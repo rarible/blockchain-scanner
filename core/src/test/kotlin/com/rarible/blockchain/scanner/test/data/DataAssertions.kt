@@ -17,7 +17,7 @@ fun assertOriginalBlockAndBlockEquals(testOriginalBlock: TestOriginalBlock, test
 }
 
 fun assertRecordAndLogEquals(testLogRecord: TestLogRecord<*>, blockchainLog: TestOriginalLog) {
-    assertOriginalLogAndLogEquals(blockchainLog, testLogRecord.log!!)
+    assertOriginalLogAndLogEquals(blockchainLog, testLogRecord.log)
     assertEquals(blockchainLog.testExtra, testLogRecord.logExtra)
 }
 

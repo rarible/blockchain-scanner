@@ -96,10 +96,12 @@ data class ReversedEthereumLogRecord(
     }
 
     override fun getKey(): String {
-        return address.hex()
+        return data.getKey(log)
     }
 
 }
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
-interface EventData
+interface EventData {
+    fun getKey(log: EthereumLog): String
+}

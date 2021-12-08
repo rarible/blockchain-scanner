@@ -48,9 +48,9 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         // We are expecting here event from pending logs and then event from new block
         assertEquals(1, logEvents.size)
 
-        assertEquals(Log.Status.CONFIRMED, logEvents[0].log!!.status)
-        assertEquals(true, logEvents[0].log!!.visible)
-        assertOriginalLogAndLogEquals(log, logEvents[0].log!!)
+        assertEquals(Log.Status.CONFIRMED, logEvents[0].log.status)
+        assertEquals(true, logEvents[0].log.visible)
+        assertOriginalLogAndLogEquals(log, logEvents[0].log)
     }
 
     private fun createBlockSubscriber(

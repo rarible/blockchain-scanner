@@ -56,8 +56,8 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
 
         val updatedRecord = findLog(collection, record.id)!!
 
-        assertFalse(updatedRecord.log!!.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
+        assertFalse(updatedRecord.log.visible)
+        assertEquals(Log.Status.INACTIVE, updatedRecord.log.status)
     }
 
 
@@ -69,8 +69,8 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
 
         val updatedRecord = findLog(collection, record.id)!!
 
-        assertFalse(updatedRecord.log!!.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
+        assertFalse(updatedRecord.log.visible)
+        assertEquals(Log.Status.INACTIVE, updatedRecord.log.status)
     }
 
     @Test
@@ -82,7 +82,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
 
         val updatedRecord = findLog(collection, record.id)!!
 
-        assertFalse(updatedRecord.log!!.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log!!.status)
+        assertFalse(updatedRecord.log.visible)
+        assertEquals(Log.Status.INACTIVE, updatedRecord.log.status)
     }
 }

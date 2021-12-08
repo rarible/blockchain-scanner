@@ -13,9 +13,6 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.withIndex
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -37,7 +34,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : 
     @Suppress("UNCHECKED_CAST")
     suspend fun revert(blockEvent: RevertedBlockEvent): List<R> {
         val reverted = logService.findAndDelete(descriptor, blockEvent.hash).toList()
-            .map { it.withLog(it.log!!.withStatus(Log.Status.REVERTED)) as R }
+            .map { it.withLog(it.log.withStatus(Log.Status.REVERTED)) as R }
         logger.info("Reverted {} Logs for Block [{}], subscriber {}", reverted.size, blockEvent, name)
         return reverted
     }
@@ -48,8 +45,8 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : 
 
         return if (logs.isNotEmpty()) {
             logger.info("Handling {} Logs of Block [{}:{}], subscriber {} ", logs.size, block.number, block.hash, name)
-            val processedLogs = logs.withIndex().flatMap { (idx, log) ->
-                onLog(block, idx, log)
+            val processedLogs = logs.withIndex().flatMap { (index, log) ->
+                subscriber.getEventRecords(block, log, logMapper, index)
             }
             withSpan("saveLogs", "db") {
                 logService.save(descriptor, processedLogs)
@@ -57,23 +54,5 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : 
         } else {
             emptyList()
         }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private suspend fun onLog(block: BB, index: Int, log: BL): List<R> {
-        return subscriber.getEventRecords(block, log)
-            .withIndex()
-            .map { indexed ->
-                val record = indexed.value
-                val minorLogIndex = indexed.index
-                val recordLog = logMapper.map(
-                    block,
-                    log,
-                    index,
-                    minorLogIndex,
-                    subscriber.getDescriptor()
-                )
-                record.withLog(recordLog) as R
-            }.toList()
     }
 }

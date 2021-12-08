@@ -10,6 +10,7 @@ data class TestLog(
     val topic: String,
     val minorLogIndex: Int,
     val blockHash: String? = null,
+    val blockNumber: Long? = null,
     val logIndex: Int? = null,
     val index: Int,
     val extra: String,

@@ -31,34 +31,27 @@ class KafkaLogEventPublisher(
     )
 
     override suspend fun publish(logEvent: LogEvent) {
-        // TODO add sorting
-        val byTopic = HashMap<String, MutableList<KafkaMessage<LogRecordEvent<*>>>>()
         val source = logEvent.blockEvent.source
+        // Here we're expecting ordered LogRecords
+        val messages = logEvent.logEvents.map { toKafkaMessage(it, source) }
+        val topic = getTopic(logEvent.groupId)
 
-        // In current implementation we're handling here events from single subscriber group,
-        // so there should NOT be different topics, but who knows, maybe one day it will be changed
-        logEvent.logEvents.map {
-            val descriptor = it.key
-            val logs = it.value
-            val topic = getTopic(descriptor)
-            val messages = logs.map { record -> toKafkaMessage(record, source) }
-            byTopic.computeIfAbsent(topic) { mutableListOf() }.addAll(messages)
-        }
-
-        byTopic.forEach {
-            kafkaProducer.send(it.value, it.key).collect()
-        }
+        kafkaProducer.send(messages, topic)
     }
 
     override suspend fun publish(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>) {
-        // TODO sorting?
+        // TODO sorting? Not sure it needed for deleted pending logs
         val topic = getTopic(descriptor)
         val messages = logs.map { record -> toKafkaMessage(record, source) }
         kafkaProducer.send(messages, topic).collect()
     }
 
     private fun getTopic(descriptor: Descriptor): String {
-        return "$topicPrefix.${descriptor.groupId}"
+        return getTopic(descriptor.groupId)
+    }
+
+    private fun getTopic(groupId: String): String {
+        return "$topicPrefix.${groupId}"
     }
 
     private fun toKafkaMessage(record: LogRecord<*, *>, source: Source): KafkaMessage<LogRecordEvent<*>> {

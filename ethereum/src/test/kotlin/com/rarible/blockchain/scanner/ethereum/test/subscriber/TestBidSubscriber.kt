@@ -3,13 +3,13 @@ package com.rarible.blockchain.scanner.ethereum.test.subscriber
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 
 class TestBidSubscriber : EthereumLogEventSubscriber {
 
@@ -23,11 +23,13 @@ class TestBidSubscriber : EthereumLogEventSubscriber {
         )
     }
 
-    override fun getEventRecords(
+    override suspend fun getEventRecords(
         block: EthereumBlockchainBlock,
-        log: EthereumBlockchainLog
-    ): Flow<EthereumLogRecord<*>> {
-        return emptyFlow()
+        log: EthereumBlockchainLog,
+        logMapper: LogMapper<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog>,
+        index: Int
+    ): List<EthereumLogRecord<*>> {
+        return emptyList()
     }
 
 }
