@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
@@ -32,6 +33,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     blockService: BlockService<B>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
+    logEventComparator: LogEventComparator<L, R>,
     properties: BlockchainScannerProperties,
     // Autowired beans
     private val blockEventPublisher: BlockEventPublisher,
@@ -50,11 +52,13 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         .groupBy { it.getDescriptor().groupId }
         .map {
             it.key to BlockEventListener(
-                blockchainClient,
-                it.value,
-                logMapper,
-                logService,
-                logEventPublisher
+                blockchainClient = blockchainClient,
+                subscribers = it.value,
+                logMapper = logMapper,
+                logService = logService,
+                groupId = it.key,
+                logEventComparator = logEventComparator,
+                logEventPublisher = logEventPublisher
             )
         }.associateBy({ it.first }, { it.second })
 

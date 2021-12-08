@@ -42,7 +42,7 @@ class BlockEventHandlerIt : AbstractIntegrationTest() {
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
         val logEvents = blockEventHandler.onBlockEvents(listOf(event))
-            .toList().flatMap { it.allRecords() } as List<TestLogRecord<*>>
+            .toList().flatMap { it.second }
 
         assertEquals(2, logEvents.size)
 

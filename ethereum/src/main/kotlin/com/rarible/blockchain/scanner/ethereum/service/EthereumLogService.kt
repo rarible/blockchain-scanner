@@ -34,7 +34,7 @@ class EthereumLogService(
             optimisticLock(properties.optimisticLockRetries) {
 
                 val collection = descriptor.collection
-                val log = record.log!!
+                val log = record.log
 
                 val found = ethereumLogRepository.findVisibleByKey(
                     descriptor.entityType,

@@ -83,7 +83,7 @@ class EthereumPendingLogChecker(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord<*>,
     ): Pair<EthereumLogRecord<*>?, BlockchainBlock?>? {
-        val tx = blockchainClient.getTransactionMeta(record.log!!.transactionHash)
+        val tx = blockchainClient.getTransactionMeta(record.log.transactionHash)
 
         if (tx == null) {
             logger.info("Can't find transaction for record in blockchain, dropping it: [{}]", record)

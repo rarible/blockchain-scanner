@@ -10,7 +10,7 @@ data class TestCustomLogRecord(
     override val version: Long?,
     override val logExtra: String,
     override val blockExtra: String,
-    override val log: TestLog? = null,
+    override val log: TestLog,
     val customData: String
 ) : TestLogRecord<TestCustomLogRecord>() {
 

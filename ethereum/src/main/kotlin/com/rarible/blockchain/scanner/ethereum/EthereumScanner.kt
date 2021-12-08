@@ -17,6 +17,7 @@ import com.rarible.blockchain.scanner.ethereum.pending.PendingLogChecker
 import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventComparator
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
@@ -38,6 +39,7 @@ class EthereumScanner(
     blockService: EthereumBlockService,
     logMapper: EthereumLogMapper,
     logService: EthereumLogService,
+    logEventComparator: EthereumLogEventComparator,
     properties: BlockchainScannerProperties,
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
@@ -52,6 +54,7 @@ class EthereumScanner(
     blockService,
     logMapper,
     logService,
+    logEventComparator,
     properties,
     blockEventPublisher,
     blockEventConsumer,
@@ -61,11 +64,11 @@ class EthereumScanner(
     private val logger = LoggerFactory.getLogger(EthereumScanner::class.java)
 
     private val pendingLogChecker = EthereumPendingLogChecker(
-        blockchainClient,
-        pendingLogService,
-        logEventPublisher,
-        blockEventListeners,
-        subscribers
+        blockchainClient = blockchainClient,
+        pendingLogService = pendingLogService,
+        logEventPublisher = logEventPublisher,
+        blockEventListeners = blockEventListeners,
+        subscribers = subscribers
     )
 
     override suspend fun checkPendingLogs() {

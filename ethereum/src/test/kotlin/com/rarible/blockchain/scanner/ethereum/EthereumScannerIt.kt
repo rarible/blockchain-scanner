@@ -135,7 +135,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
             // Artificial pending record should become INACTIVE
             val inactive = findLog(collection, saved.id)!!
-            assertEquals(Log.Status.INACTIVE, inactive.log!!.status)
+            assertEquals(Log.Status.INACTIVE, inactive.log.status)
 
             val block = findBlock(tx.blockNumber().toLong())
             assertNotNull(block)
@@ -166,7 +166,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertCollectionSize(collection, 2)
 
             // PENDING LogRecord should become INACTIVE since transfer failed
-            val savedLog = findLog(collection, saved.id)!!.log!!
+            val savedLog = findLog(collection, saved.id)!!.log
             assertEquals(savedLog.status, Log.Status.INACTIVE)
             assertNull(savedLog.blockNumber)
             assertNull(savedLog.logIndex)
@@ -192,7 +192,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         TestERC20.deploy(sender, "NAME", "NM").verifySuccess()
 
         BlockingWait.waitAssert {
-            val readLog = findLog(collection, saved.id)!!.log!!
+            val readLog = findLog(collection, saved.id)!!.log
             assertEquals(Log.Status.DROPPED, readLog.status)
             assertNull(readLog.blockNumber)
             assertNull(readLog.logIndex)

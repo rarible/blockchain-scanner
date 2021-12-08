@@ -21,7 +21,7 @@ class TestLogService(
         records: List<TestLogRecord<*>>
     ): List<TestLogRecord<*>> {
         return records.map { record ->
-            val log = record.log!!
+            val log = record.log
             val opt = testLogRepository.findByKey(
                 descriptor.entityType,
                 descriptor.collection,

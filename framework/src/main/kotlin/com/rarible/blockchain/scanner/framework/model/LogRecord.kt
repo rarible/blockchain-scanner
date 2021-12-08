@@ -10,7 +10,7 @@ interface LogRecord<L : Log<L>, LR : LogRecord<L, LR>> {
      * Log data intrinsic for specific Blockchain. Should be set by Scanner framework,
      * subscribers MUST leave it NULL.
      */
-    val log: L?
+    val log: L
 
     /**
      * Create copy of this record with new Log data. Since some implementations of Blockchain

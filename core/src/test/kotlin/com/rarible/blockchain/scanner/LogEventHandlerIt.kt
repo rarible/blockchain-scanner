@@ -53,12 +53,12 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         assertTrue(savedLog1 is TestCustomLogRecord)
         assertRecordAndLogEquals(savedLog1, log.testOriginalLog, block.testOriginalBlock)
         assertRecordAndLogEquals(savedLog2, log.testOriginalLog, block.testOriginalBlock)
-        assertEquals(0, savedLog1.log!!.index)
-        assertEquals(0, savedLog2.log!!.index)
+        assertEquals(0, savedLog1.log.index)
+        assertEquals(0, savedLog2.log.index)
 
         // Minor index should be different because there are 2 custom data objects generated for single Blockchain Log
-        assertEquals(0, savedLog1.log!!.minorLogIndex)
-        assertEquals(1, savedLog2.log!!.minorLogIndex)
+        assertEquals(0, savedLog1.log.minorLogIndex)
+        assertEquals(1, savedLog2.log.minorLogIndex)
     }
 
     @Test
@@ -72,8 +72,8 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         assertEquals(6, savedLogs.size)
 
         val fromDb = savedLogs.map { findLog(collection, it.id)!! }
-        val indices = fromDb.map { it.log!!.index }
-        val minorIndices = fromDb.map { it.log!!.minorLogIndex }
+        val indices = fromDb.map { it.log.index }
+        val minorIndices = fromDb.map { it.log.minorLogIndex }
 
         assertIterableEquals(listOf(0, 0, 0, 1, 1, 1), indices)
         assertIterableEquals(listOf(0, 1, 2, 0, 1, 2), minorIndices)
@@ -113,14 +113,14 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         // Log 1 and 2 should be deleted and published with status REVERTED
         assertNull(log1FromDb)
         assertEquals(log1.id, log1Event.id)
-        assertEquals(Log.Status.REVERTED, log1Event.log!!.status)
+        assertEquals(Log.Status.REVERTED, log1Event.log.status)
 
         assertNull(log2FromDb)
         assertEquals(log2.id, log2Event.id)
-        assertEquals(Log.Status.REVERTED, log2Event.log!!.status)
+        assertEquals(Log.Status.REVERTED, log2Event.log.status)
 
         // This log should not be changed since it related to another block
-        assertEquals(log3.log!!.status, log3FromDb.log!!.status)
+        assertEquals(log3.log.status, log3FromDb.log.status)
     }
 
     private fun createHandler(

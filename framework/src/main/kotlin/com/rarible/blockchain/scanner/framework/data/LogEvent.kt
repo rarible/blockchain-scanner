@@ -1,19 +1,20 @@
 package com.rarible.blockchain.scanner.framework.data
 
-import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 
 data class LogEvent(
     // BlockEvent related to produced LogRecords
     val blockEvent: BlockEvent,
+    // Subscriber group of the events
+    val groupId: String,
     // LogEvents grouped by Descriptor
-    val logEvents: Map<Descriptor, List<LogRecord<*, *>>>
+    val logEvents: List<LogRecord<*, *>>
 ) {
 
-    val totalLogSize = logEvents.values.sumOf { it.size }
+    val totalLogSize = logEvents.size
 
     fun allRecords(): List<LogRecord<*, *>> {
-        return logEvents.values.flatten()
+        return logEvents
     }
 
 }

@@ -52,7 +52,7 @@ class EthereumPendingLogService(
             return emptyFlow()
         }
 
-        val byTxHash = records.groupBy { it.record.log!!.transactionHash }
+        val byTxHash = records.groupBy { it.record.log.transactionHash }
         val fullBlock = monoEthereum.ethGetFullBlockByHash(Word.apply(blockHash))
         return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
             .map { tx ->
@@ -85,8 +85,8 @@ class EthereumPendingLogService(
         val copy = exist?.withIdAndVersion(record.id, exist.version)
             ?: record.withIdAndVersion(record.id, null)
 
-        logger.info("Updating status {} -> {} for record: {}", copy.log!!.status, status, copy)
-        val updatedCopy = copy.withLog(record.log!!.copy(status = status, visible = false))
+        logger.info("Updating status {} -> {} for record: {}", copy.log.status, status, copy)
+        val updatedCopy = copy.withLog(record.log.copy(status = status, visible = false))
         ethereumLogRepository.save(descriptor.collection, updatedCopy)
     }
 }

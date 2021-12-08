@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.util.logTime
@@ -19,6 +20,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
@@ -29,6 +31,8 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
+    private val groupId: String,
+    private val logEventComparator: LogEventComparator<L, R>,
     private val logEventPublisher: LogEventPublisher
 ) : BlockListener {
 
@@ -55,7 +59,11 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
             val logs = logTime("BlockEventListener::processBlockEvents") {
                 blockEventProcessor.onBlockEvents(events)
             }
-            logs
+            logs.map {
+                val sortedEvents = it.second
+                sortedEvents.sortWith(logEventComparator)
+                LogEvent(it.first, groupId, sortedEvents)
+            }
         }
     }
 

@@ -118,6 +118,8 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
                     it.value,
                     testLogMapper,
                     testLogService,
+                    it.key,
+                    testLogEventComparator,
                     logEventPublisher
                 )
             }.associateBy({ it.first }, { it.second })

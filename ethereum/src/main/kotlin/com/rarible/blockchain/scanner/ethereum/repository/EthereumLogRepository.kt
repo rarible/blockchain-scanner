@@ -106,7 +106,7 @@ class EthereumLogRepository(
         return result.flatMap {
             logger.info(
                 "Deleting EthereumLogRecord: blockHash='{}', status='{}'",
-                it.log!!.blockHash, it.log!!.status
+                it.log.blockHash, it.log.status
             )
             mongo.remove(it, collection).thenReturn(it)
         }
