@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.test.configuration
 
-import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
@@ -19,6 +18,7 @@ import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.DefaultTestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.mockk.coEvery
 import io.mockk.mockk
