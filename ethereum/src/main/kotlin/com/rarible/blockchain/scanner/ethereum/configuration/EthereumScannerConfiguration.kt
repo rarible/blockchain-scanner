@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.configuration
 
 import com.github.cloudyrock.spring.v5.EnableMongock
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.ethereum.EthereumScanner
 import com.rarible.blockchain.scanner.ethereum.subscriber.DefaultEthereumLogEventComparator
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventComparator
@@ -14,7 +15,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 
-
+@EnableBlockchainScanner
 @ExperimentalCoroutinesApi
 @FlowPreview
 @Configuration

@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.flow.configuration
 
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 @FlowPreview
+@EnableBlockchainScanner
 @Configuration
 @ComponentScan(basePackages = ["com.rarible.blockchain.scanner.flow"])
 @EnableReactiveMongoRepositories(basePackages = ["com.rarible.blockchain.scanner.flow.repository"])

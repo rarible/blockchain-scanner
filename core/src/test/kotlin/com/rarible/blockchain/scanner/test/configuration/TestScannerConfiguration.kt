@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.test.configuration
 
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
@@ -19,8 +20,6 @@ import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.DefaultTestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,6 +36,7 @@ import org.springframework.data.mongodb.core.ReactiveMongoOperations
 @Configuration
 @EnableAutoConfiguration
 @EnableRaribleMongo
+@EnableBlockchainScanner
 @EnableConfigurationProperties(TestBlockchainScannerProperties::class)
 class TestScannerConfiguration {
 
@@ -58,9 +58,6 @@ class TestScannerConfiguration {
             testDescriptor1().id, testDescriptor2().id
         )
     )
-
-    @Bean
-    fun meterRegistry(): MeterRegistry = SimpleMeterRegistry()
 
     @Bean
     fun testBlockMapper() = TestBlockMapper()
