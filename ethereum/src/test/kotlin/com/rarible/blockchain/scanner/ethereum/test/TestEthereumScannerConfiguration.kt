@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
