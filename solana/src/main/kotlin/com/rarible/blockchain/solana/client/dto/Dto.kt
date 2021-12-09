@@ -13,7 +13,10 @@ abstract class Request(
 }
 
 object GetSlotRequest : Request(
-    method = "getSlot"
+    method = "getSlot",
+    params = listOf(
+        mapOf("commitment" to "confirmed")
+    )
 )
 
 class GetBlockRequest(
@@ -25,6 +28,7 @@ class GetBlockRequest(
         slot,
         mapOf(
             "transactionDetails" to transactionDetails.name.lowercase(),
+            "commitment" to "confirmed",
             "rewards" to false
         )
     )
@@ -38,7 +42,10 @@ class GetTransactionRequest(
     signature: String
 ) : Request(
     method = "getTransaction",
-    params = listOf(signature)
+    params = listOf(
+        signature,
+        mapOf("commitment" to "confirmed")
+    )
 )
 
 data class ApiResponse<T>(
@@ -66,8 +73,9 @@ data class SolanaBlockDto(
     val blockTime: Long
 )
 
-fun SolanaBlockDto.toModel() = SolanaBlockchainBlock(
-    slot = parentSlot,
+fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(
+    slot = slot,
+    parentSlot = parentSlot,
     number = blockHeight,
     hash = blockhash,
     parentHash = previousBlockhash,
