@@ -24,6 +24,8 @@ interface SolanaApi {
 
     suspend fun getBlock(slot: Long): SolanaBlockchainBlock?
 
+    suspend fun getBlockEvents(slot: Long): List<SolanaBlockEvent>
+
     suspend fun getTransaction(signature: String): TransactionMeta?
 }
 
@@ -68,17 +70,26 @@ internal class SolanaHttpRpcApi(
         .result
 
     override suspend fun getBlock(slot: Long): SolanaBlockchainBlock? = client.post()
-        .body(BodyInserters.fromValue(GetBlockRequest(slot)))
+        .body(BodyInserters.fromValue(GetBlockRequest(slot, GetBlockRequest.TransactionDetails.None)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaBlockDto>>()
         .awaitSingleOrNull()
         ?.result
         ?.toModel(slot)
 
+    override suspend fun getBlockEvents(slot: Long): List<SolanaBlockEvent> = client.post()
+            .body(BodyInserters.fromValue(GetBlockRequest(slot, GetBlockRequest.TransactionDetails.Full)))
+            .retrieve()
+            .bodyToMono<ApiResponse<SolanaBlockDto>>()
+            .awaitSingle()
+            .result
+            .transactions
+            .flatMap { it.toModel() }
+
     override suspend fun getTransaction(signature: String) = client.post()
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
         .retrieve()
-        .bodyToMono<ApiResponse<SolanaTransactionDto>>()
+        .bodyToMono<ApiResponse<SolanaTransactionMetaDto>>()
         .awaitSingleOrNull()
         ?.result
         ?.toModel()
@@ -86,6 +97,6 @@ internal class SolanaHttpRpcApi(
     companion object {
         const val POLLING_DELAY = 500L
         const val MAX_BODY_SIZE = 10 * 1024 * 1024
-        const val DEFAULT_TIMEOUT = 2000L
+        const val DEFAULT_TIMEOUT = 5000L
     }
 }
