@@ -22,6 +22,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
 
     // We can cache lastKnown block in order to avoid huge amount of DB requests in
     // regular case of block processing
+    @Volatile
     private var lastBlock: B? = null
 
     suspend fun onNewBlock(newBlockchainBlock: BB) {
@@ -50,9 +51,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
         while (currentBlock.id < newBlock.id) {
-            val nextBlockNumber = currentBlock.id + 1 //todo search for the next available block, do not use +1
-            val nextBlock = fetchBlock(nextBlockNumber)
-                ?: error("Block after ${currentBlock.id} is not found in blockchain")
+            val nextBlock = getNextBlock(currentBlock, newBlock.id - currentBlock.id)
 
             if (nextBlock.parentHash != currentBlock.hash) {
                 // chain reorg occured while we were going forward
@@ -79,10 +78,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
             notifyRevertedBlock(stateBlock)
             blockService.remove(stateBlock.id)
 
-            //todo replace this call with getPreviousBlock(number)
-            stateBlock = blockService.getBlock(stateBlock.id - 1)
-                ?: error("Can't find block previous to ${stateBlock.id}")
-
+            stateBlock = getPreviousBlock(stateBlock)
             blockchainBlock = fetchBlock(stateBlock.id)
         }
 
@@ -107,6 +103,34 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
 
         lastBlock = blockchainBlock
         return blockchainBlock
+    }
+
+    private suspend fun getNextBlock(startBlock: B, maxSteps: Long): B {
+        var id = startBlock.id
+
+        while (id < startBlock.id + maxSteps) {
+            val block = fetchBlock(id + 1)
+
+            if (block != null) return block
+
+            id++
+        }
+
+        error("Can't find next block for: $startBlock")
+    }
+
+    private suspend fun getPreviousBlock(startBlock: B): B {
+        var id = startBlock.id
+
+        while (id > 0) {
+            val block = blockService.getBlock(id - 1)
+
+            if (block != null) return block
+
+            id--
+        }
+
+        error("Can't find previous block for: $startBlock")
     }
 
     private suspend fun updateBlock(block: B) {
