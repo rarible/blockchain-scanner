@@ -73,7 +73,7 @@ internal class SolanaHttpRpcApi(
         .bodyToMono<ApiResponse<SolanaBlockDto>>()
         .awaitSingleOrNull()
         ?.result
-        ?.toModel()
+        ?.toModel(slot)
 
     override suspend fun getTransaction(signature: String) = client.post()
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
