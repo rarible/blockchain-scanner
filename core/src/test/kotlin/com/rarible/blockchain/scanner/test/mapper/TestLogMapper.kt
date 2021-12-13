@@ -12,7 +12,6 @@ class TestLogMapper : LogMapper<TestBlockchainBlock, TestBlockchainLog, TestLog>
     override fun map(
         block: TestBlockchainBlock,
         log: TestBlockchainLog,
-        index: Int,
         minorIndex: Int,
         descriptor: Descriptor
     ): TestLog {
@@ -26,7 +25,7 @@ class TestLogMapper : LogMapper<TestBlockchainBlock, TestBlockchainLog, TestLog>
             status = Log.Status.CONFIRMED,
             blockHash = testLog.blockHash,
             logIndex = testLog.logIndex,
-            index = index
+            index = log.index
         )
     }
 }

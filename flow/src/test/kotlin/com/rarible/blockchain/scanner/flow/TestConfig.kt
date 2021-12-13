@@ -40,8 +40,7 @@ class TestConfig {
         override suspend fun getEventRecords(
             block: FlowBlockchainBlock,
             log: FlowBlockchainLog,
-            logMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog>,
-            index: Int
+            logMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog>
         ): List<FlowLogRecord<*>> {
             if (!descriptor.events.contains(log.event.type)) {
                 return emptyList()

@@ -17,7 +17,6 @@ interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>> {
      *
      * @param block original Blockchain Block
      * @param log original Blockchain Log
-     * @param index index of Log in Block
      * @param minorIndex index of Log in context of LogEvent
      * (if there are several LogRecords for single Log, they will be ordered by this index)
      * @param descriptor descriptor of subscriber, who provide LogRecords
@@ -25,7 +24,6 @@ interface LogMapper<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>> {
     fun map(
         block: BB,
         log: BL,
-        index: Int,
         minorIndex: Int,
         descriptor: Descriptor
     ): L

@@ -28,14 +28,13 @@ class TestTransferSubscriber : EthereumLogEventSubscriber {
     override suspend fun getEventRecords(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog,
-        logMapper: LogMapper<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog>,
-        index: Int
+        logMapper: LogMapper<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog>
     ): List<EthereumLogRecord<*>> {
         val scalether = TransferEvent.apply(log.ethLog)
         return listOf(
             ReversedEthereumLogRecord(
                 id = randomString(),
-                log = EthereumLogMapper().map(block, log, index, 0, getDescriptor()),
+                log = EthereumLogMapper().map(block, log, 0, getDescriptor()),
                 data = TestEthereumLogData(
                     customData = randomString(),
                     to = scalether.to(),

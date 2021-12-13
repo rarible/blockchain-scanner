@@ -45,9 +45,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : 
 
         return if (logs.isNotEmpty()) {
             logger.info("Handling {} Logs of Block [{}:{}], subscriber {} ", logs.size, block.number, block.hash, name)
-            val processedLogs = logs.withIndex().flatMap { (index, log) ->
-                subscriber.getEventRecords(block, log, logMapper, index)
-            }
+            val processedLogs = logs.flatMap {  subscriber.getEventRecords(block, it, logMapper) }
             withSpan("saveLogs", "db") {
                 logService.save(descriptor, processedLogs)
             }
