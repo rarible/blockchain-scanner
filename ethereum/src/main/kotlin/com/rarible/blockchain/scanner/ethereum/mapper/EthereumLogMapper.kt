@@ -21,6 +21,7 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
         descriptor: Descriptor
     ): EthereumLog {
         val ethLog = log.ethLog
+        val nowInstant = nowMillis()
         return EthereumLog(
             address = ethLog.address(),
             topic = Word.apply(descriptor.id),
@@ -32,8 +33,8 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
             minorLogIndex = minorIndex,
             index = index,
             visible = true,
-            createdAt = nowMillis(),
-            updatedAt = nowMillis()
+            createdAt = nowInstant,
+            updatedAt = nowInstant
         )
     }
 }
