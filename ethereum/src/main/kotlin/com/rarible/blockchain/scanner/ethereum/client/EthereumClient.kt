@@ -71,7 +71,7 @@ class EthereumClient(
                 BigInteger.valueOf(range.first).encodeForFilter(),
                 BigInteger.valueOf(range.last).encodeForFilter()
             )
-        logger.info("Loading logs with filter [$filter] in range $range")
+        logger.info("Loading logs with filter in range $range with [$filter]")
 
         return ethereum.ethGetLogsJava(filter)
             .flatMapIterable { allLogs ->
