@@ -6,7 +6,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomBlock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 @FlowPreview
@@ -15,16 +15,16 @@ import org.junit.jupiter.api.Test
 class EthereumBlockServiceIt : AbstractIntegrationTest() {
 
     @Test
-    fun `save and get`() = runBlocking {
+    fun `save and get`() = runBlocking<Unit> {
         val block = randomBlock()
 
         ethereumBlockService.save(block)
 
-        assertEquals(block, ethereumBlockService.getBlock(block.id))
+        assertThat(ethereumBlockService.getBlock(block.id)).isEqualTo(block)
     }
 
     @Test
-    fun `get last block`() = runBlocking {
+    fun `get last block`() = runBlocking<Unit> {
         val block1 = saveBlock(randomBlock())
         val block2 = saveBlock(randomBlock())
         val block3 = saveBlock(randomBlock())
@@ -33,6 +33,16 @@ class EthereumBlockServiceIt : AbstractIntegrationTest() {
 
         val lastBlock = ethereumBlockService.getLastBlock()
 
-        assertEquals(max, lastBlock?.id)
+        assertThat(lastBlock?.id).isEqualTo(max)
+    }
+
+    @Test
+    fun `delete by id`() = runBlocking<Unit> {
+        val block = randomBlock()
+
+        ethereumBlockService.save(block)
+        ethereumBlockService.remove(block.id)
+
+        assertThat(ethereumBlockService.getBlock(block.id)).isNull()
     }
 }
