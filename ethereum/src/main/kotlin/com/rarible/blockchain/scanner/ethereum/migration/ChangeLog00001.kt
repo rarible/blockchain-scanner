@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.migration
 import com.github.cloudyrock.mongock.ChangeLog
 import com.github.cloudyrock.mongock.ChangeSet
 import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import io.changock.migration.api.annotations.NonLockGuarded
 import org.bson.Document
 import org.springframework.data.domain.Sort
@@ -15,19 +16,11 @@ import org.springframework.data.mongodb.core.query.Update
 @ChangeLog(order = "00001")
 class ChangeLog00001 {
 
-    @ChangeSet(id = "fillMinorLogIndex", order = "00001", author = "eugene")
-    fun fillMinorLogIndex(
-        template: MongockTemplate,
-        @NonLockGuarded holderEthereum: EthereumLogEventSubscriberHolder
-    ) {
-        val collections = holderEthereum.subscribers.map { it.getDescriptor().collection }.toSet()
-        collections.forEach {
-            template.updateMulti(
-                Query(Criteria.where("minorLogIndex").exists(false)),
-                Update().set("minorLogIndex", 0),
-                it
-            )
-        }
+    @ChangeSet(id = "addBlockIndex", order = "00001", author = "eugene")
+    fun addBlockIndex(template: MongockTemplate) {
+        template.indexOps(EthereumBlock::class.java).ensureIndex(
+            Index().on("hash", Sort.Direction.ASC)
+        )
     }
 
     @ChangeSet(id = "ensureInitialIndexes", order = "00002", author = "eugene")
