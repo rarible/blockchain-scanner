@@ -67,13 +67,13 @@ class EthereumClient(
         val filter = LogFilter
             .apply(TopicFilter.simple(descriptor.ethTopic))
             .address(*addresses.toTypedArray())
-        val finalFilter = filter.blocks(
-            BigInteger.valueOf(range.first).encodeForFilter(),
-            BigInteger.valueOf(range.last).encodeForFilter()
-        )
-        logger.info("Loading logs with filter [$finalFilter] in range $range")
+            .blocks(
+                BigInteger.valueOf(range.first).encodeForFilter(),
+                BigInteger.valueOf(range.last).encodeForFilter()
+            )
+        logger.info("Loading logs with filter [$filter] in range $range")
 
-        return ethereum.ethGetLogsJava(finalFilter)
+        return ethereum.ethGetLogsJava(filter)
             .flatMapIterable { allLogs ->
                 logger.info("Loaded ${allLogs.size} logs for range $range")
                 allLogs.groupBy { log ->
