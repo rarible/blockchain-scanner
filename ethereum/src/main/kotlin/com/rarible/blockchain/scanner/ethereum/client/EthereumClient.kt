@@ -63,17 +63,17 @@ class EthereumClient(
         range: LongRange
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
 
-        val addresses = descriptor.contracts.map { Address.apply(it) }
+        val addresses = descriptor.contracts.map { Address.apply(it) }.toTypedArray()
         val filter = LogFilter
             .apply(TopicFilter.simple(descriptor.ethTopic))
-            .address(*addresses.toTypedArray())
-        val finalFilter = filter.blocks(
-            BigInteger.valueOf(range.first).encodeForFilter(),
-            BigInteger.valueOf(range.last).encodeForFilter()
-        )
-        logger.info("Loading logs with filter [$finalFilter] in range $range")
+            .let { if (addresses.isNotEmpty()) it.address(*addresses) else it }
+            .blocks(
+                BigInteger.valueOf(range.first).encodeForFilter(),
+                BigInteger.valueOf(range.last).encodeForFilter()
+            )
+        logger.info("Loading logs with filter in range $range with [$filter]")
 
-        return ethereum.ethGetLogsJava(finalFilter)
+        return ethereum.ethGetLogsJava(filter)
             .flatMapIterable { allLogs ->
                 logger.info("Loaded ${allLogs.size} logs for range $range")
                 allLogs.groupBy { log ->
@@ -88,8 +88,8 @@ class EthereumClient(
             }.concatMap { it }.asFlow()
     }
 
-    private fun orderByTransaction(logs: List<Log>): List<Log> {
-        return logs.groupBy {
+    private fun orderByTransaction(logsInBlock: List<Log>): List<Log> {
+        return logsInBlock.groupBy {
             it.transactionHash()
         }.values.flatMap { logsInTransaction ->
             logsInTransaction.sortedBy { log ->

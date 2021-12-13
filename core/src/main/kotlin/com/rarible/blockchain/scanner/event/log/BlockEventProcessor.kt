@@ -94,10 +94,7 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
                 }
             }
 
-            // Ordering batches by BlockEvents
-            val result = ArrayList<Pair<BlockEvent, MutableList<R>>>()
-            batch.forEach { result.add(Pair(it, byBlock.getOrDefault(it, mutableListOf()))) }
-            result
+            batch.map { it to byBlock.getOrDefault(it, mutableListOf()) }
         }
 
 

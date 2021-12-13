@@ -68,7 +68,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     }
 
     private suspend fun publishLogEvents(event: LogEvent) {
-        logger.info("Publishing {} LogEvents for Block [{}]", event.totalLogSize, event.blockEvent)
+        logger.info("Publishing {} LogEvents for Block [{}]", event.logRecords.size, event.blockEvent)
         return withSpan("onBlockProcessed") {
             logEventPublisher.publish(event)
         }

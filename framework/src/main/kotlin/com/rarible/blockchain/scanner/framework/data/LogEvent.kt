@@ -7,14 +7,6 @@ data class LogEvent(
     val blockEvent: BlockEvent,
     // Subscriber group of the events
     val groupId: String,
-    // LogEvents grouped by Descriptor
-    val logEvents: List<LogRecord<*, *>>
-) {
-
-    val totalLogSize = logEvents.size
-
-    fun allRecords(): List<LogRecord<*, *>> {
-        return logEvents
-    }
-
-}
+    // LogRecords grouped by Descriptor
+    val logRecords: List<LogRecord<*, *>>
+)
