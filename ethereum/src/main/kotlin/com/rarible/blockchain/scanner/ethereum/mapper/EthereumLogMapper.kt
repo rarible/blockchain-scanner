@@ -16,7 +16,6 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
     override fun map(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog,
-        index: Int,
         minorIndex: Int,
         descriptor: Descriptor
     ): EthereumLog {
@@ -31,7 +30,7 @@ class EthereumLogMapper : LogMapper<EthereumBlockchainBlock, EthereumBlockchainL
             blockNumber = ethLog.blockNumber().toLong(),
             logIndex = ethLog.logIndex().toInt(),
             minorLogIndex = minorIndex,
-            index = index,
+            index = log.index,
             visible = true,
             createdAt = nowInstant,
             updatedAt = nowInstant

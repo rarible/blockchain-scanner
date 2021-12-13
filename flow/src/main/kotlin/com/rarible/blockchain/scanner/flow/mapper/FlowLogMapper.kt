@@ -14,7 +14,6 @@ class FlowLogMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog> 
     override fun map(
         block: FlowBlockchainBlock,
         log: FlowBlockchainLog,
-        index: Int,
         minorIndex: Int,
         descriptor: Descriptor
     ): FlowLog {

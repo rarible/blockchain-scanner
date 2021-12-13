@@ -35,8 +35,7 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L
      *
      * @param block original Blockchain Block
      * @param log original Blockchain Log
-     * @param index natural index of the log for the current subscriber in the current block (artificial value)
      */
-    suspend fun getEventRecords(block: BB, log: BL, logMapper: LogMapper<BB, BL, L>, index: Int): List<R>
+    suspend fun getEventRecords(block: BB, log: BL, logMapper: LogMapper<BB, BL, L>): List<R>
 
 }

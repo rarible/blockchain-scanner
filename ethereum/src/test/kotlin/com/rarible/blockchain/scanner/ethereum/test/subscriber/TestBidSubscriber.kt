@@ -26,8 +26,7 @@ class TestBidSubscriber : EthereumLogEventSubscriber {
     override suspend fun getEventRecords(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog,
-        logMapper: LogMapper<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog>,
-        index: Int
+        logMapper: LogMapper<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog>
     ): List<EthereumLogRecord<*>> {
         return emptyList()
     }

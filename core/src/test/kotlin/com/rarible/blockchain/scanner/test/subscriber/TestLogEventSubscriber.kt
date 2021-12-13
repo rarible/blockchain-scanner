@@ -23,8 +23,7 @@ class TestLogEventSubscriber(
     override suspend fun getEventRecords(
         block: TestBlockchainBlock,
         log: TestBlockchainLog,
-        logMapper: LogMapper<TestBlockchainBlock, TestBlockchainLog, TestLog>,
-        index: Int
+        logMapper: LogMapper<TestBlockchainBlock, TestBlockchainLog, TestLog>
     ): List<TestLogRecord<*>> {
         val eventDataList = ArrayList<TestLogRecord<*>>(eventDataCount)
         for (i in 0 until eventDataCount) {
@@ -34,7 +33,7 @@ class TestLogEventSubscriber(
                 blockExtra = block.testOriginalBlock.testExtra,
                 logExtra = log.testOriginalLog.testExtra,
                 customData = randomString(),
-                log = logMapper.map(block, log, index, i, descriptor)
+                log = logMapper.map(block, log, i, descriptor)
             )
             eventDataList.add(record)
         }

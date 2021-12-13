@@ -67,14 +67,18 @@ class FlowBlockchainClient(
                 }.forEach { entry ->
                     val logs = entry.value.flatMap {
                         it.events
-                    }.map { flowEvent ->
+                    }.asSequence().map { flowEvent ->
                         FlowBlockchainLog(
                             hash = flowEvent.transactionId.base16Value,
                             // TODO FLOW - add transaction index
                             blockHash = entry.key.hash,
-                            event = flowEvent
+                            event = flowEvent,
+                            index = 0 // changed below
                         )
-                    }.sortedBy { it.hash }.sortedBy { it.event.eventIndex }
+                    }.sortedBy { it.hash }
+                        .sortedBy { it.event.eventIndex }
+                        .withIndex().map { it.value.copy(index = it.index) }.toList()
+                    // TODO: ^ please rethink/review this code that sets index.
 
                     send(
                         FullBlock(
