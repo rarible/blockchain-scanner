@@ -29,13 +29,13 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L
     fun getDescriptor(): D
 
     /**
-     * Produces custom data from single Log. Subscriber responsible to provide minorLogIndex for each log.
-     * This index means order of produced event. For example, if subscriber produces 3 records for
-     * provided log, they should have indices 0,1,2.
+     * Produces custom data from single Log. Subscriber is responsible to provide minorLogIndex for each log.
+     * This index means the order of produced events. For example, if subscriber produces 3 records for
+     * provided the log, they should have indices 0,1,2.
      *
      * @param block original Blockchain Block
      * @param log original Blockchain Log
-     * @param index natural index of log for current subscriber in current block (artificial value)
+     * @param index natural index of the log for the current subscriber in the current block (artificial value)
      */
     suspend fun getEventRecords(block: BB, log: BL, logMapper: LogMapper<BB, BL, L>, index: Int): List<R>
 
