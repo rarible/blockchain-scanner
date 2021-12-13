@@ -10,6 +10,6 @@ data class SolanaLogRecord<LR : SolanaLogRecord<LR>>(
     }
 
     override fun getKey(): String {
-        return log.eventType
+        return log.event.programId
     }
 }

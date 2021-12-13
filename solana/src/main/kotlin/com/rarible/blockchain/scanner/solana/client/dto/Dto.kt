@@ -1,14 +1,17 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent
-import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent.*
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent.SolanaCreateTokenMetadataEvent
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent.SolanaMintEvent
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
-import com.rarible.blockchain.scanner.solana.client.metaplex.CreateMetadataAccountArgs
-import com.rarible.blockchain.scanner.solana.client.metaplex.parseMetadataInstruction
 import org.bitcoinj.core.Base58
+
+private val objectMapper = ObjectMapper()
 
 @Suppress("unused")
 abstract class Request(
@@ -129,43 +132,29 @@ fun SolanaTransactionDto.toModel(): List<SolanaBlockEvent> {
 }
 
 fun Instruction.toModel(): SolanaBlockEvent? {
-    return when (program) {
-        "spl-token" -> parseSplToken()
-        else -> {
-            when (programId) {
-                "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" -> parseTokenMetadata()
-                else -> null
-            }
-        }
+    return when (programId) {
+        "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" -> parseTokenMetadata()
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" -> parseSplToken()
+        else -> null
     }
 }
 
 private fun Instruction.parseTokenMetadata(): SolanaBlockEvent? {
     requireNotNull(data) { "Program data is missed: $this" }
 
-    return when (val metadataInstruction = Base58.decode(data).parseMetadataInstruction()) {
-        is CreateMetadataAccountArgs -> return SolanaCreateTokenMetadataEvent(
-            name = metadataInstruction.data.name,
-            uri = metadataInstruction.data.uri,
-            symbol = metadataInstruction.data.symbol,
-            creators = metadataInstruction.data.creators?.map { Base58.encode(it.address) }
-                ?: emptyList()
-        )
+    val decoded = Base58.decode(data)
+
+    return when (decoded.first().toInt()) {
+        0 -> return SolanaCreateTokenMetadataEvent(data)
         else -> null
     }
 }
 
 private fun Instruction.parseSplToken(): SolanaBlockEvent? {
     val params = requireNotNull(parsed) { "Parsed details of transaction are missed: $this" }
-    val type = params["type"].textValue()
 
-    if (type == "mintTo") {
-        val account = params["info"]["account"].textValue()
-        val amount = params["info"]["amount"].textValue()
-        val mint = params["info"]["mint"].textValue()
-
-        return SolanaMintEvent(account, amount.toBigInteger(), mint)
+    return when (params["type"].textValue()) {
+        "mintTo" -> SolanaMintEvent(objectMapper.convertValue(params["info"]))
+        else -> null
     }
-
-    return null
 }

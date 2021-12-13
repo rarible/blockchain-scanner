@@ -21,7 +21,7 @@ class SolanaLogMapper : LogMapper<SolanaBlockchainBlock, SolanaBlockchainLog, So
             log.hash,
             status = Log.Status.CONFIRMED,
             block.number,
-            log.event.type
+            log.event
         )
     }
 }
