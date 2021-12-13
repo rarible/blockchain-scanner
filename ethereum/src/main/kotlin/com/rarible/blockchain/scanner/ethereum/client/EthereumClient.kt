@@ -78,23 +78,27 @@ class EthereumClient(
                 logger.info("Loaded ${allLogs.size} logs for range $range")
                 allLogs.groupBy { log ->
                     log.blockHash()
-                }.entries.map { e ->
-                    val orderedLogs = orderByTransaction(e.value)
-                    val block = getBlock(e.key)
-                    block.map { originalBlock ->
-                        FullBlock(originalBlock, orderedLogs.map { EthereumBlockchainLog(it) })
+                }.entries.map { (blockHash, blockLogs) ->
+                    val indexedLogs = attachIndex(blockLogs)
+                    getBlock(blockHash).map { block ->
+                        FullBlock(block, indexedLogs.map { EthereumBlockchainLog(it.value, it.index) })
                     }
                 }
             }.concatMap { it }.asFlow()
     }
 
-    private fun orderByTransaction(logsInBlock: List<Log>): List<Log> {
+    /**
+     * Attach [EthereumBlockchainLog.index] calculated by grouping <transactionHash, topic, address>
+     * and sorting by <logIndex> in each group.
+     * The topic is implicitly fixed here, so just group by <transactionHash, address>.
+     */
+    private fun attachIndex(logsInBlock: List<Log>): List<IndexedValue<Log>> {
         return logsInBlock.groupBy {
-            it.transactionHash()
-        }.values.flatMap { logsInTransaction ->
-            logsInTransaction.sortedBy { log ->
+            it.transactionHash() to it.address()
+        }.values.flatMap { group ->
+            group.sortedBy { log ->
                 log.logIndex()
-            }
+            }.withIndex()
         }
     }
 

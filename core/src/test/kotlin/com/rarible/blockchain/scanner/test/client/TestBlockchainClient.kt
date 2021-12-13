@@ -32,8 +32,7 @@ class TestBlockchainClient(
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> = flatten {
         blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
-            .map { FullBlock(TestBlockchainBlock(it), getBlockLogs(descriptor, TestBlockchainBlock(it))
-                .toList()) }
+            .map { FullBlock(TestBlockchainBlock(it), getBlockLogs(descriptor, TestBlockchainBlock(it))) }
             .asFlow()
     }
 
@@ -45,7 +44,11 @@ class TestBlockchainClient(
     private fun getBlockLogs(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
-    ): Flow<TestBlockchainLog> {
-        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }.map { TestBlockchainLog(it) }.asFlow()
+    ): List<TestBlockchainLog> {
+        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }
+            .groupBy { it.transactionHash }
+            .mapValues { (_, logsInTransaction) -> logsInTransaction.sortedBy { it.logIndex }.withIndex() }
+            .flatMap { it.value }
+            .map { TestBlockchainLog(it.value, it.index) }
     }
 }
