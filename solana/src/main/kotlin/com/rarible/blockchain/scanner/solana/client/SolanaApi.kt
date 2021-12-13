@@ -1,10 +1,12 @@
-package com.rarible.blockchain.solana.client
+package com.rarible.blockchain.scanner.solana.client
 
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
-import com.rarible.blockchain.solana.client.dto.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import com.rarible.blockchain.scanner.solana.client.dto.ApiResponse
+import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
+import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
+import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
+import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionMetaDto
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.http.HttpHeaders
@@ -18,15 +20,11 @@ import reactor.netty.http.client.HttpClient
 import java.time.Duration
 
 interface SolanaApi {
-    fun getBlockFlow(): Flow<SolanaBlockchainBlock>
-
     suspend fun getLatestSlot(): Long
 
-    suspend fun getBlock(slot: Long): SolanaBlockchainBlock?
+    suspend fun getBlock(slot: Long, details: TransactionDetails): SolanaBlockDto?
 
-    suspend fun getBlockEvents(slot: Long): List<SolanaBlockEvent>
-
-    suspend fun getTransaction(signature: String): TransactionMeta?
+    suspend fun getTransaction(signature: String): SolanaTransactionMetaDto?
 }
 
 internal class SolanaHttpRpcApi(
@@ -46,22 +44,6 @@ internal class SolanaHttpRpcApi(
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
 
-    override fun getBlockFlow(): Flow<SolanaBlockchainBlock> = flow {
-        var lastSlot: Long = -1
-
-        while (true) {
-            val slot = getLatestSlot()
-
-            if (slot != lastSlot) {
-                val block = getBlock(slot)
-
-                lastSlot = slot
-                block?.let { emit(it) }
-            }
-            delay(POLLING_DELAY)
-        }
-    }
-
     override suspend fun getLatestSlot(): Long = client.post()
         .body(BodyInserters.fromValue(GetSlotRequest))
         .retrieve()
@@ -69,22 +51,12 @@ internal class SolanaHttpRpcApi(
         .awaitSingle()
         .result
 
-    override suspend fun getBlock(slot: Long): SolanaBlockchainBlock? = client.post()
-        .body(BodyInserters.fromValue(GetBlockRequest(slot, GetBlockRequest.TransactionDetails.None)))
+    override suspend fun getBlock(slot: Long, details: TransactionDetails): SolanaBlockDto? = client.post()
+        .body(BodyInserters.fromValue(GetBlockRequest(slot, details)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaBlockDto>>()
         .awaitSingleOrNull()
         ?.result
-        ?.toModel(slot)
-
-    override suspend fun getBlockEvents(slot: Long): List<SolanaBlockEvent> = client.post()
-            .body(BodyInserters.fromValue(GetBlockRequest(slot, GetBlockRequest.TransactionDetails.Full)))
-            .retrieve()
-            .bodyToMono<ApiResponse<SolanaBlockDto>>()
-            .awaitSingle()
-            .result
-            .transactions
-            .flatMap { it.toModel() }
 
     override suspend fun getTransaction(signature: String) = client.post()
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
@@ -92,7 +64,6 @@ internal class SolanaHttpRpcApi(
         .bodyToMono<ApiResponse<SolanaTransactionMetaDto>>()
         .awaitSingleOrNull()
         ?.result
-        ?.toModel()
 
     companion object {
         const val POLLING_DELAY = 500L

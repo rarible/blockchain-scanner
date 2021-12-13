@@ -1,13 +1,13 @@
-package com.rarible.blockchain.solana.client.dto
+package com.rarible.blockchain.scanner.solana.client.dto
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
-import com.rarible.blockchain.solana.client.SolanaBlockEvent
-import com.rarible.blockchain.solana.client.SolanaBlockEvent.*
-import com.rarible.blockchain.solana.client.SolanaBlockchainBlock
-import com.rarible.blockchain.solana.client.dto.SolanaTransactionDto.Instruction
-import com.rarible.blockchain.solana.client.metaplex.CreateMetadataAccountArgs
-import com.rarible.blockchain.solana.client.metaplex.parseMetadataInstruction
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent.*
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
+import com.rarible.blockchain.scanner.solana.client.metaplex.CreateMetadataAccountArgs
+import com.rarible.blockchain.scanner.solana.client.metaplex.parseMetadataInstruction
 import org.bitcoinj.core.Base58
 
 @Suppress("unused")
@@ -85,11 +85,13 @@ data class SolanaTransactionDto(
     )
 
     data class Message(
+        val recentBlockhash: String?,
         val instructions: List<Instruction>
     )
 
     data class Details(
-        val message: Message
+        val message: Message,
+        val signatures: List<String>
     )
 
     data class Meta(
@@ -103,7 +105,7 @@ data class SolanaBlockDto(
     val previousBlockhash: String?,
     val blockHeight: Long,
     val blockTime: Long,
-    val transactions: List<SolanaTransactionDto>
+    val transactions: List<SolanaTransactionDto> = emptyList()
 )
 
 fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(

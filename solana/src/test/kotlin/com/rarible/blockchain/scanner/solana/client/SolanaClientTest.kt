@@ -1,7 +1,8 @@
-package com.rarible.blockchain.solana.client
+package com.rarible.blockchain.scanner.solana.client
 
-import com.rarible.blockchain.solana.client.SolanaBlockEvent.SolanaCreateTokenMetadataEvent
-import com.rarible.blockchain.solana.client.SolanaBlockEvent.SolanaMintEvent
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent.SolanaMintEvent
+import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -12,15 +13,17 @@ import org.junit.jupiter.api.Test
 internal class SolanaClientTest {
     private val mainNetBeta = "https://api.mainnet-beta.solana.com"
     private val client = SolanaClient(mainNetBeta)
-    private val api = SolanaHttpRpcApi(mainNetBeta)
 
     @Test
     fun testParseTransactionEvents() = runBlocking {
-        val event = api.getBlockEvents(91725442)
+        val descriptor = SolanaDescriptor("", "", SolanaMintEvent::class.java, "")
+        val events = client.getBlockEvents(descriptor, 91725442L..91725442L)
+            .single()
+            .logs
+            .map(SolanaBlockchainLog::event)
 
-        assertTrue(event.isNotEmpty())
-        assertTrue(event.filterIsInstance<SolanaMintEvent>().isNotEmpty())
-        assertTrue(event.filterIsInstance<SolanaCreateTokenMetadataEvent>().isNotEmpty())
+        assertTrue(events.isNotEmpty())
+        assertTrue(events.all { it is SolanaMintEvent })
     }
 
     @Test

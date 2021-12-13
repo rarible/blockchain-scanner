@@ -1,18 +1,20 @@
-package com.rarible.blockchain.solana.client
+package com.rarible.blockchain.scanner.solana.client
 
 import java.math.BigInteger
 
-sealed class SolanaBlockEvent {
+sealed class SolanaBlockEvent(
+    val type: String
+){
     data class SolanaMintEvent(
         val account: String,
         val amount: BigInteger,
         val mint: String
-    ) : SolanaBlockEvent()
+    ) : SolanaBlockEvent("Mint")
 
     data class SolanaCreateTokenMetadataEvent(
         val name: String,
         val uri: String,
         val symbol: String,
         val creators: List<String>
-    ) : SolanaBlockEvent()
+    ) : SolanaBlockEvent("CreateTokenMetadata")
 }

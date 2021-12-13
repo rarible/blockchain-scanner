@@ -1,4 +1,4 @@
-package com.rarible.blockchain.solana.client.metaplex
+package com.rarible.blockchain.scanner.solana.client.metaplex
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
