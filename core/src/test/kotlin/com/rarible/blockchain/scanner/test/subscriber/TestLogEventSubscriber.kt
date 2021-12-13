@@ -24,19 +24,14 @@ class TestLogEventSubscriber(
         block: TestBlockchainBlock,
         log: TestBlockchainLog,
         logMapper: LogMapper<TestBlockchainBlock, TestBlockchainLog, TestLog>
-    ): List<TestLogRecord<*>> {
-        val eventDataList = ArrayList<TestLogRecord<*>>(eventDataCount)
-        for (i in 0 until eventDataCount) {
-            val record = TestCustomLogRecord(
-                id = randomPositiveLong(),
-                version = null,
-                blockExtra = block.testOriginalBlock.testExtra,
-                logExtra = log.testOriginalLog.testExtra,
-                customData = randomString(),
-                log = logMapper.map(block, log, i, descriptor)
-            )
-            eventDataList.add(record)
-        }
-        return eventDataList
+    ): List<TestLogRecord<*>> = (0 until eventDataCount).map { minorIndex ->
+        TestCustomLogRecord(
+            id = randomPositiveLong(),
+            version = null,
+            blockExtra = block.testOriginalBlock.testExtra,
+            logExtra = log.testOriginalLog.testExtra,
+            customData = randomString(),
+            log = logMapper.map(block, log, minorIndex, descriptor)
+        )
     }
 }

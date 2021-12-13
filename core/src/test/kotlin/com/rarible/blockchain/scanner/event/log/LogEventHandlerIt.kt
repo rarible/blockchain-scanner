@@ -38,7 +38,7 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
     fun `handle logs - log saved with minor index`() = runBlocking {
         val handler = createHandler(TestLogEventSubscriber(descriptor, 2))
         val block = randomBlockchainBlock()
-        val log = randomBlockchainLog(block, topic)
+        val log = randomBlockchainLog(block, topic, index = 5)
 
         val savedLogs = handler.handleLogs(FullBlock(block, listOf(log))).toCollection(mutableListOf())
 
@@ -52,8 +52,8 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         assertTrue(savedLog1 is TestCustomLogRecord)
         assertRecordAndLogEquals(savedLog1, log.testOriginalLog, block.testOriginalBlock)
         assertRecordAndLogEquals(savedLog2, log.testOriginalLog, block.testOriginalBlock)
-        assertEquals(0, savedLog1.log.index)
-        assertEquals(0, savedLog2.log.index)
+        assertEquals(5, savedLog1.log.index)
+        assertEquals(5, savedLog2.log.index)
 
         // Minor index should be different because there are 2 custom data objects generated for single Blockchain Log
         assertEquals(0, savedLog1.log.minorLogIndex)
@@ -64,7 +64,10 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
     fun `handle logs - logs saved with index and minor index`() = runBlocking {
         val handler = createHandler(TestLogEventSubscriber(testDescriptor1(), 3))
         val block = randomBlockchainBlock()
-        val logs = listOf(randomBlockchainLog(block, topic), randomBlockchainLog(block, topic))
+        val logs = listOf(
+            randomBlockchainLog(block, topic, index = 5),
+            randomBlockchainLog(block, topic, index = 7)
+        )
 
         val savedLogs = handler.handleLogs(FullBlock(block, logs)).toCollection(mutableListOf())
 
@@ -74,7 +77,7 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
         val indices = fromDb.map { it.log.index }
         val minorIndices = fromDb.map { it.log.minorLogIndex }
 
-        assertIterableEquals(listOf(0, 0, 0, 1, 1, 1), indices)
+        assertIterableEquals(listOf(5, 5, 5, 7, 7, 7), indices)
         assertIterableEquals(listOf(0, 1, 2, 0, 1, 2), minorIndices)
     }
 

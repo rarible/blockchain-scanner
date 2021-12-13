@@ -86,7 +86,11 @@ fun randomOriginalBlock(hash: String, number: Long, parentHash: String?): TestOr
     )
 }
 
-fun randomBlockchainLog(block: BlockchainBlock, topic: String) = TestBlockchainLog(randomOriginalLog(block.hash, topic))
+fun randomBlockchainLog(
+    block: BlockchainBlock,
+    topic: String,
+    index: Int = randomPositiveInt()
+) = TestBlockchainLog(randomOriginalLog(block.hash, topic), index = index)
 
 fun randomOriginalLog(block: TestOriginalBlock, topic: String) = randomOriginalLog(block.hash, topic)
 fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
