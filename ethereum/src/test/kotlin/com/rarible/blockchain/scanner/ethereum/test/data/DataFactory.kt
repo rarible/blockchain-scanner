@@ -9,6 +9,7 @@ import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Word
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
+import scalether.domain.Address
 import scalether.domain.AddressFactory
 import java.math.BigInteger
 import java.util.concurrent.ThreadLocalRandom
@@ -24,7 +25,7 @@ fun randomBlock(): EthereumBlock {
 }
 
 fun randomLogRecord(topic: Word, blockHash: Word, status: Log.Status = Log.Status.CONFIRMED) =
-    randomLogRecord(randomLog(topic, blockHash, status))
+    randomLogRecord(randomLog(topic, blockHash, status = status))
 
 
 fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
@@ -42,20 +43,25 @@ fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
 }
 
 
-fun randomLog(topic: Word, blockHash: Word, status: Log.Status = Log.Status.CONFIRMED) =
-    randomLog(randomLogHash(), topic, blockHash, status)
+fun randomLog(
+    topic: Word,
+    blockHash: Word,
+    address: Address = randomAddress(),
+    status: Log.Status = Log.Status.CONFIRMED
+) = randomLog(randomLogHash(), topic, blockHash, address, status)
 
 fun randomLog(
     transactionHash: String,
     topic: Word,
     blockHash: Word,
+    address: Address = randomAddress(),
     status: Log.Status = Log.Status.CONFIRMED
 ): EthereumLog {
     return EthereumLog(
         transactionHash = transactionHash,
         blockHash = blockHash,
         status = status,
-        address = randomAddress(),
+        address = address,
         topic = topic,
         index = randomPositiveInt(),
         logIndex = randomPositiveInt(),

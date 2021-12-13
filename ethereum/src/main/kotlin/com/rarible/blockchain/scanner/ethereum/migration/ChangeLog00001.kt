@@ -45,16 +45,17 @@ class ChangeLog00001 {
             Index()
                 .on("transactionHash", Sort.Direction.ASC)
                 .on("topic", Sort.Direction.ASC)
+                .on("address", Sort.Direction.ASC)
                 .on("index", Sort.Direction.ASC)
                 .on("minorLogIndex", Sort.Direction.ASC)
                 .on("visible", Sort.Direction.ASC)
-                .on("address", Sort.Direction.ASC)
                 .named(VISIBLE_INDEX_NAME)
                 .background()
                 .unique()
                 .partial(PartialIndexFilter.of(Document("visible", true)))
         )
 
+        // This index is not used for queries but only to ensure the consistency of the database.
         indexOps.ensureIndex(
             Index()
                 .on("transactionHash", Sort.Direction.ASC)

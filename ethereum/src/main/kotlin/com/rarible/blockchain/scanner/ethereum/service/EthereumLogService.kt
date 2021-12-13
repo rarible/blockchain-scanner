@@ -41,21 +41,15 @@ class EthereumLogService(
                     collection,
                     log.transactionHash,
                     log.topic,
+                    log.address,
                     log.index,
-                    log.minorLogIndex
-                ) ?: ethereumLogRepository.findByKey(
-                    descriptor.entityType,
-                    collection,
-                    log.transactionHash,
-                    log.blockHash!!,
-                    log.logIndex!!,
                     log.minorLogIndex
                 )
 
                 if (found != null) {
                     val withCorrectId = record.withIdAndVersion(found.id, found.version, found.updatedAt)
                     if (withCorrectId != found) {
-                        logger.info("Saving changed LogEvent to collection '{}' : [{}]", withCorrectId, collection)
+                        logger.info("Saving changed LogEvent to collection '{}' : [{}]", collection, withCorrectId)
                         ethereumLogRepository.save(collection, withCorrectId)
                     } else {
                         logger.info("LogEvent wasn't changed: [{}]", withCorrectId)

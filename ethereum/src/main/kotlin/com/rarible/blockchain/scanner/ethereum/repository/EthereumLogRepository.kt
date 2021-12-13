@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
+import scalether.domain.Address
 
 @Component
 @Suppress("UNCHECKED_CAST")
@@ -36,35 +37,18 @@ class EthereumLogRepository(
         collection: String,
         transactionHash: String,
         topic: Word,
+        address: Address,
         index: Int,
         minorLogIndex: Int
     ): EthereumLogRecord<*>? {
         val criteria = Criteria.where("transactionHash").isEqualTo(transactionHash)
             .and("topic").isEqualTo(topic)
+            .and("address").isEqualTo(address)
             .and("index").isEqualTo(index)
             .and("minorLogIndex").isEqualTo(minorLogIndex)
             .and("visible").isEqualTo(true)
         return mongo.findOne(
             Query.query(criteria).withHint(ChangeLog00001.VISIBLE_INDEX_NAME),
-            entityType,
-            collection
-        ).awaitFirstOrNull() as EthereumLogRecord<*>?
-    }
-
-    suspend fun findByKey(
-        entityType: Class<*>,
-        collection: String,
-        transactionHash: String,
-        blockHash: Word,
-        logIndex: Int,
-        minorLogIndex: Int
-    ): EthereumLogRecord<*>? {
-        val criteria = Criteria.where("transactionHash").`is`(transactionHash)
-            .and("blockHash").`is`(blockHash)
-            .and("logIndex").`is`(logIndex)
-            .and("minorLogIndex").`is`(minorLogIndex)
-        return mongo.findOne(
-            Query(criteria),
             entityType,
             collection
         ).awaitFirstOrNull() as EthereumLogRecord<*>?

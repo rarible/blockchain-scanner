@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
+import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLog
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
@@ -14,10 +15,15 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.springframework.dao.DataAccessException
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Query
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -70,11 +76,16 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `save - overwrite visible`() = runBlocking {
+    fun `save - overwrite existing`() = runBlocking {
         val blockHash = randomBlockHash()
         val transactionHash = randomWord()
 
-        val visibleLog = randomLog(transactionHash.toString(), topic, blockHash).copy(index = 2, minorLogIndex = 3)
+        val visibleLog = randomLog(
+            transactionHash = transactionHash.toString(),
+            topic = topic,
+            blockHash = blockHash,
+            address = randomAddress()
+        ).copy(index = 2, minorLogIndex = 3)
         val visibleRecord = randomLogRecord(visibleLog)
 
         // Let's change custom data in order to detect changes
@@ -82,8 +93,8 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val updatedVisibleRecord = visibleRecord.copy(data = visibleRecordData.copy(customData = randomString()))
 
         saveLog(descriptor.collection, visibleRecord)
-        // Here we're also checking search by index/minorIndex
         ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
+        assertEquals(1, mongo.count(Query(), descriptor.collection).awaitFirst())
 
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
 
@@ -95,28 +106,24 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `save - overwrite invisible`() = runBlocking {
-        val blockHash = randomBlockHash()
-        val transactionHash = randomWord()
-
-        val visibleLog = randomLog(transactionHash.toString(), topic, blockHash).copy(index = 2, minorLogIndex = 3)
-        val visibleRecord = randomLogRecord(visibleLog)
-
-        // Let's change index in order to make this record unable to be found by findVisibleByKey
-        val visibleRecordData = visibleRecord.data as TestEthereumLogData
-        val changedVisibleLog = visibleLog.copy(index = 4)
-        val updatedVisibleRecord = visibleRecord.withLog(changedVisibleLog)
-            .copy(data = visibleRecordData.copy(customData = randomString()))
-
+    fun `save - throw inconsistency error on saving identical log event`() = runBlocking<Unit> {
+        val existingLog = randomLog(
+            transactionHash = randomWord().toString(),
+            topic = topic,
+            blockHash = randomWord(),
+            address = randomAddress()
+        )
+        val visibleRecord = randomLogRecord(existingLog)
         saveLog(descriptor.collection, visibleRecord)
-        // Here we're also checking search by blockHash/logIndex
-        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
-
-        val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
-
-        assertNotNull(savedVisibleRecord)
-        assertEquals(updatedVisibleRecord.data, savedVisibleRecord.data)
-        assertEquals(updatedVisibleRecord.log, savedVisibleRecord.log)
+        val errorLog = randomLog(
+            transactionHash = existingLog.transactionHash,
+            blockHash = existingLog.blockHash!!,
+            topic = topic
+        ).copy(logIndex = existingLog.logIndex, minorLogIndex = existingLog.minorLogIndex)
+        // The following unique index is violated: transactionHash.blockHash.logIndex.minorLogIndex
+        assertThrows<DuplicateKeyException> {
+            saveLog(descriptor.collection, randomLogRecord(errorLog))
+        }
     }
 
     @Test
