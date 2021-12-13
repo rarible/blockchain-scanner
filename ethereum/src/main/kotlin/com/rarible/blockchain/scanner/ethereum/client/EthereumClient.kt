@@ -88,8 +88,8 @@ class EthereumClient(
             }.concatMap { it }.asFlow()
     }
 
-    private fun orderByTransaction(logs: List<Log>): List<Log> {
-        return logs.groupBy {
+    private fun orderByTransaction(logsInBlock: List<Log>): List<Log> {
+        return logsInBlock.groupBy {
             it.transactionHash()
         }.values.flatMap { logsInTransaction ->
             logsInTransaction.sortedBy { log ->

@@ -43,17 +43,17 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
 
     suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
         // Fetching Logs by batch of events in background
-        val futureLogs = coroutineScope { async { getBlockLogs(events) } }
+        val newBlockLogsAsync = coroutineScope { async { getBlockLogs(events) } }
         // While Logs are fetching, updating pending logs
         val pending = events.associateBy(
             { it }, { beforeHandleNewBlock(it) }
         )
-        val fetchedLogs = futureLogs.await()
+        val newBlockLogs = newBlockLogsAsync.await()
 
         // Ordering LogEvents by order of incoming events
         return events.associateBy({ it }, { event ->
             val beforeHandleLogs = pending.getOrDefault(event, emptyList())
-            val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
+            val newLogs = newBlockLogs[event]?.let { processLogs(it) } ?: emptyList()
             logger.info(
                 "NewBlockEvent [{}] handled for subscriber {}, {} pending logs and {} new logs has been gathered",
                 event, name, beforeHandleLogs.size, newLogs.size
