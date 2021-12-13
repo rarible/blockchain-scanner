@@ -58,7 +58,7 @@ class EthereumClient(
 
     //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
     //todo (уникальный чтобы считался внутри транзакции, topic, address). это ты учел тут?
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         range: LongRange
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {

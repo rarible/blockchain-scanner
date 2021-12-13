@@ -26,13 +26,14 @@ class TestBlockchainClient(
         return TestBlockchainBlock(blocksByNumber[number]!!)
     }
 
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: TestDescriptor,
         range: LongRange
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> = flatten {
         blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
-            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it)).toList()) }
+            .map { FullBlock(TestBlockchainBlock(it), getBlockLogs(descriptor, TestBlockchainBlock(it))
+                .toList()) }
             .asFlow()
     }
 
@@ -41,7 +42,7 @@ class TestBlockchainClient(
         return if (log == null) null else TransactionMeta(log.transactionHash, log.blockHash)
     }
 
-    private fun getBlockEvents(
+    private fun getBlockLogs(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
     ): Flow<TestBlockchainLog> {

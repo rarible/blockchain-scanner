@@ -54,33 +54,33 @@ class RetryableBlockchainClientTest {
     }
 
     @Test
-    fun `get block events - all attempts failed`() = runBlocking {
+    fun `get block logs - all attempts failed`() = runBlocking {
         val descriptor = testDescriptor1()
         val range = LongRange.EMPTY
         var count = 0
-        coEvery { client.getBlockEvents(descriptor, range) } returns flow {
+        coEvery { client.getBlockLogs(descriptor, range) } returns flow {
             count++
             throw Exception()
         }
 
         assertThrows(Exception::class.java) {
-            runBlocking { retryableClient.getBlockEvents(descriptor, range).toList() }
+            runBlocking { retryableClient.getBlockLogs(descriptor, range).toList() }
         }
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 1) { client.getBlockEvents(descriptor, range) }
+        coVerify(exactly = 1) { client.getBlockLogs(descriptor, range) }
         assertEquals(3, count)
     }
 
     @Test
-    fun `get block events - last attempt succeed`() = runBlocking {
+    fun `get block logs - last attempt succeed`() = runBlocking {
         val descriptor = testDescriptor1()
         val range = LongRange(1, 1)
         var count = 0
         val block = randomBlockchainBlock()
         val log = randomBlockchainLog(block, randomString())
         val fullBlock = FullBlock(block, listOf(log))
-        coEvery { client.getBlockEvents(descriptor, range) } returns flow {
+        coEvery { client.getBlockLogs(descriptor, range) } returns flow {
             count++
             if (count < 3) {
                 error("not yet ready")
@@ -88,10 +88,10 @@ class RetryableBlockchainClientTest {
             emit(fullBlock)
         }
 
-        val result = retryableClient.getBlockEvents(descriptor, range)
+        val result = retryableClient.getBlockLogs(descriptor, range)
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 1) { client.getBlockEvents(descriptor, range) }
+        coVerify(exactly = 1) { client.getBlockLogs(descriptor, range) }
         val list = result.toList()
         assertEquals(1, list.size)
         assertEquals(3, count)

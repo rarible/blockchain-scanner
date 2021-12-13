@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface BlockchainLogClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor> {
 
     /**
-     * Get events from block range and by specific descriptor
+     * Get logs from block range and by specific descriptor
      */
-    fun getBlockEvents(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>>
+    fun getBlockLogs(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>>
 
     /**
      * Get tx meta information by transaction hash (or null if not found)

@@ -43,7 +43,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
 
     suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
         // Fetching Logs by batch of events in background
-        val futureLogs = coroutineScope { async { getLogEvents(events) } }
+        val futureLogs = coroutineScope { async { getBlockLogs(events) } }
         // While Logs are fetching, updating pending logs
         val pending = events.associateBy(
             { it }, { beforeHandleNewBlock(it) }
@@ -74,7 +74,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
     }
 
     suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): Map<BlockEvent, List<R>> {
-        val fetchedLogs = getLogEvents(events)
+        val fetchedLogs = getBlockLogs(events)
         return events.associateBy({ it }, { event ->
             val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
             logger.info(
@@ -109,7 +109,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         }
     }
 
-    private suspend fun getLogEvents(events: List<BlockEvent>): Map<BlockEvent, FullBlock<BB, BL>> = coroutineScope {
+    private suspend fun getBlockLogs(events: List<BlockEvent>): Map<BlockEvent, FullBlock<BB, BL>> = coroutineScope {
         val blockNumbers = events.map { it.number }
         val blocksByNumber = events.associateBy { it.number }
 
@@ -121,7 +121,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
             ranges.map { range ->
                 async {
                     withSpan("getBlockEvents", "network") {
-                        val result = blockchainClient.getBlockEvents(descriptor, range).toList()
+                        val result = blockchainClient.getBlockLogs(descriptor, range).toList()
                         logger.info("Found {} LogEvents for subscriber {} in Block range {}", result.size, name, range)
                         result
                     }
@@ -135,6 +135,3 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return subscriber::class.java.name + ":[${subscriber.getDescriptor()}]"
     }
 }
-
-
-

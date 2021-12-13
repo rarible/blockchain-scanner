@@ -22,7 +22,7 @@ class SolanaClient(
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? =
         api.getTransaction(transactionHash)
 
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: SolanaDescriptor,
         range: LongRange
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> {

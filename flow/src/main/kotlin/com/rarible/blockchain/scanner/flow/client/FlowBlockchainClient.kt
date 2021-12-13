@@ -46,7 +46,7 @@ class FlowBlockchainClient(
         return FlowBlockchainBlock(a)
     }
 
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: FlowDescriptor,
         range: LongRange
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> = channelFlow {
