@@ -63,10 +63,10 @@ class EthereumClient(
         range: LongRange
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
 
-        val addresses = descriptor.contracts.map { Address.apply(it) }
+        val addresses = descriptor.contracts.map { Address.apply(it) }.toTypedArray()
         val filter = LogFilter
             .apply(TopicFilter.simple(descriptor.ethTopic))
-            .address(*addresses.toTypedArray())
+            .let { if (addresses.isNotEmpty()) it.address(*addresses) else it }
             .blocks(
                 BigInteger.valueOf(range.first).encodeForFilter(),
                 BigInteger.valueOf(range.last).encodeForFilter()
