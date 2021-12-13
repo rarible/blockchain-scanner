@@ -4,6 +4,10 @@ import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -41,6 +45,29 @@ fun defaultTestProperties(): TestBlockchainScannerProperties {
         retryPolicy = RetryPolicyProperties(),
         job = JobProperties(),
         monitoring = MonitoringProperties()
+    )
+}
+
+fun randomNewBlockEvent(number: Long): NewBlockEvent {
+    return NewBlockEvent(
+        source = Source.BLOCKCHAIN,
+        number = number,
+        hash = randomBlockHash()
+    )
+}
+
+fun randomReindexBlockEvent(number: Long): ReindexBlockEvent {
+    return ReindexBlockEvent(
+        source = Source.BLOCKCHAIN,
+        number = number
+    )
+}
+
+fun randomRevertedBlockEvent(number: Long): RevertedBlockEvent {
+    return RevertedBlockEvent(
+        source = Source.BLOCKCHAIN,
+        number = number,
+        hash = randomBlockHash()
     )
 }
 

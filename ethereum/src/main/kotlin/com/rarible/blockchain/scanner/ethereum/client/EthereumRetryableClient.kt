@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-import com.rarible.blockchain.scanner.RetryableBlockchainClient
+import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import org.springframework.stereotype.Component

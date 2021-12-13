@@ -1,7 +1,6 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.block
 
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
-import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
@@ -26,8 +25,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class BlockScannerV2Test {
-
+class BlockScannerTest {
 
     private val mapper = TestBlockMapper()
     private val client = mockk<BlockchainBlockClient<TestBlockchainBlock>>()
@@ -40,20 +38,23 @@ class BlockScannerV2Test {
     }
 
     @Test
-    fun `watches events when state is empty`() = runBlocking {
+    fun `first event, state is empty`() = runBlocking {
         val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
         val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
 
         every { client.newBlocks } returns flowOf(block1)
+        // We expect both blocks will be requested from the client
         coEvery { client.getBlock(0) } returns block0
         coEvery { client.getBlock(1) } returns block1
 
+        // Imitating empty DB
         coEvery { service.getBlock(any()) } returns null
         coEvery { service.getLastBlock() } returns null
         coEvery { service.save(any()) } answers { }
 
         val events = scanOnce()
 
+        // Events for both blocks should be emitted in correct order
         assertThat(events).isEqualTo(
             listOf(
                 NewBlockEvent(Source.BLOCKCHAIN, block0.number, block0.hash),
@@ -61,9 +62,13 @@ class BlockScannerV2Test {
             )
         )
 
+        // Both blocks should be saved in DB
         coVerify(exactly = 1) { service.save(mapper.map(block0)) }
         coVerify(exactly = 1) { service.save(mapper.map(block1)) }
+
+        // Last block should be requested from state only once
         coVerify(exactly = 1) { service.getLastBlock() }
+        // Parent (root in current case) should be requested only once
         coVerify(exactly = 1) { client.getBlock(0) }
         // We don't need to call here getBlock because we just received it in event
         coVerify(exactly = 0) { client.getBlock(1) }
@@ -72,20 +77,24 @@ class BlockScannerV2Test {
     }
 
     @Test
-    fun `watches simplest case when new blocks are added`() = runBlocking {
+    fun `root block in DB, one block is missing in DB`() = runBlocking {
         val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
         val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
         val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1"))
 
+        // Imitates event for block2 while block0 already in DB, but block1 is missing
         every { client.newBlocks } returns flowOf(block2)
         coEvery { client.getBlock(0) } returns block0
         coEvery { client.getBlock(1) } returns block1
         coEvery { client.getBlock(2) } returns block2
 
+        // We already have root block in DB
         coEvery { service.getLastBlock() } returns mapper.map(block0)
         coEvery { service.save(any()) } answers { }
 
         val events = scanOnce()
+
+        // Events for both blocks (1 and 2) should be emitted in correct order
         assertThat(events).isEqualTo(
             listOf(
                 NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
@@ -96,15 +105,18 @@ class BlockScannerV2Test {
         coVerify(exactly = 1) { client.getBlock(0) }
         coVerify(exactly = 1) { client.getBlock(1) }
         coVerify(exactly = 1) { client.getBlock(2) }
-        verify { client.newBlocks }
+
+        coVerify(exactly = 1) { service.getLastBlock() }
+
         coVerify(exactly = 1) { service.save(mapper.map(block1)) }
         coVerify(exactly = 1) { service.save(mapper.map(block2)) }
-        coVerify(exactly = 1) { service.getLastBlock() }
+
+        verify { client.newBlocks }
         confirmVerified(client, service)
     }
 
     @Test
-    fun `reorg chain works`() = runBlocking {
+    fun `chain reorganized`() = runBlocking {
         val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
         val block1Reorg = TestBlockchainBlock(randomOriginalBlock("block1-reorg", 1, "block0"))
         val block2Reorg = TestBlockchainBlock(randomOriginalBlock("block2-reorg", 2, "block1-reorg"))
@@ -118,13 +130,17 @@ class BlockScannerV2Test {
         coEvery { client.getBlock(2) } returns block2
         coEvery { client.getBlock(3) } returns block3
 
-        coEvery { service.getLastBlock() } returns mapper.map(block2Reorg)
+        // We have in DB correct root block, block1 and block2 pretends to be reverted
         coEvery { service.getBlock(0) } returns mapper.map(block0)
         coEvery { service.getBlock(1) } returns mapper.map(block1Reorg)
+        coEvery { service.getLastBlock() } returns mapper.map(block2Reorg)
+
         coEvery { service.save(any()) } answers { }
         coEvery { service.remove(any()) } answers {}
 
         val events = scanOnce()
+        // Reverted events should be emitted first in DESC order
+        // Correct events should be emitted in ASC order right after reverted block events
         assertThat(events).isEqualTo(
             listOf(
                 RevertedBlockEvent(Source.BLOCKCHAIN, block2Reorg.number, block2Reorg.hash),
@@ -134,7 +150,6 @@ class BlockScannerV2Test {
                 NewBlockEvent(Source.BLOCKCHAIN, block3.number, block3.hash),
             )
         )
-
 
         verify(exactly = 1) { client.newBlocks }
         coVerify(exactly = 1) { client.getBlock(0) }
@@ -158,23 +173,31 @@ class BlockScannerV2Test {
         val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
         val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
         val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1-new"))
+        val block3 = TestBlockchainBlock(randomOriginalBlock("block3", 3, "block2-new"))
 
-        every { client.newBlocks } returns flowOf(block2)
+        every { client.newBlocks } returns flowOf(block3)
+        // For block 1 we received same data as data in DB
         coEvery { client.getBlock(1) } returns block1
+        // But block 2 has been changed while we were restoring chain
         coEvery { client.getBlock(2) } returns block2
+        coEvery { client.getBlock(3) } returns block3
 
+        // We have only 2 blocks in DB
+        coEvery { service.getBlock(0) } returns mapper.map(block0)
         coEvery { service.getLastBlock() } returns mapper.map(block1)
         coEvery { service.save(any()) } answers { }
-        coEvery { service.getBlock(0) } returns mapper.map(block0)
         coEvery { service.remove(any()) } answers { }
 
         val events = scanOnce()
 
+        // Nothing should be emitted here since chain reorganized, all event will be emitted at next block event
         assertThat(events).isEqualTo(emptyList<BlockEvent>())
 
         verify(exactly = 1) { client.newBlocks }
         coVerify(exactly = 1) { client.getBlock(1) }
         coVerify(exactly = 1) { client.getBlock(2) }
+        // There is no calls for block 3 because we found chain has been reorganized at block 2
+        coVerify(exactly = 0) { client.getBlock(3) }
 
         coVerify(exactly = 1) { service.getLastBlock() }
         confirmVerified(client, service)

@@ -1,6 +1,5 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.log
 
-import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher

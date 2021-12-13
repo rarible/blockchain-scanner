@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.test.client
 
-import com.rarible.blockchain.scanner.RetryableBlockchainClient
+import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 

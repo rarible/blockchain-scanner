@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.client
 
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient

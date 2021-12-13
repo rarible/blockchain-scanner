@@ -81,6 +81,12 @@
 
             <dependency>
                 <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-solana</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
                 <artifactId>rarible-blockchain-scanner-framework</artifactId>
                 <version>${project.version}</version>
             </dependency>

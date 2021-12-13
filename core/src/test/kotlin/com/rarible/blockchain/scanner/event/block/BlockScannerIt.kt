@@ -1,6 +1,5 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.event.block
 
-import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -45,7 +44,7 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         val savedBlock = findBlock(block.number)
 
-        // New block saved with status PENDING, listener notified with single event
+        // New block saved, listener notified with single event
         assertOriginalBlockAndBlockEquals(block, savedBlock!!)
         coVerify(exactly = 1) { blockEventPublisher.publish(any()) }
     }
@@ -63,8 +62,7 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         val savedNewBlock = findBlock(newBlock.number)
 
-        // New block saved with status PENDING, listener notified with single event
-        // existing block should not emit event
+        // New block saved, listener notified with single event existing block should not emit event
         assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
         coVerify(exactly = 1) { blockEventPublisher.publish(any()) }
         coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }
@@ -86,7 +84,7 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
 
         val savedNewBlock = findBlock(newBlock.number)
 
-        // Missed block and new block saved with status PENDING, listener notified with 2 events
+        // Missed block and new block saved, listener notified with 2 events
         assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
         coVerify(exactly = 2) { blockEventPublisher.publish(any()) }
         coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }

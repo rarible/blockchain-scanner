@@ -42,20 +42,25 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
             return
         }
 
-        // Otherwise, chain has been reorganized, syncing all reverted blocks
-        lastBlock = checkBlockchainReorganization(lastStateBlock, newBlock)
+        // Otherwise, we have missed blocks in our state OR chain was reorganized
+        lastBlock = restoreMissedBlocks(lastStateBlock, newBlock)
     }
 
-    //todo rename this
-    private suspend fun checkBlockchainReorganization(lastStateBlock: B, newBlock: B): B {
+    private suspend fun restoreMissedBlocks(lastStateBlock: B, newBlock: B): B {
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
         while (currentBlock.id < newBlock.id) {
             val nextBlock = getNextBlock(currentBlock, newBlock.id - currentBlock.id)
 
             if (nextBlock.parentHash != currentBlock.hash) {
-                // chain reorg occured while we were going forward
+                // chain reorg occurred while we were going forward
                 // stop this iteration. next time we will check reorg and go forward again
+                logger.info(
+                    "Chain has been reorganized during reading missed blocks: " +
+                            "[{}:{}] is not a parent of [{}:{}], chain will be reorganized on next BlockEvent",
+                    currentBlock.id, currentBlock.hash, newBlock.id, newBlock.hash
+                )
+
                 return currentBlock
             }
 

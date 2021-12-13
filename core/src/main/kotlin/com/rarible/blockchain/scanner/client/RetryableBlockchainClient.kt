@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner
+package com.rarible.blockchain.scanner.client
 
 import com.github.michaelbull.retry.policy.constantDelay
 import com.github.michaelbull.retry.policy.limitAttempts

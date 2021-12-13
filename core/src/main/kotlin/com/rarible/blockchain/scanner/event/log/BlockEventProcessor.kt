@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.util.BlockBatcher
 import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -53,7 +54,7 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
     }
 
     suspend fun onBlockEvents(events: List<BlockEvent>): Flow<Pair<BlockEvent, MutableList<R>>> = coroutineScope {
-        val batches = toBatches(events)
+        val batches = BlockBatcher.toBatches(events)
         logger.info("Split BlockEvents {} into {} batches", events.map { it.number }, batches.size)
 
         // Processing each batch and flatter them into consequent flow
@@ -99,23 +100,5 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
             result
         }
 
-    private fun toBatches(events: List<BlockEvent>): List<List<BlockEvent>> {
-        val batches = mutableListOf<List<BlockEvent>>()
-        val iterator = events.iterator()
-        var current = iterator.next()
-        var currentBatch = mutableListOf(current)
-        while (iterator.hasNext()) {
-            val next = iterator.next()
-            if (next.javaClass == current.javaClass) {
-                currentBatch.add(next)
-            } else {
-                batches.add(currentBatch)
-                currentBatch = mutableListOf(next)
-            }
-            current = next
-        }
-        batches.add(currentBatch)
-        return batches
-    }
 
 }
