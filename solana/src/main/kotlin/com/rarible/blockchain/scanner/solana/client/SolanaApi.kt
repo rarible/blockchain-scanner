@@ -6,7 +6,7 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.Transact
 import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
-import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionMetaDto
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.http.HttpHeaders
@@ -24,7 +24,7 @@ interface SolanaApi {
 
     suspend fun getBlock(slot: Long, details: TransactionDetails): SolanaBlockDto?
 
-    suspend fun getTransaction(signature: String): SolanaTransactionMetaDto?
+    suspend fun getTransaction(signature: String): SolanaTransactionDto?
 }
 
 internal class SolanaHttpRpcApi(
@@ -61,7 +61,7 @@ internal class SolanaHttpRpcApi(
     override suspend fun getTransaction(signature: String) = client.post()
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
         .retrieve()
-        .bodyToMono<ApiResponse<SolanaTransactionMetaDto>>()
+        .bodyToMono<ApiResponse<SolanaTransactionDto>>()
         .awaitSingleOrNull()
         ?.result
 

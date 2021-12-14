@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
+import com.rarible.blockchain.scanner.solana.client.dto.toMetaModel
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.delay
@@ -40,7 +41,7 @@ class SolanaClient(
         api.getBlock(number, TransactionDetails.None)?.toModel(number)
 
     override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? =
-        api.getTransaction(transactionHash)?.toModel()
+        api.getTransaction(transactionHash)?.toMetaModel()
 
     override fun getBlockEvents(
         descriptor: SolanaDescriptor,
@@ -57,7 +58,7 @@ class SolanaClient(
                     val events = transactionDto.toModel()
 
                     events
-                        .filter { it::class.java == descriptor.entityType }
+                        .filter { it.programId == descriptor.id }
                         .map { event -> SolanaBlockchainLog(hash, blockHash, event) }
                 }
 

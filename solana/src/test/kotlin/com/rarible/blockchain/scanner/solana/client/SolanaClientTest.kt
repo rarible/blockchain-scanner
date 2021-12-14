@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.solana.client
 
-import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent.SolanaMintEvent
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
@@ -16,14 +15,13 @@ internal class SolanaClientTest {
 
     @Test
     fun testParseTransactionEvents() = runBlocking {
-        val descriptor = SolanaDescriptor("", "", SolanaMintEvent::class.java, "")
+        val descriptor = SolanaDescriptor("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s", "", Any::class.java, "")
         val events = client.getBlockEvents(descriptor, 91725442L..91725442L)
             .single()
             .logs
             .map(SolanaBlockchainLog::event)
 
         assertTrue(events.isNotEmpty())
-        assertTrue(events.all { it is SolanaMintEvent })
     }
 
     @Test
