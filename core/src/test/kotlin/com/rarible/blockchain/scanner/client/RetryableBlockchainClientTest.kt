@@ -98,17 +98,4 @@ class RetryableBlockchainClientTest {
         assertEquals(fullBlock, list[0])
     }
 
-    @Test
-    fun `get transaction meta - all attempts failed`() = runBlocking {
-        val transactionHash = randomString()
-        coEvery { client.getTransactionMeta(transactionHash) } throws Exception()
-
-        assertThrows(Exception::class.java) {
-            runBlocking { retryableClient.getTransactionMeta(transactionHash) }
-        }
-
-        // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 3) { client.getTransactionMeta(transactionHash) }
-    }
-
 }

@@ -1,6 +1,5 @@
 package com.rarible.blockchain.solana.client.dto
 
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.solana.client.SolanaBlockchainBlock
 
 @Suppress("unused")
@@ -80,9 +79,4 @@ fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(
     hash = blockhash,
     parentHash = previousBlockhash,
     timestamp = blockTime
-)
-
-fun SolanaTransactionDto.toModel() = TransactionMeta(
-    hash = transaction.signatures.first(),
-    blockHash = transaction.message.recentBlockhash
 )

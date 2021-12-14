@@ -4,6 +4,8 @@ import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.slf4j.LoggerFactory
@@ -58,7 +60,7 @@ class EthereumLogRepository(
         return mongo.save(event, collection).awaitFirst()
     }
 
-    fun findPendingLogs(entityType: Class<*>, collection: String, topic: Word): Flux<EthereumLogRecord<*>> {
+    fun findPendingLogs(entityType: Class<*>, collection: String, topic: Word): Flow<EthereumLogRecord<*>> {
         val criteria = Criteria
             .where("topic").isEqualTo(topic)
             .and("status").`is`(Log.Status.PENDING)
@@ -67,7 +69,7 @@ class EthereumLogRepository(
             Query(criteria),
             entityType,
             collection
-        ) as Flux<EthereumLogRecord<*>>
+        ).asFlow() as Flow<EthereumLogRecord<*>>
     }
 
     fun findAndDelete(

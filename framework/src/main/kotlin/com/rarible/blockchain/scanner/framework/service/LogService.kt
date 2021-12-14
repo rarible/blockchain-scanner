@@ -1,5 +1,9 @@
 package com.rarible.blockchain.scanner.framework.service
 
+import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -24,13 +28,9 @@ interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
     suspend fun save(descriptor: D, records: List<R>): List<R>
 
     /**
-     * Operation performed before handling NewBlock. For example, here could be implemented
-     * some cleanup of temporary LogEvents (like pending logs). As a result, list of updated events
-     * should be emitted.
-     *
-     * @return updated/deleted LogRecords
+     * TODO: this will be unneeded soon. Feel free to not implement.
      */
-    suspend fun beforeHandleNewBlock(descriptor: D, blockHash: String): List<R>
+    suspend fun revertPendingLogs(descriptor: D, fullBlock: FullBlock<*, *>): List<R> = emptyList()
 
     /**
      * Delete all LogRecords of specified block and with specified status.

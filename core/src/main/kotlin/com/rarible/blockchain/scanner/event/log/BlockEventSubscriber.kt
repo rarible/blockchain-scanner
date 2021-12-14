@@ -42,23 +42,16 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
     private val name = subscriber.javaClass.simpleName
 
     suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
-        // Fetching Logs by batch of events in background
-        val newBlockLogsAsync = coroutineScope { async { getBlockLogs(events) } }
-        // While Logs are fetching, updating pending logs
-        val pending = events.associateBy(
-            { it }, { beforeHandleNewBlock(it) }
-        )
-        val newBlockLogs = newBlockLogsAsync.await()
-
-        // Ordering LogEvents by order of incoming events
+        val newBlockLogs = getBlockLogs(events)
         return events.associateBy({ it }, { event ->
-            val beforeHandleLogs = pending.getOrDefault(event, emptyList())
-            val newLogs = newBlockLogs[event]?.let { processLogs(it) } ?: emptyList()
+            val fullBlock = newBlockLogs[event] ?: return@associateBy emptyList()
+            val newLogs = processLogs(fullBlock)
+            val revertedPendingLogs = revertPendingLogs(fullBlock)
             logger.info(
-                "NewBlockEvent [{}] handled for subscriber {}, {} pending logs and {} new logs has been gathered",
-                event, name, beforeHandleLogs.size, newLogs.size
+                "NewBlockEvent [{}] handled for subscriber {}, {} reverted pending logs and {} new logs has been gathered",
+                event, name, revertedPendingLogs.size, newLogs.size
             )
-            beforeHandleLogs + newLogs
+            revertedPendingLogs + newLogs
         })
     }
 
@@ -94,10 +87,10 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return reverted
     }
 
-    private suspend fun beforeHandleNewBlock(event: NewBlockEvent): List<R> {
-        val pending = logTime("logService.beforeHandleNewBlock [${event.number}]") {
+    private suspend fun revertPendingLogs(fullBlock: FullBlock<BB, BL>): List<R> {
+        val pending = logTime("logService.revertPendingLogs [${fullBlock.block}]") {
             withSpan("markInactive", "db") {
-                logService.beforeHandleNewBlock(descriptor, event.hash)
+                logService.revertPendingLogs(descriptor, fullBlock)
             }
         }
         return pending.toList()

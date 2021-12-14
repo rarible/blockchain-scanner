@@ -1,7 +1,10 @@
 package com.rarible.blockchain.solana.client
 
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
-import com.rarible.blockchain.solana.client.dto.*
+import com.rarible.blockchain.solana.client.dto.ApiResponse
+import com.rarible.blockchain.solana.client.dto.GetBlockRequest
+import com.rarible.blockchain.solana.client.dto.GetSlotRequest
+import com.rarible.blockchain.solana.client.dto.SolanaBlockDto
+import com.rarible.blockchain.solana.client.dto.toModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -23,8 +26,6 @@ interface SolanaApi {
     suspend fun getLatestSlot(): Long
 
     suspend fun getBlock(slot: Long): SolanaBlockchainBlock?
-
-    suspend fun getTransaction(signature: String): TransactionMeta?
 }
 
 internal class SolanaHttpRpcApi(
@@ -74,14 +75,6 @@ internal class SolanaHttpRpcApi(
         .awaitSingleOrNull()
         ?.result
         ?.toModel(slot)
-
-    override suspend fun getTransaction(signature: String) = client.post()
-        .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
-        .retrieve()
-        .bodyToMono<ApiResponse<SolanaTransactionDto>>()
-        .awaitSingleOrNull()
-        ?.result
-        ?.toModel()
 
     companion object {
         const val POLLING_DELAY = 500L

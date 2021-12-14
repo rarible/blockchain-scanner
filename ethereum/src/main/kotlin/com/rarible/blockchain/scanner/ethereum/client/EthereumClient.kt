@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.ethereum.client
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
@@ -43,21 +42,6 @@ class EthereumClient(
         return getBlock(Word.apply(hash)).awaitFirst()
     }
 
-    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
-        val opt = ethereum.ethGetTransactionByHash(Word.apply(transactionHash)).awaitFirst()
-        return if (opt.isEmpty) {
-            null
-        } else {
-            val tx = opt.get()
-            TransactionMeta(
-                hash = tx.hash().toString(),
-                blockHash = tx.blockHash().toString()
-            )
-        }
-    }
-
-    //todo помнишь, мы обсуждали, что нужно сделать, чтобы index события брался немного по другим параметрам?
-    //todo (уникальный чтобы считался внутри транзакции, topic, address). это ты учел тут?
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         range: LongRange

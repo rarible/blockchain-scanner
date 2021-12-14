@@ -52,7 +52,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         properties.retryPolicy.scan
     )
 
-    protected val blockEventListeners = subscribers
+    private val blockEventListeners = subscribers
         .groupBy { it.getDescriptor().groupId }
         .map {
             it.key to BlockEventListener(

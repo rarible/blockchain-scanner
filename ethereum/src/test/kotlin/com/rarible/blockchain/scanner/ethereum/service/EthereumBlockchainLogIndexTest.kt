@@ -2,13 +2,11 @@ package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.test.data.randomInt
-import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
-import com.rarible.blockchain.scanner.ethereum.test.data.randomString
+import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
+import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.test.data.randomAddress
-import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
 import io.mockk.every
 import io.mockk.mockk
@@ -19,13 +17,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
-import scala.jdk.javaapi.CollectionConverters
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
-import scalether.domain.Address
-import scalether.domain.response.Block
-import scalether.domain.response.Log
-import java.math.BigInteger
 
 class EthereumBlockchainLogIndexTest {
     @Test
@@ -96,43 +89,4 @@ class EthereumBlockchainLogIndexTest {
             assertEquals(expectedIndex, ethereumLog!!.index)
         }
     }
-
-    private fun ethLog(
-        hash: Word,
-        topic: Word,
-        address: Address,
-        logIndex: Int,
-        blockHash: Word
-    ) = Log(
-        logIndex.toBigInteger(),
-        randomPositiveBigInt(100),
-        hash,
-        blockHash,
-        randomPositiveBigInt(100),
-        address,
-        Binary.apply("0x0"),
-        CollectionConverters.asScala(listOf(topic)).toList(),
-        randomString()
-    )
-
-    private fun ethBlock() = ethBlock(randomInt(), randomWord())
-    private fun ethBlock(number: Int, hash: Word): Block<Word> = Block<Word>(
-        number.toBigInteger(),
-        hash,
-        randomWord(),
-        randomString(),
-        randomString(),
-        randomString(),
-        randomString(),
-        randomString(),
-        randomAddress(),
-        randomPositiveBigInt(1),
-        randomPositiveBigInt(1),
-        Binary.empty(),
-        BigInteger.ZERO,
-        BigInteger.ZERO,
-        BigInteger.ZERO,
-        CollectionConverters.asScala(emptyList<Word>()).toList(),
-        BigInteger.ZERO,
-    )
 }

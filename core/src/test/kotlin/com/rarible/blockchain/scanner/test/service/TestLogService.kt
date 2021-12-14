@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.test.service
 
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
@@ -58,7 +59,4 @@ class TestLogService(
         ).collectList().awaitFirst()
     }
 
-    override suspend fun beforeHandleNewBlock(descriptor: TestDescriptor, blockHash: String): List<TestLogRecord<*>> {
-        return emptyList()
-    }
 }

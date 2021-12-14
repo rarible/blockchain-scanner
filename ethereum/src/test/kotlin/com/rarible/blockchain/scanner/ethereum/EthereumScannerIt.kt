@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
-import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
@@ -170,32 +169,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertEquals(savedLog.status, Log.Status.INACTIVE)
             assertNull(savedLog.blockNumber)
             assertNull(savedLog.logIndex)
-        }
-    }
-
-    @Test
-    fun `scan - drop cancelled`() {
-        // First expected LogRecord - from mint
-        val value = randomPositiveBigInt(1000000)
-        mintAndVerify(sender.from(), value)
-        assertCollectionSize(collection, 1)
-
-        // Second artificial record contains non-existing transaction hash
-        val beneficiary = randomAddress()
-        val fakeHash = randomLogHash()
-
-        val log = ethLog(fakeHash)
-        val record = ethRecord(log, beneficiary, value)
-        val saved = saveLog(collection, record)
-
-        // Let's trigger some BlockEvent to process pending logs
-        TestERC20.deploy(sender, "NAME", "NM").verifySuccess()
-
-        BlockingWait.waitAssert {
-            val readLog = findLog(collection, saved.id)!!.log
-            assertEquals(Log.Status.DROPPED, readLog.status)
-            assertNull(readLog.blockNumber)
-            assertNull(readLog.logIndex)
         }
     }
 

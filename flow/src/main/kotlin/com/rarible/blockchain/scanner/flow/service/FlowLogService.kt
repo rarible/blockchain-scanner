@@ -30,8 +30,4 @@ class FlowLogService(
     ): List<FlowLogRecord<*>> {
         return emptyList()
     }
-
-    override suspend fun beforeHandleNewBlock(descriptor: FlowDescriptor, blockHash: String): List<FlowLogRecord<*>> {
-        return emptyList()
-    }
 }

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.dao.DataAccessException
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 
@@ -166,7 +165,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val blockHash = randomBlockHash()
 
         val deleted = saveLog(collection, randomLogRecord(topic, blockHash))
-        val wrongStatus = saveLog(collection, randomLogRecord(topic, blockHash, Log.Status.PENDING))
+        val wrongStatus = saveLog(collection, randomLogRecord(topic, blockHash, status = Log.Status.PENDING))
 
         val deletedLogs =
             ethereumLogService.findAndDelete(descriptor, blockHash.toString(), Log.Status.CONFIRMED).toList()

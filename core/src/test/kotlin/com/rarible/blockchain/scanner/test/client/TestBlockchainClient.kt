@@ -2,14 +2,12 @@ package com.rarible.blockchain.scanner.test.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 
 class TestBlockchainClient(
     data: TestBlockchainData
@@ -38,11 +36,6 @@ class TestBlockchainClient(
             .sortedBy { it.number }
             .map { FullBlock(TestBlockchainBlock(it), getBlockLogs(descriptor, TestBlockchainBlock(it))) }
             .asFlow()
-    }
-
-    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
-        val log = logs.find { it.transactionHash == transactionHash }
-        return if (log == null) null else TransactionMeta(log.transactionHash, log.blockHash)
     }
 
     private fun getBlockLogs(

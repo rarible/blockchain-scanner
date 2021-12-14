@@ -1,92 +1,74 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.EthereumPendingLog
-import com.rarible.blockchain.scanner.ethereum.model.EthereumPendingLogStatusUpdate
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.core.common.optimisticLock
-import io.daonomic.rpc.domain.Word
+import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import reactor.kotlin.core.publisher.toFlux
-import scalether.core.MonoEthereum
-import scalether.java.Lists
+import java.time.Duration
 
 @Component
 class EthereumPendingLogService(
     private val ethereumLogRepository: EthereumLogRepository,
-    private val properties: EthereumScannerProperties,
-    private val monoEthereum: MonoEthereum
+    private val logEventPublisher: LogEventPublisher,
+    subscribers: List<EthereumLogEventSubscriber>
 ) {
 
     private val logger = LoggerFactory.getLogger(EthereumPendingLogService::class.java)
+    private val descriptors = subscribers.map { it.getDescriptor() }
 
-    suspend fun markInactive(blockHash: String, descriptor: EthereumDescriptor): List<EthereumLogRecord<*>> {
-        val pendingLogs = findPendingLogs(descriptor)
-            .map { EthereumPendingLog(it, descriptor) }
-            .toCollection(mutableListOf())
-
-        return getInactive(blockHash, pendingLogs).toList()
-            .flatMap { markInactive(it) }.toList()
-    }
-
-    fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> {
-        return ethereumLogRepository.findPendingLogs(descriptor.entityType, descriptor.collection, descriptor.ethTopic)
-            .asFlow()
-    }
-
-    private fun getInactive(
-        blockHash: String,
-        records: List<EthereumPendingLog>
-    ): Flow<EthereumPendingLogStatusUpdate> {
-        if (records.isEmpty()) {
-            return emptyFlow()
-        }
-
-        val byTxHash = records.groupBy { it.record.log.transactionHash }
-        val fullBlock = monoEthereum.ethGetFullBlockByHash(Word.apply(blockHash))
-        return fullBlock.flatMapMany { Lists.toJava(it.transactions()).toFlux() }
-            .map { tx ->
-                val first = byTxHash[tx.hash().toString()] ?: emptyList()
-                EthereumPendingLogStatusUpdate(first, Log.Status.INACTIVE)
-            }.asFlow()
-    }
-
-    private suspend fun markInactive(
-        logsToMark: EthereumPendingLogStatusUpdate
+    suspend fun dropInactivePendingLogs(
+        fullBlock: FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>,
+        descriptor: EthereumDescriptor
     ): List<EthereumLogRecord<*>> {
-        val logs = logsToMark.logs
-        val status = logsToMark.status
-        return if (logs.isNotEmpty()) {
-            logs.map {
-                updateStatus(it.descriptor, it.record, status)
+        val pendingLogs = findPendingLogs(descriptor).toList()
+        if (pendingLogs.isEmpty()) {
+            return emptyList()
+        }
+        val confirmedTransactions = fullBlock.logs.map { it.ethLog.transactionHash().toString() }.toSet()
+        val confirmedLogs = pendingLogs.filter { it.log.transactionHash in confirmedTransactions }
+        logger.info(
+            "Dropping {} inactive pending logs confirmed in block {}:{}",
+            confirmedLogs.size,
+            fullBlock.block.number,
+            fullBlock.block.hash
+        )
+        // TODO: delete logs only after sending the kafka message.
+        confirmedLogs.forEach { ethereumLogRepository.delete(descriptor.collection, it) }
+        return confirmedLogs.map { it.withLog(it.log.copy(status = Log.Status.INACTIVE)) }
+    }
+
+    /**
+     * Drop pending logs that haven't had confirmation in a given time ([maxPendingLogDuration]).
+     */
+    suspend fun dropExpiredPendingLogs(maxPendingLogDuration: Duration) {
+        for (descriptor in descriptors) {
+            val expiredLogs = findPendingLogs(descriptor)
+                .filter { Duration.between(it.updatedAt, nowMillis()) > maxPendingLogDuration }
+                .toList()
+            if (expiredLogs.isNotEmpty()) {
+                logger.info("Dropping {} expired pending logs for descriptor {}", expiredLogs.size, descriptor.id)
+                val droppedLogs = expiredLogs.map { it.withLog(it.log.copy(status = Log.Status.DROPPED)) }
+                logEventPublisher.publish(descriptor, Source.PENDING, droppedLogs)
+                droppedLogs.forEach { ethereumLogRepository.delete(descriptor.collection, it) }
+                logger.info("Dropped {} expired pending logs for descriptor {}", droppedLogs.size, descriptor.id)
+            } else {
+                logger.info("No pending logs to drop for descriptor {}", descriptor.id)
             }
-        } else {
-            emptyList()
         }
     }
 
-    suspend fun updateStatus(
-        descriptor: EthereumDescriptor,
-        record: EthereumLogRecord<*>,
-        status: Log.Status
-    ): EthereumLogRecord<*> = optimisticLock(properties.optimisticLockRetries) {
-        val exist = ethereumLogRepository.findLogEvent(descriptor.entityType, descriptor.collection, record.id)
-
-        val copy = exist?.withIdAndVersion(record.id, exist.version)
-            ?: record.withIdAndVersion(record.id, null)
-
-        logger.info("Updating status {} -> {} for record: {}", copy.log.status, status, copy)
-        val updatedCopy = copy.withLog(record.log.copy(status = status, visible = false))
-        ethereumLogRepository.save(descriptor.collection, updatedCopy)
-    }
+    private fun findPendingLogs(descriptor: EthereumDescriptor): Flow<EthereumLogRecord<*>> =
+        ethereumLogRepository.findPendingLogs(descriptor.entityType, descriptor.collection, descriptor.ethTopic)
 }
