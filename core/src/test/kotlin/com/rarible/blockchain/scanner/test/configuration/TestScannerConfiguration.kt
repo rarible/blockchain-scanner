@@ -1,12 +1,12 @@
 package com.rarible.blockchain.scanner.test.configuration
 
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
-import com.rarible.blockchain.scanner.test.client.TestRetryableBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
@@ -18,7 +18,6 @@ import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.DefaultTestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -97,7 +96,7 @@ class TestScannerConfiguration {
             .andThen(Unit)
 
         return TestBlockchainScanner(
-            blockchainClient = TestRetryableBlockchainClient(testBlockchainClient()),
+            blockchainClient = testBlockchainClient(),
             subscribers = listOf(testSubscriber1(), testSubscriber2()),
             blockMapper = testBlockMapper(),
             blockService = testBlockService(),

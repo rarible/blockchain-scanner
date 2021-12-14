@@ -2,7 +2,6 @@ package com.rarible.blockchain.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import kotlinx.coroutines.flow.Flow
 import org.springframework.stereotype.Component
 
@@ -19,8 +18,9 @@ class SolanaClient(
 
     override suspend fun getBlock(number: Long): SolanaBlockchainBlock? = api.getBlock(number)
 
-    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? =
-        api.getTransaction(transactionHash)
+    override suspend fun getBlock(hash: String): SolanaBlockchainBlock? {
+        TODO("Solana block by hash")
+    }
 
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,

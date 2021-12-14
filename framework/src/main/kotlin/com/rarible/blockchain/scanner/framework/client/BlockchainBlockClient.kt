@@ -14,4 +14,9 @@ interface BlockchainBlockClient<BB : BlockchainBlock> {
      */
     suspend fun getBlock(number: Long): BB?
 
+    /**
+     * Get single block by block hash
+     */
+    suspend fun getBlock(hash: String): BB?
+
 }

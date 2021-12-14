@@ -1,11 +1,14 @@
 package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.BlockchainScanner
+import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.client.EthereumRetryableClient
+import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
@@ -33,7 +36,7 @@ import org.springframework.stereotype.Component
 @FlowPreview
 @ExperimentalCoroutinesApi
 class EthereumScanner(
-    blockchainClient: EthereumRetryableClient,
+    ethereumClient: EthereumClient,
     subscribers: List<EthereumLogEventSubscriber>,
     blockMapper: EthereumBlockMapper,
     blockService: EthereumBlockService,
@@ -47,8 +50,9 @@ class EthereumScanner(
     logEventPublisher: LogEventPublisher,
     // Eth-specific beans
     pendingLogService: EthereumPendingLogService,
+    ethereumScannerProperties: EthereumScannerProperties
 ) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>(
-    blockchainClient,
+    ethereumClient,
     subscribers,
     blockMapper,
     blockService,
@@ -59,20 +63,18 @@ class EthereumScanner(
     blockEventPublisher,
     blockEventConsumer,
     logEventPublisher,
-), PendingLogChecker {
+) {
 
     private val logger = LoggerFactory.getLogger(EthereumScanner::class.java)
 
-    private val pendingLogChecker = EthereumPendingLogChecker(
-        blockchainClient = blockchainClient,
+    private val expiredPendingLogService = EthereumExpiredPendingLogService(
         pendingLogService = pendingLogService,
         logEventPublisher = logEventPublisher,
-        blockEventListeners = blockEventListeners,
         subscribers = subscribers
     )
 
-    override suspend fun checkPendingLogs() {
-        pendingLogChecker.checkPendingLogs()
+    suspend fun dropExpiredPendingLogs(maxPendingLogDuration: Duration) {
+        expiredPendingLogService.dropExpiredPendingLogs(maxPendingLogDuration)
     }
 
     @EventListener(ApplicationReadyEvent::class)

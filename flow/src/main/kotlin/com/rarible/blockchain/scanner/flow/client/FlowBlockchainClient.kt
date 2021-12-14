@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.flow.client
 
+import com.nftco.flow.sdk.FlowId
 import com.rarible.blockchain.scanner.flow.FlowGrpcApi
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
@@ -44,6 +45,10 @@ class FlowBlockchainClient(
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
         val a = api.blockByHeight(number) ?: throw IllegalStateException("Block [$number] not found!")
         return FlowBlockchainBlock(a)
+    }
+
+    override suspend fun getBlock(hash: String): FlowBlockchainBlock? {
+        return api.blockById(FlowId(hash))?.let { FlowBlockchainBlock(it) }
     }
 
     override fun getBlockLogs(
