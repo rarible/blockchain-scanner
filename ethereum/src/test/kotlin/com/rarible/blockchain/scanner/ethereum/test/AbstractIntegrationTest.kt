@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
-import com.rarible.blockchain.scanner.ethereum.EthereumScanner
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
@@ -13,17 +12,24 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.core.task.TaskService
+import com.rarible.core.test.wait.BlockingWait
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
 import scalether.core.MonoEthereum
 import scalether.transaction.MonoTransactionPoller
 import scalether.transaction.MonoTransactionSender
+import kotlin.concurrent.withLock
 
 @ExperimentalCoroutinesApi
 @FlowPreview
@@ -40,9 +46,6 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     protected lateinit var mongo: ReactiveMongoOperations
-
-    @Autowired
-    protected lateinit var ethereumScanner: EthereumScanner
 
     @Autowired
     lateinit var ethereumBlockMapper: EthereumBlockMapper
@@ -64,6 +67,17 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var testTransferSubscriber: TestTransferSubscriber
+
+    @Autowired
+    lateinit var monoEthereum: MonoEthereum
+
+    @Autowired
+    @Qualifier("testEthereumBlockchainClient")
+    lateinit var testEthereumBlockchainClient: TestEthereumBlockchainClient
+
+    @Autowired
+    @Qualifier("testEthereumLogEventPublisher")
+    lateinit var testEthereumLogEventPublisher: TestEthereumLogEventPublisher
 
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
@@ -96,4 +110,21 @@ abstract class AbstractIntegrationTest {
         return mono { ethereumBlockRepository.save(block) }.block()!!
     }
 
+    protected fun <T> delayBlockHandling(block: () -> T): T {
+        return testEthereumBlockchainClient.blocksDelayLock.withLock {
+            block()
+        }
+    }
+
+    @BeforeEach
+    fun ignoreOldBlocks() = runBlocking<Unit> {
+        val currentBlockNumber = monoEthereum.ethBlockNumber().awaitFirst().toLong()
+        testEthereumBlockchainClient.startingBlock = currentBlockNumber
+    }
+
+    protected fun verifyPublishedLogEvent(asserter: (LogEvent<*, *>) -> Unit) {
+        BlockingWait.waitAssert {
+            assertThat(testEthereumLogEventPublisher.publishedLogEvents).anySatisfy(asserter)
+        }
+    }
 }

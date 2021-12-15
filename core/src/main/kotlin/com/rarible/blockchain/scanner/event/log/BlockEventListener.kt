@@ -51,7 +51,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
         }.collect()
     }
 
-    private suspend fun processBlocks(events: List<BlockEvent>): Flow<LogEvent> {
+    private suspend fun processBlocks(events: List<BlockEvent>): Flow<LogEvent<L, R>> {
         return withSpan("process") {
             val logs = logTime("BlockEventListener::processBlockEvents") {
                 blockEventProcessor.onBlockEvents(events)
@@ -64,7 +64,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
         }
     }
 
-    private suspend fun publishLogEvents(event: LogEvent) {
+    private suspend fun publishLogEvents(event: LogEvent<L, R>) {
         logger.info("Publishing {} LogEvents for Block [{}]", event.logRecords.size, event.blockEvent)
         return withSpan("onBlockProcessed") {
             logEventPublisher.publish(event)

@@ -10,7 +10,7 @@ interface LogEventPublisher {
     /**
      * Publish LogEvents of handled block
      */
-    suspend fun publish(logEvent: LogEvent)
+    suspend fun publish(logEvent: LogEvent<*, *>)
 
     /**
      * Publish changed LogRecords of specified descriptor. Should be use only for

@@ -8,7 +8,7 @@ import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 
 class TestLogEventPublisher : LogEventPublisher {
 
-    override suspend fun publish(logEvent: LogEvent) {
+    override suspend fun publish(logEvent: LogEvent<*, *>) {
     }
 
     override suspend fun publish(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>) {
