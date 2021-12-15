@@ -44,12 +44,9 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return events.associateBy({ it }, { event ->
             val fullBlock = newBlockLogs[event] ?: return@associateBy emptyList()
             val newLogs = processLogs(fullBlock)
-            val revertedPendingLogs = revertPendingLogs(fullBlock)
-            logger.info(
-                "NewBlockEvent [{}] handled for subscriber {}, {} reverted pending logs and {} new logs has been gathered",
-                event, name, revertedPendingLogs.size, newLogs.size
-            )
-            revertedPendingLogs + newLogs
+            revertPendingLogs(fullBlock)
+            logger.info("{} handled for subscriber {}: {} new logs have been gathered", event, name, newLogs.size)
+            newLogs
         })
     }
 
@@ -69,7 +66,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return events.associateBy({ it }, { event ->
             val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
             logger.info(
-                "ReindexBlockEvent [{}] handled for subscriber {}, {} reindexed logs has been gathered",
+                "ReindexBlockEvent [{}] handled for subscriber {}, {} re-indexed logs has been gathered",
                 event, name, newLogs.size
             )
             newLogs
@@ -85,13 +82,12 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return reverted
     }
 
-    private suspend fun revertPendingLogs(fullBlock: FullBlock<BB, BL>): List<R> {
-        val pending = logTime("logService.revertPendingLogs [${fullBlock.block}]") {
+    private suspend fun revertPendingLogs(fullBlock: FullBlock<BB, BL>) {
+        logTime("logService.revertPendingLogs [${fullBlock.block}]") {
             withSpan("markInactive", "db") {
                 logService.revertPendingLogs(descriptor, fullBlock)
             }
         }
-        return pending.toList()
     }
 
     private suspend fun processLogs(fullBlock: FullBlock<BB, BL>): List<R> {

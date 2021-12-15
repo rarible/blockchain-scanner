@@ -7,10 +7,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
-import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.core.common.optimisticLock
@@ -69,12 +66,9 @@ class EthereumLogService(
         }
     }
 
-    override suspend fun revertPendingLogs(
-        descriptor: EthereumDescriptor,
-        fullBlock: FullBlock<*, *>
-    ): List<EthereumLogRecord<*>> {
+    override suspend fun revertPendingLogs(descriptor: EthereumDescriptor, fullBlock: FullBlock<*, *>) {
         @Suppress("UNCHECKED_CAST")
-        return pendingLogService.dropInactivePendingLogs(
+        pendingLogService.dropInactivePendingLogs(
             fullBlock as FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>,
             descriptor
         )

@@ -3,6 +3,8 @@ package com.rarible.blockchain.scanner.ethereum.service
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
@@ -19,6 +21,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -92,6 +95,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
         for (notChanged in notChangedList) {
             assertEquals(notChanged, findLog(collection, notChanged.id))
         }
+        checkDismissedLogs(pendingRecord)
     }
 
     @Test
@@ -118,5 +122,14 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
             val found = findLog(collection, notChanged.id)
             assertEquals(notChanged, found)
         }
+        checkDismissedLogs(expired)
+    }
+
+    private fun checkDismissedLogs(vararg expired: EthereumLogRecord<*>) {
+        assertThat(
+            testEthereumLogEventPublisher.dismissedLogs.values
+                .flatten()
+                .map { (it as ReversedEthereumLogRecord).id }
+        ).containsExactlyElementsOf(expired.map { it.id })
     }
 }

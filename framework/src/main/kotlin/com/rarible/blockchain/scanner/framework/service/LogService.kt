@@ -1,9 +1,6 @@
 package com.rarible.blockchain.scanner.framework.service
 
-import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -30,7 +27,7 @@ interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
     /**
      * TODO: this will be unneeded soon. Feel free to not implement.
      */
-    suspend fun revertPendingLogs(descriptor: D, fullBlock: FullBlock<*, *>): List<R> = emptyList()
+    suspend fun revertPendingLogs(descriptor: D, fullBlock: FullBlock<*, *>) = Unit
 
     /**
      * Delete all LogRecords of specified block and with specified status.

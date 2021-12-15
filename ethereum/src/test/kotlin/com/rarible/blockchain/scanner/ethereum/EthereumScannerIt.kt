@@ -8,8 +8,8 @@ import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
+import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
-import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
@@ -20,7 +20,6 @@ import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
@@ -44,11 +43,10 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
     private val logger = LoggerFactory.getLogger(EthereumScannerIt::class.java)
 
-    private var descriptor: EthereumDescriptor = mockk()
-    private var collection = ""
-    private var topic = randomWord()
-    private var contract: TestERC20 = mockk()
-
+    private lateinit var descriptor: EthereumDescriptor
+    private lateinit var collection: String
+    private lateinit var topic: Word
+    private lateinit var contract: TestERC20
 
     @BeforeEach
     fun beforeEach() {
@@ -84,91 +82,48 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(data.value).isEqualTo(value)
         }
 
-        // TODO check Kafka
-        /*coVerify(exactly = 1) {
-            testLogEventListener.onBlockLogsProcessed(match {
-                assertEquals(receipt.blockHash().toString(), it.event.hash)
-                assertEquals(1, it.records.size)
-                true
-            })
-        }*/
-    }
-
-    @Test
-    fun `scan - mark pending logs`() {
-        // First expected LogRecord - from mint
-        val value = randomPositiveBigInt(1000000)
-        mintAndVerify(sender.from(), value)
-        assertCollectionSize(collection, 1)
-
-        // Second - from transfer
-        val beneficiary = randomAddress()
-        val transferReceipt = contract.transfer(beneficiary, value)
-            .execute()
-            .verifySuccess()
-
-        // Artificial PENDING log for transaction already exist
-        val tx = ethereum.ethGetTransactionByHash(transferReceipt.transactionHash()).block()!!.get()
-        val log = ethLog(tx.hash().toString())
-        val record = ethRecord(log, beneficiary, value)
-
-        val saved = saveLog(collection, record)
-
-        BlockingWait.waitAssert {
-            // So in total we have 3 records in storage
-            assertEquals(3, findAllLogs(collection).size)
-
-            // First two records should be in CONFIRMED state, they are correct
-            val confirmed = findAllLogs(collection).map {
-                it as ReversedEthereumLogRecord
-            }.filter {
-                it.id != saved.id
+        verifyPublishedLogEvent { logEvent ->
+            assertThat(logEvent).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
+                assertThat(it.transactionHash).isEqualTo(receipt.transactionHash().toString())
+                assertThat(it.data).isInstanceOfSatisfying(TestEthereumLogData::class.java) { logData ->
+                    assertThat(logData.to).isEqualTo(beneficiary)
+                }
             }
-            confirmed.forEach {
-                val confirmedLog = it.log
-                assertEquals(confirmedLog.status, Log.Status.CONFIRMED)
-                assertNotNull(confirmedLog.blockHash)
-                assertNotNull(confirmedLog.blockNumber)
-                assertNotNull(confirmedLog.logIndex)
-            }
-
-            // Artificial pending record should become INACTIVE
-            val inactive = findLog(collection, saved.id)!!
-            assertEquals(Log.Status.INACTIVE, inactive.log.status)
-
-            val block = findBlock(tx.blockNumber().toLong())
-            assertNotNull(block)
         }
     }
 
     @Test
-    fun `scan - revert pending logs`() {
-        // First expected LogRecord - from mint
+    fun `scan - mark pending logs as inactive`() {
         val value = randomPositiveBigInt(1000000)
-        mintAndVerify(sender.from(), value)
-        assertCollectionSize(collection, 1)
+        val pendingLog = delayBlockHandling {
+            // First - log from mint
+            mintAndVerify(sender.from(), value)
 
-        // Second record should not be stored, transfer completed with error
-        val beneficiary = randomAddress()
-        val transferReceipt = contract
-            .transfer(beneficiary, value)
-            .withGas(BigInteger.valueOf(23000))
-            .execute().verifyError()
+            // Second - log from transfer
+            val beneficiary = randomAddress()
+            val transferReceipt = contract.transfer(beneficiary, value)
+                .execute()
+                .verifySuccess()
 
-        // Artificial PENDING LogRecord for failed transfer
-        val log = ethLog(transferReceipt.transactionHash().toString())
-        val record = ethRecord(log, beneficiary, value)
-        val saved = saveLog(collection, record)
+            // Artificial PENDING log for transaction that already exists
+            val log = ethLog(transferReceipt.transactionHash().toString()).copy(
+                index = randomPositiveInt()
+            )
+            val record = ethRecord(log, beneficiary, value)
+
+            saveLog(collection, record)
+        }
 
         BlockingWait.waitAssert {
-            // We expect 2 records - first from mint and artificial one with original status PENDING
-            assertCollectionSize(collection, 2)
+            // The inactive log must be removed.
+            assertNull(findLog(collection, pendingLog.id))
+        }
 
-            // PENDING LogRecord should become INACTIVE since transfer failed
-            val savedLog = findLog(collection, saved.id)!!.log
-            assertEquals(savedLog.status, Log.Status.INACTIVE)
-            assertNull(savedLog.blockNumber)
-            assertNull(savedLog.logIndex)
+        verifyDismissedLogEvent { logRecord ->
+            assertThat(logRecord).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
+                assertThat(it.id).isEqualTo(pendingLog.id)
+                assertThat(it.log.status).isEqualTo(Log.Status.INACTIVE)
+            }
         }
     }
 
@@ -263,7 +218,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
     private fun assertCollectionSize(collection: String, expectedSize: Int) {
         BlockingWait.waitAssert {
-            assertEquals(expectedSize, findAllLogs(collection).size)
+            assertThat(findAllLogs(collection)).hasSize(expectedSize)
         }
     }
 

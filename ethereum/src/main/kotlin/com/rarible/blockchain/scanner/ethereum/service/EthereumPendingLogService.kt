@@ -31,22 +31,28 @@ class EthereumPendingLogService(
     suspend fun dropInactivePendingLogs(
         fullBlock: FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>,
         descriptor: EthereumDescriptor
-    ): List<EthereumLogRecord<*>> {
+    ) {
         val pendingLogs = findPendingLogs(descriptor).toList()
         if (pendingLogs.isEmpty()) {
-            return emptyList()
+            return
         }
         val confirmedTransactions = fullBlock.logs.map { it.ethLog.transactionHash().toString() }.toSet()
-        val confirmedLogs = pendingLogs.filter { it.log.transactionHash in confirmedTransactions }
+        val toConfirmLogs = pendingLogs.filter { it.log.transactionHash in confirmedTransactions }
         logger.info(
-            "Dropping {} inactive pending logs confirmed in block {}:{}",
+            "Confirming {} pending logs from block {}:{}",
+            toConfirmLogs.size,
+            fullBlock.block.number,
+            fullBlock.block.hash
+        )
+        val confirmedLogs = toConfirmLogs.map { it.withLog(it.log.copy(status = Log.Status.INACTIVE)) }
+        logEventPublisher.publishDismissedLogs(descriptor, Source.PENDING, confirmedLogs)
+        toConfirmLogs.forEach { ethereumLogRepository.delete(descriptor.collection, it) }
+        logger.info(
+            "Confirmed {} pending logs from block {}:{}",
             confirmedLogs.size,
             fullBlock.block.number,
             fullBlock.block.hash
         )
-        // TODO: delete logs only after sending the kafka message.
-        confirmedLogs.forEach { ethereumLogRepository.delete(descriptor.collection, it) }
-        return confirmedLogs.map { it.withLog(it.log.copy(status = Log.Status.INACTIVE)) }
     }
 
     /**
@@ -60,7 +66,7 @@ class EthereumPendingLogService(
             if (expiredLogs.isNotEmpty()) {
                 logger.info("Dropping {} expired pending logs for descriptor {}", expiredLogs.size, descriptor.id)
                 val droppedLogs = expiredLogs.map { it.withLog(it.log.copy(status = Log.Status.DROPPED)) }
-                logEventPublisher.publish(descriptor, Source.PENDING, droppedLogs)
+                logEventPublisher.publishDismissedLogs(descriptor, Source.PENDING, droppedLogs)
                 droppedLogs.forEach { ethereumLogRepository.delete(descriptor.collection, it) }
                 logger.info("Dropped {} expired pending logs for descriptor {}", droppedLogs.size, descriptor.id)
             } else {

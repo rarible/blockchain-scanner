@@ -4,8 +4,8 @@ import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
-import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component
 @FlowPreview
 @ExperimentalCoroutinesApi
 class EthereumScanner(
-    ethereumClient: EthereumClient,
+    ethereumClient: EthereumBlockchainClient,
     subscribers: List<EthereumLogEventSubscriber>,
     blockMapper: EthereumBlockMapper,
     blockService: EthereumBlockService,

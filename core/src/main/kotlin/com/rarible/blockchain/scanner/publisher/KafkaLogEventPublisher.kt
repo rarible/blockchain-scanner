@@ -39,10 +39,9 @@ class KafkaLogEventPublisher(
         kafkaProducer.send(messages, topic)
     }
 
-    override suspend fun publish(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>) {
-        // TODO sorting? Not sure it needed for deleted pending logs
+    override suspend fun publishDismissedLogs(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>) {
         val topic = getTopic(descriptor)
-        val messages = logs.map { record -> toKafkaMessage(record, source) }
+        val messages = logs.map { toKafkaMessage(it, source) }
         kafkaProducer.send(messages, topic).collect()
     }
 

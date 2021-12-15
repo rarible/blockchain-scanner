@@ -13,6 +13,8 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.framework.data.LogEvent
+import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -119,12 +121,24 @@ abstract class AbstractIntegrationTest {
     @BeforeEach
     fun ignoreOldBlocks() = runBlocking<Unit> {
         val currentBlockNumber = monoEthereum.ethBlockNumber().awaitFirst().toLong()
-        testEthereumBlockchainClient.startingBlock = currentBlockNumber
+        testEthereumBlockchainClient.startingBlock = currentBlockNumber + 1
     }
 
-    protected fun verifyPublishedLogEvent(asserter: (LogEvent<*, *>) -> Unit) {
+    @BeforeEach
+    fun cleanupLogs() {
+        testEthereumLogEventPublisher.dismissedLogs.clear()
+        testEthereumLogEventPublisher.publishedLogEvents.clear()
+    }
+
+    protected fun verifyPublishedLogEvent(asserter: (LogRecord<*, *>) -> Unit) {
         BlockingWait.waitAssert {
-            assertThat(testEthereumLogEventPublisher.publishedLogEvents).anySatisfy(asserter)
+            assertThat(testEthereumLogEventPublisher.publishedLogEvents.flatMap { it.logRecords }).anySatisfy(asserter)
+        }
+    }
+
+    protected fun verifyDismissedLogEvent(asserter: (LogRecord<*, *>) -> Unit) {
+        BlockingWait.waitAssert {
+            assertThat(testEthereumLogEventPublisher.dismissedLogs.flatMap { it.value }).anySatisfy(asserter)
         }
     }
 }

@@ -13,9 +13,9 @@ interface LogEventPublisher {
     suspend fun publish(logEvent: LogEvent<*, *>)
 
     /**
-     * Publish changed LogRecords of specified descriptor. Should be use only for
-     * specific operations not related to block-based events.
+     * Publish dismissed LogRecords.
+     * TODO: will be unneeded when we move out Ethereum's pending logs to a dedicated lib.
      */
-    suspend fun publish(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>)
+    suspend fun publishDismissedLogs(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>)
 
 }
