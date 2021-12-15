@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.framework.subscriber
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -23,19 +22,16 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L
      * where to store your custom data. It will be passed to implementation of
      * [LogService][com.rarible.blockchain.scanner.framework.service.LogService],
      * [PendingLogService][com.rarible.blockchain.scanner.framework.service.PendingLogService],
-     * [BlockchainClient][com.rarible.blockchain.scanner.framework.client.BlockchainClient] and
-     * [LogMapper][com.rarible.blockchain.scanner.framework.mapper.LogMapper]
+     * [BlockchainClient][com.rarible.blockchain.scanner.framework.client.BlockchainClient].
      */
     fun getDescriptor(): D
 
     /**
-     * Produces custom data from single Log. Subscriber is responsible to provide minorLogIndex for each log.
-     * This index means the order of produced events. For example, if subscriber produces 3 records for
-     * provided the log, they should have indices 0,1,2.
+     * Produces custom data from single Log.
      *
      * @param block original Blockchain Block
      * @param log original Blockchain Log
      */
-    suspend fun getEventRecords(block: BB, log: BL, logMapper: LogMapper<BB, BL, L>): List<R>
+    suspend fun getEventRecords(block: BB, log: BL): List<R>
 
 }

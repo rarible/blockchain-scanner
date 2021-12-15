@@ -75,13 +75,11 @@ class FlowBlockchainClient(
                             hash = flowEvent.transactionId.base16Value,
                             // TODO FLOW - add transaction index
                             blockHash = entry.key.hash,
-                            event = flowEvent,
-                            index = 0 // changed below
+                            event = flowEvent
                         )
                     }.sortedBy { it.hash }
                         .sortedBy { it.event.eventIndex }
-                        .withIndex().map { it.value.copy(index = it.index) }.toList()
-                    // TODO: ^ please rethink/review this code that sets index.
+                        .toList()
 
                     send(
                         FullBlock(

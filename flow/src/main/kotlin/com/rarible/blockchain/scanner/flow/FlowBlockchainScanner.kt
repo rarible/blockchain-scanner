@@ -1,14 +1,12 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.rarible.blockchain.scanner.BlockchainScanner
-import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainClient
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.mapper.FlowBlockMapper
-import com.rarible.blockchain.scanner.flow.mapper.FlowLogMapper
 import com.rarible.blockchain.scanner.flow.model.FlowBlock
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
@@ -37,7 +35,6 @@ class FlowBlockchainScanner(
     subscribers: List<FlowLogEventSubscriber>,
     blockMapper: FlowBlockMapper,
     blockService: FlowBlockService,
-    logMapper: FlowLogMapper,
     logService: FlowLogService,
     logEveComparator: FlowLogEventComparator,
     properties: BlockchainScannerProperties,
@@ -50,7 +47,6 @@ class FlowBlockchainScanner(
     subscribers,
     blockMapper,
     blockService,
-    logMapper,
     logService,
     logEveComparator,
     properties,

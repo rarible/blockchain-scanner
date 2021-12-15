@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
@@ -33,7 +32,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
-    logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
     logEventComparator: LogEventComparator<L, R>,
     properties: BlockchainScannerProperties,
@@ -58,7 +56,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
             it.key to BlockEventListener(
                 blockchainClient = retryableClient,
                 subscribers = it.value,
-                logMapper = logMapper,
                 logService = logService,
                 groupId = it.key,
                 logEventComparator = logEventComparator,

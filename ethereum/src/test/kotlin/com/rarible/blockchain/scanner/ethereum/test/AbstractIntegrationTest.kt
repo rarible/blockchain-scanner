@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.ethereum.test
 import com.rarible.blockchain.scanner.ethereum.EthereumScanner
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
-import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
@@ -53,9 +52,6 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var ethereumBlockService: EthereumBlockService
-
-    @Autowired
-    lateinit var ethereumLogMapper: EthereumLogMapper
 
     @Autowired
     lateinit var ethereumLogRepository: EthereumLogRepository

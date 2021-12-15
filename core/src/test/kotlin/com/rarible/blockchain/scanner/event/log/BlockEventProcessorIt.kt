@@ -57,7 +57,6 @@ class BlockEventProcessorIt : AbstractIntegrationTest() {
         return BlockEventProcessor(
             testBlockchainClient,
             subscribers.asList(),
-            testLogMapper,
             testLogService
         )
     }

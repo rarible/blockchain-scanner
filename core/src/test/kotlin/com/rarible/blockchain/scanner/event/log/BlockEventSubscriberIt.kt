@@ -84,10 +84,7 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         return BlockEventSubscriber(
             testBlockchainClient,
             subscriber,
-            testLogMapper,
             testLogService
         )
     }
 }
-
-

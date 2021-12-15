@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
-import com.rarible.blockchain.scanner.ethereum.mapper.EthereumLogMapper
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
@@ -34,7 +33,6 @@ class EthereumScanner(
     subscribers: List<EthereumLogEventSubscriber>,
     blockMapper: EthereumBlockMapper,
     blockService: EthereumBlockService,
-    logMapper: EthereumLogMapper,
     logService: EthereumLogService,
     logEventComparator: EthereumLogEventComparator,
     properties: BlockchainScannerProperties,
@@ -47,7 +45,6 @@ class EthereumScanner(
     subscribers,
     blockMapper,
     blockService,
-    logMapper,
     logService,
     logEventComparator,
     properties,

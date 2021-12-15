@@ -24,7 +24,7 @@ data class ReversedEthereumLogRecord(
     val status: Log.Status,
     val topic: Word,
 
-    val minorLogIndex: Int,
+    override val minorLogIndex: Int,
     val index: Int,
 
     val address: Address,

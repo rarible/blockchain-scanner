@@ -11,5 +11,12 @@ abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<Ethereu
     abstract val createdAt: Instant
     abstract val updatedAt: Instant
 
+    /**
+     * Zero-based index of this record among all records produced by subscriber from one blockchain log.
+     * It is used to distinguish adjacent log records, and it is part of the composite primary key of ethereum logs,
+     * which consists of transactionHash.topic.address.index.minorLogIndex
+     */
+    abstract val minorLogIndex: Int
+
     abstract fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant = nowMillis()): LR
 }

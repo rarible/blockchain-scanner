@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -40,9 +39,6 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var testBlockService: TestBlockService
-
-    @Autowired
-    lateinit var testLogMapper: TestLogMapper
 
     @Autowired
     lateinit var testLogRepository: TestLogRepository

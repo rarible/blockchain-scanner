@@ -11,7 +11,6 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchainData
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
@@ -62,9 +61,6 @@ class TestScannerConfiguration {
     fun testBlockMapper() = TestBlockMapper()
 
     @Bean
-    fun testLogMapper() = TestLogMapper()
-
-    @Bean
     fun testBlockRepository() = TestBlockRepository(mongo)
 
     @Bean
@@ -100,7 +96,6 @@ class TestScannerConfiguration {
             subscribers = listOf(testSubscriber1(), testSubscriber2()),
             blockMapper = testBlockMapper(),
             blockService = testBlockService(),
-            logMapper = testLogMapper(),
             logService = testLogService(),
             logEventPublisher = testLogEventPublisher,
             logEventComparator = testLogRecordComparator(),

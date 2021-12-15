@@ -116,7 +116,6 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
                 it.key to BlockEventListener(
                     testBlockchainClient,
                     it.value,
-                    testLogMapper,
                     testLogService,
                     it.key,
                     testLogEventComparator,

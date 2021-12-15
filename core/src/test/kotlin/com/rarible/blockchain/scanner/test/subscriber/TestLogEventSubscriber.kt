@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.test.subscriber
 
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
+import com.rarible.blockchain.scanner.framework.model.Descriptor
+import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -22,8 +23,7 @@ class TestLogEventSubscriber(
 
     override suspend fun getEventRecords(
         block: TestBlockchainBlock,
-        log: TestBlockchainLog,
-        logMapper: LogMapper<TestBlockchainBlock, TestBlockchainLog, TestLog>
+        log: TestBlockchainLog
     ): List<TestLogRecord<*>> = (0 until eventDataCount).map { minorIndex ->
         TestCustomLogRecord(
             id = randomPositiveLong(),
@@ -31,7 +31,26 @@ class TestLogEventSubscriber(
             blockExtra = block.testOriginalBlock.testExtra,
             logExtra = log.testOriginalLog.testExtra,
             customData = randomString(),
-            log = logMapper.map(block, log, minorIndex, descriptor)
+            log = mapLog(log, descriptor, minorIndex)
+        )
+    }
+
+    private fun mapLog(
+        log: TestBlockchainLog,
+        descriptor: Descriptor,
+        minorLogIndex: Int
+    ): TestLog {
+        val testLog = log.testOriginalLog
+        return TestLog(
+            topic = descriptor.id,
+            transactionHash = testLog.transactionHash,
+            extra = testLog.testExtra,
+            visible = true,
+            minorLogIndex = minorLogIndex,
+            status = Log.Status.CONFIRMED,
+            blockHash = testLog.blockHash,
+            logIndex = testLog.logIndex,
+            index = log.index
         )
     }
 }

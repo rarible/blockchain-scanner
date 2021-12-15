@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.LogEvent
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -29,7 +28,6 @@ import org.slf4j.LoggerFactory
 class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
-    logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
     private val groupId: String,
     private val logEventComparator: LogEventComparator<L, R>,
@@ -41,7 +39,6 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     private val blockEventProcessor: BlockEventProcessor<BB, BL, L, R, D> = BlockEventProcessor(
         blockchainClient,
         subscribers,
-        logMapper,
         logService
     )
 

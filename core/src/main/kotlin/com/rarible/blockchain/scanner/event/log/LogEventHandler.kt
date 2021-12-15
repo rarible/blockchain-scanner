@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory
 @ExperimentalCoroutinesApi
 class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
-    private val logMapper: LogMapper<BB, BL, L>,
     private val logService: LogService<L, R, D>
 ) {
 
@@ -45,7 +43,7 @@ class LogEventHandler<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : 
 
         return if (logs.isNotEmpty()) {
             logger.info("Handling {} Logs of Block [{}:{}], subscriber {} ", logs.size, block.number, block.hash, name)
-            val processedLogs = logs.flatMap { subscriber.getEventRecords(block, it, logMapper) }
+            val processedLogs = logs.flatMap { subscriber.getEventRecords(block, it) }
             withSpan("saveLogs", "db") {
                 logService.save(descriptor, processedLogs)
             }

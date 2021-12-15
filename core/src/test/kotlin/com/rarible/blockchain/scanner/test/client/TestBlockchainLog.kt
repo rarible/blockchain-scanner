@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 
 data class TestBlockchainLog(
     val testOriginalLog: TestOriginalLog,
-    override val index: Int
+    val index: Int
 ) : BlockchainLog {
 
     override val hash = testOriginalLog.transactionHash

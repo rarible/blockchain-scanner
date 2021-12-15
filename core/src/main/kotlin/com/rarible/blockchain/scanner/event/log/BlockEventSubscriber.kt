@@ -8,7 +8,6 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -30,13 +29,12 @@ import org.slf4j.LoggerFactory
 class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
-    logMapper: LogMapper<BB, BL, L>,
     private val logService: LogService<L, R, D>
 ) {
 
     private val logger = LoggerFactory.getLogger(subscriber.javaClass)
 
-    private val logHandler = LogEventHandler(subscriber, logMapper, logService)
+    private val logHandler = LogEventHandler(subscriber, logService)
 
     val descriptor = subscriber.getDescriptor()
     private val name = subscriber.javaClass.simpleName

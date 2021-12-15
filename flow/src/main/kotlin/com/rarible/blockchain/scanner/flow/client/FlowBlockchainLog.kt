@@ -6,6 +6,5 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 data class FlowBlockchainLog(
     override val hash: String,
     override val blockHash: String,
-    override val index: Int,
     val event: FlowEvent
 ) : BlockchainLog

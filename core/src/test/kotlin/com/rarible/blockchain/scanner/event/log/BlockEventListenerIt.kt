@@ -82,7 +82,6 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
         return BlockEventListener(
             testBlockchainClient,
             subscribers.asList(),
-            testLogMapper,
             testLogService,
             descriptor.groupId,
             testLogEventComparator,

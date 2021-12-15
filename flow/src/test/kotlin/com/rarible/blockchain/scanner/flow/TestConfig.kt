@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -39,8 +38,7 @@ class TestConfig {
 
         override suspend fun getEventRecords(
             block: FlowBlockchainBlock,
-            log: FlowBlockchainLog,
-            logMapper: LogMapper<FlowBlockchainBlock, FlowBlockchainLog, FlowLog>
+            log: FlowBlockchainLog
         ): List<FlowLogRecord<*>> {
             if (!descriptor.events.contains(log.event.type)) {
                 return emptyList()

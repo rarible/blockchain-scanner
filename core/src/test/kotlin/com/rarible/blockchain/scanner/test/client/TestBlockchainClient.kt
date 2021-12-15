@@ -41,11 +41,7 @@ class TestBlockchainClient(
     private fun getBlockLogs(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
-    ): List<TestBlockchainLog> {
-        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }
-            .groupBy { it.transactionHash }
-            .mapValues { (_, logsInTransaction) -> logsInTransaction.sortedBy { it.logIndex }.withIndex() }
-            .flatMap { it.value }
-            .map { TestBlockchainLog(it.value, it.index) }
-    }
+    ): List<TestBlockchainLog> =
+        logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }
+            .mapIndexed { index, log -> TestBlockchainLog(log, index) }
 }

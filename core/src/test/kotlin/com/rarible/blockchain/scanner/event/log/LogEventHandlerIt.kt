@@ -130,7 +130,6 @@ internal class LogEventHandlerIt : AbstractIntegrationTest() {
     ): LogEventHandler<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
         return LogEventHandler(
             subscriber,
-            testLogMapper,
             testLogService
         )
     }
