@@ -1,13 +1,11 @@
 package com.rarible.blockchain.scanner.framework.data
 
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 
-data class LogEvent<L : Log<L>, R : LogRecord<L, *>>(
-    // BlockEvent related to produced LogRecords
+data class LogEvent<L : Log<L>, R : LogRecord<L, *>, D: Descriptor>(
     val blockEvent: BlockEvent,
-    // Subscriber group of the events
-    val groupId: String,
-    // LogRecords grouped by Descriptor
-    val logRecords: List<R>
+    val logRecords: List<R>,
+    val descriptor: D
 )

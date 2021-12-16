@@ -44,14 +44,14 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         val blockSubscriber = createBlockSubscriber(testBlockchainClient, subscriber)
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockSubscriber.onNewBlockEvents(listOf(event)).values.flatten()
+        val logRecords = blockSubscriber.onNewBlockEvents(listOf(event)).flatMap { it.logRecords }
 
         // We're expecting single event from subscriber here
-        assertThat(logEvents).hasSize(1)
+        assertThat(logRecords).hasSize(1)
 
-        assertThat(logEvents[0].log.status).isEqualTo(Log.Status.CONFIRMED)
-        assertThat(logEvents[0].log.visible).isTrue
-        assertOriginalLogAndLogEquals(log, logEvents[0].log)
+        assertThat(logRecords[0].log.status).isEqualTo(Log.Status.CONFIRMED)
+        assertThat(logRecords[0].log.visible).isTrue
+        assertOriginalLogAndLogEquals(log, logRecords[0].log)
     }
 
     @Test
@@ -65,16 +65,16 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         val blockSubscriber = createBlockSubscriber(TestBlockchainClient(TestBlockchainData()), subscriber)
 
         val event = RevertedBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockSubscriber.onRevertedBlockEvents(listOf(event)).values.flatten()
+        val logRecords = blockSubscriber.onRevertedBlockEvents(listOf(event)).flatMap { it.logRecords }
 
         // We're expecting here reverted log event with REVERTED status
-        assertThat(logEvents).hasSize(1)
+        assertThat(logRecords).hasSize(1)
 
         val expectedRevertedLog = saved.withLog(saved.log.withStatus(Log.Status.REVERTED))
 
-        assertThat(logEvents[0].log.status).isEqualTo(Log.Status.REVERTED)
-        assertThat(logEvents[0].log.visible).isTrue
-        assertThat(logEvents[0]).isEqualTo(expectedRevertedLog)
+        assertThat(logRecords[0].log.status).isEqualTo(Log.Status.REVERTED)
+        assertThat(logRecords[0].log.visible).isTrue
+        assertThat(logRecords[0]).isEqualTo(expectedRevertedLog)
     }
 
     private fun createBlockSubscriber(

@@ -52,7 +52,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
     @BeforeEach
     fun beforeEach() {
         clearMocks(logEventPublisher)
-        coEvery { logEventPublisher.publish(any()) } returns Unit
+        coEvery { logEventPublisher.publish(any(), any(), any()) } returns Unit
 
         batchSize = properties.job.reconciliation.batchSize
         topic1 = subscriber1.getDescriptor().id
@@ -82,7 +82,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
         assertEquals(4 * 2 * 2, findAllLogs(collection2).size)
 
         // In total, we should have 7 + 4 published events
-        coVerify(exactly = 11) { logEventPublisher.publish(any()) }
+        coVerify(exactly = 11) { logEventPublisher.publish(any(), any(), any()) }
     }
 
     @Test
@@ -94,7 +94,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
 
         // Nothing should be reindexed
         assertEquals(0, findAllLogs(collection1).size)
-        coVerify(exactly = 0) { logEventPublisher.publish(any()) }
+        coVerify(exactly = 0) { logEventPublisher.publish(any(), any(), any()) }
     }
 
     @Test
@@ -117,7 +117,6 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
                     testBlockchainClient,
                     it.value,
                     testLogService,
-                    it.key,
                     testLogEventComparator,
                     logEventPublisher
                 )

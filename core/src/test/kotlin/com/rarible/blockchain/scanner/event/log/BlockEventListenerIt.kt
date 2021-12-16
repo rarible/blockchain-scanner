@@ -41,7 +41,7 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
     @BeforeEach
     fun beforeEach() {
         clearMocks(logEventPublisher)
-        coEvery { logEventPublisher.publish(any()) } returns Unit
+        coEvery { logEventPublisher.publish(any(), any(), any()) } returns Unit
     }
 
     @Test
@@ -62,9 +62,9 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
 
         // LogEvents processed, publisher notified listeners
         coVerify(exactly = 1) {
-            logEventPublisher.publish(match {
-                assertEquals(1, it.logRecords.size)
-                assertEquals(log.transactionHash, it.logRecords[0].log.transactionHash)
+            logEventPublisher.publish(descriptor.groupId, Source.BLOCKCHAIN, match {
+                assertEquals(1, it.size)
+                assertEquals(log.transactionHash, it[0].log.transactionHash)
                 true
             })
         }
@@ -83,7 +83,6 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
             testBlockchainClient,
             subscribers.asList(),
             testLogService,
-            descriptor.groupId,
             testLogEventComparator,
             testLogEventPublisher
         )

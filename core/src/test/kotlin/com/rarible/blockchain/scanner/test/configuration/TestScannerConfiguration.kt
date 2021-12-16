@@ -86,7 +86,7 @@ class TestScannerConfiguration {
         val testLogEventPublisher: LogEventPublisher = mockk()
 
         // Imitates retry case for failed batch processing
-        coEvery { testLogEventPublisher.publish(any()) }
+        coEvery { testLogEventPublisher.publish(any(), any(), any()) }
             .returns(Unit)
             .andThenThrows(IllegalArgumentException("Test failure"))
             .andThen(Unit)

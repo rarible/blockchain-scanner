@@ -127,12 +127,12 @@ abstract class AbstractIntegrationTest {
     @BeforeEach
     fun cleanupLogs() {
         testEthereumLogEventPublisher.dismissedLogs.clear()
-        testEthereumLogEventPublisher.publishedLogEvents.clear()
+        testEthereumLogEventPublisher.publishedLogRecords.clear()
     }
 
     protected fun verifyPublishedLogEvent(asserter: (LogRecord<*, *>) -> Unit) {
         BlockingWait.waitAssert {
-            assertThat(testEthereumLogEventPublisher.publishedLogEvents.flatMap { it.logRecords }).anySatisfy(asserter)
+            assertThat(testEthereumLogEventPublisher.publishedLogRecords).anySatisfy(asserter)
         }
     }
 

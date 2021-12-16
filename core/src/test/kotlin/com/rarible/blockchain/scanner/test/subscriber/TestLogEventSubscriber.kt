@@ -1,10 +1,11 @@
 package com.rarible.blockchain.scanner.test.subscriber
 
-import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
+import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
+import com.rarible.blockchain.scanner.test.client.TestOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomPositiveLong
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
@@ -17,9 +18,9 @@ class TestLogEventSubscriber(
     private val eventDataCount: Int = 1
 ) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
 
-    override fun getDescriptor(): TestDescriptor {
-        return descriptor
-    }
+    val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord<*>>> = hashMapOf()
+
+    override fun getDescriptor(): TestDescriptor = descriptor
 
     override suspend fun getEventRecords(
         block: TestBlockchainBlock,
@@ -31,18 +32,17 @@ class TestLogEventSubscriber(
             blockExtra = block.testOriginalBlock.testExtra,
             logExtra = log.testOriginalLog.testExtra,
             customData = randomString(),
-            log = mapLog(log, descriptor, minorIndex)
+            log = mapLog(log, minorIndex)
         )
+    }.also { records ->
+        expectedRecords[block.testOriginalBlock to log.testOriginalLog] = records.map { it.copy(version = 0) }
     }
 
-    private fun mapLog(
-        log: TestBlockchainLog,
-        descriptor: Descriptor,
-        minorLogIndex: Int
-    ): TestLog {
+
+    private fun mapLog(log: TestBlockchainLog, minorLogIndex: Int): TestLog {
         val testLog = log.testOriginalLog
         return TestLog(
-            topic = descriptor.id,
+            topic = log.testOriginalLog.topic,
             transactionHash = testLog.transactionHash,
             extra = testLog.testExtra,
             visible = true,

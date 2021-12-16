@@ -30,12 +30,18 @@ class KafkaLogEventPublisher(
         bootstrapServers = properties.brokerReplicaSet
     )
 
-    override suspend fun publish(logEvent: LogEvent<*, *>) {
+    override suspend fun publish(logEvent: LogEvent<*, *, *>) {
         val source = logEvent.blockEvent.source
         // Here we're expecting ordered LogRecords
         val messages = logEvent.logRecords.map { toKafkaMessage(it, source) }
-        val topic = getTopic(logEvent.groupId)
+        val topic = getTopic(logEvent.descriptor)
 
+        kafkaProducer.send(messages, topic)
+    }
+
+    override suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>) {
+        val messages = logRecords.map { toKafkaMessage(it, source) }
+        val topic = getTopic(groupId)
         kafkaProducer.send(messages, topic)
     }
 

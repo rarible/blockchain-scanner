@@ -10,12 +10,15 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 class TestEthereumLogEventPublisher : LogEventPublisher {
 
-    val publishedLogEvents: MutableList<LogEvent<*, *>> = CopyOnWriteArrayList()
+    val publishedLogRecords: MutableList<LogRecord<*, *>> = CopyOnWriteArrayList()
 
     val dismissedLogs: MutableMap<String, MutableList<LogRecord<*, *>>> = ConcurrentHashMap()
 
-    override suspend fun publish(logEvent: LogEvent<*, *>) {
-        publishedLogEvents += logEvent
+    override suspend fun publish(logEvent: LogEvent<*, *, *>) {
+    }
+
+    override suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>) {
+        publishedLogRecords += logRecords
     }
 
     override suspend fun publishDismissedLogs(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>) {

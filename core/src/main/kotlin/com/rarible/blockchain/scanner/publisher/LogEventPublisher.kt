@@ -10,7 +10,12 @@ interface LogEventPublisher {
     /**
      * Publish LogEvents of handled block
      */
-    suspend fun publish(logEvent: LogEvent<*, *>)
+    suspend fun publish(logEvent: LogEvent<*, *, *>)
+
+    /**
+     * Publish LogEvents merged for the group and sorted with log comparator.
+     */
+    suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>)
 
     /**
      * Publish dismissed LogRecords.

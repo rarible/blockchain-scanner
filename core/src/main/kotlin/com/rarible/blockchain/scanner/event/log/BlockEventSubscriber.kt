@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
@@ -36,63 +37,42 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
 
     private val logHandler = LogEventHandler(subscriber, logService)
 
-    val descriptor = subscriber.getDescriptor()
+    private val descriptor = subscriber.getDescriptor()
     private val name = subscriber.javaClass.simpleName
 
-    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
+    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): List<LogEvent<L, R, D>> {
         val newBlockLogs = getBlockLogs(events)
-        return events.associateBy({ it }, { event ->
-            val fullBlock = newBlockLogs[event] ?: return@associateBy emptyList()
-            val newLogs = processLogs(fullBlock)
-            revertPendingLogs(fullBlock)
-            logger.info("{} handled for subscriber {}: {} new logs have been gathered", event, name, newLogs.size)
-            newLogs
-        })
+        return events.mapNotNull { event ->
+            val fullBlock = newBlockLogs[event] ?: return@mapNotNull null
+            val newRecords = logHandler.handleLogs(fullBlock)
+            logService.revertPendingLogs(descriptor, fullBlock)
+            logger.info("{} handled for subscriber {}: {} new logs have been gathered", event, name, newRecords.size)
+            LogEvent(event, newRecords, descriptor)
+        }
     }
 
-    suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): Map<BlockEvent, List<R>> {
-        return events.associateBy({ it }, { event ->
-            val reverted = revert(event)
+    suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): List<LogEvent<L, R, D>> {
+        return events.map { event ->
+            val reverted = withSpan("revert") {
+                logHandler.revert(event)
+            }
             logger.info(
                 "RevertedBlockEvent [{}] handled for subscriber {}, {} reverted logs has been gathered",
                 event, name, reverted.size
             )
-            reverted
-        })
+            LogEvent(event, reverted, descriptor)
+        }
     }
 
-    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): Map<BlockEvent, List<R>> {
+    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): List<LogEvent<L, R, D>> {
         val fetchedLogs = getBlockLogs(events)
-        return events.associateBy({ it }, { event ->
-            val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
+        return events.mapNotNull { event ->
+            val newLogs = fetchedLogs[event]?.let { logHandler.handleLogs(it) } ?: return@mapNotNull null
             logger.info(
                 "ReindexBlockEvent [{}] handled for subscriber {}, {} re-indexed logs has been gathered",
                 event, name, newLogs.size
             )
-            newLogs
-        })
-    }
-
-    private suspend fun revert(event: RevertedBlockEvent): List<R> {
-        val reverted = logTime("logHandler.revert [${event.number}]") {
-            withSpan("revert") {
-                logHandler.revert(event)
-            }
-        }
-        return reverted
-    }
-
-    private suspend fun revertPendingLogs(fullBlock: FullBlock<BB, BL>) {
-        logTime("logService.revertPendingLogs [${fullBlock.block}]") {
-            withSpan("markInactive", "db") {
-                logService.revertPendingLogs(descriptor, fullBlock)
-            }
-        }
-    }
-
-    private suspend fun processLogs(fullBlock: FullBlock<BB, BL>): List<R> {
-        return logTime("logHandler::handleLogs [${fullBlock.block.number}]") {
-            logHandler.handleLogs(fullBlock)
+            LogEvent(event, newLogs, descriptor)
         }
     }
 

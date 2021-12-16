@@ -1,26 +1,20 @@
 package com.rarible.blockchain.scanner.event.log
 
+import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
-import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
-import com.rarible.blockchain.scanner.test.data.assertRecordAndLogEquals
 import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
-import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 @ExperimentalCoroutinesApi
@@ -29,35 +23,80 @@ import org.junit.jupiter.api.Test
 class BlockEventProcessorIt : AbstractIntegrationTest() {
 
     @Test
-    fun `on block event - two subscribers`() = runBlocking {
-        val subscriber1 = TestLogEventSubscriber(testDescriptor1())
-        val subscriber2 = TestLogEventSubscriber(testDescriptor1())
+    fun `process block events - single`() = runBlocking<Unit> {
+        val descriptor = testDescriptor1()
+        val subscriber = TestLogEventSubscriber(descriptor)
+
         val block = randomOriginalBlock()
-        val log = randomOriginalLog(block.hash, subscriber1.getDescriptor().id)
+        val log = randomOriginalLog(block.hash, descriptor.id)
 
         val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block), listOf(log)))
 
-        val blockEventHandler = createBlockHandler(testBlockchainClient, subscriber1, subscriber2)
+        val blockEventProcessor = BlockEventProcessor(
+            testBlockchainClient,
+            listOf(subscriber),
+            testLogService
+        )
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockEventHandler.onBlockEvents(listOf(event))
-            .toList().flatMap { it.second }
-
-        assertEquals(2, logEvents.size)
-
-        // Since we have two subscribers for same topic, we await 2 similar events here
-        assertRecordAndLogEquals(logEvents[0], log, block)
-        assertRecordAndLogEquals(logEvents[1], log, block)
+        val logEvents = blockEventProcessor.processBlockEvents(listOf(event))
+        assertThat(logEvents).isEqualTo(
+            listOf(
+                LogEvent(
+                    blockEvent = event,
+                    logRecords = subscriber.expectedRecords.getValue(block to log),
+                    descriptor = descriptor
+                )
+            )
+        )
     }
 
-    private fun createBlockHandler(
-        testBlockchainClient: TestBlockchainClient,
-        vararg subscribers: TestLogEventSubscriber
-    ): BlockEventProcessor<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
-        return BlockEventProcessor(
+    @Test
+    fun `process block events - two blocks passed to two subscribers`() = runBlocking<Unit> {
+        val descriptor = testDescriptor1()
+        val subscriber1 = TestLogEventSubscriber(descriptor)
+        val subscriber2 = TestLogEventSubscriber(descriptor)
+
+        val block1 = randomOriginalBlock()
+        val block2 = randomOriginalBlock()
+
+        val log1 = randomOriginalLog(block1.hash, descriptor.id)
+        val log2 = randomOriginalLog(block2.hash, descriptor.id)
+
+        val testBlockchainClient = TestBlockchainClient(TestBlockchainData(listOf(block1, block2), listOf(log1, log2)))
+
+        val blockEventProcessor = BlockEventProcessor(
             testBlockchainClient,
-            subscribers.asList(),
+            listOf(subscriber1, subscriber2),
             testLogService
+        )
+
+        val event1 = NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
+        val event2 = NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
+        val logEvents = blockEventProcessor.processBlockEvents(listOf(event1, event2))
+        assertThat(logEvents).isEqualTo(
+            listOf(
+                LogEvent(
+                    blockEvent = event1,
+                    logRecords = subscriber1.expectedRecords.getValue(block1 to log1),
+                    descriptor = descriptor
+                ),
+                LogEvent(
+                    blockEvent = event2,
+                    logRecords = subscriber1.expectedRecords.getValue(block2 to log2),
+                    descriptor = descriptor
+                ),
+                LogEvent(
+                    blockEvent = event1,
+                    logRecords = subscriber2.expectedRecords.getValue(block1 to log1),
+                    descriptor = descriptor
+                ),
+                LogEvent(
+                    blockEvent = event2,
+                    logRecords = subscriber2.expectedRecords.getValue(block2 to log2),
+                    descriptor = descriptor
+                )
+            )
         )
     }
 

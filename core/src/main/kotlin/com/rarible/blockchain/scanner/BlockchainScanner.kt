@@ -57,7 +57,6 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
                 blockchainClient = retryableClient,
                 subscribers = it.value,
                 logService = logService,
-                groupId = it.key,
                 logEventComparator = logEventComparator,
                 logEventPublisher = logEventPublisher
             )
