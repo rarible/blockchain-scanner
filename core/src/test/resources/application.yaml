@@ -10,6 +10,11 @@ blockchain:
     test:
       reconnectDelay: 2000
       reconnectAttempts: 1
+      scan:
+        block-publish:
+          enabled: true
+        event-consume:
+          enabled: true
       retryPolicy:
         scan:
           reconnectDelay: 2s
