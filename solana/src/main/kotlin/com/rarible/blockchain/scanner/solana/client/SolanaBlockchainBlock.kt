@@ -1,4 +1,4 @@
-package com.rarible.blockchain.solana.client
+package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 

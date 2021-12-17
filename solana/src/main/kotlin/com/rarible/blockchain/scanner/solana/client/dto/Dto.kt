@@ -1,7 +1,8 @@
-package com.rarible.blockchain.solana.client.dto
+package com.rarible.blockchain.scanner.solana.client.dto
 
 import com.rarible.blockchain.scanner.framework.data.TransactionMeta
-import com.rarible.blockchain.solana.client.SolanaBlockchainBlock
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 
 @Suppress("unused")
 abstract class Request(
@@ -21,12 +22,13 @@ object GetSlotRequest : Request(
 
 class GetBlockRequest(
     slot: Long,
-    transactionDetails: TransactionDetails = TransactionDetails.Full
+    transactionDetails: TransactionDetails
 ) : Request(
     method = "getBlock",
     params = listOf(
         slot,
         mapOf(
+            "encoding" to "json",
             "transactionDetails" to transactionDetails.name.lowercase(),
             "commitment" to "confirmed",
             "rewards" to false
@@ -53,15 +55,33 @@ data class ApiResponse<T>(
 )
 
 data class SolanaTransactionDto(
-    val transaction: Details
+    val transaction: Details,
+    val meta: Meta,
 ) {
+    data class Instruction(
+        val accounts: List<Int>,
+        val data: String,
+        val programIdIndex: Int
+    )
+
+    data class InnerInstruction(
+        val index: Int,
+        val instructions: List<Instruction>,
+    )
+
+    data class Message(
+        val recentBlockhash: String?,
+        val accountKeys: List<String>,
+        val instructions: List<Instruction>
+    )
+
     data class Details(
         val message: Message,
         val signatures: List<String>
     )
 
-    data class Message(
-        val recentBlockhash: String
+    data class Meta(
+        val innerInstructions: List<InnerInstruction>
     )
 }
 
@@ -70,7 +90,8 @@ data class SolanaBlockDto(
     val blockhash: String,
     val previousBlockhash: String?,
     val blockHeight: Long,
-    val blockTime: Long
+    val blockTime: Long,
+    val transactions: List<SolanaTransactionDto> = emptyList()
 )
 
 fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(
@@ -82,7 +103,20 @@ fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(
     timestamp = blockTime
 )
 
-fun SolanaTransactionDto.toModel() = TransactionMeta(
+fun SolanaTransactionDto.toMetaModel() = TransactionMeta(
     hash = transaction.signatures.first(),
     blockHash = transaction.message.recentBlockhash
 )
+
+fun SolanaTransactionDto.toModel(): List<SolanaBlockEvent> {
+    val instructions = transaction.message.instructions + meta.innerInstructions.flatMap { it.instructions }
+    val accountKeys = transaction.message.accountKeys
+
+    return instructions.map { transaction ->
+        val programId = accountKeys[transaction.programIdIndex]
+        val data = transaction.data
+        val accounts = transaction.accounts.map { accountKeys[it] }
+
+        SolanaBlockEvent(programId, data, accounts)
+    }
+}

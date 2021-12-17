@@ -1,5 +1,7 @@
-package com.rarible.blockchain.solana.client
+package com.rarible.blockchain.scanner.solana.client
 
+import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -10,6 +12,17 @@ import org.junit.jupiter.api.Test
 internal class SolanaClientTest {
     private val mainNetBeta = "https://api.mainnet-beta.solana.com"
     private val client = SolanaClient(mainNetBeta)
+
+    @Test
+    fun testParseTransactionEvents() = runBlocking {
+        val descriptor = SolanaDescriptor(programId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s", "", "", Any::class.java)
+        val events = client.getBlockEvents(descriptor, 91725442L..91725442L)
+            .single()
+            .logs
+            .map(SolanaBlockchainLog::event)
+
+        assertTrue(events.isNotEmpty())
+    }
 
     @Test
     fun testGetBlock() = runBlocking {
