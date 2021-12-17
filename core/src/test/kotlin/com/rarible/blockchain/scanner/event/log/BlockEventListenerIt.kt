@@ -2,30 +2,21 @@ package com.rarible.blockchain.scanner.event.log
 
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
+import com.rarible.blockchain.scanner.framework.model.Descriptor
+import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
-import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
-import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
-import com.rarible.blockchain.scanner.test.data.assertOriginalBlockAndBlockEquals
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
-import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import io.mockk.clearMocks
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 @ExperimentalCoroutinesApi
@@ -36,55 +27,58 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
     private val descriptor = testDescriptor1()
     private val topic = descriptor.id
 
-    private val logEventPublisher: LogEventPublisher = mockk()
+    private val publishedRecords = arrayListOf<LogRecord<*, *>>()
 
-    @BeforeEach
-    fun beforeEach() {
-        clearMocks(logEventPublisher)
-        coEvery { logEventPublisher.publish(any(), any(), any()) } returns Unit
+    private val logEventPublisher = object : LogEventPublisher {
+        override suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>) {
+            publishedRecords += logRecords
+        }
+
+        override suspend fun publishDismissedLogs(
+            descriptor: Descriptor,
+            source: Source,
+            logs: List<LogRecord<*, *>>
+        ) = Unit
     }
 
     @Test
-    fun `on block event - event processed`() = runBlocking {
+    fun `on block event - event processed`() = runBlocking<Unit> {
         val subscriber = TestLogEventSubscriber(descriptor)
-        val block = randomBlockchainBlock()
-        val log = randomOriginalLog(block.hash, topic)
-        // Before log handling we have this block with default status = PENDING
-        saveBlock(block.testOriginalBlock)
+        val block1 = randomBlockchainBlock()
+        val block2 = randomBlockchainBlock()
 
-        val testBlockchainClient =
-            TestBlockchainClient(TestBlockchainData(listOf(block.testOriginalBlock), listOf(log)))
-        val blockEventListener = createBlockListener(testBlockchainClient, logEventPublisher, subscriber)
+        val log1 = randomOriginalLog(block1.hash, topic)
+        val log2 = randomOriginalLog(block2.hash, topic)
 
-        val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
+        saveBlock(block1.testOriginalBlock)
+        saveBlock(block2.testOriginalBlock)
 
-        blockEventListener.onBlockEvents(listOf(event))
+        val testBlockchainClient = TestBlockchainClient(
+            TestBlockchainData(
+                blocks = listOf(block1.testOriginalBlock, block2.testOriginalBlock),
+                logs = listOf(log1, log2)
+            )
+        )
 
-        // LogEvents processed, publisher notified listeners
-        coVerify(exactly = 1) {
-            logEventPublisher.publish(descriptor.groupId, Source.BLOCKCHAIN, match {
-                assertEquals(1, it.size)
-                assertEquals(log.transactionHash, it[0].log.transactionHash)
-                true
-            })
-        }
-
-        // Block now have PROCESSED status, nothing else changed
-        val savedBlock = testBlockRepository.findById(block.number)
-        assertOriginalBlockAndBlockEquals(block.testOriginalBlock, savedBlock!!)
-    }
-
-    private fun createBlockListener(
-        testBlockchainClient: TestBlockchainClient,
-        testLogEventPublisher: LogEventPublisher,
-        vararg subscribers: TestLogEventSubscriber
-    ): BlockEventListener<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
-        return BlockEventListener(
+        val blockEventListener = BlockEventListener(
             testBlockchainClient,
-            subscribers.asList(),
+            arrayOf(subscriber).asList(),
             testLogService,
             testLogEventComparator,
-            testLogEventPublisher
+            logEventPublisher
+        )
+
+        val event1 = NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
+        val event2 = NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
+
+        // Explicitly reversed order of events - to check the publishing order.
+        blockEventListener.onBlockEvents(listOf(event2, event1))
+
+        assertThat(publishedRecords).isEqualTo(
+            listOf(
+                subscriber.expectedRecords.getValue(block2.testOriginalBlock to log2).single(),
+                subscriber.expectedRecords.getValue(block1.testOriginalBlock to log1).single(),
+            )
         )
     }
 }

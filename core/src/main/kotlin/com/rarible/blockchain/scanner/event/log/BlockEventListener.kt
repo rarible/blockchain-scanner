@@ -37,15 +37,16 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
 
     override suspend fun onBlockEvents(events: List<BlockEvent>) {
         logger.info("Received BlockEvents: {}", events)
-        val logs = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
         val logEvents = withSpan("onBlockEvents") {
             blockEventProcessor.processBlockEvents(events)
         }
+        val blockLogs = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
         for (logEvent in logEvents) {
-            logs.getOrPut(logEvent.blockEvent) { hashMapOf() }
+            blockLogs.getOrPut(logEvent.blockEvent) { hashMapOf() }
                 .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecords
         }
-        for ((blockEvent, groupIdMap) in logs) {
+        for (blockEvent in events) {
+            val groupIdMap = blockLogs[blockEvent] ?: continue
             for ((groupId, logRecords) in groupIdMap) {
                 val sortedRecords = logRecords.sortedWith(logEventComparator)
                 logger.info("Publishing {} log records for {} of {}", sortedRecords.size, groupId, blockEvent)

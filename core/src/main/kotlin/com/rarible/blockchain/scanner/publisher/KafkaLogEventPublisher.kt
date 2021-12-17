@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.publisher
 
 import com.rarible.blockchain.scanner.configuration.KafkaProperties
-import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Descriptor
@@ -29,15 +28,6 @@ class KafkaLogEventPublisher(
         defaultTopic = topicPrefix, // ends with .log, not required originally
         bootstrapServers = properties.brokerReplicaSet
     )
-
-    override suspend fun publish(logEvent: LogEvent<*, *, *>) {
-        val source = logEvent.blockEvent.source
-        // Here we're expecting ordered LogRecords
-        val messages = logEvent.logRecords.map { toKafkaMessage(it, source) }
-        val topic = getTopic(logEvent.descriptor)
-
-        kafkaProducer.send(messages, topic)
-    }
 
     override suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>) {
         val messages = logRecords.map { toKafkaMessage(it, source) }
