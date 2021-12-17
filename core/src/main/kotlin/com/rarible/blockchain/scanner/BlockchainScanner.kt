@@ -31,7 +31,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     logMapper: LogMapper<BB, BL, L>,
     logService: LogService<L, R, D>,
     logEventComparator: LogEventComparator<L, R>,
-    properties: BlockchainScannerProperties,
+    private val properties: BlockchainScannerProperties,
     // Autowired beans
     private val blockEventPublisher: BlockEventPublisher,
     private val blockEventConsumer: BlockEventConsumer,
@@ -67,8 +67,10 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
 
     suspend fun scan() {
-        blockEventConsumer.start(blockEventListeners)
-        blockScanner.scan(blockEventPublisher)
+        if (properties.scan.eventConsume.enabled)
+            blockEventConsumer.start(blockEventListeners)
+        if (properties.scan.blockPublish.enabled)
+            blockScanner.scan(blockEventPublisher)
     }
 
     override fun reconcile(subscriberGroupId: String?, from: Long, batchSize: Long): Flow<LongRange> {
