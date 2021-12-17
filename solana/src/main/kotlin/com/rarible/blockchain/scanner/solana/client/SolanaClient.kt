@@ -10,9 +10,7 @@ import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import org.springframework.stereotype.Component
 
-@Component
 class SolanaClient(
     url: String
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {

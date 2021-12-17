@@ -24,5 +24,6 @@ data class SolanaBlockchainScannerProperties(
         )
     ),
     override val job: JobProperties = JobProperties(),
-    override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()
+    override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
+    val rpcApiUrl: String
 ): BlockchainScannerProperties
