@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 internal class SolanaClientTest {
@@ -14,6 +15,7 @@ internal class SolanaClientTest {
     private val client = SolanaClient(mainNetBeta)
 
     @Test
+    @Disabled
     fun testParseTransactionEvents() = runBlocking {
         val descriptor = SolanaDescriptor(programId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s", "", "", Any::class.java)
         val events = client.getBlockEvents(descriptor, 91725442L..91725442L)
@@ -25,6 +27,7 @@ internal class SolanaClientTest {
     }
 
     @Test
+    @Disabled
     fun testGetBlock() = runBlocking {
         val slot = client.getLatestSlot()
         val block = client.getBlock(slot)
@@ -33,6 +36,7 @@ internal class SolanaClientTest {
     }
 
     @Test
+    @Disabled
     fun testBlockFlow() = runBlocking {
         val blocks = client.newBlocks.take(3).toList()
 
