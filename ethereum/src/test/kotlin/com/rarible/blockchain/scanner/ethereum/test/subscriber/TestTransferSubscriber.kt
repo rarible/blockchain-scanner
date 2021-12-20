@@ -35,7 +35,8 @@ class TestTransferSubscriber : EthereumLogEventSubscriber() {
                     customData = randomString(),
                     to = rawEvent.to(),
                     from = rawEvent.from(),
-                    value = rawEvent.value()
+                    value = rawEvent.value(),
+                    transactionInput = log.ethTransaction.input().toString()
                 )
             )
         )

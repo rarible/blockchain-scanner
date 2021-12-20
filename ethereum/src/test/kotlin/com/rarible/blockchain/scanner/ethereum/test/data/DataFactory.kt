@@ -14,6 +14,7 @@ import scala.jdk.javaapi.CollectionConverters
 import scalether.domain.Address
 import scalether.domain.AddressFactory
 import scalether.domain.response.Block
+import scalether.domain.response.Transaction
 import java.math.BigInteger
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.abs
@@ -43,7 +44,8 @@ fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
             customData = randomString(),
             to = randomAddress(),
             from = randomAddress(),
-            value = BigInteger.valueOf(randomPositiveLong())
+            value = BigInteger.valueOf(randomPositiveLong()),
+            transactionInput = randomString()
         )
     )
 }
@@ -72,6 +74,7 @@ fun randomLog(
         index = randomPositiveInt(),
         logIndex = randomPositiveInt(),
         minorLogIndex = randomPositiveInt(),
+        blockTimestamp = randomPositiveLong(),
         createdAt = nowMillis(),
         updatedAt = nowMillis(),
     )
@@ -115,6 +118,21 @@ fun ethLog(
     Binary.apply("0x0"),
     CollectionConverters.asScala(listOf(topic)).toList(),
     randomString()
+)
+
+fun ethTransaction() = Transaction(
+    randomWord(),
+    BigInteger.ZERO,
+    randomWord(),
+    randomPositiveBigInt(100),
+    Address.ZERO(),
+    BigInteger.ZERO,
+    randomAddress(),
+    randomAddress(),
+    BigInteger.ZERO,
+    BigInteger.ZERO,
+    BigInteger.ZERO,
+    Binary.empty()
 )
 
 fun ethBlock() = ethBlock(randomInt(), randomWord())

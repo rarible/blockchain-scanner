@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
 import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
+import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
@@ -77,18 +78,20 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
                 )
             ),
         )
-        val log = EthereumBlockchainLog(
-            ethLog(
+        val blockchainLog = EthereumBlockchainLog(
+            ethLog = ethLog(
                 transactionHash = transactionHash,
                 topic = randomWord(),
                 address = randomAddress(),
                 logIndex = 0,
                 blockHash = randomWord()
-            ), 0
+            ),
+            ethTransaction = ethTransaction(),
+            index = 0
         )
         val fullBlock = FullBlock(
             block = EthereumBlockchainBlock(ethBlock(number = 1, hash = randomWord())),
-            logs = listOf(log)
+            logs = listOf(blockchainLog)
         )
         ethereumPendingLogService.dropInactivePendingLogs(fullBlock, descriptor)
         assertNull(findLog(collection, pendingRecord.id))

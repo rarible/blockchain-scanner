@@ -9,12 +9,15 @@ import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
+import scala.jdk.javaapi.CollectionConverters
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
 import scalether.domain.request.LogFilter
 import scalether.domain.request.TopicFilter
+import scalether.domain.response.Block
 import scalether.domain.response.Log
+import scalether.domain.response.Transaction
 import scalether.util.Hex
 import java.math.BigInteger
 import java.time.Duration
@@ -63,9 +66,8 @@ class EthereumClient(
                 allLogs.groupBy { log ->
                     log.blockHash()
                 }.entries.map { (blockHash, blockLogs) ->
-                    val indexedLogs = attachIndex(blockLogs)
-                    getBlock(blockHash).map { block ->
-                        FullBlock(block, indexedLogs.map { EthereumBlockchainLog(it.value, it.index) })
+                    ethereum.ethGetFullBlockByHash(blockHash).map { ethBlock ->
+                        createFullBlock(ethBlock, blockLogs)
                     }
                 }
             }.concatMap { it }.asFlow()
@@ -84,6 +86,29 @@ class EthereumClient(
                 log.logIndex()
             }.withIndex()
         }
+    }
+
+    private fun createFullBlock(
+        ethFullBlock: Block<Transaction>,
+        logsInBlock: List<Log>
+    ): FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog> {
+        val indexedEthLogs = attachIndex(logsInBlock)
+        val transactions = CollectionConverters.asJava(ethFullBlock.transactions()).associateBy { it.hash() }
+        return FullBlock(
+            block = EthereumBlockchainBlock(ethFullBlock),
+            logs = indexedEthLogs.map { (index, ethLog) ->
+                val transaction = transactions[ethLog.transactionHash()]
+                    ?: error(
+                        "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
+                                "All transactions: $transactions"
+                    )
+                EthereumBlockchainLog(
+                    ethLog = ethLog,
+                    index = index,
+                    ethTransaction = transaction
+                )
+            }
+        )
     }
 
     private fun getBlock(hash: Word): Mono<EthereumBlockchainBlock> {

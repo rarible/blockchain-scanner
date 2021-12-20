@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.lt
-import reactor.core.publisher.Mono
 import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
@@ -65,9 +64,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         val value = randomPositiveBigInt(1000000)
         val receipt = mintAndVerify(beneficiary, value)
 
-        // Ensure we have something in DB - it means, scanner caught event
-        assertCollectionSize(collection, 1)
-
         BlockingWait.waitAssert {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())!!
@@ -75,12 +71,19 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
             // We expect single LogRecord from our single Subscriber
             val testRecord = findAllLogs(collection)[0] as ReversedEthereumLogRecord
-            val data = testRecord.data as TestEthereumLogData
             assertThat(testRecord.log.status).isEqualTo(Log.Status.CONFIRMED)
             assertThat(testRecord.log.blockTimestamp).isEqualTo(receipt.getTimestamp().epochSecond)
-            assertThat(data.from).isEqualTo(Address.ZERO())
-            assertThat(data.to).isEqualTo(beneficiary)
-            assertThat(data.value).isEqualTo(value)
+
+            val data = testRecord.data as TestEthereumLogData
+            assertThat(data).isEqualTo(
+                TestEthereumLogData(
+                    customData = data.customData,
+                    from = Address.ZERO(),
+                    to = beneficiary,
+                    value = value,
+                    transactionInput = receipt.getTransaction().input().toString()
+                )
+            )
         }
 
         verifyPublishedLogEvent { logEvent ->
@@ -134,7 +137,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         val beneficiary = randomAddress()
         val value = randomPositiveBigInt(100000)
         mintAndVerify(beneficiary, value)
-        assertCollectionSize(collection, 1)
 
         val numberEnd = ethereum.ethBlockNumber().block()!!.toLong()
         val beforeCleanupSize = findAllLogs(collection).size
@@ -170,11 +172,12 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             id = randomString(),
             version = null,
             log = log,
-            TestEthereumLogData(
+            data = TestEthereumLogData(
                 customData = randomString(),
                 from = sender.from(),
                 to = beneficiary,
-                value = value
+                value = value,
+                transactionInput = randomString()
             )
         )
     }
@@ -198,29 +201,4 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         assertEquals(contract.balanceOf(beneficiary).call().block()!!, value)
         return result
     }
-
-    private fun Mono<Word>.verifyError(): TransactionReceipt {
-        val receipt = waitReceipt()
-        assertFalse(receipt.success())
-        return receipt
-    }
-
-    private fun Mono<Word>.verifySuccess(): TransactionReceipt {
-        val receipt = waitReceipt()
-        assertTrue(receipt.success())
-        return receipt
-    }
-
-    private fun Mono<Word>.waitReceipt(): TransactionReceipt {
-        val value = this.block()
-        require(value != null) { "Transaction hash is null" }
-        return ethereum.ethGetTransactionReceipt(value).block()!!.get()
-    }
-
-    private fun assertCollectionSize(collection: String, expectedSize: Int) {
-        BlockingWait.waitAssert {
-            assertThat(findAllLogs(collection)).hasSize(expectedSize)
-        }
-    }
-
 }

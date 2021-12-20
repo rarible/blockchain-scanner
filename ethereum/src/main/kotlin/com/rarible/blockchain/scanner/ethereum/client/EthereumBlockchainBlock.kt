@@ -10,7 +10,7 @@ data class EthereumBlockchainBlock(
     override val parentHash: String?,
     override val timestamp: Long
 ) : BlockchainBlock {
-    constructor(ethBlock: Block<Word>) : this(
+    constructor(ethBlock: Block<*>) : this(
         number = ethBlock.number().toLong(),
         hash = ethBlock.hash().toString(),
         parentHash = ethBlock.parentHash()?.toString(),

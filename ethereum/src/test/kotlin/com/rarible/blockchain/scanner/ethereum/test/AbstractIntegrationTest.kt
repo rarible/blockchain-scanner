@@ -12,23 +12,25 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
-import com.rarible.blockchain.scanner.framework.data.LogEvent
-import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
+import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
+import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
+import scalether.domain.response.Transaction
 import scalether.domain.response.TransactionReceipt
 import scalether.transaction.MonoTransactionPoller
 import scalether.transaction.MonoTransactionSender
@@ -146,4 +148,19 @@ abstract class AbstractIntegrationTest {
 
     protected fun TransactionReceipt.getTimestamp(): Instant =
         Instant.ofEpochSecond(ethereum.ethGetFullBlockByHash(blockHash()).map { it.timestamp() }.block()!!.toLong())
+
+    protected fun TransactionReceipt.getTransaction(): Transaction =
+        ethereum.ethGetTransactionByHash(transactionHash()).block()!!.get()
+
+    protected fun Mono<Word>.verifySuccess(): TransactionReceipt {
+        val receipt = waitReceipt()
+        Assertions.assertTrue(receipt.success())
+        return receipt
+    }
+
+    protected fun Mono<Word>.waitReceipt(): TransactionReceipt {
+        val value = this.block()
+        require(value != null) { "Transaction hash is null" }
+        return ethereum.ethGetTransactionReceipt(value).block()!!.get()
+    }
 }
