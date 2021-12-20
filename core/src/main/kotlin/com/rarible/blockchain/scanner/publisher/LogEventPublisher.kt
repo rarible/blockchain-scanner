@@ -11,10 +11,4 @@ interface LogEventPublisher {
      */
     suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>)
 
-    /**
-     * Publish dismissed LogRecords.
-     * TODO: will be unneeded when we move out Ethereum's pending logs to a dedicated lib.
-     */
-    suspend fun publishDismissedLogs(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>)
-
 }

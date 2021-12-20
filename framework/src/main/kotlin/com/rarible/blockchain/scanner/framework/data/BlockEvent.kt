@@ -36,9 +36,10 @@ data class RevertedBlockEvent(
 }
 
 data class ReindexBlockEvent(
-    override val source: Source = Source.REINDEX,
     override val number: Long
 ) : BlockEvent() {
+    override val source: Source = Source.REINDEX
+
     override fun toString(): String {
         return "$number:$source"
     }

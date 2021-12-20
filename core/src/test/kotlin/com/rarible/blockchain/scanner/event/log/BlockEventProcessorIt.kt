@@ -39,13 +39,14 @@ class BlockEventProcessorIt : AbstractIntegrationTest() {
         )
 
         val event = NewBlockEvent(Source.BLOCKCHAIN, block.number, block.hash)
-        val logEvents = blockEventProcessor.processBlockEvents(listOf(event))
+        val logEvents = blockEventProcessor.prepareBlockEvents(listOf(event))
         assertThat(logEvents).isEqualTo(
             listOf(
                 LogEvent(
                     blockEvent = event,
-                    logRecords = subscriber.expectedRecords.getValue(block to log),
-                    descriptor = descriptor
+                    descriptor = descriptor,
+                    logRecordsToInsert = subscriber.getReturnedRecords(block, log),
+                    logRecordsToRemove = emptyList()
                 )
             )
         )
@@ -73,28 +74,32 @@ class BlockEventProcessorIt : AbstractIntegrationTest() {
 
         val event1 = NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
         val event2 = NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
-        val logEvents = blockEventProcessor.processBlockEvents(listOf(event1, event2))
+        val logEvents = blockEventProcessor.prepareBlockEvents(listOf(event1, event2))
         assertThat(logEvents).isEqualTo(
             listOf(
                 LogEvent(
                     blockEvent = event1,
-                    logRecords = subscriber1.expectedRecords.getValue(block1 to log1),
-                    descriptor = descriptor
+                    descriptor = descriptor,
+                    logRecordsToInsert = subscriber1.getReturnedRecords(block1, log1),
+                    logRecordsToRemove = emptyList()
                 ),
                 LogEvent(
                     blockEvent = event2,
-                    logRecords = subscriber1.expectedRecords.getValue(block2 to log2),
-                    descriptor = descriptor
+                    descriptor = descriptor,
+                    logRecordsToInsert = subscriber1.getReturnedRecords(block2, log2),
+                    logRecordsToRemove = emptyList()
                 ),
                 LogEvent(
                     blockEvent = event1,
-                    logRecords = subscriber2.expectedRecords.getValue(block1 to log1),
-                    descriptor = descriptor
+                    descriptor = descriptor,
+                    logRecordsToInsert = subscriber2.getReturnedRecords(block1, log1),
+                    logRecordsToRemove = emptyList()
                 ),
                 LogEvent(
                     blockEvent = event2,
-                    logRecords = subscriber2.expectedRecords.getValue(block2 to log2),
-                    descriptor = descriptor
+                    descriptor = descriptor,
+                    logRecordsToInsert = subscriber2.getReturnedRecords(block2, log2),
+                    logRecordsToRemove = emptyList()
                 )
             )
         )

@@ -61,7 +61,11 @@ class EthereumLogRepository(
         return mongo.save(event, collection).awaitFirst()
     }
 
-    fun findPendingLogs(entityType: Class<*>, collection: String, topic: Word): Flow<EthereumLogRecord<*>> {
+    fun findPendingLogs(
+        entityType: Class<*>,
+        collection: String,
+        topic: Word
+    ): Flow<EthereumLogRecord<*>> {
         val criteria = Criteria
             .where("topic").isEqualTo(topic)
             .and("status").`is`(Log.Status.PENDING)
@@ -73,29 +77,15 @@ class EthereumLogRepository(
         ).asFlow() as Flow<EthereumLogRecord<*>>
     }
 
-    fun findAndDelete(
+    fun find(
         entityType: Class<*>,
         collection: String,
         blockHash: Word,
-        topic: Word,
-        status: Log.Status? = null
-    ): Flux<EthereumLogRecord<*>> {
-        var criteria = Criteria
+        topic: Word
+    ): Flow<EthereumLogRecord<*>> {
+        val criteria = Criteria
             .where("blockHash").isEqualTo(blockHash)
             .and("topic").isEqualTo(topic)
-
-        criteria = status?.let {
-            criteria.and("status").isEqualTo(status)
-        } ?: criteria
-
-        val result = mongo.find(Query(criteria), entityType, collection) as Flux<EthereumLogRecord<*>>
-
-        return result.flatMap {
-            logger.info(
-                "Deleting EthereumLogRecord: blockHash='{}', status='{}'",
-                it.log.blockHash, it.log.status
-            )
-            mongo.remove(it, collection).thenReturn(it)
-        }
+        return mongo.find(Query(criteria), entityType, collection).asFlow() as Flow<EthereumLogRecord<*>>
     }
 }

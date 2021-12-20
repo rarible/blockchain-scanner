@@ -20,8 +20,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import org.slf4j.LoggerFactory
 
 @FlowPreview
@@ -29,7 +27,7 @@ import org.slf4j.LoggerFactory
 class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
-    logService: LogService<L, R, D>
+    private val logService: LogService<L, R, D>
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockEventProcessor::class.java)
@@ -43,13 +41,25 @@ class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, 
         logger.info("Injected subscribers: {}", this.subscribers)
     }
 
-    suspend fun processBlockEvents(events: List<BlockEvent>): List<LogEvent<L, R, D>> = coroutineScope {
+    suspend fun prepareBlockEvents(events: List<BlockEvent>): List<LogEvent<L, R, D>> {
         val batches = BlockBatcher.toBatches(events)
-        logger.info("Split BlockEvents {} into {} batches", events.map { it.number }, batches.size)
-        batches.flatMap { processBlockEventsBatch(it) }
+        return batches.flatMap { prepareBlockEventsBatch(it) }
     }
 
-    private suspend fun processBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent<L, R, D>> =
+    suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<L, R, D>>) = coroutineScope {
+        logEvents.flatMap { logEvent ->
+            listOf(
+                async {
+                    logService.delete(logEvent.descriptor, logEvent.logRecordsToRemove)
+                },
+                async {
+                    logService.save(logEvent.descriptor, logEvent.logRecordsToInsert)
+                }
+            )
+        }.awaitAll()
+    }
+
+    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent<L, R, D>> =
         coroutineScope {
             logger.info("Processing {} subscribers with BlockEvent batch: {}", subscribers.size, batch)
             subscribers.map { subscriber ->

@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.test.repository
 
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
@@ -48,23 +47,17 @@ class TestLogRepository(
         return mongo.findById(id, entityType, collection).awaitFirstOrNull() as TestLogRecord<*>?
     }
 
-    fun findAndDelete(
+    fun find(
         entityType: Class<*>,
         collection: String,
         blockHash: String,
-        topic: String,
-        status: Log.Status? = null
+        topic: String
     ): Flux<TestLogRecord<*>> {
         val query = Query().apply {
             addCriteria(Criteria.where("log.blockHash").isEqualTo(blockHash))
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
-            status?.let { addCriteria(Criteria.where("log.status").isEqualTo(it)) }
         }
-
-        return mongo.find(query, entityType, collection)
-            .flatMap {
-                delete(collection, it as TestLogRecord<*>).thenReturn(it)
-            } as Flux<TestLogRecord<*>>
+        return mongo.find(query, entityType, collection) as Flux<TestLogRecord<*>>
     }
 
 }

@@ -51,7 +51,7 @@ class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog,
         logger.info("Scanning for Logs in batches from {} to {} with batchSize {}", from, to, batchSize)
         return BlockRanges.getRanges(from, to, batchSize.toInt()).onEach { range ->
             withTransaction("reindex", listOf("range" to range.toString())) {
-                val reindexBlockEvents = range.map { ReindexBlockEvent(number = it) }
+                val reindexBlockEvents = range.map { ReindexBlockEvent(it) }
                 blockListener.onBlockEvents(reindexBlockEvents)
             }
         }

@@ -25,7 +25,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `scan all`() = runBlocking {
-        scanOnce(testBlockchainScanner)
+        testBlockchainScanner.scanOnce()
         val expectedLogCount = TEST_BLOCK_COUNT * TEST_LOG_COUNT_PER_BLOCK
 
         BlockingWait.waitAssert {

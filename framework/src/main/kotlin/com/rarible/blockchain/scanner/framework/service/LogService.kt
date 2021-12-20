@@ -20,21 +20,23 @@ interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
     suspend fun delete(descriptor: D, record: R): R
 
     /**
+     * Delete multiple LogRecord-s from the persistent storage.
+     */
+    suspend fun delete(descriptor: D, records: List<R>): List<R>
+
+    /**
      * Insert or update list of LogRecords to the persistent storage.
      */
     suspend fun save(descriptor: D, records: List<R>): List<R>
 
     /**
-     * TODO: this will be unneeded soon. Feel free to not implement.
+     * Returns log records that must be reverted when a new block is processed.
      */
-    suspend fun revertPendingLogs(descriptor: D, fullBlock: FullBlock<*, *>) = Unit
+    suspend fun prepareLogsToRevertOnNewBlock(descriptor: D, newBlock: FullBlock<*, *>): List<R> = emptyList()
 
     /**
-     * Delete all LogRecords of specified block and with specified status.
-     * Required to clean up LogRecords of reverted block.
-     *
-     * @return deleted LogRecords
+     * Returns logs that must be reverted when a block is reverted.
      */
-    suspend fun findAndDelete(descriptor: D, blockHash: String, status: Log.Status? = null): List<R>
+    suspend fun prepareLogsToRevertOnRevertedBlock(descriptor: D, revertedBlockHash: String): List<R> = emptyList()
 
 }

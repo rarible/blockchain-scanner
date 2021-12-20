@@ -4,10 +4,6 @@ import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
-import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
@@ -48,29 +44,6 @@ fun defaultTestProperties(): TestBlockchainScannerProperties {
     )
 }
 
-fun randomNewBlockEvent(number: Long): NewBlockEvent {
-    return NewBlockEvent(
-        source = Source.BLOCKCHAIN,
-        number = number,
-        hash = randomBlockHash()
-    )
-}
-
-fun randomReindexBlockEvent(number: Long): ReindexBlockEvent {
-    return ReindexBlockEvent(
-        source = Source.BLOCKCHAIN,
-        number = number
-    )
-}
-
-fun randomRevertedBlockEvent(number: Long): RevertedBlockEvent {
-    return RevertedBlockEvent(
-        source = Source.BLOCKCHAIN,
-        number = number,
-        hash = randomBlockHash()
-    )
-}
-
 fun randomBlockchainBlock() = TestBlockchainBlock(randomOriginalBlock())
 
 fun randomOriginalBlock() = randomOriginalBlock(randomPositiveLong())
@@ -104,23 +77,12 @@ fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
 }
 
 
-fun randomTestLogRecord() = randomTestLogRecord(randomString(), randomString())
 fun randomTestLogRecord(
     topic: String,
     blockHash: String,
     status: Log.Status = Log.Status.CONFIRMED
 ): TestCustomLogRecord {
     val testLog = randomTestLog(topic, blockHash, status)
-    return randomTestLogRecord(testLog)
-}
-
-fun randomTestLogRecord(log: TestOriginalLog, status: Log.Status): TestCustomLogRecord {
-    val testLog = randomTestLog().copy(
-        transactionHash = log.transactionHash,
-        blockHash = log.blockHash,
-        status = status,
-        topic = log.topic
-    )
     return randomTestLogRecord(testLog)
 }
 

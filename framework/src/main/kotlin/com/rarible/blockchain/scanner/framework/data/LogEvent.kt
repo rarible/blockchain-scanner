@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 
 data class LogEvent<L : Log<L>, R : LogRecord<L, *>, D: Descriptor>(
     val blockEvent: BlockEvent,
-    val logRecords: List<R>,
-    val descriptor: D
+    val descriptor: D,
+    val logRecordsToInsert: List<R>,
+    val logRecordsToRemove: List<R>
 )

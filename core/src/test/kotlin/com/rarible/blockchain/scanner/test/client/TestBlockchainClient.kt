@@ -42,6 +42,7 @@ class TestBlockchainClient(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
     ): List<TestBlockchainLog> =
-        logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }
+        logsByBlock[block.hash]!!
+            .filter { it.topic == descriptor.id }
             .mapIndexed { index, log -> TestBlockchainLog(log, index) }
 }

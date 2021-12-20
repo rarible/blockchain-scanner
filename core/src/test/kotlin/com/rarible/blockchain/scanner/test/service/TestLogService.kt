@@ -1,7 +1,5 @@
 package com.rarible.blockchain.scanner.test.service
 
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
@@ -13,9 +11,13 @@ class TestLogService(
     private val testLogRepository: TestLogRepository
 ) : LogService<TestLog, TestLogRecord<*>, TestDescriptor> {
 
-    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord<*>): TestLogRecord<*> {
-        return testLogRepository.delete(descriptor.collection, record).awaitFirst()
-    }
+    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord<*>): TestLogRecord<*> =
+        testLogRepository.delete(descriptor.collection, record).awaitFirst()
+
+    override suspend fun delete(
+        descriptor: TestDescriptor,
+        records: List<TestLogRecord<*>>
+    ): List<TestLogRecord<*>> = records.map { delete(descriptor, it) }
 
     override suspend fun save(
         descriptor: TestDescriptor,
@@ -45,18 +47,15 @@ class TestLogService(
         }
     }
 
-    override suspend fun findAndDelete(
+    override suspend fun prepareLogsToRevertOnRevertedBlock(
         descriptor: TestDescriptor,
-        blockHash: String,
-        status: Log.Status?
-    ): List<TestLogRecord<*>> {
-        return testLogRepository.findAndDelete(
+        revertedBlockHash: String
+    ): List<TestLogRecord<*>> =
+        testLogRepository.find(
             descriptor.entityType,
             descriptor.collection,
-            blockHash,
-            descriptor.id,
-            status
+            revertedBlockHash,
+            descriptor.id
         ).collectList().awaitFirst()
-    }
 
 }

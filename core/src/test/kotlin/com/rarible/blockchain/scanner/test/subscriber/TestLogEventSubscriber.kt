@@ -18,7 +18,11 @@ class TestLogEventSubscriber(
     private val eventDataCount: Int = 1
 ) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
 
-    val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord<*>>> = hashMapOf()
+    private val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord<*>>> = hashMapOf()
+
+    fun getReturnedRecords(testOriginalBlock: TestOriginalBlock, testOriginalLog: TestOriginalLog): List<TestLogRecord<*>> {
+        return expectedRecords.getValue(testOriginalBlock to testOriginalLog)
+    }
 
     override fun getDescriptor(): TestDescriptor = descriptor
 
@@ -35,7 +39,7 @@ class TestLogEventSubscriber(
             log = mapLog(log, minorIndex)
         )
     }.also { records ->
-        expectedRecords[block.testOriginalBlock to log.testOriginalLog] = records.map { it.copy(version = 0) }
+        expectedRecords[block.testOriginalBlock to log.testOriginalLog] = records
     }
 
 

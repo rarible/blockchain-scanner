@@ -30,7 +30,12 @@ class BlockScannerTest {
     private val mapper = TestBlockMapper()
     private val client = mockk<BlockchainBlockClient<TestBlockchainBlock>>()
     private val service = mockk<BlockService<TestBlock>>()
-    private val scanner = BlockScanner(mapper, client, service, ScanRetryPolicyProperties(reconnectAttempts = 1))
+    private val scanner = BlockScanner(
+        mapper,
+        client,
+        service,
+        ScanRetryPolicyProperties(reconnectAttempts = 1)
+    )
 
     @BeforeEach
     fun beforeEach() {

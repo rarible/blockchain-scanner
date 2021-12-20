@@ -123,7 +123,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertNull(findLog(collection, pendingLog.id))
         }
 
-        verifyDismissedLogEvent { logRecord ->
+        verifyPublishedLogEvent { logRecord ->
             assertThat(logRecord).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
                 assertThat(it.id).isEqualTo(pendingLog.id)
                 assertThat(it.log.status).isEqualTo(Log.Status.INACTIVE)

@@ -38,21 +38,34 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     override suspend fun onBlockEvents(events: List<BlockEvent>) {
         logger.info("Received BlockEvents: {}", events)
         val logEvents = withSpan("onBlockEvents") {
-            blockEventProcessor.processBlockEvents(events)
+            blockEventProcessor.prepareBlockEvents(events)
         }
-        val blockLogs = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
         for (logEvent in logEvents) {
-            blockLogs.getOrPut(logEvent.blockEvent) { hashMapOf() }
-                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecords
+            blockLogsToInsert.getOrPut(logEvent.blockEvent) { hashMapOf() }
+                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecordsToInsert
+            blockLogsToRemove.getOrPut(logEvent.blockEvent) { hashMapOf() }
+                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecordsToRemove
         }
         for (blockEvent in events) {
-            val groupIdMap = blockLogs[blockEvent] ?: continue
-            for ((groupId, logRecords) in groupIdMap) {
-                val sortedRecords = logRecords.sortedWith(logEventComparator)
-                logger.info("Publishing {} log records for {} of {}", sortedRecords.size, groupId, blockEvent)
-                logEventPublisher.publish(groupId, blockEvent.source, sortedRecords)
+            val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
+            val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
+            for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
+                val toRemoveSorted = toRemoveGroupIdMap.getValue(groupId).sortedWith(logEventComparator)
+                logger.info("Publishing {} log records to remove for {} of {}", toRemoveSorted.size, groupId, blockEvent)
+                if (toRemoveSorted.isNotEmpty()) {
+                    logEventPublisher.publish(groupId, blockEvent.source, toRemoveSorted)
+                }
+
+                val toInsertSorted = recordsToInsert.sortedWith(logEventComparator)
+                logger.info("Publishing {} log records to insert for {} of {}", toInsertSorted.size, groupId, blockEvent)
+                if (toInsertSorted.isNotEmpty()) {
+                    logEventPublisher.publish(groupId, blockEvent.source, toInsertSorted)
+                }
             }
             logger.info("Sent events for {}", blockEvent)
         }
+        blockEventProcessor.insertOrRemoveRecords(logEvents)
     }
 }

@@ -11,7 +11,6 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.framework.model.Log
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -140,40 +139,20 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `find and delete records - without status`() = runBlocking {
+    fun `prepare reverted logs`() = runBlocking {
         val anotherCollection = testBidSubscriber.getDescriptor().collection
         val blockHash = randomBlockHash()
 
-        val deleted = saveLog(collection, randomLogRecord(topic, blockHash))
-        val wrongBlockHash = saveLog(collection, randomLogRecord(topic, randomBlockHash()))
-        val wrongTopic = saveLog(collection, randomLogRecord(randomWord(), blockHash))
-        val wrongCollection = saveLog(anotherCollection, randomLogRecord(topic, blockHash))
+        val reverted = saveLog(collection, randomLogRecord(topic, blockHash))
+        // wrongBlockHash
+        saveLog(collection, randomLogRecord(topic, randomBlockHash()))
+        // wrongTopic
+        saveLog(collection, randomLogRecord(randomWord(), blockHash))
+        // wrongCollection
+        saveLog(anotherCollection, randomLogRecord(topic, blockHash))
 
-        val deletedLogs = ethereumLogService.findAndDelete(descriptor, blockHash.toString()).toList()
-
-        assertEquals(1, deletedLogs.size)
-        assertEquals(deleted.id, deletedLogs[0].id)
-
-        assertNull(findLog(collection, deleted.id))
-        assertNotNull(findLog(collection, wrongBlockHash.id))
-        assertNotNull(findLog(collection, wrongTopic.id))
-        assertNotNull(findLog(anotherCollection, wrongCollection.id))
-    }
-
-    @Test
-    fun `find and delete records - with status`() = runBlocking {
-        val blockHash = randomBlockHash()
-
-        val deleted = saveLog(collection, randomLogRecord(topic, blockHash))
-        val wrongStatus = saveLog(collection, randomLogRecord(topic, blockHash, status = Log.Status.PENDING))
-
-        val deletedLogs =
-            ethereumLogService.findAndDelete(descriptor, blockHash.toString(), Log.Status.CONFIRMED).toList()
-
-        assertEquals(1, deletedLogs.size)
-        assertEquals(deleted.id, deletedLogs[0].id)
-
-        assertNull(findLog(collection, deleted.id))
-        assertNotNull(findLog(collection, wrongStatus.id))
+        val revertedLogs = ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
+        assertEquals(1, revertedLogs.size)
+        assertEquals(reverted.id, revertedLogs[0].id)
     }
 }

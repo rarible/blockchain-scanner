@@ -130,19 +130,12 @@ abstract class AbstractIntegrationTest {
 
     @BeforeEach
     fun cleanupLogs() {
-        testEthereumLogEventPublisher.dismissedLogs.clear()
         testEthereumLogEventPublisher.publishedLogRecords.clear()
     }
 
     protected fun verifyPublishedLogEvent(asserter: (LogRecord<*, *>) -> Unit) {
         BlockingWait.waitAssert {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).anySatisfy(asserter)
-        }
-    }
-
-    protected fun verifyDismissedLogEvent(asserter: (LogRecord<*, *>) -> Unit) {
-        BlockingWait.waitAssert {
-            assertThat(testEthereumLogEventPublisher.dismissedLogs.flatMap { it.value }).anySatisfy(asserter)
         }
     }
 

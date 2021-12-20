@@ -120,8 +120,8 @@ fun ethLog(
     randomString()
 )
 
-fun ethTransaction() = Transaction(
-    randomWord(),
+fun ethTransaction(transactionHash: Word = randomWord()) = Transaction(
+    transactionHash,
     BigInteger.ZERO,
     randomWord(),
     randomPositiveBigInt(100),

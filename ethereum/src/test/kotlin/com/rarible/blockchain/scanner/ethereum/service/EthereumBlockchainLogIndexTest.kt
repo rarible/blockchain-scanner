@@ -14,12 +14,14 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 
+@Disabled // TODO: will be re-implemented.
 class EthereumBlockchainLogIndexTest {
     @Test
     fun `index is calculated in group of transactionHash, topic, address`() = runBlocking<Unit> {

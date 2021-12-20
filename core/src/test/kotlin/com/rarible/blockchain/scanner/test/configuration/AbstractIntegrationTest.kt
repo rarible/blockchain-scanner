@@ -75,6 +75,7 @@ abstract class AbstractIntegrationTest {
         return block
     }
 
+
     protected fun newBlockEvent(
         block: TestOriginalBlock,
         source: Source = Source.BLOCKCHAIN
@@ -89,20 +90,19 @@ abstract class AbstractIntegrationTest {
         return RevertedBlockEvent(source, block.number, block.hash)
     }
 
-    protected suspend fun scanOnce(blockScanner: BlockScanner<*, *>, publisher: BlockEventPublisher) {
+    protected suspend fun BlockScanner<*, *>.scanOnce(publisher: BlockEventPublisher) {
         try {
-            blockScanner.scan(publisher)
+            scan(publisher)
+        } catch (e: Exception) {
+            // Ignore the flow completed.
+        }
+    }
+
+    protected suspend fun BlockchainScanner<*, *, *, *, *, *>.scanOnce() {
+        try {
+            scan()
         } catch (e: IllegalStateException) {
             // Do nothing, in prod there will be infinite attempts count
         }
     }
-
-    protected suspend fun scanOnce(blockchainScanner: BlockchainScanner<*, *, *, *, *, *>) {
-        try {
-            blockchainScanner.scan()
-        } catch (e: IllegalStateException) {
-            // Do nothing, in prod there will be infinite attempts count
-        }
-    }
-
 }

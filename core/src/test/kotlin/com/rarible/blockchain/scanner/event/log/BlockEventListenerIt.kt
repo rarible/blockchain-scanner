@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.event.log
 
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -34,15 +33,10 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
             publishedRecords += logRecords
         }
 
-        override suspend fun publishDismissedLogs(
-            descriptor: Descriptor,
-            source: Source,
-            logs: List<LogRecord<*, *>>
-        ) = Unit
     }
 
     @Test
-    fun `on block event - event processed`() = runBlocking<Unit> {
+    fun `on block event - event processed and log records are published`() = runBlocking<Unit> {
         val subscriber = TestLogEventSubscriber(descriptor)
         val block1 = randomBlockchainBlock()
         val block2 = randomBlockchainBlock()
@@ -76,8 +70,8 @@ internal class BlockEventListenerIt : AbstractIntegrationTest() {
 
         assertThat(publishedRecords).isEqualTo(
             listOf(
-                subscriber.expectedRecords.getValue(block2.testOriginalBlock to log2).single(),
-                subscriber.expectedRecords.getValue(block1.testOriginalBlock to log1).single(),
+                subscriber.getReturnedRecords(block2.testOriginalBlock, log2).single(),
+                subscriber.getReturnedRecords(block1.testOriginalBlock, log1).single(),
             )
         )
     }

@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.kafka.KafkaMessage
 import com.rarible.core.kafka.RaribleKafkaProducer
 import com.rarible.core.kafka.json.JsonSerializer
-import kotlinx.coroutines.flow.collect
 import java.util.*
 
 class KafkaLogEventPublisher(
@@ -33,12 +32,6 @@ class KafkaLogEventPublisher(
         val messages = logRecords.map { toKafkaMessage(it, source) }
         val topic = getTopic(groupId)
         kafkaProducer.send(messages, topic)
-    }
-
-    override suspend fun publishDismissedLogs(descriptor: Descriptor, source: Source, logs: List<LogRecord<*, *>>) {
-        val topic = getTopic(descriptor)
-        val messages = logs.map { toKafkaMessage(it, source) }
-        kafkaProducer.send(messages, topic).collect()
     }
 
     private fun getTopic(descriptor: Descriptor): String {

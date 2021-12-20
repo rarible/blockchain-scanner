@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowBlock
-import com.rarible.blockchain.scanner.util.logTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.delay
@@ -44,12 +43,10 @@ class FlowNetNewBlockPoller(
                 val range = (startNumber .. latest.height).asFlow()
                 log.debug("read block range ${(startNumber .. latest.height)}")
                 range.collect {
-                    logTime("Collect block [$it]") {
-                        val b = api.blockByHeight(it)
-                        if (b != null) {
-                            log.debug("Send to flow ${b.height}")
-                            send(b)
-                        }
+                    val block = api.blockByHeight(it)
+                    if (block != null) {
+                        log.debug("Send to flow ${block.height}")
+                        send(block)
                     }
                 }
                 start.set(latest.height)
