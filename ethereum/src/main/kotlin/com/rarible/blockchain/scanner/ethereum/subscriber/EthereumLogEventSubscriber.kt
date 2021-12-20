@@ -32,7 +32,7 @@ abstract class EthereumLogEventSubscriber :
     /**
      * Converts Ethereum blockchain log provided by Ethereum client to Ethereum log.
      */
-    protected fun mapLog(log: EthereumBlockchainLog): EthereumLog {
+    protected fun mapLog(block: EthereumBlockchainBlock, log: EthereumBlockchainLog): EthereumLog {
         val ethLog = log.ethLog
         val nowInstant = nowMillis()
         return EthereumLog(
@@ -42,6 +42,7 @@ abstract class EthereumLogEventSubscriber :
             status = Log.Status.CONFIRMED,
             blockHash = ethLog.blockHash(),
             blockNumber = ethLog.blockNumber().toLong(),
+            blockTimestamp = block.timestamp,
             logIndex = ethLog.logIndex().toInt(),
             minorLogIndex = 0, // will be assigned above.
             index = log.index,

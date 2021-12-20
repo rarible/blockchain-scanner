@@ -30,7 +30,7 @@ class TestTransferSubscriber : EthereumLogEventSubscriber() {
         return listOf(
             ReversedEthereumLogRecord(
                 id = randomString(),
-                log = mapLog(log),
+                log = mapLog(block, log),
                 data = TestEthereumLogData(
                     customData = randomString(),
                     to = rawEvent.to(),

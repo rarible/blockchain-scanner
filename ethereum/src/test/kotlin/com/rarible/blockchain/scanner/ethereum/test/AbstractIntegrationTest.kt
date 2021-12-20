@@ -29,8 +29,10 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
 import scalether.core.MonoEthereum
+import scalether.domain.response.TransactionReceipt
 import scalether.transaction.MonoTransactionPoller
 import scalether.transaction.MonoTransactionSender
+import java.time.Instant
 import kotlin.concurrent.withLock
 
 @ExperimentalCoroutinesApi
@@ -141,4 +143,7 @@ abstract class AbstractIntegrationTest {
             assertThat(testEthereumLogEventPublisher.dismissedLogs.flatMap { it.value }).anySatisfy(asserter)
         }
     }
+
+    protected fun TransactionReceipt.getTimestamp(): Instant =
+        Instant.ofEpochSecond(ethereum.ethGetFullBlockByHash(blockHash()).map { it.timestamp() }.block()!!.toLong())
 }

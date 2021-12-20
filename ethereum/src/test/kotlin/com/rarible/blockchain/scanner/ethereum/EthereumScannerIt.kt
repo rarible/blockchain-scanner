@@ -77,6 +77,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             val testRecord = findAllLogs(collection)[0] as ReversedEthereumLogRecord
             val data = testRecord.data as TestEthereumLogData
             assertThat(testRecord.log.status).isEqualTo(Log.Status.CONFIRMED)
+            assertThat(testRecord.log.blockTimestamp).isEqualTo(receipt.getTimestamp().epochSecond)
             assertThat(data.from).isEqualTo(Address.ZERO())
             assertThat(data.to).isEqualTo(beneficiary)
             assertThat(data.value).isEqualTo(value)

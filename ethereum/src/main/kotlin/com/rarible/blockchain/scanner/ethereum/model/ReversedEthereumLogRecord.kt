@@ -33,6 +33,8 @@ data class ReversedEthereumLogRecord(
     val blockNumber: Long? = null,
     val logIndex: Int? = null,
 
+    val blockTimestamp: Long? = null,
+
     val visible: Boolean = true,
 
     override val createdAt: Instant = Instant.EPOCH,
@@ -58,6 +60,7 @@ data class ReversedEthereumLogRecord(
 
         visible = visible,
 
+        blockTimestamp = blockTimestamp,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -81,6 +84,7 @@ data class ReversedEthereumLogRecord(
 
         visible = log.visible,
 
+        blockTimestamp = log.blockTimestamp,
         createdAt = log.createdAt,
         updatedAt = log.updatedAt,
 
