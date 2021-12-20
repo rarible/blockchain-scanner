@@ -77,6 +77,6 @@ class ChangeLog00001 {
 
     companion object {
         const val VISIBLE_INDEX_NAME =
-            "transactionHash_1_topic_1_index_1_minorLogIndex_1_visible_1_address_1"
+            "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1"
     }
 }
