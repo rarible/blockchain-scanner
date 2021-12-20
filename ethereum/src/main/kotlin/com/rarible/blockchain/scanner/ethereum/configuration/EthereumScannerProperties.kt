@@ -13,15 +13,11 @@ import org.springframework.boot.context.properties.ConstructorBinding
 data class EthereumScannerProperties(
 
     val optimisticLockRetries: Long = 3,
+    override val blockchain: String = "ethereum",
     override val service: String = "scanner",
     override val retryPolicy: RetryPolicyProperties,
     override val job: EthereumScannerJobProperties,
     override val monitoring: MonitoringProperties,
     override val scan: ScanProperties = ScanProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()
-
-) : BlockchainScannerProperties {
-
-    override val blockchain: String = "ethereum"
-
-}
+) : BlockchainScannerProperties
