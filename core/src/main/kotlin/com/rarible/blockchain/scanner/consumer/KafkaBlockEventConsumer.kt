@@ -11,10 +11,7 @@ import com.rarible.core.daemon.sequential.ConsumerBatchWorker
 import com.rarible.core.kafka.RaribleKafkaConsumer
 import com.rarible.core.kafka.json.JsonDeserializer
 import io.micrometer.core.instrument.MeterRegistry
-import org.apache.kafka.clients.admin.AdminClient
-import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class KafkaBlockEventConsumer(
@@ -27,16 +24,12 @@ class KafkaBlockEventConsumer(
     private val service: String
 ) : BlockEventConsumer {
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(KafkaBlockEventConsumer::class.java)
-    }
-
     private val topic = getBlockTopic(environment, service, blockchain)
     private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
 
     override suspend fun start(handler: Map<String, BlockListener>) {
-        createTopic()
-        handler.map { consumer(it.key, it.value) }
+        handler
+            .map { consumer(it.key, it.value) }
             .forEach { it.start() }
     }
 
@@ -63,18 +56,6 @@ class KafkaBlockEventConsumer(
             meterRegistry = meterRegistry,
             workerName = "block-event-consumer-$group"
         )
-    }
-
-    private fun createTopic() {
-        val newTopic = NewTopic(topic, 1, 1)
-        val client = AdminClient.create(
-            mutableMapOf<String, Any>("bootstrap.servers" to properties.brokerReplicaSet)
-        )
-        if (!client.listTopics().names().get().contains(topic)) {
-            logger.info("Creating topic '{}'", topic)
-            client.createTopics(listOf(newTopic)).all().get()
-        }
-        client.close()
     }
 
     private class BlockEventHandler(
