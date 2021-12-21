@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.event.block
 
+import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
@@ -30,7 +31,14 @@ class BlockScannerTest {
     private val mapper = TestBlockMapper()
     private val client = mockk<BlockchainBlockClient<TestBlockchainBlock>>()
     private val service = mockk<BlockService<TestBlock>>()
-    private val scanner = BlockScanner(mapper, client, service, ScanRetryPolicyProperties(reconnectAttempts = 1))
+
+    private val scanner = BlockScanner(
+        mapper,
+        client,
+        service,
+        ScanRetryPolicyProperties(reconnectAttempts = 1),
+        BlockBatchLoadProperties()
+    )
 
     @BeforeEach
     fun beforeEach() {

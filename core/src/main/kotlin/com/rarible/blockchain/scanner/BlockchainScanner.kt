@@ -42,7 +42,8 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         blockMapper,
         blockchainClient,
         blockService,
-        properties.retryPolicy.scan
+        properties.retryPolicy.scan,
+        properties.scan.blockBatchLoad
     )
 
     protected val blockEventListeners = subscribers
