@@ -25,7 +25,6 @@ class TestEthereumBlockchainClient(
         get() = delegate.newBlocks.onEach {
             // Check if the block processing is delayed.
             blocksDelayLock.withLock {
-                println("Give block $it")
             }
         }
 
@@ -44,8 +43,14 @@ class TestEthereumBlockchainClient(
         return delegate.getBlock(number)
     }
 
-    override suspend fun getBlock(hash: String): EthereumBlockchainBlock? =
-        delegate.getBlock(hash)
+    override suspend fun getBlock(hash: String): EthereumBlockchainBlock? {
+        val block = delegate.getBlock(hash) ?: return null
+        if (block.number == startingBlock) {
+            val zeroBlock = delegate.getBlock(0L)
+            return block.copy(parentHash = zeroBlock?.hash)
+        }
+        return block
+    }
 
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,

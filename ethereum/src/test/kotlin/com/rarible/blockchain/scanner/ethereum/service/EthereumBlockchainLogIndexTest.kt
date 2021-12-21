@@ -1,10 +1,14 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
 import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
+import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
+import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.test.data.randomAddress
 import io.daonomic.rpc.domain.Word
@@ -12,16 +16,16 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Disabled
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
+import scala.jdk.javaapi.CollectionConverters
 import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
+import scalether.domain.Address
+import scalether.domain.response.Block
 
-@Disabled // TODO: will be re-implemented.
 class EthereumBlockchainLogIndexTest {
     @Test
     fun `index is calculated in group of transactionHash, topic, address`() = runBlocking<Unit> {
@@ -37,58 +41,145 @@ class EthereumBlockchainLogIndexTest {
         val transactionHash1 = randomWord()
         val topic1 = randomWord()
         val address1 = randomAddress()
-        val block1 = allBlocks[0]
 
         val transactionHash2 = randomWord()
         val topic2 = randomWord()
         val address2 = randomAddress()
-        val block2 = allBlocks[1]
 
-        val expectedLogs = listOf(
-            IndexedValue(0, ethLog(transactionHash1, topic1, randomAddress(), 0, allBlocks[0].hash())),
-            IndexedValue(0, ethLog(transactionHash1, randomWord(), address1, 1, allBlocks[1].hash())),
-            IndexedValue(0, ethLog(randomWord(), topic1, address1, 2, allBlocks[2].hash())),
-            IndexedValue(0, ethLog(randomWord(), randomWord(), randomAddress(), 3, allBlocks[3].hash())),
-
-            // Group #1 of <transactionHash, topic, address>
-            IndexedValue(0, ethLog(transactionHash1, topic1, address1, 4, allBlocks[4].hash())),
-            IndexedValue(1, ethLog(transactionHash1, topic1, address1, 5, allBlocks[4].hash())),
-            IndexedValue(2, ethLog(transactionHash1, topic1, address1, 6, allBlocks[4].hash())),
-
-            // Group #2 of <transactionHash, topic, address>
-            IndexedValue(0, ethLog(transactionHash2, topic2, address2, 7, allBlocks[5].hash())),
-            IndexedValue(1, ethLog(transactionHash2, topic2, address2, 8, allBlocks[5].hash())),
-            IndexedValue(2, ethLog(transactionHash2, topic2, address2, 9, allBlocks[5].hash())),
+        fun createEthereumBL(
+            index: Int,
+            transactionHash: Word,
+            topic: Word,
+            address: Address,
+            logIndex: Int,
+            block: Block<Word>
+        ) = EthereumBlockchainLog(
+            ethLog = ethLog(
+                transactionHash = transactionHash,
+                topic = topic,
+                address = address,
+                logIndex = logIndex,
+                blockHash = block.hash()
+            ),
+            ethTransaction = ethTransaction(
+                transactionHash = transactionHash,
+                blockHash = block.hash(),
+                blockNumber = block.number()
+            ),
+            index = index
         )
 
-        val monoEthereum = mockk<MonoEthereum>()
-        every { monoEthereum.ethGetLogsJava(any()) } returns expectedLogs.map { it.value }.toMono()
-        every { monoEthereum.ethGetBlockByHash(any()) } answers {
-            val blockHash = firstArg<Word>()
-            allBlocks.find { it.hash() == blockHash }.justOrEmpty()
-        }
-        every { monoEthereum.ethGetBlockByHash(block1.hash()) } returns block1.toMono()
-        every { monoEthereum.ethGetBlockByHash(block2.hash()) } returns block2.toMono()
+        val expectedLogs = listOf(
+            /* 0 */
+            createEthereumBL(0, randomWord(), topic1, randomAddress(), 0, allBlocks[0]),
+            /* 1 */
+            createEthereumBL(0, randomWord(), randomWord(), address1, 1, allBlocks[1]),
+            /* 2 */
+            createEthereumBL(0, randomWord(), topic1, address1, 2, allBlocks[2]),
+            /* 3 */
+            createEthereumBL(0, randomWord(), randomWord(), address2, 3, allBlocks[3]),
 
-        val ethPubSub = mockk<EthPubSub>()
-        every { ethPubSub.newHeads() } returns Flux.empty()
+            // Group #1 of <transactionHash, topic, address>
+            /* 4 */
+            createEthereumBL(0, transactionHash1, topic1, address1, 4, allBlocks[4]),
+            /* 5 */
+            createEthereumBL(1, transactionHash1, topic1, address1, 5, allBlocks[4]),
+            /* 6 */
+            createEthereumBL(2, transactionHash1, topic1, address1, 6, allBlocks[4]),
 
-        val client = EthereumClient(monoEthereum, ethPubSub)
+            // Group #2 of <transactionHash, topic, address>
+            /* 7 */
+            createEthereumBL(0, transactionHash2, topic2, address2, 7, allBlocks[5]),
+            /* 8 */
+            createEthereumBL(1, transactionHash2, topic2, address2, 8, allBlocks[5]),
+            /* 9 */
+            createEthereumBL(2, transactionHash2, topic2, address2, 9, allBlocks[5]),
+        )
+
+        val expectedFullBlocks = listOf(
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[0]),
+                logs = listOf(expectedLogs[0])
+            ),
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[1]),
+                logs = listOf(expectedLogs[1])
+            ),
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[2]),
+                logs = listOf(expectedLogs[2])
+            ),
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[3]),
+                logs = listOf(expectedLogs[3])
+            ),
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[4]),
+                logs = listOf(expectedLogs[4], expectedLogs[5], expectedLogs[6])
+            ),
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[5]),
+                logs = listOf(expectedLogs[7], expectedLogs[8], expectedLogs[9])
+            ),
+        )
+
+
+        val ethereumClient = createEthereumClient(allBlocks, expectedLogs)
 
         val descriptor = mockk<EthereumDescriptor>()
         every { descriptor.contracts } returns emptyList()
         every { descriptor.ethTopic } returns randomWord()
 
-        val fullBlocks = client.getBlockLogs(descriptor, LongRange(1, 1)).toList()
-        assertEquals(6, fullBlocks.size)
-        fullBlocks.forEach { println(it) }
-        for ((expectedIndex, log) in expectedLogs) {
-            val fullBlock = fullBlocks.find { it.block.hash == log.blockHash().toString() }
-            assertNotNull(fullBlock) { "No full block found for block hash ${log.blockHash()}" }
-
-            val ethereumLog = fullBlock!!.logs.find { it.ethLog == log }
-            assertNotNull(ethereumLog) { "No log returned for $log" }
-            assertEquals(expectedIndex, ethereumLog!!.index)
+        val fullBlocks = ethereumClient.getBlockLogs(descriptor, LongRange(1, 1)).toList()
+        assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
+        for ((block, logs) in fullBlocks) {
+            val expectedFullBlock = expectedFullBlocks.find { it.block == block }!!
+            assertThat(logs.map { it.index }).isEqualTo(expectedFullBlock.logs.map { it.index })
         }
+    }
+
+    @Suppress("ReactiveStreamsUnusedPublisher")
+    private fun createEthereumClient(
+        allBlocks: List<Block<Word>>,
+        logs: List<EthereumBlockchainLog>
+    ): EthereumClient {
+        val monoEthereum = mockk<MonoEthereum>()
+        every { monoEthereum.ethGetLogsJava(any()) } returns logs.map { it.ethLog }.toMono()
+        every { monoEthereum.ethGetBlockByHash(any()) } answers {
+            val blockHash = firstArg<Word>()
+            allBlocks.find { it.hash() == blockHash }.justOrEmpty()
+        }
+        every { monoEthereum.ethGetFullBlockByHash(any()) } answers {
+            val blockHash = firstArg<Word>()
+            val block = allBlocks.find { it.hash() == blockHash } ?: return@answers null
+            val transactions = logs.filter {
+                it.ethTransaction.blockNumber() == block.blockNumber
+                        && it.ethTransaction.blockHash() == blockHash
+            }.map { it.ethTransaction }
+            Block(
+                block.number(),
+                block.hash(),
+                block.parentHash(),
+                block.nonce(),
+                block.sha3Uncles(),
+                block.logsBloom(),
+                block.transactionsRoot(),
+                block.stateRoot(),
+                block.miner(),
+                block.difficulty(),
+                block.totalDifficulty(),
+                block.extraData(),
+                block.size(),
+                block.gasLimit(),
+                block.gasUsed(),
+                CollectionConverters.asScala(transactions).toList(),
+                block.timestamp()
+            ).toMono()
+        }
+
+        val ethPubSub = mockk<EthPubSub>()
+        every { ethPubSub.newHeads() } returns Flux.empty()
+
+        return EthereumClient(monoEthereum, ethPubSub)
     }
 }

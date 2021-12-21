@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 @JsonSubTypes(
     JsonSubTypes.Type(name = "NEW", value = NewBlockEvent::class),
     JsonSubTypes.Type(name = "REVERTED", value = RevertedBlockEvent::class),
-    JsonSubTypes.Type(name = "REINDEX", value = RevertedBlockEvent::class)
+    JsonSubTypes.Type(name = "REINDEX", value = ReindexBlockEvent::class)
 )
 sealed class BlockEvent {
     abstract val source: Source

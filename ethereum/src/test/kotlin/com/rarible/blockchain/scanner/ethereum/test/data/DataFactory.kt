@@ -120,11 +120,15 @@ fun ethLog(
     randomString()
 )
 
-fun ethTransaction(transactionHash: Word = randomWord()) = Transaction(
+fun ethTransaction(
+    transactionHash: Word = randomWord(),
+    blockHash: Word = randomWord(),
+    blockNumber: BigInteger = randomPositiveBigInt(100)
+) = Transaction(
     transactionHash,
     BigInteger.ZERO,
-    randomWord(),
-    randomPositiveBigInt(100),
+    blockHash,
+    blockNumber,
     Address.ZERO(),
     BigInteger.ZERO,
     randomAddress(),

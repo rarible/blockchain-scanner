@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
@@ -12,32 +11,22 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.framework.model.Log
-import com.rarible.blockchain.scanner.reconciliation.ReconciliationTaskHandler
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
 import com.rarible.core.common.nowMillis
-import com.rarible.core.task.Task
-import com.rarible.core.task.TaskStatus
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.lt
 import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
 
 @IntegrationTest
 class EthereumScannerIt : AbstractIntegrationTest() {
-
-    private val logger = LoggerFactory.getLogger(EthereumScannerIt::class.java)
 
     private lateinit var descriptor: EthereumDescriptor
     private lateinit var collection: String
@@ -67,7 +56,10 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertEquals(receipt.blockHash().toString(), block.hash)
 
             // We expect single LogRecord from our single Subscriber
-            val testRecord = findAllLogs(collection)[0] as ReversedEthereumLogRecord
+            val allLogs = findAllLogs(collection)
+            assertThat(allLogs).hasSize(1)
+
+            val testRecord = allLogs.single() as ReversedEthereumLogRecord
             assertThat(testRecord.log.status).isEqualTo(Log.Status.CONFIRMED)
             assertThat(testRecord.log.blockTimestamp).isEqualTo(receipt.getTimestamp().epochSecond)
 
@@ -125,42 +117,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                 assertThat(it.id).isEqualTo(pendingLog.id)
                 assertThat(it.log.status).isEqualTo(Log.Status.INACTIVE)
             }
-        }
-    }
-
-    @Test
-    fun `reconciliation job`() {
-        val number = ethereum.ethBlockNumber().block()!!.toLong()
-        val beneficiary = randomAddress()
-        val value = randomPositiveBigInt(100000)
-        mintAndVerify(beneficiary, value)
-
-        val numberEnd = ethereum.ethBlockNumber().block()!!.toLong()
-        val beforeCleanupSize = findAllLogs(collection).size
-
-        // Cleanup Blocks and Task collection to trigger reconciliation job
-        mongo.findAllAndRemove(Query(), Task::class.java).then().block()
-        mongo.findAllAndRemove(Query(EthereumBlock::id lt numberEnd), EthereumBlock::class.java).then().block()
-        mongo.findAllAndRemove<Any>(Query(), collection).collectList().block()!!
-
-        val newTask = Task(
-            type = ReconciliationTaskHandler.RECONCILIATION,
-            param = "transfers",
-            lastStatus = TaskStatus.NONE,
-            state = number + 1,
-            running = false
-        )
-        logger.info("Saving task for reconciliation: [{}]", newTask)
-        mongo.save(newTask).block()
-
-        taskService.readAndRun()
-
-        // Waiting job is completed and our collection have same number of LogRecords as it had before cleanup
-        BlockingWait.waitAssert {
-            val tasks = runBlocking { taskService.findTasks(ReconciliationTaskHandler.RECONCILIATION).toList() }
-            assertEquals(1, tasks.size)
-            assertEquals(TaskStatus.COMPLETED, tasks[0].lastStatus)
-            assertEquals(beforeCleanupSize, findAllLogs(collection).size)
         }
     }
 
