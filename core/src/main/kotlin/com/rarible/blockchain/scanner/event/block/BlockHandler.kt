@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.event.block
 
+import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
@@ -9,13 +10,21 @@ import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
+import com.rarible.blockchain.scanner.util.BlockRanges
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
 import org.slf4j.LoggerFactory
 
 class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, only one B is needed
     private val blockMapper: BlockMapper<BB, B>, //todo remove block mapper, not needed
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService<B>,
-    private val blockListener: BlockEventPublisher
+    private val blockListener: BlockEventPublisher,
+    private val batchLoad: BlockBatchLoadProperties
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
@@ -49,6 +58,11 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
     private suspend fun restoreMissedBlocks(lastStateBlock: B, newBlock: B): B {
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
+        currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.distance) {
+            batchRestoreMissedBlocks(currentBlock, newBlock.id - currentBlock.id - batchLoad.distance)
+        } else {
+            currentBlock
+        }
         while (currentBlock.id < newBlock.id) {
             val nextBlock = getNextBlock(currentBlock, newBlock.id - currentBlock.id)
 
@@ -136,6 +150,29 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         }
 
         error("Can't find previous block for: $startBlock")
+    }
+
+    private suspend fun batchRestoreMissedBlocks(lastStateBlock: B, amount: Long): B = coroutineScope<B> {
+        val startBlockId = lastStateBlock.id + 1
+        val endBlockId = startBlockId + amount
+        require(endBlockId - startBlockId > 0) { "Block batch restore range must be positive" }
+
+        logger.info("Restore blocks from $startBlockId to $endBlockId with batch requests")
+
+        var lastSeenBlock: B = lastStateBlock
+        BlockRanges.getRanges(startBlockId, endBlockId, batchLoad.batchSize).flatMapConcat { range ->
+            logger.info("Restore block range $range")
+            range.map { id ->
+                async {
+                    blockService.getBlock(id)
+                        ?: throw IllegalStateException("Can't find restored block $id")
+                }
+            }.awaitAll().asFlow()
+        }.collect { block ->
+            updateBlock(block)
+            lastSeenBlock = block
+        }
+        lastSeenBlock
     }
 
     private suspend fun updateBlock(block: B) {

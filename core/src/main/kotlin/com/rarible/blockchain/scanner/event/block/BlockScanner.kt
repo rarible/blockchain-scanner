@@ -6,6 +6,7 @@ import com.github.michaelbull.retry.policy.constantDelay
 import com.github.michaelbull.retry.policy.limitAttempts
 import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
+import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
@@ -20,7 +21,8 @@ class BlockScanner<BB : BlockchainBlock, B : Block>(
     private val blockMapper: BlockMapper<BB, B>,
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService<B>,
-    private val retryPolicy: ScanRetryPolicyProperties
+    private val retryPolicy: ScanRetryPolicyProperties,
+    private val batchLoad: BlockBatchLoadProperties
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockScanner::class.java)
@@ -43,7 +45,8 @@ class BlockScanner<BB : BlockchainBlock, B : Block>(
             blockMapper,
             blockClient,
             blockService,
-            blockEventPublisher
+            blockEventPublisher,
+            batchLoad
         )
 
         retry(retryOnFlowCompleted + limitAttempts(attempts) + constantDelay(delay)) {
