@@ -15,12 +15,17 @@ class FlowReconciliationFromProvider(
     private val sporkService: SporkService
 ) : ReconciliationFromProvider {
 
-    override fun initialFrom(descriptorId: String): Long {
-        val sub = subscribers.first { descriptorId == it.getDescriptor().id }
-        return sub.getDescriptor().startFrom ?: when(chainId) {
-            FlowChainId.MAINNET, FlowChainId.TESTNET -> sporkService.allSporks[chainId]!!.last().from
-            FlowChainId.EMULATOR -> 0L
-            else -> throw IllegalArgumentException("Unsupported chain-id : $chainId")
-        }
+    override fun initialFrom(groupId: String): Long {
+        val allStartFrom = subscribers.filter { it.getDescriptor().groupId == groupId }
+            .map { it.getDescriptor().startFrom }
+        // TODO: is it correct implementation?
+        return minOf(
+            allStartFrom.filterNotNull().minOrNull() ?: 0,
+            when(chainId) {
+                FlowChainId.MAINNET, FlowChainId.TESTNET -> sporkService.allSporks[chainId]!!.last().from
+                FlowChainId.EMULATOR -> 0L
+                else -> throw IllegalArgumentException("Unsupported chain-id : $chainId")
+            }
+        )
     }
 }

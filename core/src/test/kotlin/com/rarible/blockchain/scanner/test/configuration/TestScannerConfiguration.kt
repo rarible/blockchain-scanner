@@ -103,7 +103,7 @@ class TestScannerConfiguration {
 
     @Bean
     fun fromProvider(): ReconciliationFromProvider = object : ReconciliationFromProvider {
-        override fun initialFrom(descriptorId: String): Long = 1L
+        override fun initialFrom(groupId: String): Long = 1L
     }
 
 }

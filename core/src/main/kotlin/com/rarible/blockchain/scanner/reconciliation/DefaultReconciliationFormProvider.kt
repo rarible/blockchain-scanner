@@ -6,5 +6,5 @@ import org.springframework.stereotype.Component
 @Component
 @ConditionalOnMissingBean(ReconciliationFromProvider::class)
 class DefaultReconciliationFormProvider: ReconciliationFromProvider {
-    override fun initialFrom(descriptorId: String): Long = 1L
+    override fun initialFrom(groupId: String): Long = 1L
 }

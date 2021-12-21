@@ -63,18 +63,15 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
         blockEventListeners = blockEventListeners
     )
 
-    private val descriptorIds = subscribers.map { it.getDescriptor().id }.toSet()
+    private val descriptors = subscribers.map { it.getDescriptor() }
 
     suspend fun scan() {
         blockEventConsumer.start(blockEventListeners)
         blockScanner.scan(blockEventPublisher)
     }
 
-    override fun reconcile(subscriberGroupId: String?, from: Long, batchSize: Long): Flow<LongRange> {
-        return reconciliationService.reindex(subscriberGroupId, from, batchSize)
-    }
+    override fun reconcile(groupId: String, from: Long, batchSize: Long): Flow<LongRange> =
+        reconciliationService.reindex(groupId, from, batchSize)
 
-    override fun getSubscriberGroupIds(): Set<String> {
-        return descriptorIds
-    }
+    override fun getDescriptors(): List<Descriptor> = descriptors
 }

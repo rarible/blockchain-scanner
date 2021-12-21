@@ -47,6 +47,5 @@ data class ReindexBlockEvent(
 
 enum class Source {
     BLOCKCHAIN,
-    PENDING,
     REINDEX
 }
