@@ -6,8 +6,6 @@ import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.core.test.wait.BlockingWait
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -15,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 @IntegrationTest
 @Import(MonitoringWorkerIt.TestConfiguration::class)
 class MonitoringWorkerIt : AbstractIntegrationTest() {

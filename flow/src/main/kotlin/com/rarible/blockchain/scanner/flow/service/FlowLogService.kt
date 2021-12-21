@@ -5,11 +5,9 @@ import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.service.LogService
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
-@FlowPreview
 @Service
 class FlowLogService(
     private val logRepository: FlowLogRepository

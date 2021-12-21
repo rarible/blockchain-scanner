@@ -16,15 +16,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 @IntegrationTest
 internal class BlockScannerIt : AbstractIntegrationTest() {
 
@@ -37,7 +33,7 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `block event - first block received`() = runBlocking<Unit> {
+    fun `block event - first block received`() = runBlocking {
         val block = randomOriginalBlock().copy(number = 0)
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(block),

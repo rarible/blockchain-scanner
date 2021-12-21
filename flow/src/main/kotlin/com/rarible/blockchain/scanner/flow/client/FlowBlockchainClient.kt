@@ -7,9 +7,6 @@ import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.flatten
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -25,9 +22,6 @@ import java.time.ZoneOffset
 /**
  * Client for Flow blockchain
  */
-@FlowPreview
-@ObsoleteCoroutinesApi
-@ExperimentalCoroutinesApi
 @Component
 class FlowBlockchainClient(
     private val poller: FlowNetNewBlockPoller,

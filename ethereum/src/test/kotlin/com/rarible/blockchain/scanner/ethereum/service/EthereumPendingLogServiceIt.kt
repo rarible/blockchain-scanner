@@ -18,16 +18,12 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.core.common.nowMillis
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.temporal.ChronoUnit
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 @IntegrationTest
 class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
 

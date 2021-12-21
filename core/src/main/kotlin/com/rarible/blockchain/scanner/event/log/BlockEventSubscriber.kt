@@ -17,16 +17,12 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,

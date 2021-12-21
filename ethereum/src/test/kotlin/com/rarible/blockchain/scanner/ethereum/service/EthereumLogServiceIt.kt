@@ -12,19 +12,17 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 @IntegrationTest
 class EthereumLogServiceIt : AbstractIntegrationTest() {
 

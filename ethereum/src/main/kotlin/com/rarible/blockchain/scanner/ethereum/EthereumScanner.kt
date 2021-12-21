@@ -17,8 +17,6 @@ import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventCompar
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -26,8 +24,6 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
-@FlowPreview
-@ExperimentalCoroutinesApi
 class EthereumScanner(
     ethereumClient: EthereumBlockchainClient,
     subscribers: List<EthereumLogEventSubscriber>,

@@ -17,9 +17,6 @@ import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventComparator
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.reactor.mono
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
@@ -27,9 +24,6 @@ import org.springframework.stereotype.Component
 
 
 @Component
-@FlowPreview
-@ExperimentalCoroutinesApi
-@ObsoleteCoroutinesApi
 class FlowBlockchainScanner(
     flowBlockchainClient: FlowBlockchainClient,
     subscribers: List<FlowLogEventSubscriber>,

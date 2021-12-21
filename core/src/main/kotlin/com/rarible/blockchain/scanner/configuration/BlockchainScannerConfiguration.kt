@@ -7,8 +7,6 @@ import com.rarible.blockchain.scanner.monitoring.Monitor
 import com.rarible.blockchain.scanner.monitoring.MonitoringWorker
 import com.rarible.core.task.EnableRaribleTask
 import io.micrometer.core.instrument.MeterRegistry
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -20,8 +18,6 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @ComponentScan(basePackageClasses = [BlockchainScanner::class])
 @EnableScheduling
 @EnableRaribleTask
-@FlowPreview
-@ExperimentalCoroutinesApi
 @Import(KafkaConfiguration::class)
 class BlockchainScannerConfiguration(
     private val properties: BlockchainScannerProperties

@@ -20,12 +20,11 @@ import com.rarible.core.task.Task
 import com.rarible.core.task.TaskStatus
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
@@ -35,9 +34,7 @@ import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
 
-@FlowPreview
 @IntegrationTest
-@ExperimentalCoroutinesApi
 class EthereumScannerIt : AbstractIntegrationTest() {
 
     private val logger = LoggerFactory.getLogger(EthereumScannerIt::class.java)

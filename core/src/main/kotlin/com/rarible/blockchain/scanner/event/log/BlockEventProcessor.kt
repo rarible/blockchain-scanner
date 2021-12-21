@@ -15,15 +15,11 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.BlockBatcher
 import com.rarible.core.apm.withSpan
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 class BlockEventProcessor<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,

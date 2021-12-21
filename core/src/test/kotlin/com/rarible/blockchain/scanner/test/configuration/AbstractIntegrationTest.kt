@@ -17,15 +17,11 @@ import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 abstract class AbstractIntegrationTest {
 
     @Autowired

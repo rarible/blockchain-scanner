@@ -10,8 +10,6 @@ import com.rarible.blockchain.scanner.reconciliation.DefaultReconciliationFormPr
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -27,8 +25,6 @@ import scalether.transaction.MonoSimpleNonceProvider
 import scalether.transaction.MonoTransactionPoller
 import java.math.BigInteger
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 @Configuration
 @EnableEthereumScanner
 @EnableAutoConfiguration

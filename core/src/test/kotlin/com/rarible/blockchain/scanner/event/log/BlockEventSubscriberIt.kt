@@ -25,16 +25,12 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 @IntegrationTest
 class BlockEventSubscriberIt : AbstractIntegrationTest() {
 
@@ -93,7 +89,7 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `handle logs - logs saved with index and minor index`() = runBlocking<Unit> {
+    fun `handle logs - logs saved with index and minor index`() = runBlocking {
         val blockEventSubscriber = createBlockSubscriber(TestLogEventSubscriber(testDescriptor1(), 3))
         val block = randomBlockchainBlock()
         val logs = listOf(

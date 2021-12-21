@@ -13,8 +13,6 @@ import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.apm.withTransaction
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
@@ -23,8 +21,6 @@ import org.slf4j.LoggerFactory
  * Reconciliation service contains set of single Reconciliation Indexers(one per subscriber) and
  * triggers reconciliation procedure for any of them from specified block until last known.
  */
-@FlowPreview
-@ExperimentalCoroutinesApi
 class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     private val blockService: BlockService<B>,
     private val blockEventListeners: Map<String, BlockEventListener<BB, BL, L, R, D>>

@@ -1,18 +1,18 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowBlock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.retry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicLong
 
-@ObsoleteCoroutinesApi
-@ExperimentalCoroutinesApi
 @Component
 class FlowNetNewBlockPoller(
     @Value("\${blockchain.scanner.flow.poller.delay:1000}")

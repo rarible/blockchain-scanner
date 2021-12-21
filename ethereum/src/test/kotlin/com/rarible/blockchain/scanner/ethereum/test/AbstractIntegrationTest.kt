@@ -16,8 +16,6 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
@@ -37,8 +35,6 @@ import scalether.transaction.MonoTransactionSender
 import java.time.Instant
 import kotlin.concurrent.withLock
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 abstract class AbstractIntegrationTest {
 
     @Autowired

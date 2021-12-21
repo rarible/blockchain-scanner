@@ -17,9 +17,6 @@ import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.core.test.containers.KGenericContainer
 import com.rarible.core.test.ext.MongoCleanup
 import com.rarible.core.test.ext.MongoTest
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -35,8 +32,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
 import java.time.Duration
 
-@ObsoleteCoroutinesApi
-@FlowPreview
 @SpringBootTest(
     properties = [
         "application.environment = test",
@@ -55,7 +50,6 @@ import java.time.Duration
 @ContextConfiguration(classes = [TestConfig::class])
 @MongoCleanup
 @MongoTest
-@ExperimentalCoroutinesApi
 @Testcontainers
 @Disabled
 class FlowScannerTest {

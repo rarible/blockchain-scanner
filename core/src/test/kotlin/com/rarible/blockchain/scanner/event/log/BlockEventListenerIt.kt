@@ -12,14 +12,10 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 @IntegrationTest
 internal class BlockEventListenerIt : AbstractIntegrationTest() {
 

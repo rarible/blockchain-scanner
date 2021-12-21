@@ -13,12 +13,8 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.LogEventPublisher
 import com.rarible.core.apm.withSpan
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import org.slf4j.LoggerFactory
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
