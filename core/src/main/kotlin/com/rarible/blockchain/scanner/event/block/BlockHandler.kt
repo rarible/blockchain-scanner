@@ -15,8 +15,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
 class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, only one B is needed
@@ -58,8 +59,8 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
     private suspend fun restoreMissedBlocks(lastStateBlock: B, newBlock: B): B {
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
-        currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.distance) {
-            batchRestoreMissedBlocks(currentBlock, newBlock.id - currentBlock.id - batchLoad.distance)
+        currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
+            batchRestoreMissedBlocks(currentBlock, newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance)
         } else {
             currentBlock
         }
@@ -152,27 +153,23 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         error("Can't find previous block for: $startBlock")
     }
 
-    private suspend fun batchRestoreMissedBlocks(lastStateBlock: B, amount: Long): B = coroutineScope<B> {
+    private suspend fun batchRestoreMissedBlocks(lastStateBlock: B, amount: Long): B = coroutineScope {
         val startBlockId = lastStateBlock.id + 1
         val endBlockId = startBlockId + amount
         require(endBlockId - startBlockId > 0) { "Block batch restore range must be positive" }
 
         logger.info("Restore blocks from $startBlockId to $endBlockId with batch requests")
 
-        var lastSeenBlock: B = lastStateBlock
         BlockRanges.getRanges(startBlockId, endBlockId, batchLoad.batchSize).flatMapConcat { range ->
             logger.info("Restore block range $range")
             range.map { id ->
                 async {
-                    blockService.getBlock(id)
-                        ?: throw IllegalStateException("Can't find restored block $id")
+                    fetchBlock(id) ?: throw IllegalStateException("Can't find restored block $id")
                 }
             }.awaitAll().asFlow()
-        }.collect { block ->
+        }.onEach { block ->
             updateBlock(block)
-            lastSeenBlock = block
-        }
-        lastSeenBlock
+        }.last()
     }
 
     private suspend fun updateBlock(block: B) {
