@@ -9,12 +9,12 @@ data class TestLog(
 
     val topic: String,
     val minorLogIndex: Int,
-    val blockHash: String? = null,
-    val blockNumber: Long? = null,
-    val logIndex: Int? = null,
+    val blockHash: String?,
+    val blockNumber: Long?,
+    val logIndex: Int?,
     val index: Int,
     val extra: String,
-    val visible: Boolean = true
+    val visible: Boolean
 
 ) : Log<TestLog> {
     override fun withStatus(status: Log.Status): TestLog {

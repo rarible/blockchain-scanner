@@ -70,6 +70,7 @@ fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
     return TestOriginalLog(
         transactionHash = randomLogHash(),
         blockHash = blockHash,
+        blockNumber = randomPositiveLong(),
         testExtra = randomString(16),
         logIndex = randomInt(),
         topic = topic
@@ -107,6 +108,7 @@ fun randomTestLog(topic: String, blockHash: String, status: Log.Status = Log.Sta
         minorLogIndex = randomPositiveInt(),
         status = status,
         blockHash = blockHash,
+        blockNumber = randomPositiveLong(),
         logIndex = randomPositiveInt(),
         index = randomPositiveInt()
     )

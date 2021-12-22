@@ -53,6 +53,7 @@ class TestLogEventSubscriber(
             minorLogIndex = minorLogIndex,
             status = Log.Status.CONFIRMED,
             blockHash = testLog.blockHash,
+            blockNumber = testLog.blockNumber,
             logIndex = testLog.logIndex,
             index = log.index
         )

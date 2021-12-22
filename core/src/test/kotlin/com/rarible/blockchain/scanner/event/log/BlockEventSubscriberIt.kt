@@ -18,7 +18,6 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
-import com.rarible.blockchain.scanner.test.data.randomTestLog
 import com.rarible.blockchain.scanner.test.data.randomTestLogRecord
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
@@ -28,7 +27,6 @@ import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @IntegrationTest
@@ -62,34 +60,7 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `on reverted block event`() = runBlocking<Unit> {
-        val subscriber = TestLogEventSubscriber(descriptor)
-        val blockHash = randomBlockHash()
-        val log = randomTestLog(topic, blockHash = blockHash)
-        val logRecord = randomTestLogRecord(log)
-
-        testLogRepository.save(descriptor.collection, logRecord)
-
-        val blockSubscriber = createBlockSubscriber(subscriber)
-
-        val event = RevertedBlockEvent(Source.BLOCKCHAIN, 1, blockHash)
-        val logEvents = blockSubscriber.onRevertedBlockEvents(listOf(event))
-        assertThat(logEvents).isEqualTo(
-            listOf(
-                LogEvent(
-                    blockEvent = event,
-                    descriptor = descriptor,
-                    logRecordsToInsert = emptyList(),
-                    logRecordsToRemove = listOf<TestLogRecord<*>>(
-                        logRecord.copy(version = 0).withLog(logRecord.log.copy(status = Log.Status.REVERTED))
-                    )
-                )
-            )
-        )
-    }
-
-    @Test
-    fun `handle logs - logs saved with index and minor index`() = runBlocking {
+    fun `prepare logs saved with corrrect index and minor index`() = runBlocking {
         val blockEventSubscriber = createBlockSubscriber(TestLogEventSubscriber(testDescriptor1(), 3))
         val block = randomBlockchainBlock()
         val logs = listOf(
@@ -108,16 +79,6 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `handle logs - nothing on empty flow`() = runBlocking {
-        val blockEventSubscriber = createBlockSubscriber(TestLogEventSubscriber(descriptor, 3))
-        val block = randomBlockchainBlock()
-
-        val savedLogs =
-            blockEventSubscriber.prepareLogsToInsert(FullBlock(block, emptyList())).toCollection(mutableListOf())
-        assertEquals(0, savedLogs.size)
-    }
-
-    @Test
     fun `revert block`() = runBlocking<Unit> {
         val revertedBlock = randomBlockchainBlock()
         val revertedBlockEvent = RevertedBlockEvent(Source.BLOCKCHAIN, revertedBlock.number, revertedBlock.hash)
@@ -129,7 +90,9 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
         testLogRepository.saveAll(collection, log1, log2, log3)
 
         val blockSubscriber = createBlockSubscriber(subscriber = TestLogEventSubscriber(descriptor))
-        val logEvents = blockSubscriber.onRevertedBlockEvents(listOf(revertedBlockEvent))
+        val logEvents = blockSubscriber.onRevertedBlockEvents(listOf(revertedBlockEvent)).map {
+            it.copy(logRecordsToRemove = it.logRecordsToRemove.sortedWith(testLogEventComparator))
+        }
         assertThat(logEvents).isEqualTo(
             listOf(
                 LogEvent(
