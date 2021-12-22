@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.LogEvent
+import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
@@ -15,7 +16,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockBatcher
 import com.rarible.core.apm.withSpan
 import kotlinx.coroutines.async
@@ -28,7 +29,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     private val logService: LogService<L, R, D>,
     private val logEventComparator: LogEventComparator<L, R>,
-    private val logEventPublisher: LogEventPublisher
+    private val logRecordEventPublisher: LogRecordEventPublisher
 ) : BlockListener {
 
     private val logger = LoggerFactory.getLogger(BlockListener::class.java)
@@ -55,20 +56,18 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
             for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
                 logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
                 if (recordsToRemove.isNotEmpty()) {
-                    logEventPublisher.publish(
-                        groupId,
-                        blockEvent.source,
-                        recordsToRemove.sortedWith(logEventComparator)
-                    )
+                    val logRecordEvents = recordsToRemove.sortedWith(logEventComparator)
+                        .map { LogRecordEvent(it, blockEvent.source, true) }
+                    logRecordEventPublisher.publish(groupId, logRecordEvents)
                 }
             }
             for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
                 logger.info("Publishing {} log records to insert for {} of {}", recordsToInsert.size, groupId, blockEvent)
                 if (recordsToInsert.isNotEmpty()) {
-                    logEventPublisher.publish(
+                    logRecordEventPublisher.publish(
                         groupId,
-                        blockEvent.source,
                         recordsToInsert.sortedWith(logEventComparator)
+                            .map { LogRecordEvent(it, blockEvent.source, false) }
                     )
                 }
             }

@@ -5,7 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.DefaultReconciliationFormProvider
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import io.micrometer.core.instrument.MeterRegistry
@@ -68,5 +68,5 @@ class TestEthereumScannerConfiguration {
     @Bean
     @Primary
     @Qualifier("TestEthereumLogEventPublisher")
-    fun testEthereumLogEventPublisher(): LogEventPublisher = TestEthereumLogEventPublisher()
+    fun testEthereumLogEventPublisher(): LogRecordEventPublisher = TestEthereumLogRecordEventPublisher()
 }

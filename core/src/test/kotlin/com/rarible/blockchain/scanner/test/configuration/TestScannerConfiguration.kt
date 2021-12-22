@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.test.configuration
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -79,10 +79,10 @@ class TestScannerConfiguration {
 
     @Bean
     fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher): TestBlockchainScanner {
-        val testLogEventPublisher: LogEventPublisher = mockk()
+        val testLogRecordEventPublisher: LogRecordEventPublisher = mockk()
 
         // Imitates retry case for failed batch processing
-        coEvery { testLogEventPublisher.publish(any(), any(), any()) }
+        coEvery { testLogRecordEventPublisher.publish(any(), any()) }
             .returns(Unit)
             .andThenThrows(IllegalArgumentException("Test failure"))
             .andThen(Unit)
@@ -93,7 +93,7 @@ class TestScannerConfiguration {
             blockMapper = testBlockMapper(),
             blockService = testBlockService(),
             logService = testLogService(),
-            logEventPublisher = testLogEventPublisher,
+            logRecordEventPublisher = testLogRecordEventPublisher,
             logEventComparator = testLogRecordComparator(),
             properties = properties,
             blockEventConsumer = consumer,

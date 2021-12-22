@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
@@ -79,7 +80,7 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     @Qualifier("testEthereumLogEventPublisher")
-    lateinit var testEthereumLogEventPublisher: TestEthereumLogEventPublisher
+    lateinit var testEthereumLogEventPublisher: TestEthereumLogRecordEventPublisher
 
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
@@ -129,7 +130,7 @@ abstract class AbstractIntegrationTest {
         testEthereumLogEventPublisher.publishedLogRecords.clear()
     }
 
-    protected fun verifyPublishedLogEvent(asserter: (LogRecord<*, *>) -> Unit) {
+    protected fun verifyPublishedLogEvent(asserter: (LogRecordEvent<*>) -> Unit) {
         BlockingWait.waitAssert {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).anySatisfy(asserter)
         }

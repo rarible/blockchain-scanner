@@ -16,7 +16,7 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventComparator
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -35,7 +35,7 @@ class EthereumScanner(
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
     blockEventConsumer: BlockEventConsumer,
-    logEventPublisher: LogEventPublisher
+    logRecordEventPublisher: LogRecordEventPublisher
 ) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor>(
     ethereumClient,
     subscribers,
@@ -46,7 +46,7 @@ class EthereumScanner(
     properties,
     blockEventPublisher,
     blockEventConsumer,
-    logEventPublisher,
+    logRecordEventPublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(EthereumScanner::class.java)

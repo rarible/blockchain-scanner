@@ -98,7 +98,6 @@ fun randomTestLogRecord(testLog: TestLog): TestCustomLogRecord {
     )
 }
 
-fun randomTestLog() = randomTestLog(randomString(), randomString())
 fun randomTestLog(topic: String, blockHash: String, status: Log.Status = Log.Status.CONFIRMED): TestLog {
     return TestLog(
         topic = topic,

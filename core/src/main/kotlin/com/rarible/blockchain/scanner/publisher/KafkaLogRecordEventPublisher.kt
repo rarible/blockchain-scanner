@@ -2,20 +2,18 @@ package com.rarible.blockchain.scanner.publisher
 
 import com.rarible.blockchain.scanner.configuration.KafkaProperties
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
-import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.kafka.KafkaMessage
 import com.rarible.core.kafka.RaribleKafkaProducer
 import com.rarible.core.kafka.json.JsonSerializer
 import java.util.*
 
-class KafkaLogEventPublisher(
+class KafkaLogRecordEventPublisher(
     properties: KafkaProperties,
     environment: String,
     blockchain: String,
     service: String
-) : LogEventPublisher {
+) : LogRecordEventPublisher {
 
     private val topicPrefix = getLogTopicPrefix(environment, service, blockchain)
 
@@ -27,22 +25,17 @@ class KafkaLogEventPublisher(
         bootstrapServers = properties.brokerReplicaSet
     )
 
-    override suspend fun publish(groupId: String, source: Source, logRecords: List<LogRecord<*, *>>) {
-        val messages = logRecords.map { toKafkaMessage(it, source) }
+    override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) {
         val topic = getTopic(groupId)
+        val messages = logRecordEvents.map {
+            KafkaMessage(
+                id = UUID.randomUUID().toString(),
+                key = it.record.getKey(),
+                value = it
+            )
+        }
         kafkaProducer.send(messages, topic)
     }
 
     private fun getTopic(groupId: String): String = "$topicPrefix.${groupId}"
-
-    private fun toKafkaMessage(record: LogRecord<*, *>, source: Source): KafkaMessage<LogRecordEvent<*>> {
-        return KafkaMessage(
-            id = UUID.randomUUID().toString(),
-            key = record.getKey(),
-            value = LogRecordEvent(
-                source = source,
-                record = record
-            )
-        )
-    }
 }

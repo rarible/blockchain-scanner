@@ -16,7 +16,7 @@ import com.rarible.blockchain.scanner.flow.service.FlowLogService
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventComparator
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import kotlinx.coroutines.reactor.mono
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
@@ -35,7 +35,7 @@ class FlowBlockchainScanner(
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
     blockEventConsumer: BlockEventConsumer,
-    logEventPublisher: LogEventPublisher
+    logRecordEventPublisher: LogRecordEventPublisher
 ) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowBlock, FlowLog, FlowLogRecord<*>, FlowDescriptor>(
     flowBlockchainClient,
     subscribers,
@@ -46,7 +46,7 @@ class FlowBlockchainScanner(
     properties,
     blockEventPublisher,
     blockEventConsumer,
-    logEventPublisher
+    logRecordEventPublisher
 ) {
 
     @EventListener(ApplicationReadyEvent::class)

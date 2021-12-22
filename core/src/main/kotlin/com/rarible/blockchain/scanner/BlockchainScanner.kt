@@ -18,7 +18,7 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +34,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
     // Autowired beans
     private val blockEventPublisher: BlockEventPublisher,
     private val blockEventConsumer: BlockEventConsumer,
-    logEventPublisher: LogEventPublisher
+    logRecordEventPublisher: LogRecordEventPublisher
 ) : ReconciliationExecutor {
 
     private val retryableClient = RetryableBlockchainClient(blockchainClient, properties.retryPolicy.client)
@@ -54,7 +54,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
                 subscribers = it.value,
                 logService = logService,
                 logEventComparator = logEventComparator,
-                logEventPublisher = logEventPublisher
+                logRecordEventPublisher = logRecordEventPublisher
             )
         }.associateBy({ it.first }, { it.second })
 
