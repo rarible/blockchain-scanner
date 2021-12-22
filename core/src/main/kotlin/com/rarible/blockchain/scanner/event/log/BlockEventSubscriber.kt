@@ -23,7 +23,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     private val logService: LogService<L, R, D>

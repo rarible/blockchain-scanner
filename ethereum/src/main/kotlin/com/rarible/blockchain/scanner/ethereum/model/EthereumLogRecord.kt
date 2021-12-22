@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.common.nowMillis
 import java.time.Instant
 
-abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<EthereumLog, LR> {
+abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<EthereumLog> {
 
     abstract val id: String
     abstract val version: Long?
