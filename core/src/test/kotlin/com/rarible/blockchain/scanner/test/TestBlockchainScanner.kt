@@ -24,7 +24,6 @@ class TestBlockchainScanner(
     blockMapper: TestBlockMapper,
     blockService: TestBlockService,
     logService: TestLogService,
-    logEventComparator: TestLogEventComparator,
     properties: BlockchainScannerProperties,
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
@@ -36,7 +35,7 @@ class TestBlockchainScanner(
     blockMapper,
     blockService,
     logService,
-    logEventComparator,
+    TestLogEventComparator,
     properties,
     blockEventPublisher,
     blockEventConsumer,

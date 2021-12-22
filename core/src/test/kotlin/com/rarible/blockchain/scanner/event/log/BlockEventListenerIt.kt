@@ -24,6 +24,7 @@ import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -115,7 +116,7 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
                     source = Source.BLOCKCHAIN,
                     reverted = true
                 )
-            ).sortedWith(compareBy(testLogEventComparator) { it.record })
+            ).sortedWith(compareBy(TestLogEventComparator) { it.record })
         )
     }
 
@@ -206,7 +207,7 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
         testBlockchainClient,
         subscribers.toList(),
         testLogService,
-        testLogEventComparator,
+        TestLogEventComparator,
         logRecordEventPublisher
     )
 }

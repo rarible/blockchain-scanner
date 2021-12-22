@@ -15,7 +15,6 @@ import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.DefaultTestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.mockk.coEvery
@@ -75,9 +74,6 @@ class TestScannerConfiguration {
     fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 2)
 
     @Bean
-    fun testLogRecordComparator() = DefaultTestLogRecordComparator()
-
-    @Bean
     fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher): TestBlockchainScanner {
         val testLogRecordEventPublisher: LogRecordEventPublisher = mockk()
 
@@ -94,7 +90,6 @@ class TestScannerConfiguration {
             blockService = testBlockService(),
             logService = testLogService(),
             logRecordEventPublisher = testLogRecordEventPublisher,
-            logEventComparator = testLogRecordComparator(),
             properties = properties,
             blockEventConsumer = consumer,
             blockEventPublisher = publisher

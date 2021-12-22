@@ -43,9 +43,6 @@ abstract class AbstractIntegrationTest {
     lateinit var testLogService: TestLogService
 
     @Autowired
-    lateinit var testLogEventComparator: TestLogEventComparator
-
-    @Autowired
     lateinit var properties: TestBlockchainScannerProperties
 
     protected suspend fun findLog(collection: String, id: Long): TestLogRecord<*>? {

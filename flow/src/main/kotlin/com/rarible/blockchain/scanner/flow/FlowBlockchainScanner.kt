@@ -30,7 +30,6 @@ class FlowBlockchainScanner(
     blockMapper: FlowBlockMapper,
     blockService: FlowBlockService,
     logService: FlowLogService,
-    logEveComparator: FlowLogEventComparator,
     properties: BlockchainScannerProperties,
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
@@ -42,7 +41,7 @@ class FlowBlockchainScanner(
     blockMapper,
     blockService,
     logService,
-    logEveComparator,
+    FlowLogEventComparator,
     properties,
     blockEventPublisher,
     blockEventConsumer,

@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class DefaultEthereumLogEventComparatorTest {
+class EthereumLogEventComparatorTest {
 
     @Test
     fun `sort records`() {
@@ -20,7 +20,7 @@ class DefaultEthereumLogEventComparatorTest {
 
         val list = listOf(r1, r2, r3, r4, r5, r6).shuffled()
 
-        val sorted = list.sortedWith(DefaultEthereumLogEventComparator())
+        val sorted = list.sortedWith(EthereumLogEventComparator)
 
         assertThat(sorted[0]).isEqualTo(r6) // pending logs should be first
         assertThat(sorted[1]).isEqualTo(r1)

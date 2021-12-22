@@ -30,7 +30,6 @@ class EthereumScanner(
     blockMapper: EthereumBlockMapper,
     blockService: EthereumBlockService,
     logService: EthereumLogService,
-    logEventComparator: EthereumLogEventComparator,
     properties: BlockchainScannerProperties,
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
@@ -42,7 +41,7 @@ class EthereumScanner(
     blockMapper,
     blockService,
     logService,
-    logEventComparator,
+    EthereumLogEventComparator,
     properties,
     blockEventPublisher,
     blockEventConsumer,

@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -113,7 +114,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
                     testBlockchainClient,
                     it.value,
                     testLogService,
-                    testLogEventComparator,
+                    TestLogEventComparator,
                     logRecordEventPublisher
                 )
             }.associateBy({ it.first }, { it.second })
