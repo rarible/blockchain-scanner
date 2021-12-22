@@ -11,7 +11,7 @@ data class EthereumLog(
      * Hash of the transaction.
      * Note that the transaction may be pending, in which case the [blockHash], [blockNumber] and [logIndex] are `null`.
      */
-    override val transactionHash: String,
+    val transactionHash: String,
 
     /**
      * Status of the log event. Usually, only [Log.Status.CONFIRMED] log events impact business calculations.

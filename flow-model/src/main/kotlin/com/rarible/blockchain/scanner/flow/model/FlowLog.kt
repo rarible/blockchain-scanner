@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import java.time.Instant
 
 data class FlowLog(
-    override val transactionHash: String,
+    val transactionHash: String,
     override val status: Log.Status,
     val eventIndex: Int,
     val eventType: String,

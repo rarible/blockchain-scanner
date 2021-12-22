@@ -5,7 +5,6 @@ package com.rarible.blockchain.scanner.framework.model
  */
 interface Log<L : Log<L>> {
 
-    val transactionHash: String
     val status: Status
 
     enum class Status {

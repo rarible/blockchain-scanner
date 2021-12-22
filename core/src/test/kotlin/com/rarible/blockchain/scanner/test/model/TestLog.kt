@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 
 data class TestLog(
 
-    override val transactionHash: String,
+    val transactionHash: String,
     override val status: Log.Status,
 
     val topic: String,
