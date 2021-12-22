@@ -60,7 +60,7 @@ class BlockEventSubscriberIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `prepare logs saved with corrrect index and minor index`() = runBlocking {
+    fun `prepare logs saved with corrrect index and minor index`() = runBlocking<Unit> {
         val blockEventSubscriber = createBlockSubscriber(TestLogEventSubscriber(testDescriptor1(), 3))
         val block = randomBlockchainBlock()
         val logs = listOf(
