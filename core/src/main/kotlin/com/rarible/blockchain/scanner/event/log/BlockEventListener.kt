@@ -47,17 +47,24 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R
         for (blockEvent in events) {
             val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
             val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
-            for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
-                val toRemoveSorted = toRemoveGroupIdMap.getValue(groupId).sortedWith(logEventComparator)
-                logger.info("Publishing {} log records to remove for {} of {}", toRemoveSorted.size, groupId, blockEvent)
-                if (toRemoveSorted.isNotEmpty()) {
-                    logEventPublisher.publish(groupId, blockEvent.source, toRemoveSorted)
+            for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
+                logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
+                if (recordsToRemove.isNotEmpty()) {
+                    logEventPublisher.publish(
+                        groupId,
+                        blockEvent.source,
+                        recordsToRemove.sortedWith(logEventComparator)
+                    )
                 }
-
-                val toInsertSorted = recordsToInsert.sortedWith(logEventComparator)
-                logger.info("Publishing {} log records to insert for {} of {}", toInsertSorted.size, groupId, blockEvent)
-                if (toInsertSorted.isNotEmpty()) {
-                    logEventPublisher.publish(groupId, blockEvent.source, toInsertSorted)
+            }
+            for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
+                logger.info("Publishing {} log records to insert for {} of {}", recordsToInsert.size, groupId, blockEvent)
+                if (recordsToInsert.isNotEmpty()) {
+                    logEventPublisher.publish(
+                        groupId,
+                        blockEvent.source,
+                        recordsToInsert.sortedWith(logEventComparator)
+                    )
                 }
             }
             logger.info("Sent events for {}", blockEvent)
