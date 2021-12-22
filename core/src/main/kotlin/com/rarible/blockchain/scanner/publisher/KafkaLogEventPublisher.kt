@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.publisher
 import com.rarible.blockchain.scanner.configuration.KafkaProperties
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.kafka.KafkaMessage
@@ -34,13 +33,7 @@ class KafkaLogEventPublisher(
         kafkaProducer.send(messages, topic)
     }
 
-    private fun getTopic(descriptor: Descriptor): String {
-        return getTopic(descriptor.groupId)
-    }
-
-    private fun getTopic(groupId: String): String {
-        return "$topicPrefix.${groupId}"
-    }
+    private fun getTopic(groupId: String): String = "$topicPrefix.${groupId}"
 
     private fun toKafkaMessage(record: LogRecord<*, *>, source: Source): KafkaMessage<LogRecordEvent<*>> {
         return KafkaMessage(
