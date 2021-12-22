@@ -12,7 +12,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * For example, each subscriber has it own collection/table to store data. In such case descriptor can provide
  * name of the collection current operation should be executed to.
  */
-interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
+interface LogService<L : Log, R : LogRecord<L, *>, D : Descriptor> {
 
     /**
      * Delete LogRecord from persistent storage.

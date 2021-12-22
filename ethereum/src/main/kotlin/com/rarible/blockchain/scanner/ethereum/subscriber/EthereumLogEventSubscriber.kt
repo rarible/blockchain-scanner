@@ -5,7 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.core.common.nowMillis
 
@@ -39,7 +39,7 @@ abstract class EthereumLogEventSubscriber :
             address = ethLog.address(),
             topic = ethLog.topics().head(),
             transactionHash = ethLog.transactionHash().toString(),
-            status = Log.Status.CONFIRMED,
+            status = EthereumLogStatus.CONFIRMED,
             blockHash = ethLog.blockHash(),
             blockNumber = ethLog.blockNumber().toLong(),
             blockTimestamp = block.timestamp,

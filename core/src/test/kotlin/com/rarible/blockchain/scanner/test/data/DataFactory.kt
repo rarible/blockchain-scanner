@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
@@ -14,6 +13,7 @@ import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.core.common.nowMillis
+import com.rarible.core.test.data.randomWord
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
 import kotlin.math.abs
@@ -78,12 +78,8 @@ fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
 }
 
 
-fun randomTestLogRecord(
-    topic: String,
-    blockHash: String,
-    status: Log.Status = Log.Status.CONFIRMED
-): TestCustomLogRecord {
-    val testLog = randomTestLog(topic, blockHash, status)
+fun randomTestLogRecord(topic: String, blockHash: String): TestCustomLogRecord {
+    val testLog = randomTestLog(topic, blockHash)
     return randomTestLogRecord(testLog)
 }
 
@@ -98,14 +94,13 @@ fun randomTestLogRecord(testLog: TestLog): TestCustomLogRecord {
     )
 }
 
-fun randomTestLog(topic: String, blockHash: String, status: Log.Status = Log.Status.CONFIRMED): TestLog {
+fun randomTestLog(topic: String, blockHash: String): TestLog {
     return TestLog(
+        transactionHash = randomWord(),
         topic = topic,
-        transactionHash = randomString(),
         extra = randomString(16),
         visible = true,
         minorLogIndex = randomPositiveInt(),
-        status = status,
         blockHash = blockHash,
         blockNumber = randomPositiveLong(),
         logIndex = randomPositiveInt(),

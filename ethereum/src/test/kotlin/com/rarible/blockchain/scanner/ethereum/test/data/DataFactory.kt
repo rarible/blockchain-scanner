@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
@@ -32,7 +32,7 @@ fun randomLogRecord(
     topic: Word,
     blockHash: Word?,
     transactionHash: String = randomLogHash(),
-    status: Log.Status = Log.Status.CONFIRMED
+    status: EthereumLogStatus = EthereumLogStatus.CONFIRMED
 ) = randomLogRecord(randomLog(transactionHash, topic, blockHash, status = status))
 
 fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
@@ -55,7 +55,7 @@ fun randomLog(
     topic: Word,
     blockHash: Word,
     address: Address = randomAddress(),
-    status: Log.Status = Log.Status.CONFIRMED
+    status: EthereumLogStatus = EthereumLogStatus.CONFIRMED
 ) = randomLog(randomLogHash(), topic, blockHash, address, status)
 
 fun randomLog(
@@ -63,7 +63,7 @@ fun randomLog(
     topic: Word,
     blockHash: Word?,
     address: Address = randomAddress(),
-    status: Log.Status = Log.Status.CONFIRMED
+    status: EthereumLogStatus = EthereumLogStatus.CONFIRMED
 ): EthereumLog {
     return EthereumLog(
         transactionHash = transactionHash,

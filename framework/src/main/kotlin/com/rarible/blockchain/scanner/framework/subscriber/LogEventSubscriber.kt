@@ -15,14 +15,10 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  */
 
 // Inside of group logs should be processed together
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
+interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor> {
 
     /**
-     * This descriptor will be used in Blockchain scanner implementation to define how to build various queries and
-     * where to store your custom data. It will be passed to implementation of
-     * [LogService][com.rarible.blockchain.scanner.framework.service.LogService],
-     * [PendingLogService][com.rarible.blockchain.scanner.framework.service.PendingLogService],
-     * [BlockchainClient][com.rarible.blockchain.scanner.framework.client.BlockchainClient].
+     * Descriptor used to define where to store data and how to serialize/deserialize it.
      */
     fun getDescriptor(): D
 

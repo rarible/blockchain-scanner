@@ -10,4 +10,3 @@ abstract class TestLogRecord<LR : TestLogRecord<LR>> : LogRecord<TestLog, LR> {
 
     abstract fun withIdAndVersion(id: Long, version: Long?): LR
 }
-

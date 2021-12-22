@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
@@ -21,7 +20,7 @@ data class ReversedEthereumLogRecord(
     override val version: Long? = null,
 
     val transactionHash: String,
-    val status: Log.Status,
+    val status: EthereumLogStatus,
     val topic: Word,
 
     override val minorLogIndex: Int,

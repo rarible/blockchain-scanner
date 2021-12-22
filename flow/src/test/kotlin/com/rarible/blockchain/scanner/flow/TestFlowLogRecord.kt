@@ -9,8 +9,5 @@ data class TestFlowLogRecord(
     override val log: FlowLog,
     val data: String
 ) : FlowLogRecord<TestFlowLogRecord>() {
-    override fun withLog(log: FlowLog): FlowLogRecord<TestFlowLogRecord> = copy(log = log)
-    override fun getKey(): String {
-        return log.eventType
-    }
+    override fun getKey(): String = log.eventType
 }

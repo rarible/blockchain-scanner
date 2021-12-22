@@ -19,4 +19,6 @@ abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<Ethereu
     abstract val minorLogIndex: Int
 
     abstract fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant = nowMillis()): LR
+
+    abstract fun withLog(log: EthereumLog): LR
 }

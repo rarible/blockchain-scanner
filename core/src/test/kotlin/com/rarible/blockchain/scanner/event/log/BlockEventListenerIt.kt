@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -94,9 +93,9 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
         val revertedBlock = randomBlockchainBlock()
         val revertedBlockEvent = RevertedBlockEvent(Source.BLOCKCHAIN, revertedBlock.number, revertedBlock.hash)
 
-        val log1 = randomTestLogRecord(topic = topic, blockHash = revertedBlock.hash, status = Log.Status.CONFIRMED)
-        val log2 = randomTestLogRecord(topic = topic, blockHash = revertedBlock.hash, status = Log.Status.CONFIRMED)
-        val log3 = randomTestLogRecord(topic = topic, blockHash = randomBlockHash(), status = Log.Status.CONFIRMED)
+        val log1 = randomTestLogRecord(topic = topic, blockHash = revertedBlock.hash)
+        val log2 = randomTestLogRecord(topic = topic, blockHash = revertedBlock.hash)
+        val log3 = randomTestLogRecord(topic = topic, blockHash = randomBlockHash())
 
         testLogRepository.saveAll(collection, log1, log2, log3)
 
@@ -107,12 +106,12 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
         assertThat(publishedEvents).isEqualTo(
             listOf(
                 LogRecordEvent(
-                    record = log1.copy(version = 0).withLog(log1.log.copy(status = Log.Status.REVERTED)),
+                    record = log1.copy(version = 0),
                     source = Source.BLOCKCHAIN,
                     reverted = true
                 ),
                 LogRecordEvent(
-                    record = log2.copy(version = 0).withLog(log2.log.copy(status = Log.Status.REVERTED)),
+                    record = log2.copy(version = 0),
                     source = Source.BLOCKCHAIN,
                     reverted = true
                 )

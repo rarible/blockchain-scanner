@@ -23,7 +23,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     private val logService: LogService<L, R, D>
@@ -71,9 +71,6 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>,
         return events.map { event ->
             val logsToRevert = withSpan("revert") {
                 logService.prepareLogsToRevertOnRevertedBlock(descriptor, event.hash).toList()
-            }.map {
-                @Suppress("UNCHECKED_CAST")
-                it.withLog(it.log.withStatus(Log.Status.REVERTED)) as R
             }.toList()
             logger.info(
                 "Prepared {} logs to revert for subscriber {} and RevertedBlockEvent {}",

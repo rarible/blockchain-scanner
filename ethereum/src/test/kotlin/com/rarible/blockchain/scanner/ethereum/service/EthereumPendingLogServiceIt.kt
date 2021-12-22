@@ -14,7 +14,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.core.common.nowMillis
 import io.mockk.every
 import io.mockk.mockk
@@ -47,7 +47,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
                 topic = topic,
                 blockHash = null,
                 transactionHash = transactionHash.toString(),
-                status = Log.Status.PENDING
+                status = EthereumLogStatus.PENDING
             )
         )
         listOf(
@@ -57,7 +57,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
                     topic = topic,
                     blockHash = null,
                     transactionHash = transactionHash.toString(),
-                    status = Log.Status.CONFIRMED
+                    status = EthereumLogStatus.CONFIRMED
                 )
             ),
             // another transaction hash
@@ -66,7 +66,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
                     topic = topic,
                     blockHash = null,
                     transactionHash = randomLogHash(),
-                    status = Log.Status.PENDING
+                    status = EthereumLogStatus.PENDING
                 )
             ),
         )
@@ -86,7 +86,7 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
             logs = listOf(blockchainLog)
         )
         val pendingLogs = ethereumPendingLogService.getInactivePendingLogs(fullBlock, descriptor)
-        assertThat(pendingLogs).isEqualTo(listOf(pendingRecord.withLog(pendingRecord.log.copy(status = Log.Status.INACTIVE))))
+        assertThat(pendingLogs).isEqualTo(listOf(pendingRecord.withLog(pendingRecord.log.copy(status = EthereumLogStatus.INACTIVE))))
     }
 
     @Test
@@ -94,21 +94,21 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
         val manyHoursAgo = nowMillis().minus(24, ChronoUnit.HOURS)
         val expired = saveLog(
             collection,
-            randomLogRecord(topic, randomBlockHash(), status = Log.Status.PENDING)
+            randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.PENDING)
                 .let { it.withLog(it.log.copy(createdAt = manyHoursAgo, updatedAt = manyHoursAgo)) }
         )
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = Log.Status.PENDING))
+        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.PENDING))
         saveLog(
             collection, randomLogRecord(
                 randomWord(),
                 randomBlockHash(),
-                status = Log.Status.PENDING
+                status = EthereumLogStatus.PENDING
             )
         )
         val fullBlock = mockk<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
             every { logs } returns emptyList()
         }
         val expiredLogs = ethereumPendingLogService.getInactivePendingLogs(fullBlock, descriptor)
-        assertThat(expiredLogs).isEqualTo(listOf(expired.withLog(expired.log.copy(status = Log.Status.DROPPED))))
+        assertThat(expiredLogs).isEqualTo(listOf(expired.withLog(expired.log.copy(status = EthereumLogStatus.DROPPED))))
     }
 }

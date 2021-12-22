@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
@@ -41,12 +41,12 @@ class EthereumPendingLogService(
         val toConfirmLogs = pendingLogs.filter { it.log.transactionHash in confirmedTransactions }
 
         // Logs that have received confirmation in this new block (mark them as INACTIVE).
-        val confirmedLogs = toConfirmLogs.map { it.withLog(it.log.copy(status = Log.Status.INACTIVE)) }
+        val confirmedLogs = toConfirmLogs.map { it.withLog(it.log.copy(status = EthereumLogStatus.INACTIVE)) }
 
         // Logs that have not received confirmation in max pending time (mark them as DROPPED).
         val expiredLogs = (pendingLogs - confirmedLogs)
             .filter { Duration.between(it.updatedAt, nowMillis()) > maxPendingLogDuration }
-            .map { it.withLog(it.log.copy(status = Log.Status.DROPPED)) }
+            .map { it.withLog(it.log.copy(status = EthereumLogStatus.DROPPED)) }
         logger.info(
             "Found {} confirmed logs and {} dropped logs for {}",
             confirmedLogs.size,

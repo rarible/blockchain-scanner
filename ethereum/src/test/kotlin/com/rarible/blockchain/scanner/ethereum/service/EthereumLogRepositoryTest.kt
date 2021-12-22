@@ -6,7 +6,7 @@ import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -32,10 +32,10 @@ class EthereumLogRepositoryTest : AbstractIntegrationTest() {
     fun `find pending logs`() = runBlocking {
         val anotherCollection = testBidSubscriber.getDescriptor().collection
 
-        val pendingLog = saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = Log.Status.PENDING))
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = Log.Status.CONFIRMED))
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = Log.Status.REVERTED))
-        saveLog(anotherCollection, randomLogRecord(topic, randomBlockHash(), status = Log.Status.PENDING))
+        val pendingLog = saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.PENDING))
+        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.CONFIRMED))
+        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.REVERTED))
+        saveLog(anotherCollection, randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.PENDING))
 
         val pendingLogs = ethereumLogRepository.findPendingLogs(
             entityType = descriptor.entityType,

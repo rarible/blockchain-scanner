@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.core.common.optimisticLock
 import io.daonomic.rpc.domain.Word
@@ -87,5 +88,5 @@ class EthereumLogService(
         collection = descriptor.collection,
         blockHash = Word.apply(revertedBlockHash),
         topic = descriptor.ethTopic
-    ).toList()
+    ).toList().map { it.withLog(it.log.copy(status = EthereumLogStatus.REVERTED)) }
 }

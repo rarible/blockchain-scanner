@@ -12,13 +12,11 @@ import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.apm.withTransaction
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
-class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
+class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log, R : LogRecord<L, *>, D : Descriptor>(
     private val blockService: BlockService<B>,
     private val blockEventListeners: Map<String, BlockEventListener<BB, BL, L, R, D>>
 ) {

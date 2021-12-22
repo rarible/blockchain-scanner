@@ -14,10 +14,6 @@ data class TestCustomLogRecord(
     val customData: String
 ) : TestLogRecord<TestCustomLogRecord>() {
 
-    override fun withLog(log: TestLog): TestCustomLogRecord {
-        return copy(log = log)
-    }
-
     override fun withIdAndVersion(id: Long, version: Long?): TestCustomLogRecord {
         return copy(id = id, version = version)
     }

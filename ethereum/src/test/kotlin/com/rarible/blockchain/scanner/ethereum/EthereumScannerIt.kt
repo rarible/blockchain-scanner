@@ -11,7 +11,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
 import com.rarible.core.common.nowMillis
@@ -61,7 +61,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(allLogs).hasSize(1)
 
             val testRecord = allLogs.single() as ReversedEthereumLogRecord
-            assertThat(testRecord.log.status).isEqualTo(Log.Status.CONFIRMED)
+            assertThat(testRecord.log.status).isEqualTo(EthereumLogStatus.CONFIRMED)
             assertThat(testRecord.log.blockTimestamp).isEqualTo(receipt.getTimestamp().epochSecond)
 
             val data = testRecord.data as TestEthereumLogData
@@ -119,7 +119,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(logRecord.reverted).isTrue()
             assertThat(logRecord.record).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
                 assertThat(it.id).isEqualTo(pendingLog.id)
-                assertThat(it.log.status).isEqualTo(Log.Status.INACTIVE)
+                assertThat(it.log.status).isEqualTo(EthereumLogStatus.INACTIVE)
             }
         }
     }
@@ -144,7 +144,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             address = contract.address(),
             topic = TransferEvent.id(),
             transactionHash = transactionHash,
-            status = Log.Status.PENDING,
+            status = EthereumLogStatus.PENDING,
             index = 0,
             minorLogIndex = 0,
             visible = true,

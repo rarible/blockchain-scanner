@@ -14,9 +14,9 @@ data class EthereumLog(
     val transactionHash: String,
 
     /**
-     * Status of the log event. Usually, only [Log.Status.CONFIRMED] log events impact business calculations.
+     * Status of the log event. Usually, only [EthereumLogStatus.CONFIRMED] log events impact business calculations.
      */
-    override val status: Log.Status,
+    val status: EthereumLogStatus,
 
     /**
      * Address of the smart contract that produced this log event.
@@ -67,10 +67,4 @@ data class EthereumLog(
     val createdAt: Instant = Instant.EPOCH,
     val updatedAt: Instant = Instant.EPOCH
 
-) : Log<EthereumLog> {
-
-    override fun withStatus(status: Log.Status): EthereumLog {
-        return this.copy(status = status)
-    }
-
-}
+) : Log

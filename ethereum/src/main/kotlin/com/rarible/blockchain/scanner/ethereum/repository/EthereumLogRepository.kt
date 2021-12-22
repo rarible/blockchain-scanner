@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
@@ -13,9 +13,7 @@ import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.remove
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
 import scalether.domain.Address
 
 @Component
@@ -68,7 +66,7 @@ class EthereumLogRepository(
     ): Flow<EthereumLogRecord<*>> {
         val criteria = Criteria
             .where("topic").isEqualTo(topic)
-            .and("status").`is`(Log.Status.PENDING)
+            .and("status").`is`(EthereumLogStatus.PENDING)
 
         return mongo.find(
             Query(criteria),

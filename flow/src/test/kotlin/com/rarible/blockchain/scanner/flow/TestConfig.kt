@@ -40,7 +40,6 @@ class TestConfig {
             val record = TestFlowLogRecord(
                 log = FlowLog(
                     transactionHash = log.hash,
-                    status = Log.Status.CONFIRMED,
                     timestamp = Instant.ofEpochSecond(block.timestamp),
                     blockHeight = block.number,
                     blockHash = block.hash,
