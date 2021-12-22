@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -17,16 +16,11 @@ import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 abstract class AbstractIntegrationTest {
 
     @Autowired
@@ -42,21 +36,15 @@ abstract class AbstractIntegrationTest {
     lateinit var testBlockService: TestBlockService
 
     @Autowired
-    lateinit var testLogMapper: TestLogMapper
-
-    @Autowired
     lateinit var testLogRepository: TestLogRepository
 
     @Autowired
     lateinit var testLogService: TestLogService
 
     @Autowired
-    lateinit var testLogEventComparator: TestLogEventComparator
-
-    @Autowired
     lateinit var properties: TestBlockchainScannerProperties
 
-    protected suspend fun findLog(collection: String, id: Long): TestLogRecord<*>? {
+    protected suspend fun findLog(collection: String, id: Long): TestLogRecord? {
         return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
     }
 
@@ -79,6 +67,7 @@ abstract class AbstractIntegrationTest {
         return block
     }
 
+
     protected fun newBlockEvent(
         block: TestOriginalBlock,
         source: Source = Source.BLOCKCHAIN
@@ -93,20 +82,19 @@ abstract class AbstractIntegrationTest {
         return RevertedBlockEvent(source, block.number, block.hash)
     }
 
-    protected suspend fun scanOnce(blockScanner: BlockScanner<*, *>, publisher: BlockEventPublisher) {
+    protected suspend fun BlockScanner<*, *>.scanOnce(publisher: BlockEventPublisher) {
         try {
-            blockScanner.scan(publisher)
+            scan(publisher)
+        } catch (e: Exception) {
+            // Ignore the flow completed.
+        }
+    }
+
+    protected suspend fun BlockchainScanner<*, *, *, *, *, *>.scanOnce() {
+        try {
+            scan()
         } catch (e: IllegalStateException) {
             // Do nothing, in prod there will be infinite attempts count
         }
     }
-
-    protected suspend fun scanOnce(blockchainScanner: BlockchainScanner<*, *, *, *, *, *>) {
-        try {
-            blockchainScanner.scan()
-        } catch (e: IllegalStateException) {
-            // Do nothing, in prod there will be infinite attempts count
-        }
-    }
-
 }

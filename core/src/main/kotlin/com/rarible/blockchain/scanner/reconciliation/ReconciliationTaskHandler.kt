@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.task.RunTask
 import com.rarible.core.task.TaskHandler
 import kotlinx.coroutines.flow.Flow
@@ -26,23 +25,21 @@ class ReconciliationTaskHandler(
 
     override fun getAutorunParams(): List<RunTask> {
         if (jobProperties.enabled) {
-            return reconciliationExecutor.getSubscriberGroupIds().map {
-                logger.info("Creating reconciliation task for descriptor with id '{}'", it)
-                RunTask(it, null)
+            return reconciliationExecutor.getDescriptors().map { it.groupId }.toSet().map { groupId ->
+                logger.info("Creating reconciliation task for group {}", groupId)
+                RunTask(groupId, null)
             }
         }
         logger.info("Reconciliation disabled, no tasks will be launched")
         return emptyList()
     }
 
-    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    override fun runLongTask(from: Long?, subscriberGroupId: String): Flow<Long> = flatten {
+    override fun runLongTask(from: Long?, param: String): Flow<Long> =
         reconciliationExecutor.reconcile(
-            subscriberGroupId,
-            from ?: fromProvider.initialFrom(subscriberGroupId),
-            jobProperties.batchSize
+            groupId = param,
+            from = from ?: fromProvider.initialFrom(param),
+            batchSize = jobProperties.batchSize
         ).map { it.first }
-    }
 
     companion object {
         const val RECONCILIATION = "RECONCILIATION"

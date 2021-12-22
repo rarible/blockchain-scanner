@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.test.repository
 
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
@@ -15,7 +14,7 @@ import reactor.core.publisher.Mono
 class TestLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-    fun delete(collection: String, event: TestLogRecord<*>): Mono<TestLogRecord<*>> {
+    fun delete(collection: String, event: TestLogRecord): Mono<TestLogRecord> {
         return mongo.remove(event, collection).thenReturn(event)
     }
 
@@ -26,45 +25,39 @@ class TestLogRepository(
         blockHash: String,
         logIndex: Int,
         minorLogIndex: Int
-    ): TestLogRecord<*>? {
+    ): TestLogRecord? {
         val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
             .and("log.blockHash").`is`(blockHash)
             .and("log.logIndex").`is`(logIndex)
             .and("log.minorLogIndex").`is`(minorLogIndex)
-        return mongo.findOne(Query(criteria), entityType, collection).awaitFirstOrNull() as TestLogRecord<*>?
+        return mongo.findOne(Query(criteria), entityType, collection).awaitFirstOrNull() as TestLogRecord?
     }
 
-    suspend fun save(collection: String, event: TestLogRecord<*>): TestLogRecord<*> {
+    suspend fun save(collection: String, event: TestLogRecord): TestLogRecord {
         return mongo.save(event, collection).awaitFirst()
     }
 
-    suspend fun saveAll(collection: String, vararg events: TestLogRecord<*>) {
+    suspend fun saveAll(collection: String, vararg events: TestLogRecord) {
         events.forEach {
             mongo.save(it, collection).awaitFirstOrNull()
         }
     }
 
-    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: Long): TestLogRecord<*>? {
-        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as TestLogRecord<*>?
+    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: Long): TestLogRecord? {
+        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as TestLogRecord?
     }
 
-    fun findAndDelete(
+    fun find(
         entityType: Class<*>,
         collection: String,
         blockHash: String,
-        topic: String,
-        status: Log.Status? = null
-    ): Flux<TestLogRecord<*>> {
+        topic: String
+    ): Flux<TestLogRecord> {
         val query = Query().apply {
             addCriteria(Criteria.where("log.blockHash").isEqualTo(blockHash))
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
-            status?.let { addCriteria(Criteria.where("log.status").isEqualTo(it)) }
         }
-
-        return mongo.find(query, entityType, collection)
-            .flatMap {
-                delete(collection, it as TestLogRecord<*>).thenReturn(it)
-            } as Flux<TestLogRecord<*>>
+        return mongo.find(query, entityType, collection) as Flux<TestLogRecord>
     }
 
 }

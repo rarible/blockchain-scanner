@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 
@@ -101,11 +100,6 @@ fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(
     hash = blockhash,
     parentHash = previousBlockhash,
     timestamp = blockTime
-)
-
-fun SolanaTransactionDto.toMetaModel() = TransactionMeta(
-    hash = transaction.signatures.first(),
-    blockHash = transaction.message.recentBlockhash
 )
 
 fun SolanaTransactionDto.toModel(): List<SolanaBlockEvent> {

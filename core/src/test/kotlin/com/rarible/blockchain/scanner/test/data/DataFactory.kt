@@ -5,11 +5,6 @@ import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
-import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
@@ -19,6 +14,7 @@ import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.core.common.nowMillis
+import com.rarible.core.test.data.randomWord
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
 import kotlin.math.abs
@@ -50,29 +46,6 @@ fun defaultTestProperties(): TestBlockchainScannerProperties {
     )
 }
 
-fun randomNewBlockEvent(number: Long): NewBlockEvent {
-    return NewBlockEvent(
-        source = Source.BLOCKCHAIN,
-        number = number,
-        hash = randomBlockHash()
-    )
-}
-
-fun randomReindexBlockEvent(number: Long): ReindexBlockEvent {
-    return ReindexBlockEvent(
-        source = Source.BLOCKCHAIN,
-        number = number
-    )
-}
-
-fun randomRevertedBlockEvent(number: Long): RevertedBlockEvent {
-    return RevertedBlockEvent(
-        source = Source.BLOCKCHAIN,
-        number = number,
-        hash = randomBlockHash()
-    )
-}
-
 fun randomBlockchainBlock() = TestBlockchainBlock(randomOriginalBlock())
 
 fun randomOriginalBlock() = randomOriginalBlock(randomPositiveLong())
@@ -88,13 +61,18 @@ fun randomOriginalBlock(hash: String, number: Long, parentHash: String?): TestOr
     )
 }
 
-fun randomBlockchainLog(block: BlockchainBlock, topic: String) = TestBlockchainLog(randomOriginalLog(block.hash, topic))
+fun randomBlockchainLog(
+    block: BlockchainBlock,
+    topic: String,
+    index: Int = randomPositiveInt()
+) = TestBlockchainLog(randomOriginalLog(block.hash, topic), index = index)
 
 fun randomOriginalLog(block: TestOriginalBlock, topic: String) = randomOriginalLog(block.hash, topic)
 fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
     return TestOriginalLog(
         transactionHash = randomLogHash(),
         blockHash = blockHash,
+        blockNumber = randomPositiveLong(),
         testExtra = randomString(16),
         logIndex = randomInt(),
         topic = topic
@@ -102,23 +80,8 @@ fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
 }
 
 
-fun randomTestLogRecord() = randomTestLogRecord(randomString(), randomString())
-fun randomTestLogRecord(
-    topic: String,
-    blockHash: String,
-    status: Log.Status = Log.Status.CONFIRMED
-): TestCustomLogRecord {
-    val testLog = randomTestLog(topic, blockHash, status)
-    return randomTestLogRecord(testLog)
-}
-
-fun randomTestLogRecord(log: TestOriginalLog, status: Log.Status): TestCustomLogRecord {
-    val testLog = randomTestLog().copy(
-        transactionHash = log.transactionHash,
-        blockHash = log.blockHash,
-        status = status,
-        topic = log.topic
-    )
+fun randomTestLogRecord(topic: String, blockHash: String): TestCustomLogRecord {
+    val testLog = randomTestLog(topic, blockHash)
     return randomTestLogRecord(testLog)
 }
 
@@ -133,16 +96,15 @@ fun randomTestLogRecord(testLog: TestLog): TestCustomLogRecord {
     )
 }
 
-fun randomTestLog() = randomTestLog(randomString(), randomString())
-fun randomTestLog(topic: String, blockHash: String, status: Log.Status = Log.Status.CONFIRMED): TestLog {
+fun randomTestLog(topic: String, blockHash: String): TestLog {
     return TestLog(
+        transactionHash = randomWord(),
         topic = topic,
-        transactionHash = randomString(),
         extra = randomString(16),
         visible = true,
         minorLogIndex = randomPositiveInt(),
-        status = status,
         blockHash = blockHash,
+        blockNumber = randomPositiveLong(),
         logIndex = randomPositiveInt(),
         index = randomPositiveInt()
     )

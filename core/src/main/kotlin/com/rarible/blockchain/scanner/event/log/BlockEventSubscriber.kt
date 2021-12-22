@@ -5,136 +5,122 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.blockchain.scanner.util.logTime
+import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
-@FlowPreview
-@ExperimentalCoroutinesApi
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
-    logMapper: LogMapper<BB, BL, L>,
     private val logService: LogService<L, R, D>
 ) {
 
     private val logger = LoggerFactory.getLogger(subscriber.javaClass)
 
-    private val logHandler = LogEventHandler(subscriber, logMapper, logService)
-
-    val descriptor = subscriber.getDescriptor()
+    private val descriptor = subscriber.getDescriptor()
     private val name = subscriber.javaClass.simpleName
 
-    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): Map<BlockEvent, List<R>> {
-        // Fetching Logs by batch of events in background
-        val futureLogs = coroutineScope { async { getLogEvents(events) } }
-        // While Logs are fetching, updating pending logs
-        val pending = events.associateBy(
-            { it }, { beforeHandleNewBlock(it) }
-        )
-        val fetchedLogs = futureLogs.await()
-
-        // Ordering LogEvents by order of incoming events
-        return events.associateBy({ it }, { event ->
-            val beforeHandleLogs = pending.getOrDefault(event, emptyList())
-            val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
+    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): List<LogEvent<R, D>> {
+        val blockLogs = getBlockLogs(events)
+        return events.mapNotNull { event ->
+            val fullBlock = blockLogs[event] ?: return@mapNotNull null
+            val logRecordsToInsert = prepareLogsToInsert(fullBlock)
+            val logRecordsToRevert = logService.prepareLogsToRevertOnNewBlock(descriptor, fullBlock)
             logger.info(
-                "NewBlockEvent [{}] handled for subscriber {}, {} pending logs and {} new logs has been gathered",
-                event, name, beforeHandleLogs.size, newLogs.size
+                "Prepared {} new logs and {} logs to remove for {} of {}",
+                logRecordsToInsert.size,
+                logRecordsToRevert.size,
+                name,
+                event,
             )
-            beforeHandleLogs + newLogs
-        })
+            LogEvent(
+                blockEvent = event,
+                descriptor = descriptor,
+                logRecordsToInsert = logRecordsToInsert,
+                logRecordsToRemove = logRecordsToRevert
+            )
+        }
     }
 
-    suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): Map<BlockEvent, List<R>> {
-        return events.associateBy({ it }, { event ->
-            val reverted = revert(event)
-            logger.info(
-                "RevertedBlockEvent [{}] handled for subscriber {}, {} reverted logs has been gathered",
-                event, name, reverted.size
-            )
-            reverted
-        })
+    suspend fun prepareLogsToInsert(fullBlock: FullBlock<BB, BL>): List<R> {
+        val block = fullBlock.block
+        val logs = fullBlock.logs
+        if (logs.isEmpty()) {
+            logger.info("No logs in the full block {} for {}", block, name)
+            return emptyList()
+        }
+        logger.info("[{}] Preparing log event records for the full block {}", name, block)
+        return logs.flatMap { subscriber.getEventRecords(block, it) }
     }
 
-    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): Map<BlockEvent, List<R>> {
-        val fetchedLogs = getLogEvents(events)
-        return events.associateBy({ it }, { event ->
-            val newLogs = fetchedLogs[event]?.let { processLogs(it) } ?: emptyList()
+    suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): List<LogEvent<R, D>> {
+        return events.map { event ->
+            val logsToRevert = withSpan("revert") {
+                logService.prepareLogsToRevertOnRevertedBlock(descriptor, event.hash).toList()
+            }.toList()
             logger.info(
-                "ReindexBlockEvent [{}] handled for subscriber {}, {} reindexed logs has been gathered",
+                "Prepared {} logs to revert for subscriber {} and RevertedBlockEvent {}",
+                logsToRevert.size, name, event
+            )
+            LogEvent(
+                blockEvent = event,
+                descriptor = descriptor,
+                logRecordsToInsert = emptyList(),
+                logRecordsToRemove = logsToRevert
+            )
+        }
+    }
+
+    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): List<LogEvent<R, D>> {
+        val blockLogs = getBlockLogs(events)
+        return events.mapNotNull { event ->
+            val fullBlock = blockLogs[event] ?: return@mapNotNull null
+            val newLogs = prepareLogsToInsert(fullBlock)
+            logger.info(
+                "ReindexBlockEvent [{}] handled for subscriber {}, {} re-indexed logs has been gathered",
                 event, name, newLogs.size
             )
-            newLogs
-        })
-    }
-
-    private suspend fun revert(event: RevertedBlockEvent): List<R> {
-        val reverted = logTime("logHandler.revert [${event.number}]") {
-            withSpan("revert") {
-                logHandler.revert(event)
-            }
-        }
-        return reverted
-    }
-
-    private suspend fun beforeHandleNewBlock(event: NewBlockEvent): List<R> {
-        val pending = logTime("logService.beforeHandleNewBlock [${event.number}]") {
-            withSpan("markInactive", "db") {
-                logService.beforeHandleNewBlock(descriptor, event.hash)
-            }
-        }
-        return pending.toList()
-    }
-
-    private suspend fun processLogs(fullBlock: FullBlock<BB, BL>): List<R> {
-        return logTime("logHandler::handleLogs [${fullBlock.block.number}]") {
-            logHandler.handleLogs(fullBlock)
+            LogEvent(
+                blockEvent = event,
+                descriptor = descriptor,
+                logRecordsToInsert = newLogs,
+                logRecordsToRemove = emptyList()
+            )
         }
     }
 
-    private suspend fun getLogEvents(events: List<BlockEvent>): Map<BlockEvent, FullBlock<BB, BL>> = coroutineScope {
+    private suspend fun getBlockLogs(events: List<BlockEvent>): Map<BlockEvent, FullBlock<BB, BL>> = coroutineScope {
         val blockNumbers = events.map { it.number }
         val blocksByNumber = events.associateBy { it.number }
 
         // Ideally, we should have here just one range, since events of blocks are ordered in Kafka
-        val ranges = BlockRanges.toRanges(blockNumbers)
-        logger.info("Searching for LogEvents in Blocks {} (ranges={})", blockNumbers, ranges)
+        val blockRanges = BlockRanges.toRanges(blockNumbers)
+        logger.info("Searching for {} logs in block ranges {}", name, blockRanges)
 
-        val logEvents = logTime("blockchainClient::getBlockEvents") {
-            ranges.map { range ->
-                async {
-                    withSpan("getBlockEvents", "network") {
-                        val result = blockchainClient.getBlockEvents(descriptor, range).toList()
-                        logger.info("Found {} LogEvents for subscriber {} in Block range {}", result.size, name, range)
-                        result
-                    }
+        blockRanges.map { range ->
+            async {
+                withSpan("getBlockLogs", SpanType.EXT) {
+                    val blockLogs = blockchainClient.getBlockLogs(descriptor, range).toList()
+                    logger.info("Found {} logs for {} in range {}", blockLogs.size, name, range)
+                    blockLogs
                 }
-            }.awaitAll().flatten()
-        }
-        logEvents.associateBy { blocksByNumber[it.block.number]!! }
+            }
+        }.awaitAll().flatten().associateBy { blocksByNumber.getValue(it.block.number) }
     }
 
-    override fun toString(): String {
-        return subscriber::class.java.name + ":[${subscriber.getDescriptor()}]"
-    }
+    override fun toString(): String = subscriber::class.java.name + ":[${subscriber.getDescriptor()}]"
 }
-
-
-

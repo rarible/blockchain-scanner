@@ -2,49 +2,42 @@ package com.rarible.blockchain.scanner.test.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 
 class TestBlockchainClient(
-    data: TestBlockchainData
+    private val data: TestBlockchainData
 ) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
 
     private val blocksByNumber = data.blocks.associateBy { it.number }
-    private val logs = data.logs
+    private val blocksByHash = data.blocks.associateBy { it.hash }
     private val logsByBlock = data.logs.filter { it.blockHash != null }.groupBy { it.blockHash }
 
-    override val newBlocks: Flow<TestBlockchainBlock> =
-        data.newBlocks.asFlow().map { TestBlockchainBlock(it) }
+    override val newBlocks: Flow<TestBlockchainBlock> get() = data.newBlocks.asFlow().map { TestBlockchainBlock(it) }
 
     override suspend fun getBlock(number: Long): TestBlockchainBlock {
         return TestBlockchainBlock(blocksByNumber[number]!!)
     }
 
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: TestDescriptor,
         range: LongRange
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> = flatten {
         blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
-            .map { FullBlock(TestBlockchainBlock(it), getBlockEvents(descriptor, TestBlockchainBlock(it)).toList()) }
+            .map { FullBlock(TestBlockchainBlock(it), getBlockLogs(descriptor, TestBlockchainBlock(it))) }
             .asFlow()
     }
 
-    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
-        val log = logs.find { it.transactionHash == transactionHash }
-        return if (log == null) null else TransactionMeta(log.transactionHash, log.blockHash)
-    }
-
-    private fun getBlockEvents(
+    private fun getBlockLogs(
         descriptor: TestDescriptor,
         block: TestBlockchainBlock
-    ): Flow<TestBlockchainLog> {
-        return logsByBlock[block.hash]!!.filter { it.topic == descriptor.id }.map { TestBlockchainLog(it) }.asFlow()
-    }
+    ): List<TestBlockchainLog> =
+        logsByBlock[block.hash]!!
+            .filter { it.topic == descriptor.id }
+            .mapIndexed { index, log -> TestBlockchainLog(log, index) }
 }

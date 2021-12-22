@@ -18,7 +18,7 @@ internal class SolanaClientTest {
     @Disabled
     fun testParseTransactionEvents() = runBlocking {
         val descriptor = SolanaDescriptor(programId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s", "", "", Any::class.java)
-        val events = client.getBlockEvents(descriptor, 91725442L..91725442L)
+        val events = client.getBlockLogs(descriptor, 91725442L..91725442L)
             .single()
             .logs
             .map(SolanaBlockchainLog::event)

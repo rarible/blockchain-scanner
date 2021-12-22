@@ -9,7 +9,8 @@ data class TestEthereumLogData(
     val customData: String,
     val from: Address,
     val to: Address,
-    val value: BigInteger
+    val value: BigInteger,
+    val transactionInput: String
 ) : EventData {
 
     override fun getKey(log: EthereumLog): String {

@@ -6,71 +6,111 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.LogEvent
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
+import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
+import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
-import com.rarible.blockchain.scanner.util.logTime
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.util.BlockBatcher
 import com.rarible.core.apm.withSpan
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 
-@FlowPreview
-@ExperimentalCoroutinesApi
-class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor>(
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
-    logMapper: LogMapper<BB, BL, L>,
-    logService: LogService<L, R, D>,
-    private val groupId: String,
-    private val logEventComparator: LogEventComparator<L, R>,
-    private val logEventPublisher: LogEventPublisher
+    private val logService: LogService<L, R, D>,
+    private val logRecordComparator: LogRecordComparator<R>,
+    private val logRecordEventPublisher: LogRecordEventPublisher
 ) : BlockListener {
 
     private val logger = LoggerFactory.getLogger(BlockListener::class.java)
 
-    private val blockEventProcessor: BlockEventProcessor<BB, BL, L, R, D> = BlockEventProcessor(
-        blockchainClient,
-        subscribers,
-        logMapper,
-        logService
-    )
+    private val subscribers = subscribers.map { BlockEventSubscriber(blockchainClient, it, logService) }
+        .also { logger.info("Injected subscribers: {}", it) }
 
     override suspend fun onBlockEvents(events: List<BlockEvent>) {
         logger.info("Received BlockEvents: {}", events)
-        val logFlow = processBlocks(events)
-        logFlow.onEach {
-            publishLogEvents(it)
-            logger.info("BlockEvent [{}] handled", it.blockEvent)
-        }.collect()
+        val logEvents = withSpan("onBlockEvents") {
+            prepareBlockEvents(events)
+        }
+        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        for (logEvent in logEvents) {
+            blockLogsToInsert.getOrPut(logEvent.blockEvent) { hashMapOf() }
+                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecordsToInsert
+            blockLogsToRemove.getOrPut(logEvent.blockEvent) { hashMapOf() }
+                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecordsToRemove
+        }
+        for (blockEvent in events) {
+            val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
+            val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
+            for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
+                logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
+                if (recordsToRemove.isNotEmpty()) {
+                    val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator)
+                        .map { LogRecordEvent(it, blockEvent.source, true) }
+                    logRecordEventPublisher.publish(groupId, logRecordEvents)
+                }
+            }
+            for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
+                logger.info("Publishing {} log records to insert for {} of {}", recordsToInsert.size, groupId, blockEvent)
+                if (recordsToInsert.isNotEmpty()) {
+                    logRecordEventPublisher.publish(
+                        groupId,
+                        recordsToInsert.sortedWith(logRecordComparator)
+                            .map { LogRecordEvent(it, blockEvent.source, false) }
+                    )
+                }
+            }
+            logger.info("Sent events for {}", blockEvent)
+        }
+        insertOrRemoveRecords(logEvents)
     }
 
-    private suspend fun processBlocks(events: List<BlockEvent>): Flow<LogEvent> {
-        return withSpan("process") {
-            val logs = logTime("BlockEventListener::processBlockEvents") {
-                blockEventProcessor.onBlockEvents(events)
-            }
-            logs.map {
-                val sortedEvents = it.second
-                sortedEvents.sortWith(logEventComparator)
-                LogEvent(it.first, groupId, sortedEvents)
-            }
-        }
+    suspend fun prepareBlockEvents(events: List<BlockEvent>): List<LogEvent<R, D>> {
+        val batches = BlockBatcher.toBatches(events)
+        return batches.flatMap { prepareBlockEventsBatch(it) }
     }
 
-    private suspend fun publishLogEvents(event: LogEvent) {
-        logger.info("Publishing {} LogEvents for Block [{}]", event.totalLogSize, event.blockEvent)
-        return withSpan("onBlockProcessed") {
-            logEventPublisher.publish(event)
+    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent<R, D>> =
+        coroutineScope {
+            logger.info("Processing {} subscribers with BlockEvent batch: {}", subscribers.size, batch)
+            subscribers.map { subscriber ->
+                async {
+                    withSpan(
+                        name = "processSubscriber",
+                        labels = listOf("subscriber" to subscriber.subscriber.javaClass.name)
+                    ) {
+                        @Suppress("UNCHECKED_CAST")
+                        when (batch[0]) {
+                            is NewBlockEvent -> subscriber.onNewBlockEvents(batch as List<NewBlockEvent>)
+                            is RevertedBlockEvent -> subscriber.onRevertedBlockEvents(batch as List<RevertedBlockEvent>)
+                            is ReindexBlockEvent -> subscriber.onReindexBlockEvents(batch as List<ReindexBlockEvent>)
+                        }
+                    }
+                }
+            }.awaitAll().flatten()
         }
+
+    private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
+        logEvents.flatMap { logEvent ->
+            listOf(
+                async {
+                    logService.delete(logEvent.descriptor, logEvent.logRecordsToRemove)
+                },
+                async {
+                    logService.save(logEvent.descriptor, logEvent.logRecordsToInsert)
+                }
+            )
+        }.awaitAll()
     }
 }

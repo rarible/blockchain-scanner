@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.reconciliation
 
+import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -8,18 +9,18 @@ import kotlinx.coroutines.flow.Flow
 interface ReconciliationExecutor {
 
     /**
-     * Start reconciliation for specific descriptor from specified block number.
+     * Start reconciliation for a group of descriptors starting from specified block number.
      *
-     * @param subscriberGroupId identifier of subscriber's descriptor requires reconciliation
+     * @param groupId identifier of the descriptors group
      * @param from number of start block
      *
      * @return range of scanned blocks numbers
      */
-    fun reconcile(subscriberGroupId: String?, from: Long, batchSize: Long): Flow<LongRange>
+    fun reconcile(groupId: String, from: Long, batchSize: Long): Flow<LongRange>
 
     /**
      * @return set of descriptors of all registered subscribers
      */
-    fun getSubscriberGroupIds(): Set<String>
+    fun getDescriptors(): List<Descriptor>
 
 }

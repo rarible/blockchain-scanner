@@ -1,28 +1,28 @@
 package com.rarible.blockchain.scanner.event.block
 
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
-import com.rarible.blockchain.scanner.test.data.assertOriginalBlockAndBlockEquals
 import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.confirmVerified
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-@ExperimentalCoroutinesApi
-@FlowPreview
 @IntegrationTest
-internal class BlockScannerIt : AbstractIntegrationTest() {
+class BlockScannerIt : AbstractIntegrationTest() {
 
     private var blockEventPublisher: BlockEventPublisher = mockk()
 
@@ -40,13 +40,23 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
             newBlocks = listOf(block)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData), blockEventPublisher)
-
-        val savedBlock = findBlock(block.number)
+        val blockScanner = createBlockScanner(testBlockchainData)
+        blockScanner.scanOnce(blockEventPublisher)
 
         // New block saved, listener notified with single event
-        assertOriginalBlockAndBlockEquals(block, savedBlock!!)
-        coVerify(exactly = 1) { blockEventPublisher.publish(any()) }
+        val savedBlock = findBlock(block.number)
+        assertThat(savedBlock).isEqualTo(
+            testBlockMapper.map(TestBlockchainBlock(block))
+        )
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(
+                    source = Source.BLOCKCHAIN,
+                    number = 0,
+                    hash = block.hash
+                )
+            )
+        }
     }
 
     @Test
@@ -58,15 +68,24 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
             newBlocks = listOf(newBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData), blockEventPublisher)
+        val blockScanner = createBlockScanner(testBlockchainData)
+        blockScanner.scanOnce(blockEventPublisher)
 
         val savedNewBlock = findBlock(newBlock.number)
 
         // New block saved, listener notified with single event existing block should not emit event
-        assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
-        coVerify(exactly = 1) { blockEventPublisher.publish(any()) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }
-        coVerify(exactly = 0) { blockEventPublisher.publish(newBlockEvent(existingBlock)) }
+        assertThat(savedNewBlock).isEqualTo(testBlockMapper.map(TestBlockchainBlock(newBlock)))
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(Source.BLOCKCHAIN, newBlock.number, newBlock.hash)
+            )
+        }
+        coVerify(exactly = 0) {
+            blockEventPublisher.publish(
+                NewBlockEvent(Source.BLOCKCHAIN, existingBlock.number, existingBlock.hash)
+            )
+        }
+        confirmVerified(blockEventPublisher)
     }
 
     @Test
@@ -80,16 +99,29 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
             newBlocks = listOf(newBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData), blockEventPublisher)
-
-        val savedNewBlock = findBlock(newBlock.number)
+        val blockScanner = createBlockScanner(testBlockchainData)
+        blockScanner.scanOnce(blockEventPublisher)
 
         // Missed block and new block saved, listener notified with 2 events
-        assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock!!)
-        coVerify(exactly = 2) { blockEventPublisher.publish(any()) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(missedBlock)) }
-        coVerify(exactly = 0) { blockEventPublisher.publish(newBlockEvent(existingBlock)) }
+        assertThat(findBlock(missedBlock.number)).isEqualTo(testBlockMapper.map(TestBlockchainBlock(missedBlock)))
+        assertThat(findBlock(newBlock.number)).isEqualTo(testBlockMapper.map(TestBlockchainBlock(newBlock)))
+
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(source = Source.BLOCKCHAIN, number = newBlock.number, hash = newBlock.hash)
+            )
+        }
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(source = Source.BLOCKCHAIN, number = missedBlock.number, hash = missedBlock.hash)
+            )
+        }
+        coVerify(exactly = 0) {
+            blockEventPublisher.publish(
+                NewBlockEvent(source = Source.BLOCKCHAIN, number = existingBlock.number, hash = existingBlock.hash)
+            )
+        }
+        confirmVerified(blockEventPublisher)
     }
 
     @Test
@@ -111,7 +143,8 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
             newBlocks = listOf(newBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData), blockEventPublisher)
+        val blockScanner = createBlockScanner(testBlockchainData)
+        blockScanner.scanOnce(blockEventPublisher)
 
         val savedRoot = findBlock(existingRoot.number)!!
         val savedNewGrandparent = findBlock(newGrandParent.number)!!
@@ -119,20 +152,76 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
         val savedNewBlock = findBlock(newBlock.number)!!
 
         // Now we need to ensure all changed blocks are stored in DB and root was not changed
-        assertOriginalBlockAndBlockEquals(existingRoot, savedRoot)
-        assertOriginalBlockAndBlockEquals(newGrandParent, savedNewGrandparent)
-        assertOriginalBlockAndBlockEquals(newParent, savedNewParent)
-        assertOriginalBlockAndBlockEquals(newBlock, savedNewBlock)
+        assertThat(savedRoot).isEqualTo(
+            testBlockMapper.map(TestBlockchainBlock(existingRoot))
+        )
+        assertThat(savedNewGrandparent).isEqualTo(
+            testBlockMapper.map(TestBlockchainBlock(newGrandParent))
+        )
+        assertThat(savedNewParent).isEqualTo(
+            testBlockMapper.map(TestBlockchainBlock(newParent))
+        )
+        assertThat(savedNewBlock).isEqualTo(
+            testBlockMapper.map(TestBlockchainBlock(newBlock))
+        )
 
         // Changed blocks should emit new events along with new block event, event for root block should not be emitted
         // reverted block events should contain metadata of reverted blocks
         coVerify(exactly = 5) { blockEventPublisher.publish(any()) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(revertedBlockEvent(existingGrandParent)) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(revertedBlockEvent(existingParent)) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newBlock)) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newParent)) }
-        coVerify(exactly = 1) { blockEventPublisher.publish(newBlockEvent(newGrandParent)) }
-        coVerify(exactly = 0) { blockEventPublisher.publish(newBlockEvent(existingRoot)) }
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                RevertedBlockEvent(
+                    Source.BLOCKCHAIN,
+                    existingGrandParent.number,
+                    existingGrandParent.hash
+                )
+            )
+        }
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                RevertedBlockEvent(
+                    Source.BLOCKCHAIN,
+                    existingParent.number,
+                    existingParent.hash
+                )
+            )
+        }
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(
+                    Source.BLOCKCHAIN,
+                    newBlock.number,
+                    newBlock.hash
+                )
+            )
+        }
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(
+                    Source.BLOCKCHAIN,
+                    newParent.number,
+                    newParent.hash
+                )
+            )
+        }
+        coVerify(exactly = 1) {
+            blockEventPublisher.publish(
+                NewBlockEvent(
+                    Source.BLOCKCHAIN,
+                    newGrandParent.number,
+                    newGrandParent.hash
+                )
+            )
+        }
+        coVerify(exactly = 0) {
+            blockEventPublisher.publish(
+                NewBlockEvent(
+                    Source.BLOCKCHAIN,
+                    existingRoot.number,
+                    existingRoot.hash
+                )
+            )
+        }
     }
 
     @Test
@@ -143,12 +232,15 @@ internal class BlockScannerIt : AbstractIntegrationTest() {
             newBlocks = listOf(existingBlock)
         )
 
-        scanOnce(createBlockScanner(testBlockchainData), blockEventPublisher)
+        val blockScanner = createBlockScanner(testBlockchainData)
+        blockScanner.scanOnce(blockEventPublisher)
 
         val storedExistingBlock = findBlock(existingBlock.number)!!
 
         // Existing block should not be changed, no events should be emitted
-        assertOriginalBlockAndBlockEquals(existingBlock, storedExistingBlock)
+        assertThat(storedExistingBlock).isEqualTo(
+            testBlockMapper.map(TestBlockchainBlock(existingBlock))
+        )
         coVerify(exactly = 0) { blockEventPublisher.publish(any()) }
     }
 

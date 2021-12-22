@@ -1,29 +1,24 @@
 package com.rarible.blockchain.scanner.test.configuration
 
+import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
-import com.rarible.blockchain.scanner.test.client.TestRetryableBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.mapper.TestLogMapper
 import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.DefaultTestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -31,8 +26,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 @Configuration
 @EnableAutoConfiguration
 @EnableRaribleMongo
@@ -63,9 +56,6 @@ class TestScannerConfiguration {
     fun testBlockMapper() = TestBlockMapper()
 
     @Bean
-    fun testLogMapper() = TestLogMapper()
-
-    @Bean
     fun testBlockRepository() = TestBlockRepository(mongo)
 
     @Bean
@@ -84,27 +74,22 @@ class TestScannerConfiguration {
     fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 2)
 
     @Bean
-    fun testLogRecordComparator() = DefaultTestLogRecordComparator()
-
-    @Bean
     fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher): TestBlockchainScanner {
-        val testLogEventPublisher: LogEventPublisher = mockk()
+        val testLogRecordEventPublisher: LogRecordEventPublisher = mockk()
 
         // Imitates retry case for failed batch processing
-        coEvery { testLogEventPublisher.publish(any()) }
+        coEvery { testLogRecordEventPublisher.publish(any(), any()) }
             .returns(Unit)
             .andThenThrows(IllegalArgumentException("Test failure"))
             .andThen(Unit)
 
         return TestBlockchainScanner(
-            blockchainClient = TestRetryableBlockchainClient(testBlockchainClient()),
+            blockchainClient = testBlockchainClient(),
             subscribers = listOf(testSubscriber1(), testSubscriber2()),
             blockMapper = testBlockMapper(),
             blockService = testBlockService(),
-            logMapper = testLogMapper(),
             logService = testLogService(),
-            logEventPublisher = testLogEventPublisher,
-            logEventComparator = testLogRecordComparator(),
+            logRecordEventPublisher = testLogRecordEventPublisher,
             properties = properties,
             blockEventConsumer = consumer,
             blockEventPublisher = publisher
@@ -113,7 +98,7 @@ class TestScannerConfiguration {
 
     @Bean
     fun fromProvider(): ReconciliationFromProvider = object : ReconciliationFromProvider {
-        override fun initialFrom(descriptorId: String): Long = 1L
+        override fun initialFrom(groupId: String): Long = 1L
     }
 
 }

@@ -12,17 +12,9 @@ data class TestCustomLogRecord(
     override val blockExtra: String,
     override val log: TestLog,
     val customData: String
-) : TestLogRecord<TestCustomLogRecord>() {
+) : TestLogRecord() {
 
-    override fun withLog(log: TestLog): TestCustomLogRecord {
-        return copy(log = log)
-    }
+    override fun withIdAndVersion(id: Long, version: Long?): TestCustomLogRecord = copy(id = id, version = version)
 
-    override fun withIdAndVersion(id: Long, version: Long?): TestCustomLogRecord {
-        return copy(id = id, version = version)
-    }
-
-    override fun getKey(): String {
-        return logExtra
-    }
+    override fun getKey(): String = logExtra
 }

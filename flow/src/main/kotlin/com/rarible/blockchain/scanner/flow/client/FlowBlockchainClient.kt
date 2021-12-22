@@ -5,11 +5,7 @@ import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.util.flatten
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +13,6 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import org.bouncycastle.util.encoders.Hex
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -26,9 +21,6 @@ import java.time.ZoneOffset
 /**
  * Client for Flow blockchain
  */
-@FlowPreview
-@ObsoleteCoroutinesApi
-@ExperimentalCoroutinesApi
 @Component
 class FlowBlockchainClient(
     private val poller: FlowNetNewBlockPoller,
@@ -46,7 +38,7 @@ class FlowBlockchainClient(
         return FlowBlockchainBlock(a)
     }
 
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: FlowDescriptor,
         range: LongRange
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> = channelFlow {
@@ -67,14 +59,16 @@ class FlowBlockchainClient(
                 }.forEach { entry ->
                     val logs = entry.value.flatMap {
                         it.events
-                    }.map { flowEvent ->
+                    }.asSequence().map { flowEvent ->
                         FlowBlockchainLog(
                             hash = flowEvent.transactionId.base16Value,
                             // TODO FLOW - add transaction index
                             blockHash = entry.key.hash,
                             event = flowEvent
                         )
-                    }.sortedBy { it.hash }.sortedBy { it.event.eventIndex }
+                    }.sortedBy { it.hash }
+                        .sortedBy { it.event.eventIndex }
+                        .toList()
 
                     send(
                         FullBlock(
@@ -86,8 +80,4 @@ class FlowBlockchainClient(
         }
     }
 
-    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? {
-        val tx = api.txById(transactionHash) ?: return null
-        return TransactionMeta(hash = transactionHash, blockHash = Hex.toHexString(tx.referenceBlockId.bytes))
-    }
 }

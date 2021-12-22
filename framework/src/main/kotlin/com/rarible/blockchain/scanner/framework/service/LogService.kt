@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.framework.service
 
+import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -11,7 +12,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * For example, each subscriber has it own collection/table to store data. In such case descriptor can provide
  * name of the collection current operation should be executed to.
  */
-interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
+interface LogService<L : Log, R : LogRecord, D : Descriptor> {
 
     /**
      * Delete LogRecord from persistent storage.
@@ -19,25 +20,24 @@ interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
     suspend fun delete(descriptor: D, record: R): R
 
     /**
+     * Delete multiple LogRecord-s from the persistent storage.
+     */
+    suspend fun delete(descriptor: D, records: List<R>): List<R> =
+        records.map { delete(descriptor, it) }
+
+    /**
      * Insert or update list of LogRecords to the persistent storage.
      */
     suspend fun save(descriptor: D, records: List<R>): List<R>
 
     /**
-     * Operation performed before handling NewBlock. For example, here could be implemented
-     * some cleanup of temporary LogEvents (like pending logs). As a result, list of updated events
-     * should be emitted.
-     *
-     * @return updated/deleted LogRecords
+     * Returns log records that must be reverted when a new block is processed.
      */
-    suspend fun beforeHandleNewBlock(descriptor: D, blockHash: String): List<R>
+    suspend fun prepareLogsToRevertOnNewBlock(descriptor: D, newBlock: FullBlock<*, *>): List<R>
 
     /**
-     * Delete all LogRecords of specified block and with specified status.
-     * Required to clean up LogRecords of reverted block.
-     *
-     * @return deleted LogRecords
+     * Returns logs that must be reverted when a block is reverted.
      */
-    suspend fun findAndDelete(descriptor: D, blockHash: String, status: Log.Status? = null): List<R>
+    suspend fun prepareLogsToRevertOnRevertedBlock(descriptor: D, revertedBlockHash: String): List<R>
 
 }

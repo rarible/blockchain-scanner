@@ -16,18 +16,18 @@ import org.springframework.stereotype.Component
 class SolanaLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-    suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): SolanaLogRecord<*>? {
+    suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): SolanaLogRecord? {
         val criteria = Criteria.where("log.eventType").isEqualTo(eventType)
-        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull() as SolanaLogRecord<*>?
+        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull() as SolanaLogRecord?
     }
 
-    suspend fun delete(collection: String, record: SolanaLogRecord<*>): SolanaLogRecord<*> {
+    suspend fun delete(collection: String, record: SolanaLogRecord): SolanaLogRecord {
         return mongo.remove(record, collection).thenReturn(record).awaitSingle()
     }
 
-    suspend fun saveAll(collection: String, records: List<SolanaLogRecord<*>>): Flow<SolanaLogRecord<*>> =
+    suspend fun saveAll(collection: String, records: List<SolanaLogRecord>): Flow<SolanaLogRecord> =
         records.asFlow().map { save(collection, it) }
 
-    suspend fun save(collection: String, record: SolanaLogRecord<*>): SolanaLogRecord<*> =
+    suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =
         mongo.save(record, collection).awaitSingle()
 }

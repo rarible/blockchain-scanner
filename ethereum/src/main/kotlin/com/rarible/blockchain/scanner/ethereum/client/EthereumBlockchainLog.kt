@@ -2,9 +2,13 @@ package com.rarible.blockchain.scanner.ethereum.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import scalether.domain.response.Log
+import scalether.domain.response.Transaction
 
-class EthereumBlockchainLog(val ethLog: Log) : BlockchainLog {
-
+data class EthereumBlockchainLog(
+    val ethLog: Log,
+    val ethTransaction: Transaction,
+    val index: Int
+) : BlockchainLog {
     override val hash = ethLog.transactionHash().toString()
     override val blockHash = ethLog.blockHash().toString()
 

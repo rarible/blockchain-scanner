@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.framework.subscriber
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.mapper.LogMapper
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -16,27 +15,19 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  */
 
 // Inside of group logs should be processed together
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
+interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor> {
 
     /**
-     * This descriptor will be used in Blockchain scanner implementation to define how to build various queries and
-     * where to store your custom data. It will be passed to implementation of
-     * [LogService][com.rarible.blockchain.scanner.framework.service.LogService],
-     * [PendingLogService][com.rarible.blockchain.scanner.framework.service.PendingLogService],
-     * [BlockchainClient][com.rarible.blockchain.scanner.framework.client.BlockchainClient] and
-     * [LogMapper][com.rarible.blockchain.scanner.framework.mapper.LogMapper]
+     * Descriptor used to define where to store data and how to serialize/deserialize it.
      */
     fun getDescriptor(): D
 
     /**
-     * Produces custom data from single Log. Subscriber responsible to provide minorLogIndex for each log.
-     * This index means order of produced event. For example, if subscriber produces 3 records for
-     * provided log, they should have indices 0,1,2.
+     * Produces custom data from single Log.
      *
      * @param block original Blockchain Block
      * @param log original Blockchain Log
-     * @param index natural index of log for current subscriber in current block (artificial value)
      */
-    suspend fun getEventRecords(block: BB, log: BL, logMapper: LogMapper<BB, BL, L>, index: Int): List<R>
+    suspend fun getEventRecords(block: BB, log: BL): List<R>
 
 }

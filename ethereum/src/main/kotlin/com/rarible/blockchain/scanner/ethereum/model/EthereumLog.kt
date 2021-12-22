@@ -11,12 +11,12 @@ data class EthereumLog(
      * Hash of the transaction.
      * Note that the transaction may be pending, in which case the [blockHash], [blockNumber] and [logIndex] are `null`.
      */
-    override val transactionHash: String,
+    val transactionHash: String,
 
     /**
-     * Status of the log event. Usually, only [Log.Status.CONFIRMED] log events impact business calculations.
+     * Status of the log event. Usually, only [EthereumLogStatus.CONFIRMED] log events impact business calculations.
      */
-    override val status: Log.Status,
+    val status: EthereumLogStatus,
 
     /**
      * Address of the smart contract that produced this log event.
@@ -57,14 +57,14 @@ data class EthereumLog(
      */
     val visible: Boolean = true,
 
+    /**
+     * Timestamp of the block to which this log event belongs.
+     *
+     * This field is nullable until all log events are updated in the database.
+     * For new log events it is not null.
+    */
+    val blockTimestamp: Long? = null,
     val createdAt: Instant = Instant.EPOCH,
     val updatedAt: Instant = Instant.EPOCH
 
-) : Log<EthereumLog> {
-
-    override fun withStatus(status: Log.Status): EthereumLog {
-        return this.copy(status = status)
-    }
-
-}
-
+) : Log

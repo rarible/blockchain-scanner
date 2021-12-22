@@ -1,24 +1,29 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
+import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
+import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
+import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
+import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
+import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
-import com.rarible.blockchain.scanner.framework.model.Log
+import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.core.common.nowMillis
+import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.temporal.ChronoUnit
 
-@FlowPreview
-@ExperimentalCoroutinesApi
 @IntegrationTest
 class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
 
@@ -34,55 +39,76 @@ class EthereumPendingLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `find pending logs`() = runBlocking {
-        val anotherCollection = testBidSubscriber.getDescriptor().collection
-
-        val pendingLog = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.CONFIRMED))
-        saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.REVERTED))
-        saveLog(anotherCollection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-
-        val pendingLogs = ethereumPendingLogService.findPendingLogs(descriptor).toList()
-
-        assertEquals(1, pendingLogs.size)
-        assertEquals(pendingLog, pendingLogs[0])
+    fun `get inactive pending logs`() = runBlocking<Unit> {
+        val transactionHash = randomWord()
+        val pendingRecord = saveLog(
+            collection,
+            randomLogRecord(
+                topic = topic,
+                blockHash = null,
+                transactionHash = transactionHash.toString(),
+                status = EthereumLogStatus.PENDING
+            )
+        )
+        listOf(
+            // another status
+            saveLog(
+                collection, randomLogRecord(
+                    topic = topic,
+                    blockHash = null,
+                    transactionHash = transactionHash.toString(),
+                    status = EthereumLogStatus.CONFIRMED
+                )
+            ),
+            // another transaction hash
+            saveLog(
+                collection, randomLogRecord(
+                    topic = topic,
+                    blockHash = null,
+                    transactionHash = randomLogHash(),
+                    status = EthereumLogStatus.PENDING
+                )
+            ),
+        )
+        val blockchainLog = EthereumBlockchainLog(
+            ethLog = ethLog(
+                transactionHash = transactionHash,
+                topic = randomWord(),
+                address = randomAddress(),
+                logIndex = 0,
+                blockHash = randomWord()
+            ),
+            ethTransaction = ethTransaction(),
+            index = 0
+        )
+        val fullBlock = FullBlock(
+            block = EthereumBlockchainBlock(ethBlock(number = 1, hash = randomWord())),
+            logs = listOf(blockchainLog)
+        )
+        val pendingLogs = ethereumPendingLogService.getInactivePendingLogs(fullBlock, descriptor)
+        assertThat(pendingLogs).isEqualTo(listOf(pendingRecord.withLog(pendingRecord.log.copy(status = EthereumLogStatus.INACTIVE))))
     }
 
     @Test
-    fun `update status - record exist`() = runBlocking {
-        val record = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-
-        ethereumPendingLogService.updateStatus(descriptor, record, Log.Status.INACTIVE)
-
-        val updatedRecord = findLog(collection, record.id)!!
-
-        assertFalse(updatedRecord.log.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log.status)
-    }
-
-
-    @Test
-    fun `update status - record doesn't exist`() = runBlocking {
-        val record = randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING)
-
-        ethereumPendingLogService.updateStatus(descriptor, record, Log.Status.INACTIVE)
-
-        val updatedRecord = findLog(collection, record.id)!!
-
-        assertFalse(updatedRecord.log.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log.status)
-    }
-
-    @Test
-    fun `update status - optimistic lock handled`() = runBlocking {
-        val record = saveLog(collection, randomLogRecord(topic, randomBlockHash(), Log.Status.PENDING))
-        val prevVersion = record.withIdAndVersion(record.id, null)
-
-        ethereumPendingLogService.updateStatus(descriptor, prevVersion, Log.Status.INACTIVE)
-
-        val updatedRecord = findLog(collection, record.id)!!
-
-        assertFalse(updatedRecord.log.visible)
-        assertEquals(Log.Status.INACTIVE, updatedRecord.log.status)
+    fun `find expired pending logs`() = runBlocking<Unit> {
+        val manyHoursAgo = nowMillis().minus(24, ChronoUnit.HOURS)
+        val expired = saveLog(
+            collection,
+            randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.PENDING)
+                .let { it.withLog(it.log.copy(createdAt = manyHoursAgo, updatedAt = manyHoursAgo)) }
+        )
+        saveLog(collection, randomLogRecord(topic, randomBlockHash(), status = EthereumLogStatus.PENDING))
+        saveLog(
+            collection, randomLogRecord(
+                randomWord(),
+                randomBlockHash(),
+                status = EthereumLogStatus.PENDING
+            )
+        )
+        val fullBlock = mockk<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
+            every { logs } returns emptyList()
+        }
+        val expiredLogs = ethereumPendingLogService.getInactivePendingLogs(fullBlock, descriptor)
+        assertThat(expiredLogs).isEqualTo(listOf(expired.withLog(expired.log.copy(status = EthereumLogStatus.DROPPED))))
     }
 }

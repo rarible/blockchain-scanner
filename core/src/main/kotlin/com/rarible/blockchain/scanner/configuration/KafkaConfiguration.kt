@@ -4,8 +4,8 @@ import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.consumer.KafkaBlockEventConsumer
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.KafkaBlockEventPublisher
-import com.rarible.blockchain.scanner.publisher.KafkaLogEventPublisher
-import com.rarible.blockchain.scanner.publisher.LogEventPublisher
+import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.core.application.ApplicationEnvironmentInfo
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
@@ -49,13 +49,13 @@ class KafkaConfiguration(
     }
 
     @Bean
-    @ConditionalOnMissingBean(LogEventPublisher::class)
-    fun kafkaLogEventPublisher(): LogEventPublisher {
+    @ConditionalOnMissingBean(LogRecordEventPublisher::class)
+    fun kafkaLogEventPublisher(): LogRecordEventPublisher {
         logger.info(
             "Custom {} is not configured, using {}",
-            LogEventPublisher::class.java.simpleName, KafkaLogEventPublisher::class.java.name
+            LogRecordEventPublisher::class.java.simpleName, KafkaLogRecordEventPublisher::class.java.name
         )
-        return KafkaLogEventPublisher(
+        return KafkaLogRecordEventPublisher(
             properties = kafkaProperties,
             environment = applicationEnvironmentInfo.name,
             blockchain = properties.blockchain,

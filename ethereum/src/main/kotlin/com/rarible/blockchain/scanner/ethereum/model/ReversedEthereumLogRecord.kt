@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
@@ -21,10 +20,10 @@ data class ReversedEthereumLogRecord(
     override val version: Long? = null,
 
     val transactionHash: String,
-    val status: Log.Status,
+    val status: EthereumLogStatus,
     val topic: Word,
 
-    val minorLogIndex: Int,
+    override val minorLogIndex: Int,
     val index: Int,
 
     val address: Address,
@@ -33,13 +32,15 @@ data class ReversedEthereumLogRecord(
     val blockNumber: Long? = null,
     val logIndex: Int? = null,
 
+    val blockTimestamp: Long? = null,
+
     val visible: Boolean = true,
 
     override val createdAt: Instant = Instant.EPOCH,
     override val updatedAt: Instant = Instant.EPOCH,
 
     val data: EventData
-) : EthereumLogRecord<ReversedEthereumLogRecord>() {
+) : EthereumLogRecord() {
 
     @Transient
     override val log: EthereumLog = EthereumLog(
@@ -58,6 +59,7 @@ data class ReversedEthereumLogRecord(
 
         visible = visible,
 
+        blockTimestamp = blockTimestamp,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -81,6 +83,7 @@ data class ReversedEthereumLogRecord(
 
         visible = log.visible,
 
+        blockTimestamp = log.blockTimestamp,
         createdAt = log.createdAt,
         updatedAt = log.updatedAt,
 

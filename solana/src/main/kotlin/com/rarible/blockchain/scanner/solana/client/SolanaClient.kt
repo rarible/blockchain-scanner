@@ -2,18 +2,14 @@ package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.framework.data.TransactionMeta
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
-import com.rarible.blockchain.scanner.solana.client.dto.toMetaModel
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-class SolanaClient(
-    url: String
-) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
+class SolanaClient(url: String) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
     private val api = SolanaHttpRpcApi(url)
 
     override val newBlocks: Flow<SolanaBlockchainBlock>
@@ -38,10 +34,7 @@ class SolanaClient(
     override suspend fun getBlock(number: Long): SolanaBlockchainBlock? =
         api.getBlock(number, TransactionDetails.None)?.toModel(number)
 
-    override suspend fun getTransactionMeta(transactionHash: String): TransactionMeta? =
-        api.getTransaction(transactionHash)?.toMetaModel()
-
-    override fun getBlockEvents(
+    override fun getBlockLogs(
         descriptor: SolanaDescriptor,
         range: LongRange
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> = flow {

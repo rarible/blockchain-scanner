@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.core.daemon.DaemonWorkerProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
+import java.time.Duration
 
 @ConstructorBinding
 @ConfigurationProperties(prefix = "blockchain.scanner.ethereum")
@@ -19,5 +20,6 @@ data class EthereumScannerProperties(
     override val job: EthereumScannerJobProperties,
     override val monitoring: MonitoringProperties,
     override val scan: ScanProperties = ScanProperties(),
-    override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()
+    override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
+    val maxPendingLogDuration: Long = Duration.ofHours(2).toMillis()
 ) : BlockchainScannerProperties

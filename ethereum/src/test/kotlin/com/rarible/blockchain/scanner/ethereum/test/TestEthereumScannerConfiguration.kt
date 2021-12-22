@@ -1,19 +1,22 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
-import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.DefaultReconciliationFormProvider
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.web3j.utils.Numeric
 import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
@@ -55,4 +58,15 @@ class TestEthereumScannerConfiguration {
 
     @Bean
     fun fromProvider(): ReconciliationFromProvider = DefaultReconciliationFormProvider()
+
+    @Bean
+    @Primary
+    @Qualifier("testEthereumBlockchainClient")
+    fun testEthereumBlockchainClient(originalClient: EthereumBlockchainClient): EthereumBlockchainClient =
+        TestEthereumBlockchainClient(originalClient)
+
+    @Bean
+    @Primary
+    @Qualifier("TestEthereumLogEventPublisher")
+    fun testEthereumLogEventPublisher(): LogRecordEventPublisher = TestEthereumLogRecordEventPublisher()
 }
