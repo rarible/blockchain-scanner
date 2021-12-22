@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.test.service
 
+import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
@@ -57,5 +58,10 @@ class TestLogService(
             revertedBlockHash,
             descriptor.id
         ).collectList().awaitFirst()
+
+    override suspend fun prepareLogsToRevertOnNewBlock(
+        descriptor: TestDescriptor,
+        newBlock: FullBlock<*, *>
+    ): List<TestLogRecord<*>> = emptyList()
 
 }

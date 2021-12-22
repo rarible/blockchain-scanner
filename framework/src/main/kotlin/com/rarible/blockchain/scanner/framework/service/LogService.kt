@@ -32,11 +32,11 @@ interface LogService<L : Log<L>, R : LogRecord<L, *>, D : Descriptor> {
     /**
      * Returns log records that must be reverted when a new block is processed.
      */
-    suspend fun prepareLogsToRevertOnNewBlock(descriptor: D, newBlock: FullBlock<*, *>): List<R> = emptyList()
+    suspend fun prepareLogsToRevertOnNewBlock(descriptor: D, newBlock: FullBlock<*, *>): List<R>
 
     /**
      * Returns logs that must be reverted when a block is reverted.
      */
-    suspend fun prepareLogsToRevertOnRevertedBlock(descriptor: D, revertedBlockHash: String): List<R> = emptyList()
+    suspend fun prepareLogsToRevertOnRevertedBlock(descriptor: D, revertedBlockHash: String): List<R>
 
 }
