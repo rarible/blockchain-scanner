@@ -24,10 +24,6 @@ class TestBlockchainClient(
         return TestBlockchainBlock(blocksByNumber[number]!!)
     }
 
-    override suspend fun getBlock(hash: String): TestBlockchainBlock {
-        return TestBlockchainBlock(blocksByHash[hash]!!)
-    }
-
     override fun getBlockLogs(
         descriptor: TestDescriptor,
         range: LongRange

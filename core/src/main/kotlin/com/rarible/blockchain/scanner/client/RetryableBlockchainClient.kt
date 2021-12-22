@@ -34,12 +34,6 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         }
     }
 
-    override suspend fun getBlock(hash: String): BB? {
-        return wrapWithRetry("getBlock", hash) {
-            original.getBlock(hash)
-        }
-    }
-
     override fun getBlockLogs(descriptor: D, range: LongRange): Flow<FullBlock<BB, BL>> {
         return original.getBlockLogs(descriptor, range)
             .wrapWithRetry()

@@ -18,10 +18,6 @@ class SolanaClient(
 
     override suspend fun getBlock(number: Long): SolanaBlockchainBlock? = api.getBlock(number)
 
-    override suspend fun getBlock(hash: String): SolanaBlockchainBlock? {
-        TODO("Solana block by hash")
-    }
-
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,
         range: LongRange

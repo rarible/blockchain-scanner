@@ -41,10 +41,6 @@ class EthereumClient(
         }.awaitFirst()
     }
 
-    override suspend fun getBlock(hash: String): EthereumBlockchainBlock {
-        return getBlock(Word.apply(hash)).awaitFirst()
-    }
-
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         range: LongRange
