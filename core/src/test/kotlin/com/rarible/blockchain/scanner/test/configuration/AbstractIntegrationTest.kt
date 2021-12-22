@@ -16,7 +16,6 @@ import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
 import kotlinx.coroutines.reactive.awaitFirst
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
@@ -45,7 +44,7 @@ abstract class AbstractIntegrationTest {
     @Autowired
     lateinit var properties: TestBlockchainScannerProperties
 
-    protected suspend fun findLog(collection: String, id: Long): TestLogRecord<*>? {
+    protected suspend fun findLog(collection: String, id: Long): TestLogRecord? {
         return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
     }
 

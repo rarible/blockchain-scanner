@@ -24,11 +24,11 @@ class EthereumLogRepository(
 
     private val logger = LoggerFactory.getLogger(EthereumLogRepository::class.java)
 
-    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: String): EthereumLogRecord<*>? {
-        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as EthereumLogRecord<*>?
+    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: String): EthereumLogRecord? {
+        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as EthereumLogRecord?
     }
 
-    suspend fun delete(collection: String, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
+    suspend fun delete(collection: String, record: EthereumLogRecord): EthereumLogRecord {
         mongo.remove(record, collection).awaitFirst()
         return record
     }
@@ -41,7 +41,7 @@ class EthereumLogRepository(
         address: Address,
         index: Int,
         minorLogIndex: Int
-    ): EthereumLogRecord<*>? {
+    ): EthereumLogRecord? {
         val criteria = Criteria.where("transactionHash").isEqualTo(transactionHash)
             .and("topic").isEqualTo(topic)
             .and("address").isEqualTo(address)
@@ -52,10 +52,10 @@ class EthereumLogRepository(
             Query.query(criteria).withHint(ChangeLog00001.VISIBLE_INDEX_NAME),
             entityType,
             collection
-        ).awaitFirstOrNull() as EthereumLogRecord<*>?
+        ).awaitFirstOrNull() as EthereumLogRecord?
     }
 
-    suspend fun save(collection: String, event: EthereumLogRecord<*>): EthereumLogRecord<*> {
+    suspend fun save(collection: String, event: EthereumLogRecord): EthereumLogRecord {
         return mongo.save(event, collection).awaitFirst()
     }
 
@@ -63,7 +63,7 @@ class EthereumLogRepository(
         entityType: Class<*>,
         collection: String,
         topic: Word
-    ): Flow<EthereumLogRecord<*>> {
+    ): Flow<EthereumLogRecord> {
         val criteria = Criteria
             .where("topic").isEqualTo(topic)
             .and("status").`is`(EthereumLogStatus.PENDING)
@@ -72,7 +72,7 @@ class EthereumLogRepository(
             Query(criteria),
             entityType,
             collection
-        ).asFlow() as Flow<EthereumLogRecord<*>>
+        ).asFlow() as Flow<EthereumLogRecord>
     }
 
     fun find(
@@ -80,10 +80,10 @@ class EthereumLogRepository(
         collection: String,
         blockHash: Word,
         topic: Word
-    ): Flow<EthereumLogRecord<*>> {
+    ): Flow<EthereumLogRecord> {
         val criteria = Criteria
             .where("blockHash").isEqualTo(blockHash)
             .and("topic").isEqualTo(topic)
-        return mongo.find(Query(criteria), entityType, collection).asFlow() as Flow<EthereumLogRecord<*>>
+        return mongo.find(Query(criteria), entityType, collection).asFlow() as Flow<EthereumLogRecord>
     }
 }

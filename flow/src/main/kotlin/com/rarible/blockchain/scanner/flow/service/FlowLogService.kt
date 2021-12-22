@@ -12,24 +12,24 @@ import org.springframework.stereotype.Service
 @Service
 class FlowLogService(
     private val logRepository: FlowLogRepository
-) : LogService<FlowLog, FlowLogRecord<*>, FlowDescriptor> {
+) : LogService<FlowLog, FlowLogRecord, FlowDescriptor> {
 
-    override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord<*>): FlowLogRecord<*> =
+    override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord): FlowLogRecord =
         logRepository.delete(descriptor.collection, record)
 
     override suspend fun delete(
         descriptor: FlowDescriptor,
-        records: List<FlowLogRecord<*>>
-    ): List<FlowLogRecord<*>> = records.map { delete(descriptor, it) }
+        records: List<FlowLogRecord>
+    ): List<FlowLogRecord> = records.map { delete(descriptor, it) }
 
-    override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord<*>>): List<FlowLogRecord<*>> {
+    override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord>): List<FlowLogRecord> {
         return logRepository.saveAll(descriptor.collection, records).toList()
     }
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: FlowDescriptor,
         newBlock: FullBlock<*, *>
-    ): List<FlowLogRecord<*>> {
+    ): List<FlowLogRecord> {
         // TODO: there are no pending logs in Flow, so nothing to revert, right?
         return emptyList()
     }
@@ -37,7 +37,7 @@ class FlowLogService(
     override suspend fun prepareLogsToRevertOnRevertedBlock(
         descriptor: FlowDescriptor,
         revertedBlockHash: String
-    ): List<FlowLogRecord<*>> {
+    ): List<FlowLogRecord> {
         // TODO: are we sure that in Flow no logs must be reverted?
         return emptyList()
     }

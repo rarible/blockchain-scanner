@@ -263,8 +263,8 @@ class FlowScannerTest {
         Assertions.assertEquals(txId, FlowId(event.log.transactionHash), "Transactions are not equals")
     }
 
-    private suspend fun awaitMintEvent(): FlowLogRecord<*> {
-        var founded: FlowLogRecord<*>? = null
+    private suspend fun awaitMintEvent(): FlowLogRecord {
+        var founded: FlowLogRecord? = null
         Assertions.assertTimeout(Duration.ofSeconds(10L)) {
             runBlocking {
                 while (founded == null) {

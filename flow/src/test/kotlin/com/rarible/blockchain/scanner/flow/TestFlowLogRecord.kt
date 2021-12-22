@@ -8,6 +8,6 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class TestFlowLogRecord(
     override val log: FlowLog,
     val data: String
-) : FlowLogRecord<TestFlowLogRecord>() {
+) : FlowLogRecord() {
     override fun getKey(): String = log.eventType
 }

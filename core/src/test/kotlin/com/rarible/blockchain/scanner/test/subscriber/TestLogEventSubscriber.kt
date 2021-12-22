@@ -16,11 +16,11 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 class TestLogEventSubscriber(
     private val descriptor: TestDescriptor,
     private val eventDataCount: Int = 1
-) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor> {
 
-    private val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord<*>>> = hashMapOf()
+    private val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord>> = hashMapOf()
 
-    fun getReturnedRecords(testOriginalBlock: TestOriginalBlock, testOriginalLog: TestOriginalLog): List<TestLogRecord<*>> {
+    fun getReturnedRecords(testOriginalBlock: TestOriginalBlock, testOriginalLog: TestOriginalLog): List<TestLogRecord> {
         return expectedRecords.getValue(testOriginalBlock to testOriginalLog)
     }
 
@@ -29,7 +29,7 @@ class TestLogEventSubscriber(
     override suspend fun getEventRecords(
         block: TestBlockchainBlock,
         log: TestBlockchainLog
-    ): List<TestLogRecord<*>> = (0 until eventDataCount).map { minorIndex ->
+    ): List<TestLogRecord> = (0 until eventDataCount).map { minorIndex ->
         TestCustomLogRecord(
             id = randomPositiveLong(),
             version = null,

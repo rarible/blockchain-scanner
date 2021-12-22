@@ -15,7 +15,7 @@ import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
+import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -23,13 +23,13 @@ import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import kotlinx.coroutines.flow.Flow
 
-open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord<L>, D : Descriptor>(
+open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
     logService: LogService<L, R, D>,
-    logEventComparator: LogEventComparator<L, R>,
+    logRecordComparator: LogRecordComparator<R>,
     properties: BlockchainScannerProperties,
     // Autowired beans
     private val blockEventPublisher: BlockEventPublisher,
@@ -53,7 +53,7 @@ open class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block
                 blockchainClient = retryableClient,
                 subscribers = it.value,
                 logService = logService,
-                logEventComparator = logEventComparator,
+                logRecordComparator = logRecordComparator,
                 logRecordEventPublisher = logRecordEventPublisher
             )
         }.associateBy({ it.first }, { it.second })

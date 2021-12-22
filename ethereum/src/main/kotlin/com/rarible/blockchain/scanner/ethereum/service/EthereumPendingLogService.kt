@@ -27,7 +27,7 @@ class EthereumPendingLogService(
     suspend fun getInactivePendingLogs(
         fullBlock: FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>,
         descriptor: EthereumDescriptor
-    ): List<EthereumLogRecord<*>> {
+    ): List<EthereumLogRecord> {
         val pendingLogs = ethereumLogRepository.findPendingLogs(
             entityType = descriptor.entityType,
             collection = descriptor.collection,

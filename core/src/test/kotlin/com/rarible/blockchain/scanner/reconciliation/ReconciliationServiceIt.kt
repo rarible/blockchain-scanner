@@ -12,7 +12,7 @@ import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventComparator
+import com.rarible.blockchain.scanner.test.subscriber.TestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -106,7 +106,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
 
     private fun createReconciliationService(
         testBlockchainClient: TestBlockchainClient
-    ): ReconciliationService<TestBlockchainBlock, TestBlock, TestBlockchainLog, TestLog, TestLogRecord<*>, TestDescriptor> {
+    ): ReconciliationService<TestBlockchainBlock, TestBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor> {
         val blockEventListeners = listOf(subscriber1, subscriber2)
             .groupBy { it.getDescriptor().groupId }
             .map {
@@ -114,7 +114,7 @@ class ReconciliationServiceIt : AbstractIntegrationTest() {
                     testBlockchainClient,
                     it.value,
                     testLogService,
-                    TestLogEventComparator,
+                    TestLogRecordComparator,
                     logRecordEventPublisher
                 )
             }.associateBy({ it.first }, { it.second })

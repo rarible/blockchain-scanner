@@ -23,7 +23,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
     private val logService: LogService<L, R, D>
@@ -34,7 +34,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
     private val descriptor = subscriber.getDescriptor()
     private val name = subscriber.javaClass.simpleName
 
-    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): List<LogEvent<L, R, D>> {
+    suspend fun onNewBlockEvents(events: List<NewBlockEvent>): List<LogEvent<R, D>> {
         val blockLogs = getBlockLogs(events)
         return events.mapNotNull { event ->
             val fullBlock = blockLogs[event] ?: return@mapNotNull null
@@ -67,7 +67,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
         return logs.flatMap { subscriber.getEventRecords(block, it) }
     }
 
-    suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): List<LogEvent<L, R, D>> {
+    suspend fun onRevertedBlockEvents(events: List<RevertedBlockEvent>): List<LogEvent<R, D>> {
         return events.map { event ->
             val logsToRevert = withSpan("revert") {
                 logService.prepareLogsToRevertOnRevertedBlock(descriptor, event.hash).toList()
@@ -85,7 +85,7 @@ class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R 
         }
     }
 
-    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): List<LogEvent<L, R, D>> {
+    suspend fun onReindexBlockEvents(events: List<ReindexBlockEvent>): List<LogEvent<R, D>> {
         val blockLogs = getBlockLogs(events)
         return events.mapNotNull { event ->
             val fullBlock = blockLogs[event] ?: return@mapNotNull null

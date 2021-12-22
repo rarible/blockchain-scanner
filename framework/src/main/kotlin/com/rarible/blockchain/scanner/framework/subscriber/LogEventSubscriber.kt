@@ -15,7 +15,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  */
 
 // Inside of group logs should be processed together
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor> {
+interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor> {
 
     /**
      * Descriptor used to define where to store data and how to serialize/deserialize it.

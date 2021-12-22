@@ -10,20 +10,20 @@ import kotlinx.coroutines.reactive.awaitFirst
 
 class TestLogService(
     private val testLogRepository: TestLogRepository
-) : LogService<TestLog, TestLogRecord<*>, TestDescriptor> {
+) : LogService<TestLog, TestLogRecord, TestDescriptor> {
 
-    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord<*>): TestLogRecord<*> =
+    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord): TestLogRecord =
         testLogRepository.delete(descriptor.collection, record).awaitFirst()
 
     override suspend fun delete(
         descriptor: TestDescriptor,
-        records: List<TestLogRecord<*>>
-    ): List<TestLogRecord<*>> = records.map { delete(descriptor, it) }
+        records: List<TestLogRecord>
+    ): List<TestLogRecord> = records.map { delete(descriptor, it) }
 
     override suspend fun save(
         descriptor: TestDescriptor,
-        records: List<TestLogRecord<*>>
-    ): List<TestLogRecord<*>> {
+        records: List<TestLogRecord>
+    ): List<TestLogRecord> {
         return records.map { record ->
             val log = record.log
             val opt = testLogRepository.findByKey(
@@ -51,7 +51,7 @@ class TestLogService(
     override suspend fun prepareLogsToRevertOnRevertedBlock(
         descriptor: TestDescriptor,
         revertedBlockHash: String
-    ): List<TestLogRecord<*>> =
+    ): List<TestLogRecord> =
         testLogRepository.find(
             descriptor.entityType,
             descriptor.collection,
@@ -62,6 +62,6 @@ class TestLogService(
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: TestDescriptor,
         newBlock: FullBlock<*, *>
-    ): List<TestLogRecord<*>> = emptyList()
+    ): List<TestLogRecord> = emptyList()
 
 }

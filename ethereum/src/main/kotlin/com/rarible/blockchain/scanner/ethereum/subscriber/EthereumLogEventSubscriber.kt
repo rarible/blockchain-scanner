@@ -10,7 +10,7 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.core.common.nowMillis
 
 abstract class EthereumLogEventSubscriber :
-    LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
+    LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog, EthereumLogRecord, EthereumDescriptor> {
 
     /**
      * Helper override that assigns correct minorLogIndex.
@@ -19,7 +19,7 @@ abstract class EthereumLogEventSubscriber :
     final override suspend fun getEventRecords(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog
-    ): List<EthereumLogRecord<*>> =
+    ): List<EthereumLogRecord> =
         getEthereumEventRecords(block, log).withIndex().map { (minorLogIndex, record) ->
             record.withLog(record.log.copy(minorLogIndex = minorLogIndex))
         }
@@ -27,7 +27,7 @@ abstract class EthereumLogEventSubscriber :
     abstract suspend fun getEthereumEventRecords(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog
-    ): List<EthereumLogRecord<*>>
+    ): List<EthereumLogRecord>
 
     /**
      * Converts Ethereum blockchain log provided by Ethereum client to Ethereum log.

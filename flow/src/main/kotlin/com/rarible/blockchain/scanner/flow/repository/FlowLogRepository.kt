@@ -17,19 +17,19 @@ class FlowLogRepository(
     private val mongo: ReactiveMongoTemplate
 ) {
 
-    suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): FlowLogRecord<*>? {
+    suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): FlowLogRecord? {
         val criteria = Criteria.where("log.eventType").isEqualTo(eventType)
-        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull() as FlowLogRecord<*>?
+        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull() as FlowLogRecord?
     }
 
-    suspend fun delete(collection: String, record: FlowLogRecord<*>): FlowLogRecord<*> {
+    suspend fun delete(collection: String, record: FlowLogRecord): FlowLogRecord {
         return mongo.remove(record, collection).thenReturn(record).awaitSingle()
     }
 
-    suspend fun saveAll(collection: String, records: List<FlowLogRecord<*>>): Flow<FlowLogRecord<*>> =
+    suspend fun saveAll(collection: String, records: List<FlowLogRecord>): Flow<FlowLogRecord> =
         records.asFlow().map { save(collection, it) }
 
-    suspend fun save(collection: String, record: FlowLogRecord<*>): FlowLogRecord<*> =
+    suspend fun save(collection: String, record: FlowLogRecord): FlowLogRecord =
         mongo.save(record, collection).awaitSingle()
 
 }

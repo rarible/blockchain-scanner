@@ -13,10 +13,10 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
-import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
@@ -85,13 +85,14 @@ abstract class AbstractIntegrationTest {
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
 
+    @FlowPreview
     @Autowired
     lateinit var taskService: TaskService
 
     @Autowired
     lateinit var properties: EthereumScannerProperties
 
-    protected fun findLog(collection: String, id: String): EthereumLogRecord<*>? = runBlocking {
+    protected fun findLog(collection: String, id: String): EthereumLogRecord? = runBlocking {
         ethereumLogRepository.findLogEvent(ReversedEthereumLogRecord::class.java, collection, id)
     }
 
@@ -103,7 +104,7 @@ abstract class AbstractIntegrationTest {
         return mongo.findAll<Any>(collection).collectList().block() ?: emptyList()
     }
 
-    protected fun saveLog(collection: String, logRecord: EthereumLogRecord<*>): EthereumLogRecord<*> {
+    protected fun saveLog(collection: String, logRecord: EthereumLogRecord): EthereumLogRecord {
         return mono { ethereumLogRepository.save(collection, logRecord) }.block()!!
     }
 

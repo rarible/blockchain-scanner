@@ -21,23 +21,23 @@ class EthereumLogService(
     private val ethereumLogRepository: EthereumLogRepository,
     private val ethereumPendingLogService: EthereumPendingLogService,
     private val properties: EthereumScannerProperties
-) : LogService<EthereumLog, EthereumLogRecord<*>, EthereumDescriptor> {
+) : LogService<EthereumLog, EthereumLogRecord, EthereumDescriptor> {
 
     private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord<*>): EthereumLogRecord<*> {
+    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
         return ethereumLogRepository.delete(descriptor.collection, record)
     }
 
     override suspend fun delete(
         descriptor: EthereumDescriptor,
-        records: List<EthereumLogRecord<*>>
-    ): List<EthereumLogRecord<*>> = records.map { ethereumLogRepository.delete(descriptor.collection, it) }
+        records: List<EthereumLogRecord>
+    ): List<EthereumLogRecord> = records.map { ethereumLogRepository.delete(descriptor.collection, it) }
 
     override suspend fun save(
         descriptor: EthereumDescriptor,
-        records: List<EthereumLogRecord<*>>
-    ): List<EthereumLogRecord<*>> {
+        records: List<EthereumLogRecord>
+    ): List<EthereumLogRecord> {
         return records.map { record ->
             optimisticLock(properties.optimisticLockRetries) {
 
@@ -74,7 +74,7 @@ class EthereumLogService(
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: EthereumDescriptor,
         newBlock: FullBlock<*, *>
-    ): List<EthereumLogRecord<*>> {
+    ): List<EthereumLogRecord> {
         @Suppress("UNCHECKED_CAST")
         val fullBlock = newBlock as FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>
         return ethereumPendingLogService.getInactivePendingLogs(fullBlock, descriptor)
@@ -83,7 +83,7 @@ class EthereumLogService(
     override suspend fun prepareLogsToRevertOnRevertedBlock(
         descriptor: EthereumDescriptor,
         revertedBlockHash: String
-    ): List<EthereumLogRecord<*>> = ethereumLogRepository.find(
+    ): List<EthereumLogRecord> = ethereumLogRepository.find(
         entityType = descriptor.entityType,
         collection = descriptor.collection,
         blockHash = Word.apply(revertedBlockHash),

@@ -4,12 +4,14 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.core.common.nowMillis
 import java.time.Instant
 
-abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<EthereumLog> {
+abstract class EthereumLogRecord : LogRecord {
 
     abstract val id: String
     abstract val version: Long?
     abstract val createdAt: Instant
     abstract val updatedAt: Instant
+
+    abstract override val log: EthereumLog
 
     /**
      * Zero-based index of this record among all records produced by subscriber from one blockchain log.
@@ -18,7 +20,7 @@ abstract class EthereumLogRecord<LR : EthereumLogRecord<LR>> : LogRecord<Ethereu
      */
     abstract val minorLogIndex: Int
 
-    abstract fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant = nowMillis()): LR
+    abstract fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant = nowMillis()): EthereumLogRecord
 
-    abstract fun withLog(log: EthereumLog): LR
+    abstract fun withLog(log: EthereumLog): EthereumLogRecord
 }

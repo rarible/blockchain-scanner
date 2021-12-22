@@ -25,7 +25,7 @@ class TestTransferSubscriber : EthereumLogEventSubscriber() {
     override suspend fun getEthereumEventRecords(
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog
-    ): List<EthereumLogRecord<*>> {
+    ): List<EthereumLogRecord> {
         val rawEvent = TransferEvent.apply(log.ethLog)
         return listOf(
             ReversedEthereumLogRecord(

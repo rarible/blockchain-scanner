@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
-import com.rarible.blockchain.scanner.framework.model.Log
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -33,7 +32,7 @@ class TestConfig {
         override suspend fun getEventRecords(
             block: FlowBlockchainBlock,
             log: FlowBlockchainLog
-        ): List<FlowLogRecord<*>> {
+        ): List<FlowLogRecord> {
             if (!descriptor.events.contains(log.event.type)) {
                 return emptyList()
             }

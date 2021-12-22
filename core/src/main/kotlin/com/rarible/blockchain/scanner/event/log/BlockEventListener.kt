@@ -14,7 +14,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.subscriber.LogEventComparator
+import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockBatcher
@@ -24,11 +24,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 
-class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord<L>, D : Descriptor>(
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     private val logService: LogService<L, R, D>,
-    private val logEventComparator: LogEventComparator<L, R>,
+    private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher
 ) : BlockListener {
 
@@ -56,7 +56,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
             for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
                 logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
                 if (recordsToRemove.isNotEmpty()) {
-                    val logRecordEvents = recordsToRemove.sortedWith(logEventComparator)
+                    val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator)
                         .map { LogRecordEvent(it, blockEvent.source, true) }
                     logRecordEventPublisher.publish(groupId, logRecordEvents)
                 }
@@ -66,7 +66,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
                 if (recordsToInsert.isNotEmpty()) {
                     logRecordEventPublisher.publish(
                         groupId,
-                        recordsToInsert.sortedWith(logEventComparator)
+                        recordsToInsert.sortedWith(logRecordComparator)
                             .map { LogRecordEvent(it, blockEvent.source, false) }
                     )
                 }
@@ -76,12 +76,12 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
         insertOrRemoveRecords(logEvents)
     }
 
-    suspend fun prepareBlockEvents(events: List<BlockEvent>): List<LogEvent<L, R, D>> {
+    suspend fun prepareBlockEvents(events: List<BlockEvent>): List<LogEvent<R, D>> {
         val batches = BlockBatcher.toBatches(events)
         return batches.flatMap { prepareBlockEventsBatch(it) }
     }
 
-    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent<L, R, D>> =
+    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent<R, D>> =
         coroutineScope {
             logger.info("Processing {} subscribers with BlockEvent batch: {}", subscribers.size, batch)
             subscribers.map { subscriber ->
@@ -101,7 +101,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
             }.awaitAll().flatten()
         }
 
-    private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<L, R, D>>) = coroutineScope {
+    private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
         logEvents.flatMap { logEvent ->
             listOf(
                 async {

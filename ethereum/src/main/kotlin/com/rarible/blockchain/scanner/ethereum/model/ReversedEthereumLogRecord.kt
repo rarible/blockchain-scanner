@@ -40,7 +40,7 @@ data class ReversedEthereumLogRecord(
     override val updatedAt: Instant = Instant.EPOCH,
 
     val data: EventData
-) : EthereumLogRecord<ReversedEthereumLogRecord>() {
+) : EthereumLogRecord() {
 
     @Transient
     override val log: EthereumLog = EthereumLog(

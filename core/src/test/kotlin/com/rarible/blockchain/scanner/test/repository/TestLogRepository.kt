@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono
 class TestLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-    fun delete(collection: String, event: TestLogRecord<*>): Mono<TestLogRecord<*>> {
+    fun delete(collection: String, event: TestLogRecord): Mono<TestLogRecord> {
         return mongo.remove(event, collection).thenReturn(event)
     }
 
@@ -25,26 +25,26 @@ class TestLogRepository(
         blockHash: String,
         logIndex: Int,
         minorLogIndex: Int
-    ): TestLogRecord<*>? {
+    ): TestLogRecord? {
         val criteria = Criteria.where("log.transactionHash").`is`(transactionHash)
             .and("log.blockHash").`is`(blockHash)
             .and("log.logIndex").`is`(logIndex)
             .and("log.minorLogIndex").`is`(minorLogIndex)
-        return mongo.findOne(Query(criteria), entityType, collection).awaitFirstOrNull() as TestLogRecord<*>?
+        return mongo.findOne(Query(criteria), entityType, collection).awaitFirstOrNull() as TestLogRecord?
     }
 
-    suspend fun save(collection: String, event: TestLogRecord<*>): TestLogRecord<*> {
+    suspend fun save(collection: String, event: TestLogRecord): TestLogRecord {
         return mongo.save(event, collection).awaitFirst()
     }
 
-    suspend fun saveAll(collection: String, vararg events: TestLogRecord<*>) {
+    suspend fun saveAll(collection: String, vararg events: TestLogRecord) {
         events.forEach {
             mongo.save(it, collection).awaitFirstOrNull()
         }
     }
 
-    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: Long): TestLogRecord<*>? {
-        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as TestLogRecord<*>?
+    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: Long): TestLogRecord? {
+        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as TestLogRecord?
     }
 
     fun find(
@@ -52,12 +52,12 @@ class TestLogRepository(
         collection: String,
         blockHash: String,
         topic: String
-    ): Flux<TestLogRecord<*>> {
+    ): Flux<TestLogRecord> {
         val query = Query().apply {
             addCriteria(Criteria.where("log.blockHash").isEqualTo(blockHash))
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
         }
-        return mongo.find(query, entityType, collection) as Flux<TestLogRecord<*>>
+        return mongo.find(query, entityType, collection) as Flux<TestLogRecord>
     }
 
 }
