@@ -1,5 +1,5 @@
 package com.rarible.blockchain.scanner.configuration
 
-open class JobProperties(
+data class JobProperties(
     val reconciliation: ReconciliationJobProperties = ReconciliationJobProperties()
 )
