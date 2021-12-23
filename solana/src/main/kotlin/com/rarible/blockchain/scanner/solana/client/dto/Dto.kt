@@ -50,8 +50,14 @@ class GetTransactionRequest(
 )
 
 data class ApiResponse<T>(
-    val result: T
-)
+    val result: T?,
+    val error: Error?
+) {
+    data class Error(
+        val message: String,
+        val code: Int
+    )
+}
 
 data class SolanaTransactionDto(
     val transaction: Details,
@@ -93,14 +99,29 @@ data class SolanaBlockDto(
     val transactions: List<SolanaTransactionDto> = emptyList()
 )
 
-fun SolanaBlockDto.toModel(slot: Long) = SolanaBlockchainBlock(
-    slot = slot,
-    parentSlot = parentSlot,
-    number = blockHeight,
-    hash = blockhash,
-    parentHash = previousBlockhash,
-    timestamp = blockTime
-)
+fun ApiResponse<Long>.toModel(): Long = result!!
+
+fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? {
+    if (result != null) {
+        return with(result) {
+            SolanaBlockchainBlock(
+                slot = slot,
+                parentSlot = parentSlot,
+                number = blockHeight,
+                hash = blockhash,
+                parentHash = previousBlockhash,
+                timestamp = blockTime
+            )
+        }
+    }
+
+    val code = requireNotNull(error) { "error field must be not null" }.code
+    if (code == ErrorCodes.BLOCK_NOT_AVAILABLE) {
+        return null
+    } else {
+        error("Unknown error code: $code")
+    }
+}
 
 fun SolanaTransactionDto.toModel(): List<SolanaBlockEvent> {
     val instructions = transaction.message.instructions + meta.innerInstructions.flatMap { it.instructions }
@@ -113,4 +134,8 @@ fun SolanaTransactionDto.toModel(): List<SolanaBlockEvent> {
 
         SolanaBlockEvent(programId, data, accounts)
     }
+}
+
+object ErrorCodes {
+    const val BLOCK_NOT_AVAILABLE = -32004
 }

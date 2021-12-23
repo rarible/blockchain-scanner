@@ -8,7 +8,6 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
@@ -20,11 +19,11 @@ import reactor.netty.http.client.HttpClient
 import java.time.Duration
 
 interface SolanaApi {
-    suspend fun getLatestSlot(): Long
+    suspend fun getLatestSlot(): ApiResponse<Long>
 
-    suspend fun getBlock(slot: Long, details: TransactionDetails): SolanaBlockDto?
+    suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto>
 
-    suspend fun getTransaction(signature: String): SolanaTransactionDto?
+    suspend fun getTransaction(signature: String): ApiResponse<SolanaTransactionDto>
 }
 
 internal class SolanaHttpRpcApi(
@@ -44,26 +43,23 @@ internal class SolanaHttpRpcApi(
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
 
-    override suspend fun getLatestSlot(): Long = client.post()
+    override suspend fun getLatestSlot(): ApiResponse<Long> = client.post()
         .body(BodyInserters.fromValue(GetSlotRequest))
         .retrieve()
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
-        .result
 
-    override suspend fun getBlock(slot: Long, details: TransactionDetails): SolanaBlockDto? = client.post()
+    override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
         .body(BodyInserters.fromValue(GetBlockRequest(slot, details)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaBlockDto>>()
-        .awaitSingleOrNull()
-        ?.result
+        .awaitSingle()
 
     override suspend fun getTransaction(signature: String) = client.post()
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaTransactionDto>>()
-        .awaitSingleOrNull()
-        ?.result
+        .awaitSingle()
 
     companion object {
         const val POLLING_DELAY = 500L
