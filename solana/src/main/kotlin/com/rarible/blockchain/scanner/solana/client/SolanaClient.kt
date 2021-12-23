@@ -27,7 +27,6 @@ class SolanaClient(
                     lastSlot = slot
                     block?.let { emit(it) }
                 }
-                delay(SolanaHttpRpcApi.POLLING_DELAY)
             }
         }
 

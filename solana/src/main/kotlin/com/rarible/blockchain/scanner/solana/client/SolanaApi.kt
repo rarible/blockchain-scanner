@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -49,11 +50,17 @@ internal class SolanaHttpRpcApi(
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
 
-    override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
-        .body(BodyInserters.fromValue(GetBlockRequest(slot, details)))
-        .retrieve()
-        .bodyToMono<ApiResponse<SolanaBlockDto>>()
-        .awaitSingle()
+    override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> {
+        val result = client.post()
+            .body(BodyInserters.fromValue(GetBlockRequest(slot, details)))
+            .retrieve()
+            .bodyToMono<ApiResponse<SolanaBlockDto>>()
+            .awaitSingle()
+
+        delay(POLLING_DELAY) // TODO remove after getting personal node
+
+        return result
+    }
 
     override suspend fun getTransaction(signature: String) = client.post()
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
@@ -62,7 +69,7 @@ internal class SolanaHttpRpcApi(
         .awaitSingle()
 
     companion object {
-        const val POLLING_DELAY = 500L
+        const val POLLING_DELAY = 1000L
         const val MAX_BODY_SIZE = 10 * 1024 * 1024
         const val DEFAULT_TIMEOUT = 5000L
     }
