@@ -20,41 +20,37 @@ class SolanaClient(url: String) : BlockchainClient<SolanaBlockchainBlock, Solana
                 val slot = getLatestSlot()
 
                 if (slot != lastSlot) {
-                    val block = api.getBlock(slot, TransactionDetails.None)
+                    val block = api.getBlock(slot, TransactionDetails.None).toModel(slot)
 
                     lastSlot = slot
-                    block?.let { emit(it.toModel(slot)) }
+                    block?.let { emit(it) }
                 }
                 delay(SolanaHttpRpcApi.POLLING_DELAY)
             }
         }
 
-    suspend fun getLatestSlot(): Long = api.getLatestSlot()
+    suspend fun getLatestSlot(): Long = api.getLatestSlot().toModel()
 
     override suspend fun getBlock(number: Long): SolanaBlockchainBlock? =
-        api.getBlock(number, TransactionDetails.None)?.toModel(number)
+        api.getBlock(number, TransactionDetails.None).toModel(number)
 
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,
         range: LongRange
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> = flow {
-        range.forEach { slot ->
+        for (slot in range) {
             val blockDto = api.getBlock(slot, TransactionDetails.Full)
+            val solanaBlockchainBlock = blockDto.toModel(slot) ?: continue
+            val solanaBlockchainLogs = blockDto.result!!.transactions.flatMap { transactionDto ->
+                val hash = transactionDto.transaction.signatures.first()
+                val blockHash = solanaBlockchainBlock.hash
+                val events = transactionDto.toModel()
 
-            if (blockDto != null) {
-                val solanaBlockchainBlock = blockDto.toModel(slot)
-                val solanaBlockchainLogs = blockDto.transactions.flatMap { transactionDto ->
-                    val hash = transactionDto.transaction.signatures.first()
-                    val blockHash = solanaBlockchainBlock.hash
-                    val events = transactionDto.toModel()
-
-                    events
-                        .filter { it.programId == descriptor.id }
-                        .map { event -> SolanaBlockchainLog(hash, blockHash, event) }
-                }
-
-                emit(FullBlock(solanaBlockchainBlock, solanaBlockchainLogs))
+                events.filter { it.programId == descriptor.programId }
+                    .map { event -> SolanaBlockchainLog(hash, blockHash, event) }
             }
+
+            emit(FullBlock(solanaBlockchainBlock, solanaBlockchainLogs))
         }
     }
 }
