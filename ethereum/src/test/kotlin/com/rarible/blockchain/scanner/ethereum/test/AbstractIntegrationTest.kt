@@ -85,7 +85,6 @@ abstract class AbstractIntegrationTest {
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
 
-    @FlowPreview
     @Autowired
     lateinit var taskService: TaskService
 

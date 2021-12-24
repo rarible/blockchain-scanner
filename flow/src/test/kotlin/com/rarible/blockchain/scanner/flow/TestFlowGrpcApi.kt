@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.future.await
 
 
-@ExperimentalCoroutinesApi
 class TestFlowGrpcApi(private val api: AsyncFlowAccessApi): FlowGrpcApi {
     override suspend fun isAlive(): Boolean = true
 

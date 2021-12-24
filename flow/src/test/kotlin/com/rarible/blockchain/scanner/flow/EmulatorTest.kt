@@ -15,9 +15,8 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
 
-@ExperimentalCoroutinesApi
 @Testcontainers
-internal class EmulatorTest {
+class EmulatorTest {
 
     private var userPrivateKeyHex: String = ""
     private var userPublicKeyHex: String = ""

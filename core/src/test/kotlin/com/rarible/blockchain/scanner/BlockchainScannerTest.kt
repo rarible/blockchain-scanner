@@ -20,15 +20,11 @@ import com.rarible.core.daemon.DaemonWorkerProperties
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
-@ExperimentalCoroutinesApi
-@FlowPreview
-internal class BlockchainScannerTest {
+class BlockchainScannerTest {
     private val testLogService = mockk<TestLogService>()
     private val testBlockService = mockk<TestBlockService>()
     private val blockchainClient = mockk<TestBlockchainClient>()
