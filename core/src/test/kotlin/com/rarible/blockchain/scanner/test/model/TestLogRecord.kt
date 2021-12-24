@@ -7,6 +7,6 @@ abstract class TestLogRecord : LogRecord {
     abstract val version: Long?
     abstract val logExtra: String
     abstract val blockExtra: String
-    abstract override val log: TestLog
+    abstract val log: TestLog
     abstract fun withIdAndVersion(id: Long, version: Long?): TestLogRecord
 }

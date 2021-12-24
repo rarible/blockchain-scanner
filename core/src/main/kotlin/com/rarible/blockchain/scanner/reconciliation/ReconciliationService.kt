@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.util.BlockRanges
@@ -16,9 +15,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
-class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
+class ReconciliationService<BB : BlockchainBlock, B : Block, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val blockService: BlockService<B>,
-    private val blockEventListeners: Map<String, BlockEventListener<BB, BL, L, R, D>>
+    private val blockEventListeners: Map<String, BlockEventListener<BB, BL, R, D>>
 ) {
 
     private val logger = LoggerFactory.getLogger(ReconciliationService::class.java)

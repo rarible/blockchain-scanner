@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.solana.model
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 
 data class SolanaLogRecord(
-    override val log: SolanaLog
+    val log: SolanaLog
 ) : LogRecord {
     fun withLog(log: SolanaLog): SolanaLogRecord {
         return copy(log = log)

@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
@@ -21,7 +20,7 @@ class EthereumLogService(
     private val ethereumLogRepository: EthereumLogRepository,
     private val ethereumPendingLogService: EthereumPendingLogService,
     private val properties: EthereumScannerProperties
-) : LogService<EthereumLog, EthereumLogRecord, EthereumDescriptor> {
+) : LogService<EthereumLogRecord, EthereumDescriptor> {
 
     private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 

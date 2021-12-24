@@ -10,7 +10,7 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.core.common.nowMillis
 
 abstract class EthereumLogEventSubscriber :
-    LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLog, EthereumLogRecord, EthereumDescriptor> {
+    LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor> {
 
     /**
      * Helper override that assigns correct minorLogIndex.

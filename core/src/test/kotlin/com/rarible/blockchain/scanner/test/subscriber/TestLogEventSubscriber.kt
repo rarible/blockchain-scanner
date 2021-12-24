@@ -16,7 +16,7 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 class TestLogEventSubscriber(
     private val descriptor: TestDescriptor,
     private val eventDataCount: Int = 1
-) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor> {
+) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor> {
 
     private val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord>> = hashMapOf()
 

@@ -90,7 +90,7 @@ abstract class AbstractIntegrationTest {
         }
     }
 
-    protected suspend fun BlockchainScanner<*, *, *, *, *, *>.scanOnce() {
+    protected suspend fun BlockchainScanner<*, *, *, *, *>.scanOnce() {
         try {
             scan()
         } catch (e: IllegalStateException) {

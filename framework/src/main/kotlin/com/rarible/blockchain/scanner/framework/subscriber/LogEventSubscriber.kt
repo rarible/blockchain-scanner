@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.framework.subscriber
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 
 /**
@@ -15,7 +14,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  */
 
 // Inside of group logs should be processed together
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor> {
+interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor> {
 
     /**
      * Descriptor used to define where to store data and how to serialize/deserialize it.

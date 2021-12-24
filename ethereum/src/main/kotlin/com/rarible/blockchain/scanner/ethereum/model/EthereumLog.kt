@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
-import com.rarible.blockchain.scanner.framework.model.Log
 import io.daonomic.rpc.domain.Word
 import scalether.domain.Address
 import java.time.Instant
@@ -67,4 +66,4 @@ data class EthereumLog(
     val createdAt: Instant = Instant.EPOCH,
     val updatedAt: Instant = Instant.EPOCH
 
-) : Log
+)
