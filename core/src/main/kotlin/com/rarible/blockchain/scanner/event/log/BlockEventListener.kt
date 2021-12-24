@@ -42,19 +42,18 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
         val logEvents = withSpan("onBlockEvents") {
             prepareBlockEvents(events)
         }
-        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<Descriptor, MutableList<R>>>()
-        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<Descriptor, MutableList<R>>>()
+        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
         for (logEvent in logEvents) {
             blockLogsToInsert.getOrPut(logEvent.blockEvent) { hashMapOf() }
-                .getOrPut(logEvent.descriptor) { arrayListOf() } += logEvent.logRecordsToInsert
+                .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToInsert
             blockLogsToRemove.getOrPut(logEvent.blockEvent) { hashMapOf() }
-                .getOrPut(logEvent.descriptor) { arrayListOf() } += logEvent.logRecordsToRemove
+                .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToRemove
         }
         for (blockEvent in events) {
             val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
             val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
-            for ((descriptor, recordsToRemove) in toRemoveGroupIdMap) {
-                val groupId = descriptor.groupId
+            for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
                 logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
                 if (recordsToRemove.isNotEmpty()) {
                     val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator)
@@ -62,8 +61,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
                     logRecordEventPublisher.publish(groupId, logRecordEvents)
                 }
             }
-            for ((descriptor, recordsToInsert) in toInsertGroupIdMap) {
-                val groupId = descriptor.groupId
+            for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
                 logger.info("Publishing {} log records to insert for {} of {}", recordsToInsert.size, groupId, blockEvent)
                 if (recordsToInsert.isNotEmpty()) {
                     logRecordEventPublisher.publish(
