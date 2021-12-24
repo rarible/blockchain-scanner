@@ -13,6 +13,7 @@ import com.rarible.core.kafka.RaribleKafkaConsumer
 import com.rarible.core.kafka.json.JsonDeserializer
 import io.micrometer.core.instrument.MeterRegistry
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class KafkaBlockEventConsumer(
@@ -68,7 +69,13 @@ class KafkaBlockEventConsumer(
             val filteredEvents = if (skipUntil == null) event else event.filter { it.number >= skipUntil }
             if (filteredEvents.isNotEmpty()) {
                 blockListener.onBlockEvents(filteredEvents)
+            } else {
+                logger.info("Skip block handle from ${event.firstOrNull()?.number} to ${event.lastOrNull()}")
             }
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(KafkaBlockEventConsumer::class.java)
     }
 }
