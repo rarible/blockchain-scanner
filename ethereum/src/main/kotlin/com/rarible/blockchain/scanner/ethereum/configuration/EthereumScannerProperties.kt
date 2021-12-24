@@ -16,7 +16,8 @@ data class EthereumScannerProperties(
 
     val optimisticLockRetries: Long = 3,
     override val blockchain: String = "ethereum",
-    override val service: String = "scanner",
+    override val blockService: String = "block-scanner",
+    override val logService: String = "log-scanner",
     override val retryPolicy: RetryPolicyProperties,
     override val job: JobProperties,
     override val monitoring: MonitoringProperties,

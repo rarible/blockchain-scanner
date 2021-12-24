@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.consumer
 
+import com.rarible.blockchain.scanner.configuration.BlockConsumeProperties
 import com.rarible.blockchain.scanner.configuration.KafkaProperties
 import com.rarible.blockchain.scanner.event.block.BlockListener
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
@@ -21,7 +22,8 @@ class KafkaBlockEventConsumer(
     host: String,
     environment: String,
     blockchain: String,
-    private val service: String
+    private val service: String,
+    private val blockConsume: BlockConsumeProperties
 ) : BlockEventConsumer {
 
     private val topic = getBlockTopic(environment, service, blockchain)
@@ -52,18 +54,19 @@ class KafkaBlockEventConsumer(
             properties = daemonProperties,
             // Block consumer should NOT skip events, so there is we're using endless retry
             retryProperties = RetryProperties(attempts = Integer.MAX_VALUE, delay = Duration.ofMillis(1000)),
-            eventHandler = BlockEventHandler(listener),
+            eventHandler = BlockEventHandler(listener, blockConsume.skipUntil),
             meterRegistry = meterRegistry,
             workerName = "block-event-consumer-$group"
         )
     }
 
     private class BlockEventHandler(
-        private val blockListener: BlockListener
+        private val blockListener: BlockListener,
+        private val skipUntil: Long?
     ) : ConsumerBatchEventHandler<BlockEvent> {
         override suspend fun handle(event: List<BlockEvent>) {
-            blockListener.onBlockEvents(event)
+            val filteredEvents = if (skipUntil == null) event else event.filter { it.number >= skipUntil }
+            blockListener.onBlockEvents(filteredEvents)
         }
     }
-
 }

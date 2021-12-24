@@ -34,7 +34,8 @@ class KafkaConfiguration(
             host = applicationEnvironmentInfo.host,
             environment = applicationEnvironmentInfo.name,
             blockchain = properties.blockchain,
-            service = properties.service
+            service = properties.blockService,
+            blockConsume = properties.scan.blockConsume
         )
     }
 
@@ -44,7 +45,7 @@ class KafkaConfiguration(
             properties = kafkaProperties,
             environment = applicationEnvironmentInfo.name,
             blockchain = properties.blockchain,
-            service = properties.service
+            service = properties.blockService
         )
     }
 
@@ -59,8 +60,7 @@ class KafkaConfiguration(
             properties = kafkaProperties,
             environment = applicationEnvironmentInfo.name,
             blockchain = properties.blockchain,
-            service = properties.service
+            service = properties.logService
         )
     }
-
 }

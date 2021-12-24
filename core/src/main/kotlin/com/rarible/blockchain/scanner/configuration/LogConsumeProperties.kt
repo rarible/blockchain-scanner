@@ -1,5 +1,5 @@
 package com.rarible.blockchain.scanner.configuration
 
-data class EventConsumeProperties(
+data class LogConsumeProperties(
     val enabled: Boolean = true
 )

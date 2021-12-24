@@ -252,7 +252,7 @@ class BlockScannerIt : AbstractIntegrationTest() {
             TestBlockchainClient(testBlockchainData),
             testBlockService,
             properties.retryPolicy.scan,
-            properties.scan.blockBatchLoad
+            properties.scan.blockConsume.batchLoad
         )
     }
 }

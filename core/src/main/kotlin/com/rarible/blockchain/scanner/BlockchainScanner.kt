@@ -43,7 +43,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : B
         retryableClient,
         blockService,
         properties.retryPolicy.scan,
-        properties.scan.blockBatchLoad
+        properties.scan.blockConsume.batchLoad
     )
 
     private val blockEventListeners = subscribers
@@ -66,7 +66,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : B
     private val descriptors = subscribers.map { it.getDescriptor() }
 
     suspend fun scan() {
-        if (properties.scan.eventConsume.enabled) {
+        if (properties.scan.logConsume.enabled) {
             blockEventConsumer.start(blockEventListeners)
         }
         if (properties.scan.blockPublish.enabled) {

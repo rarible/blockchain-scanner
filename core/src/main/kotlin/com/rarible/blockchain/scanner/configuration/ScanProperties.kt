@@ -1,8 +1,7 @@
 package com.rarible.blockchain.scanner.configuration
 
 data class ScanProperties(
-    val blockBatchLoad: BlockBatchLoadProperties = BlockBatchLoadProperties(),
+    val blockConsume: BlockConsumeProperties = BlockConsumeProperties(),
     val blockPublish: BlockPublishProperties = BlockPublishProperties(),
-    val eventConsume: EventConsumeProperties = EventConsumeProperties()
+    val logConsume: LogConsumeProperties = LogConsumeProperties()
 )
-

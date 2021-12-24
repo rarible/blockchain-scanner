@@ -14,7 +14,8 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "blockchain.scanner.solana")
 data class SolanaBlockchainScannerProperties(
     override val blockchain: String = "solana",
-    override val service: String = "scanner",
+    override val logService: String = "log-scanner",
+    override val blockService: String = "block-scanner",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(
         worker = DaemonWorkerProperties(
