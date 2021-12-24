@@ -115,11 +115,11 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? {
         }
     }
 
-    val code = requireNotNull(error) { "error field must be not null" }.code
+    val (message, code) = requireNotNull(error) { "error field must be not null" }
     if (code == ErrorCodes.BLOCK_NOT_AVAILABLE) {
         return null
     } else {
-        error("Unknown error code: $code")
+        error("Unknown error code: $code, message: $message")
     }
 }
 
