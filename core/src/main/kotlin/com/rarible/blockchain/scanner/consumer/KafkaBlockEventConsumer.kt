@@ -70,7 +70,7 @@ class KafkaBlockEventConsumer(
             if (filteredEvents.isNotEmpty()) {
                 blockListener.onBlockEvents(filteredEvents)
             } else {
-                logger.info("Skip block handle from ${event.firstOrNull()?.number} to ${event.lastOrNull()}")
+                logger.info("Skip block handle from ${event.firstOrNull()?.number} to ${event.lastOrNull()?.number}")
             }
         }
     }
