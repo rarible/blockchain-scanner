@@ -66,7 +66,9 @@ class KafkaBlockEventConsumer(
     ) : ConsumerBatchEventHandler<BlockEvent> {
         override suspend fun handle(event: List<BlockEvent>) {
             val filteredEvents = if (skipUntil == null) event else event.filter { it.number >= skipUntil }
-            blockListener.onBlockEvents(filteredEvents)
+            if (filteredEvents.isNotEmpty()) {
+                blockListener.onBlockEvents(filteredEvents)
+            }
         }
     }
 }
