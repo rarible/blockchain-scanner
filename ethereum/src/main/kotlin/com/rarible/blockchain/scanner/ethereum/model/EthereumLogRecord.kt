@@ -11,7 +11,7 @@ abstract class EthereumLogRecord : LogRecord {
     abstract val createdAt: Instant
     abstract val updatedAt: Instant
 
-    abstract override val log: EthereumLog
+    abstract val log: EthereumLog
 
     /**
      * Zero-based index of this record among all records produced by subscriber from one blockchain log.

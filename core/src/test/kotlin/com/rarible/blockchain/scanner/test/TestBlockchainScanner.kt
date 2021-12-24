@@ -12,7 +12,6 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
 import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
@@ -20,7 +19,7 @@ import com.rarible.blockchain.scanner.test.subscriber.TestLogRecordComparator
 
 class TestBlockchainScanner(
     blockchainClient: TestBlockchainClient,
-    subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor>>,
+    subscribers: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>>,
     blockMapper: TestBlockMapper,
     blockService: TestBlockService,
     logService: TestLogService,
@@ -29,7 +28,7 @@ class TestBlockchainScanner(
     blockEventPublisher: BlockEventPublisher,
     blockEventConsumer: BlockEventConsumer,
     logRecordEventPublisher: LogRecordEventPublisher
-) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLog, TestLogRecord, TestDescriptor>(
+) : BlockchainScanner<TestBlockchainBlock, TestBlockchainLog, TestBlock, TestLogRecord, TestDescriptor>(
     blockchainClient,
     subscribers,
     blockMapper,

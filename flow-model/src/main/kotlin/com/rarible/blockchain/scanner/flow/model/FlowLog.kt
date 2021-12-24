@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.flow.model
 
-import com.rarible.blockchain.scanner.framework.model.Log
 import java.time.Instant
 
 data class FlowLog(
@@ -10,4 +9,4 @@ data class FlowLog(
     val timestamp: Instant,
     val blockHeight: Long,
     val blockHash: String
-) : Log
+)

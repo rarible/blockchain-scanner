@@ -11,7 +11,6 @@ import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
@@ -24,10 +23,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 
-class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
+class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
-    private val logService: LogService<L, R, D>,
+    subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+    private val logService: LogService<R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
 ) : BlockListener {

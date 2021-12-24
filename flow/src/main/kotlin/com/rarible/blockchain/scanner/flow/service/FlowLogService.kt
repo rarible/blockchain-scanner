@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.flow.service
 
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
-import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Service
 @Service
 class FlowLogService(
     private val logRepository: FlowLogRepository
-) : LogService<FlowLog, FlowLogRecord, FlowDescriptor> {
+) : LogService<FlowLogRecord, FlowDescriptor> {
 
     override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord): FlowLogRecord =
         logRepository.delete(descriptor.collection, record)

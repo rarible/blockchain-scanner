@@ -11,7 +11,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
 import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -23,12 +22,12 @@ import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import kotlinx.coroutines.flow.Flow
 
-abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, L : Log, R : LogRecord, D : Descriptor>(
+abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
+    subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
     blockMapper: BlockMapper<BB, B>,
     blockService: BlockService<B>,
-    logService: LogService<L, R, D>,
+    logService: LogService<R, D>,
     logRecordComparator: LogRecordComparator<R>,
     private val properties: BlockchainScannerProperties,
     private val blockEventPublisher: BlockEventPublisher,

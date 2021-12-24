@@ -10,7 +10,6 @@ import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
-import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
@@ -23,10 +22,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 
-class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : LogRecord, D : Descriptor>(
+class BlockEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
-    val subscriber: LogEventSubscriber<BB, BL, L, R, D>,
-    private val logService: LogService<L, R, D>
+    val subscriber: LogEventSubscriber<BB, BL, R, D>,
+    private val logService: LogService<R, D>
 ) {
 
     private val logger = LoggerFactory.getLogger(subscriber.javaClass)

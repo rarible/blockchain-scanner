@@ -22,7 +22,6 @@ import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomTestLogRecord
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.subscriber.TestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
@@ -192,7 +191,7 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
     }
 
     private fun createBlockSubscriber(
-        subscriber: LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLog, TestLogRecord, TestDescriptor>,
+        subscriber: LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>,
         testBlockchainClient: TestBlockchainClient = TestBlockchainClient(TestBlockchainData()),
     ) = BlockEventSubscriber(
         testBlockchainClient,

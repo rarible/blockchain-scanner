@@ -3,14 +3,13 @@ package com.rarible.blockchain.scanner.test.service
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import kotlinx.coroutines.reactive.awaitFirst
 
 class TestLogService(
     private val testLogRepository: TestLogRepository
-) : LogService<TestLog, TestLogRecord, TestDescriptor> {
+) : LogService<TestLogRecord, TestDescriptor> {
 
     override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord): TestLogRecord =
         testLogRepository.delete(descriptor.collection, record).awaitFirst()

@@ -34,7 +34,7 @@ class SolanaBlockchainScanner(
     blockEventPublisher: BlockEventPublisher,
     blockEventConsumer: BlockEventConsumer,
     logEventPublisher: LogRecordEventPublisher
-) : BlockchainScanner<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaBlock, SolanaLog, SolanaLogRecord, SolanaDescriptor>(
+) : BlockchainScanner<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaBlock, SolanaLogRecord, SolanaDescriptor>(
     blockchainClient,
     subscribers,
     blockMapper,
