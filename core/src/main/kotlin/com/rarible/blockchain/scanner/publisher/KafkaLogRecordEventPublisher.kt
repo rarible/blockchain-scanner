@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.kafka.KafkaMessage
 import com.rarible.core.kafka.RaribleKafkaProducer
 import com.rarible.core.kafka.json.JsonSerializer
+import kotlinx.coroutines.flow.collect
 import java.util.*
 
 class KafkaLogRecordEventPublisher(
@@ -34,7 +35,7 @@ class KafkaLogRecordEventPublisher(
                 value = it
             )
         }
-        kafkaProducer.send(messages, topic)
+        kafkaProducer.send(messages, topic).collect { result -> result.ensureSuccess() }
     }
 
     private fun getTopic(groupId: String): String = "$topicPrefix.${groupId}"

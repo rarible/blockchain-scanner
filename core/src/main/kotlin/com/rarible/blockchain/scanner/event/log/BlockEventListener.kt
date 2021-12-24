@@ -29,7 +29,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
     subscribers: List<LogEventSubscriber<BB, BL, L, R, D>>,
     private val logService: LogService<L, R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
-    private val logRecordEventPublisher: LogRecordEventPublisher
+    private val logRecordEventPublisher: LogRecordEventPublisher,
 ) : BlockListener {
 
     private val logger = LoggerFactory.getLogger(BlockListener::class.java)
@@ -42,18 +42,19 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
         val logEvents = withSpan("onBlockEvents") {
             prepareBlockEvents(events)
         }
-        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
-        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<Descriptor, MutableList<R>>>()
+        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<Descriptor, MutableList<R>>>()
         for (logEvent in logEvents) {
             blockLogsToInsert.getOrPut(logEvent.blockEvent) { hashMapOf() }
-                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecordsToInsert
+                .getOrPut(logEvent.descriptor) { arrayListOf() } += logEvent.logRecordsToInsert
             blockLogsToRemove.getOrPut(logEvent.blockEvent) { hashMapOf() }
-                .getOrPut(logEvent.descriptor.id) { arrayListOf() } += logEvent.logRecordsToRemove
+                .getOrPut(logEvent.descriptor) { arrayListOf() } += logEvent.logRecordsToRemove
         }
         for (blockEvent in events) {
             val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
             val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
-            for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
+            for ((descriptor, recordsToRemove) in toRemoveGroupIdMap) {
+                val groupId = descriptor.groupId
                 logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
                 if (recordsToRemove.isNotEmpty()) {
                     val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator)
@@ -61,7 +62,8 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, L : Log, R : 
                     logRecordEventPublisher.publish(groupId, logRecordEvents)
                 }
             }
-            for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
+            for ((descriptor, recordsToInsert) in toInsertGroupIdMap) {
+                val groupId = descriptor.groupId
                 logger.info("Publishing {} log records to insert for {} of {}", recordsToInsert.size, groupId, blockEvent)
                 if (recordsToInsert.isNotEmpty()) {
                     logRecordEventPublisher.publish(
