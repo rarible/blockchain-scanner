@@ -17,13 +17,19 @@ internal class SolanaClientTest {
     @Test
     @Disabled
     fun testParseTransactionEvents() = runBlocking {
-        val descriptor = object : SolanaDescriptor(programId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s", "", "") {}
+        val descriptor = object : SolanaDescriptor(
+            programId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+            collection = "",
+            groupId = "",
+            entityType = Any::class.java
+        ) {}
         val events = client.getBlockLogs(descriptor, 91725442L..91725442L)
             .single()
             .logs
-            .map(SolanaBlockchainLog::event)
+            .map(SolanaBlockchainLog::instruction)
 
         assertTrue(events.isNotEmpty())
+        assertTrue(events.all { it.programId == "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" })
     }
 
     @Test

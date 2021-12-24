@@ -1,9 +1,14 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.solana.model.SolanaLog
 
 class SolanaBlockchainLog(
-    override val hash: String,
-    override val blockHash: String,
-    val event: SolanaBlockEvent
-) : BlockchainLog
+    val log: SolanaLog,
+    val instruction: SolanaInstruction
+) : BlockchainLog {
+    override val hash
+        get() = log.transactionHash
+    override val blockHash
+        get() = log.blockHash
+}

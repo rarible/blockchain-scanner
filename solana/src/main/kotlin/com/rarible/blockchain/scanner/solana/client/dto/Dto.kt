@@ -1,7 +1,10 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
-import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent
+import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
+import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
+import com.rarible.blockchain.scanner.solana.model.SolanaLog
 
 @Suppress("unused")
 abstract class Request(
@@ -123,17 +126,28 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? {
     }
 }
 
-fun SolanaTransactionDto.toModel(): List<SolanaBlockEvent> {
-    val instructions = transaction.message.instructions + meta.innerInstructions.flatMap { it.instructions }
-    val accountKeys = transaction.message.accountKeys
+fun Instruction.toModel(
+    accountKeys: List<String>,
+    blockNumber: Long,
+    blockHash: String,
+    transactionHash: String,
+    transactionIndex: Int,
+    innerTransactionIndex: Int
+): SolanaBlockchainLog {
+    val instruction = SolanaInstruction(
+        programId = accountKeys[programIdIndex],
+        data = data,
+        accounts = accounts.map { accountKeys[it] }
+    )
+    val solanaLog = SolanaLog(
+        blockNumber = blockNumber,
+        transactionHash = transactionHash,
+        blockHash = blockHash,
+        instructionIndex = transactionIndex,
+        innerInstructionIndex = innerTransactionIndex
+    )
 
-    return instructions.map { transaction ->
-        val programId = accountKeys[transaction.programIdIndex]
-        val data = transaction.data
-        val accounts = transaction.accounts.map { accountKeys[it] }
-
-        SolanaBlockEvent(programId, data, accounts)
-    }
+    return SolanaBlockchainLog(solanaLog, instruction)
 }
 
 object ErrorCodes {

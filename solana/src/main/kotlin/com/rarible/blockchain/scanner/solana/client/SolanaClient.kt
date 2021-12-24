@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -40,15 +39,43 @@ class SolanaClient(
         range: LongRange
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> = flow {
         for (slot in range) {
-            val blockDto = api.getBlock(slot, TransactionDetails.Full)
-            val solanaBlockchainBlock = blockDto.toModel(slot) ?: continue
-            val solanaBlockchainLogs = blockDto.result!!.transactions.flatMap { transactionDto ->
-                val hash = transactionDto.transaction.signatures.first()
-                val blockHash = solanaBlockchainBlock.hash
-                val events = transactionDto.toModel()
+            val apiResponse = api.getBlock(slot, TransactionDetails.Full)
+            val solanaBlockchainBlock = apiResponse.toModel(slot) ?: continue
+            val blockDto = apiResponse.result!!
 
-                events.filter { it.programId == descriptor.programId }
-                    .map { event -> SolanaBlockchainLog(hash, blockHash, event) }
+            val solanaBlockchainLogs = blockDto.transactions.flatMapIndexed { transactionIndex, transactionDto ->
+                val result = mutableListOf<SolanaBlockchainLog>()
+                val transaction = transactionDto.transaction
+                val accountKeys = transaction.message.accountKeys
+                val blockNumber = solanaBlockchainBlock.number
+                val blockHash = solanaBlockchainBlock.hash
+                val transactionHash = transactionDto.transaction.signatures.first()
+
+                result += transaction.message.instructions.map {
+                    it.toModel(
+                        accountKeys,
+                        blockNumber,
+                        blockHash,
+                        transactionHash,
+                        transactionIndex,
+                        Int.MIN_VALUE
+                    )
+                }
+
+                result += transactionDto.meta.innerInstructions.flatMapIndexed { innerInstructionIndex, innerInstruction ->
+                    innerInstruction.instructions.map { instruction ->
+                        instruction.toModel(
+                            accountKeys,
+                            blockNumber,
+                            blockHash,
+                            transactionHash,
+                            innerInstruction.index,
+                            innerInstructionIndex
+                        )
+                    }
+                }
+
+                result.filter { it.instruction.programId == descriptor.programId }
             }
 
             emit(FullBlock(solanaBlockchainBlock, solanaBlockchainLogs))
