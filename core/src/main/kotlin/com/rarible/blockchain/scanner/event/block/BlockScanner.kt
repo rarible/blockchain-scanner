@@ -10,17 +10,13 @@ import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
-import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
-import com.rarible.blockchain.scanner.framework.model.Block
-import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import kotlinx.coroutines.flow.collect
 import org.slf4j.LoggerFactory
 
-class BlockScanner<BB : BlockchainBlock, B : Block>(
-    private val blockMapper: BlockMapper<BB, B>,
+class BlockScanner<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
-    private val blockService: BlockService<B>,
+    private val blockService: BlockService,
     private val retryPolicy: ScanRetryPolicyProperties,
     private val batchLoad: BlockBatchLoadProperties
 ) {
@@ -42,7 +38,6 @@ class BlockScanner<BB : BlockchainBlock, B : Block>(
         }
 
         val handler = BlockHandler(
-            blockMapper,
             blockClient,
             blockService,
             blockEventPublisher,

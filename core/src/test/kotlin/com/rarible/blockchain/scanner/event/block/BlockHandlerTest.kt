@@ -9,8 +9,6 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.test.data.randomString
-import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.service.TestBlockService
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -19,9 +17,8 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
 internal class BlockHandlerTest {
-    private val blockMapper = TestBlockMapper()
-    private val blockClient =  mockk<TestBlockchainClient>()
-    private val blockService = mockk<TestBlockService>()
+    private val blockClient = mockk<TestBlockchainClient>()
+    private val blockService = mockk<BlockService>()
     private val blockListener = mockk<BlockEventPublisher>()
     private val batchLoad = BlockBatchLoadProperties(
         enabled = true,
@@ -29,7 +26,6 @@ internal class BlockHandlerTest {
         confirmationBlockDistance = 10
     )
     private val blockHandler = BlockHandler(
-        blockMapper,
         blockClient,
         blockService,
         blockListener,
@@ -41,12 +37,12 @@ internal class BlockHandlerTest {
         val lastStateBlockNumber = 1L
         val latestBlockNumber = 200L
 
-        val testBlockchainBlocks = (lastStateBlockNumber.. latestBlockNumber)
+        val testBlockchainBlocks = (lastStateBlockNumber..latestBlockNumber)
             .map { createTestBlockchainBlock(it) }
             .let { makeChain(it) }
             .associateBy { it.number }
         val testBlocks = testBlockchainBlocks
-            .mapValues { blockMapper.map(it.value) }
+            .mapValues { mapBlockchainBlock(it.value) }
 
         coEvery { blockService.getLastBlock() } returns testBlocks[lastStateBlockNumber]
 

@@ -1,20 +1,16 @@
 package com.rarible.blockchain.scanner.test.configuration
 
 import com.rarible.blockchain.scanner.BlockchainScanner
-import com.rarible.blockchain.scanner.event.block.BlockScanner
+import com.rarible.blockchain.scanner.event.block.*
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
-import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.model.TestBlock
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
-import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import kotlinx.coroutines.reactive.awaitFirst
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,13 +23,10 @@ abstract class AbstractIntegrationTest {
     protected lateinit var mongo: ReactiveMongoOperations
 
     @Autowired
-    lateinit var testBlockMapper: TestBlockMapper
+    lateinit var testBlockRepository: BlockRepository
 
     @Autowired
-    lateinit var testBlockRepository: TestBlockRepository
-
-    @Autowired
-    lateinit var testBlockService: TestBlockService
+    lateinit var testBlockService: BlockService
 
     @Autowired
     lateinit var testLogRepository: TestLogRepository
@@ -48,7 +41,7 @@ abstract class AbstractIntegrationTest {
         return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
     }
 
-    protected suspend fun findBlock(number: Long): TestBlock? {
+    protected suspend fun findBlock(number: Long): Block? {
         return testBlockRepository.findById(number)
     }
 
@@ -56,14 +49,14 @@ abstract class AbstractIntegrationTest {
         return mongo.findAll<Any>(collection).collectList().awaitFirst()
     }
 
-    protected suspend fun findAllBlocks(): List<TestBlock> {
-        return mongo.findAll<TestBlock>().collectList().awaitFirst()
+    protected suspend fun findAllBlocks(): List<Block> {
+        return mongo.findAll<Block>().collectList().awaitFirst()
     }
 
     protected suspend fun saveBlock(
         block: TestOriginalBlock
     ): TestOriginalBlock {
-        testBlockRepository.save(testBlockMapper.map(TestBlockchainBlock(block)))
+        testBlockRepository.save(mapBlockchainBlock(TestBlockchainBlock(block)))
         return block
     }
 
@@ -82,7 +75,7 @@ abstract class AbstractIntegrationTest {
         return RevertedBlockEvent(source, block.number, block.hash)
     }
 
-    protected suspend fun BlockScanner<*, *>.scanOnce(publisher: BlockEventPublisher) {
+    protected suspend fun BlockScanner<*>.scanOnce(publisher: BlockEventPublisher) {
         try {
             scan(publisher)
         } catch (e: Exception) {
@@ -90,7 +83,7 @@ abstract class AbstractIntegrationTest {
         }
     }
 
-    protected suspend fun BlockchainScanner<*, *, *, *, *>.scanOnce() {
+    protected suspend fun BlockchainScanner<*, *, *, *>.scanOnce() {
         try {
             scan()
         } catch (e: IllegalStateException) {

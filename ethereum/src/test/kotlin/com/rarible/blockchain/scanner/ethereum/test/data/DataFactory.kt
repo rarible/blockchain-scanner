@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.test.data
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
@@ -19,8 +18,8 @@ import java.math.BigInteger
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.abs
 
-fun randomBlock(): EthereumBlock {
-    return EthereumBlock(
+fun randomBlock(): com.rarible.blockchain.scanner.event.block.Block {
+    return com.rarible.blockchain.scanner.event.block.Block(
         id = randomPositiveLong(),
         hash = randomBlockHash().toString(),
         parentHash = randomBlockHash().toString(),
