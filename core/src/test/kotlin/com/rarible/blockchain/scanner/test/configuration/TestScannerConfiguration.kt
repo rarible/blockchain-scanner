@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.test.configuration
 
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
+import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
@@ -10,10 +11,7 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.data.testDescriptor2
-import com.rarible.blockchain.scanner.test.mapper.TestBlockMapper
-import com.rarible.blockchain.scanner.test.repository.TestBlockRepository
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
-import com.rarible.blockchain.scanner.test.service.TestBlockService
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
@@ -53,16 +51,7 @@ class TestScannerConfiguration {
     )
 
     @Bean
-    fun testBlockMapper() = TestBlockMapper()
-
-    @Bean
-    fun testBlockRepository() = TestBlockRepository(mongo)
-
-    @Bean
     fun testLogRepository() = TestLogRepository(mongo)
-
-    @Bean
-    fun testBlockService() = TestBlockService(testBlockRepository())
 
     @Bean
     fun testLogService() = TestLogService(testLogRepository())
@@ -74,7 +63,7 @@ class TestScannerConfiguration {
     fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 2)
 
     @Bean
-    fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher): TestBlockchainScanner {
+    fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher, blockService: BlockService): TestBlockchainScanner {
         val testLogRecordEventPublisher: LogRecordEventPublisher = mockk()
 
         // Imitates retry case for failed batch processing
@@ -86,8 +75,7 @@ class TestScannerConfiguration {
         return TestBlockchainScanner(
             blockchainClient = testBlockchainClient(),
             subscribers = listOf(testSubscriber1(), testSubscriber2()),
-            blockMapper = testBlockMapper(),
-            blockService = testBlockService(),
+            blockService = blockService,
             logService = testLogService(),
             logRecordEventPublisher = testLogRecordEventPublisher,
             properties = properties,

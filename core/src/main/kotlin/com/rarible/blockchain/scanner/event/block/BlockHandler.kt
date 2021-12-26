@@ -6,9 +6,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
-import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
-import com.rarible.blockchain.scanner.framework.model.Block
-import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.async
@@ -20,10 +17,32 @@ import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.onEach
 import org.slf4j.LoggerFactory
 
-class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, only one B is needed
-    private val blockMapper: BlockMapper<BB, B>, //todo remove block mapper, not needed
+/**
+ * Synchronizes block state in db with the blockchain.
+ * Emits these events:
+ *  * NewBlock (when recent block found)
+ *  * NewBlocks (when batch of old blocks found)
+ *  * RevertedBlock (when blockchain state was reorganized, fork was detected)
+ *
+ * Blocks have 2 statuses:
+ *  1. PENDING - when block is found but block processing is not yet finished (some or no data is processed)
+ *  2. SUCCESS - when block is fully processed
+ *
+ * Considerations about handling statuses of the blocks:
+ *  1. When new Block found:
+ *      * block saved into the state with status PENDING
+ *      * [blockListener] is notified about the event (NewBlock or NewBlocks)
+ *      * if listener completes without an error, status is set to SUCCESS
+ *  2. When block needs to be reverted (in blockchain hash of the block with the same number differs)
+ *      * it should be reverted if block is in any status (PENDING or SUCCESS)
+ *      * [blockListener] is notified about the event (RevertedBlock)
+ *      * if listener completed without an error, block is removed from the db
+ *
+ * See [onNewBlock] for more information about algorithm
+ */
+class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
-    private val blockService: BlockService<B>,
+    private val blockService: BlockService,
     private val blockListener: BlockEventPublisher,
     private val batchLoad: BlockBatchLoadProperties
 ) {
@@ -33,11 +52,20 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
     // We can cache lastKnown block in order to avoid huge amount of DB requests in
     // regular case of block processing
     @Volatile
-    private var lastBlock: B? = null
+    private var lastBlock: Block? = null
 
+    /**
+     * Entry-point.
+     * It's called when new block is seen by the [BlockScanner]
+     *  1. If [BlockchainBlock.parentHash] of the new block is the same as the last known block's hash then [NewBlockEvent] is emitted
+     *  2. Otherwise, handler tries to reconstruct the state:
+     *      * [checkChainReorgAndRevert] is called: checks if latest blocks in db should be reverted
+     *      * [batchRestoreMissedBlocks] is called: if db state is far from the blockchain state (thus it's safe to consider these blocks won't be reverted or changed in any way)
+     *      * loads block information one by one and emits corresponding [NewBlockEvent] events
+     */
     suspend fun onNewBlock(newBlockchainBlock: BB) {
         logger.info("Received new Block [{}:{}]", newBlockchainBlock.number, newBlockchainBlock.hash)
-        val newBlock = blockMapper.map(newBlockchainBlock)
+        val newBlock = mapBlockchainBlock(newBlockchainBlock)
 
         val lastStateBlock = getLastKnownBlock()
         logger.info(
@@ -56,7 +84,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         lastBlock = restoreMissedBlocks(lastStateBlock, newBlock)
     }
 
-    private suspend fun restoreMissedBlocks(lastStateBlock: B, newBlock: B): B {
+    private suspend fun restoreMissedBlocks(lastStateBlock: Block, newBlock: Block): Block {
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
         currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
@@ -90,7 +118,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
      * @param startStateBlock block from the state to start looking for reorg from
      * @return latest correct block found
      */
-    private suspend fun checkChainReorgAndRevert(startStateBlock: B): B {
+    private suspend fun checkChainReorgAndRevert(startStateBlock: Block): Block {
         var stateBlock = startStateBlock
         var blockchainBlock = fetchBlock(stateBlock.id)
 
@@ -105,7 +133,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         return stateBlock
     }
 
-    private suspend fun getLastKnownBlock(): B {
+    private suspend fun getLastKnownBlock(): Block {
         if (lastBlock != null) {
             return lastBlock!!
         }
@@ -125,7 +153,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         return blockchainBlock
     }
 
-    private suspend fun getNextBlock(startBlock: B, maxSteps: Long): B {
+    private suspend fun getNextBlock(startBlock: Block, maxSteps: Long): Block {
         var id = startBlock.id
 
         while (id < startBlock.id + maxSteps) {
@@ -139,7 +167,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         error("Can't find next block for: $startBlock")
     }
 
-    private suspend fun getPreviousBlock(startBlock: B): B {
+    private suspend fun getPreviousBlock(startBlock: Block): Block {
         var id = startBlock.id
 
         while (id > 0) {
@@ -153,7 +181,7 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         error("Can't find previous block for: $startBlock")
     }
 
-    private suspend fun batchRestoreMissedBlocks(lastStateBlock: B, amount: Long): B = coroutineScope {
+    private suspend fun batchRestoreMissedBlocks(lastStateBlock: Block, amount: Long): Block = coroutineScope {
         val startBlockId = lastStateBlock.id + 1
         val endBlockId = startBlockId + amount
         require(endBlockId - startBlockId > 0) { "Block batch restore range must be positive" }
@@ -172,22 +200,25 @@ class BlockHandler<BB : BlockchainBlock, B : Block>(//todo simplify generics, on
         }.last()
     }
 
-    private suspend fun updateBlock(block: B) {
+    private suspend fun updateBlock(block: Block) {
         notifyNewBlock(block)
         blockService.save(block)
         logger.info("Block [{}:{}] saved", block.id, block.hash)
     }
 
-    private suspend fun fetchBlock(number: Long): B? {
+    private suspend fun fetchBlock(number: Long): Block? {
         val blockchainBlock = blockClient.getBlock(number)
-        return blockchainBlock?.let { blockMapper.map(it) }
+        return blockchainBlock?.let { mapBlockchainBlock(it) }
     }
 
-    private suspend fun notifyNewBlock(block: B) {
+    private suspend fun notifyNewBlock(block: Block) {
         blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
     }
 
-    private suspend fun notifyRevertedBlock(block: B) {
+    private suspend fun notifyRevertedBlock(block: Block) {
         blockListener.publish(RevertedBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
     }
 }
+
+fun mapBlockchainBlock(b: BlockchainBlock): Block =
+    Block(b.number, b.hash, b.parentHash, b.timestamp)

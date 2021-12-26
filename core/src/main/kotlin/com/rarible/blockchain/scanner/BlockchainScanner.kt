@@ -4,29 +4,26 @@ import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.event.block.BlockScanner
+import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.mapper.BlockMapper
-import com.rarible.blockchain.scanner.framework.model.Block
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
-import com.rarible.blockchain.scanner.framework.service.BlockService
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
 import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
 import kotlinx.coroutines.flow.Flow
 
-abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : Block, R : LogRecord, D : Descriptor>(
+abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
-    blockMapper: BlockMapper<BB, B>,
-    blockService: BlockService<B>,
+    blockService: BlockService,
     logService: LogService<R, D>,
     logRecordComparator: LogRecordComparator<R>,
     private val properties: BlockchainScannerProperties,
@@ -38,7 +35,6 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, B : B
     private val retryableClient = RetryableBlockchainClient(blockchainClient, properties.retryPolicy.client)
 
     private val blockScanner = BlockScanner(
-        blockMapper,
         retryableClient,
         blockService,
         properties.retryPolicy.scan,

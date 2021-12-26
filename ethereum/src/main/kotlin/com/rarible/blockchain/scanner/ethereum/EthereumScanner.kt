@@ -6,14 +6,12 @@ import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
-import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
-import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
+import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import kotlinx.coroutines.reactor.mono
@@ -26,18 +24,16 @@ import org.springframework.stereotype.Component
 class EthereumScanner(
     ethereumClient: EthereumBlockchainClient,
     subscribers: List<EthereumLogEventSubscriber>,
-    blockMapper: EthereumBlockMapper,
-    blockService: EthereumBlockService,
+    blockService: BlockService,
     logService: EthereumLogService,
     properties: BlockchainScannerProperties,
     // Autowired from core
     blockEventPublisher: BlockEventPublisher,
     blockEventConsumer: BlockEventConsumer,
     logRecordEventPublisher: LogRecordEventPublisher
-) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumBlock, EthereumLogRecord, EthereumDescriptor>(
+) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>(
     ethereumClient,
     subscribers,
-    blockMapper,
     blockService,
     logService,
     EthereumLogRecordComparator,

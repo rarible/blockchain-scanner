@@ -3,22 +3,19 @@ package com.rarible.blockchain.scanner.ethereum.migration
 import com.github.cloudyrock.mongock.ChangeLog
 import com.github.cloudyrock.mongock.ChangeSet
 import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
+import com.rarible.blockchain.scanner.event.block.Block
 import io.changock.migration.api.annotations.NonLockGuarded
 import org.bson.Document
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.index.Index
 import org.springframework.data.mongodb.core.index.PartialIndexFilter
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 
 @ChangeLog(order = "00001")
 class ChangeLog00001 {
 
     @ChangeSet(id = "addBlockIndex", order = "00001", author = "eugene")
     fun addBlockIndex(template: MongockTemplate) {
-        template.indexOps(EthereumBlock::class.java).ensureIndex(
+        template.indexOps(Block::class.java).ensureIndex(
             Index().on("hash", Sort.Direction.ASC)
         )
     }
