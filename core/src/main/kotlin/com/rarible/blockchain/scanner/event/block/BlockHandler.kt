@@ -39,6 +39,10 @@ import org.slf4j.LoggerFactory
  *      * if listener completed without an error, block is removed from the db
  *
  * See [onNewBlock] for more information about algorithm
+ * TODO
+ *  handle statuses
+ *  add batch events
+ *  we can add constraint to the DB: only one PENDING block can exist. do we need this?
  */
 class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
@@ -52,12 +56,14 @@ class BlockHandler<BB : BlockchainBlock>(
     // We can cache lastKnown block in order to avoid huge amount of DB requests in
     // regular case of block processing
     @Volatile
+    //TODO do we need this volatile?
     private var lastBlock: Block? = null
 
     /**
      * Entry-point.
      * It's called when new block is seen by the [BlockScanner]
      *  1. If [BlockchainBlock.parentHash] of the new block is the same as the last known block's hash then [NewBlockEvent] is emitted
+     *      * if last known block is in status PENDING then we process all the way from the start
      *  2. Otherwise, handler tries to reconstruct the state:
      *      * [checkChainReorgAndRevert] is called: checks if latest blocks in db should be reverted
      *      * [batchRestoreMissedBlocks] is called: if db state is far from the blockchain state (thus it's safe to consider these blocks won't be reverted or changed in any way)
@@ -68,29 +74,31 @@ class BlockHandler<BB : BlockchainBlock>(
         val newBlock = mapBlockchainBlock(newBlockchainBlock)
 
         val lastStateBlock = getLastKnownBlock()
-        logger.info(
-            "Last known Block [{}:{}], parentHash: {}",
-            lastStateBlock.id, lastStateBlock.hash, lastStateBlock.parentHash
-        )
+        logger.info("Last known Block: $lastStateBlock")
 
         // If new block's parent hash is the same as hash of last known block, we could omit blockchain reorg check
         if (newBlockchainBlock.parentHash == lastStateBlock.hash) {
-            updateBlock(newBlock)
-            lastBlock = newBlock
+            if (lastStateBlock.status == BlockStatus.PENDING) {
+                newBlock(lastStateBlock)
+            }
+            lastBlock = newBlock(newBlock)
             return
         }
 
         // Otherwise, we have missed blocks in our state OR chain was reorganized
-        lastBlock = restoreMissedBlocks(lastStateBlock, newBlock)
+        lastBlock = restoreMissingBlocks(lastStateBlock, newBlock)
     }
 
-    private suspend fun restoreMissedBlocks(lastStateBlock: Block, newBlock: Block): Block {
+    private suspend fun restoreMissingBlocks(lastStateBlock: Block, newBlock: Block): Block {
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
         currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
             batchRestoreMissedBlocks(currentBlock, newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance)
         } else {
             currentBlock
+        }
+        if (currentBlock.status == BlockStatus.PENDING) {
+            newBlock(currentBlock)
         }
         while (currentBlock.id < newBlock.id) {
             val nextBlock = getNextBlock(currentBlock, newBlock.id - currentBlock.id)
@@ -107,8 +115,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 return currentBlock
             }
 
-            updateBlock(nextBlock)
-            currentBlock = nextBlock
+            currentBlock = newBlock(nextBlock)
         }
         return currentBlock
     }
@@ -123,8 +130,7 @@ class BlockHandler<BB : BlockchainBlock>(
         var blockchainBlock = fetchBlock(stateBlock.id)
 
         while (blockchainBlock == null || blockchainBlock.hash != stateBlock.hash) {
-            notifyRevertedBlock(stateBlock)
-            blockService.remove(stateBlock.id)
+            revertBlock(stateBlock)
 
             stateBlock = getPreviousBlock(stateBlock)
             blockchainBlock = fetchBlock(stateBlock.id)
@@ -144,10 +150,9 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
         logger.info("There is no last know Block, retrieving first one")
-        val blockchainBlock = fetchBlock(0) ?: error("not found root block")
+        val blockchainBlock = newBlock(fetchBlock(0) ?: error("not found root block"))
 
         logger.info("Found first Block in chain [{}:{}]", blockchainBlock.id, blockchainBlock.hash)
-        updateBlock(blockchainBlock)
 
         lastBlock = blockchainBlock
         return blockchainBlock
@@ -196,29 +201,28 @@ class BlockHandler<BB : BlockchainBlock>(
                 }
             }.awaitAll().asFlow()
         }.onEach { block ->
-            updateBlock(block)
+            newBlock(block)
         }.last()
     }
 
-    private suspend fun updateBlock(block: Block) {
-        notifyNewBlock(block)
-        blockService.save(block)
+    private suspend fun newBlock(block: Block): Block {
+        blockService.save(block.copy(status = BlockStatus.PENDING))
+        blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
+        val result = blockService.save(block.copy(status = BlockStatus.SUCCESS))
         logger.info("Block [{}:{}] saved", block.id, block.hash)
+        return result
+    }
+
+    private suspend fun revertBlock(block: Block) {
+        blockListener.publish(RevertedBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
+        blockService.remove(block.id)
     }
 
     private suspend fun fetchBlock(number: Long): Block? {
         val blockchainBlock = blockClient.getBlock(number)
         return blockchainBlock?.let { mapBlockchainBlock(it) }
     }
-
-    private suspend fun notifyNewBlock(block: Block) {
-        blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
-    }
-
-    private suspend fun notifyRevertedBlock(block: Block) {
-        blockListener.publish(RevertedBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
-    }
 }
 
 fun mapBlockchainBlock(b: BlockchainBlock): Block =
-    Block(b.number, b.hash, b.parentHash, b.timestamp)
+    Block(b.number, b.hash, b.parentHash, b.timestamp, BlockStatus.PENDING)

@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.event.block.BlockStatus
 import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
@@ -23,7 +24,8 @@ fun randomBlock(): com.rarible.blockchain.scanner.event.block.Block {
         id = randomPositiveLong(),
         hash = randomBlockHash().toString(),
         parentHash = randomBlockHash().toString(),
-        timestamp = randomPositiveLong()
+        timestamp = randomPositiveLong(),
+        status = BlockStatus.PENDING
     )
 }
 

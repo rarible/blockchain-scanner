@@ -59,7 +59,7 @@ internal class BlockHandlerTest {
 
         coEvery {
             blockService.save(any())
-        } returns Unit
+        } answers { it.invocation.args.first() as Block }
 
         blockHandler.onNewBlock(requireNotNull(testBlockchainBlocks[latestBlockNumber]))
 
