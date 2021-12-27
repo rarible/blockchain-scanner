@@ -43,7 +43,6 @@ class BlockchainScannerTest {
                     enabled = false
                 )
             ),
-            job = JobProperties(),
             monitoring = MonitoringProperties(),
             daemon = DaemonWorkerProperties()
         )

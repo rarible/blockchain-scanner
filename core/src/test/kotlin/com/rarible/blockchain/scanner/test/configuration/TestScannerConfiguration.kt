@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
-import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.data.randomBlockchainData
@@ -63,7 +62,11 @@ class TestScannerConfiguration {
     fun testSubscriber2() = TestLogEventSubscriber(testDescriptor2(), 2)
 
     @Bean
-    fun testScanner(consumer: BlockEventConsumer, publisher: BlockEventPublisher, blockService: BlockService): TestBlockchainScanner {
+    fun testScanner(
+        consumer: BlockEventConsumer,
+        publisher: BlockEventPublisher,
+        blockService: BlockService
+    ): TestBlockchainScanner {
         val testLogRecordEventPublisher: LogRecordEventPublisher = mockk()
 
         // Imitates retry case for failed batch processing
@@ -83,10 +86,4 @@ class TestScannerConfiguration {
             blockEventPublisher = publisher
         )
     }
-
-    @Bean
-    fun fromProvider(): ReconciliationFromProvider = object : ReconciliationFromProvider {
-        override fun initialFrom(groupId: String): Long = 1L
-    }
-
 }

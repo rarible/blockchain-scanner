@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.solana.configuration
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
@@ -25,7 +24,6 @@ data class SolanaBlockchainScannerProperties(
             buffer = true
         )
     ),
-    override val job: JobProperties = JobProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     val rpcApiUrl: String,
     override val scan: ScanProperties = ScanProperties()
