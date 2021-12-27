@@ -1,9 +1,20 @@
 package com.rarible.blockchain.scanner.solana.model
 
-import com.rarible.blockchain.scanner.solana.client.SolanaBlockEvent
-
 data class SolanaLog(
+    val blockNumber: Long,
     val transactionHash: String,
-    val blockHeight: Long,
-    val event: SolanaBlockEvent
-)
+    val blockHash: String,
+    val instructionIndex: Int,
+    val innerInstructionIndex: Int?
+) : Comparable<SolanaLog> {
+    override fun compareTo(other: SolanaLog): Int = comparator.compare(this, other)
+
+    companion object {
+        private val comparator =
+            compareBy<SolanaLog>(
+                { it.blockNumber },
+                { it.instructionIndex },
+                { it.innerInstructionIndex ?: Int.MIN_VALUE }
+            )
+    }
+}
