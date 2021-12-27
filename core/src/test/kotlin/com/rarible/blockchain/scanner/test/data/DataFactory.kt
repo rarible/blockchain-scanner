@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.test.data
 
-import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
@@ -39,7 +38,6 @@ fun defaultTestProperties(): TestBlockchainScannerProperties {
     return TestBlockchainScannerProperties(
         retryPolicy = RetryPolicyProperties(),
         scan = ScanProperties(),
-        job = JobProperties(),
         monitoring = MonitoringProperties()
     )
 }

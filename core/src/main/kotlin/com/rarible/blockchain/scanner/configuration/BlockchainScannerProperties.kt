@@ -11,8 +11,6 @@ interface BlockchainScannerProperties {
 
     val retryPolicy: RetryPolicyProperties
     val scan: ScanProperties
-    val job: JobProperties
     val monitoring: MonitoringProperties
     val daemon: DaemonWorkerProperties
 }
-

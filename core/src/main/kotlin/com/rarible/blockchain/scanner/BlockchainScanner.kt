@@ -16,9 +16,6 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
-import com.rarible.blockchain.scanner.reconciliation.ReconciliationExecutor
-import com.rarible.blockchain.scanner.reconciliation.ReconciliationService
-import kotlinx.coroutines.flow.Flow
 
 abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
@@ -30,7 +27,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     private val blockEventPublisher: BlockEventPublisher,
     private val blockEventConsumer: BlockEventConsumer,
     logRecordEventPublisher: LogRecordEventPublisher
-) : ReconciliationExecutor {
+) {
 
     private val retryableClient = RetryableBlockchainClient(blockchainClient, properties.retryPolicy.client)
 
@@ -53,11 +50,6 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
             )
         }.associateBy({ it.first }, { it.second })
 
-    private val reconciliationService = ReconciliationService(
-        blockService = blockService,
-        blockEventListeners = blockEventListeners
-    )
-
     private val descriptors = subscribers.map { it.getDescriptor() }
 
     suspend fun scan() {
@@ -68,9 +60,4 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
             blockScanner.scan(blockEventPublisher)
         }
     }
-
-    override fun reconcile(groupId: String, from: Long, batchSize: Long): Flow<LongRange> =
-        reconciliationService.reindex(groupId, from, batchSize)
-
-    override fun getDescriptors(): List<Descriptor> = descriptors
 }
