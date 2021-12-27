@@ -14,14 +14,11 @@ class TestBlockchainClient(
 ) : BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor> {
 
     private val blocksByNumber = data.blocks.associateBy { it.number }
-    private val blocksByHash = data.blocks.associateBy { it.hash }
     private val logsByBlock = data.logs.filter { it.blockHash != null }.groupBy { it.blockHash }
 
-    override val newBlocks: Flow<TestBlockchainBlock> get() = data.newBlocks.asFlow().map { TestBlockchainBlock(it) }
+    override val newBlocks: Flow<TestBlockchainBlock> get() = data.newBlocks.asFlow()
 
-    override suspend fun getBlock(number: Long): TestBlockchainBlock {
-        return TestBlockchainBlock(blocksByNumber[number]!!)
-    }
+    override suspend fun getBlock(number: Long): TestBlockchainBlock = blocksByNumber.getValue(number)
 
     override fun getBlockLogs(
         descriptor: TestDescriptor,
@@ -29,7 +26,7 @@ class TestBlockchainClient(
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> = flatten {
         blocksByNumber.values.filter { range.contains(it.number) }
             .sortedBy { it.number }
-            .map { FullBlock(TestBlockchainBlock(it), getBlockLogs(descriptor, TestBlockchainBlock(it))) }
+            .map { FullBlock(it, getBlockLogs(descriptor, it)) }
             .asFlow()
     }
 

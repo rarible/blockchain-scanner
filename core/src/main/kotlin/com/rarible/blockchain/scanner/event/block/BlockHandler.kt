@@ -61,7 +61,7 @@ class BlockHandler<BB : BlockchainBlock>(
      */
     suspend fun onNewBlock(newBlockchainBlock: BB) {
         logger.info("Received new Block [{}:{}]", newBlockchainBlock.number, newBlockchainBlock.hash)
-        val newBlock = mapBlockchainBlock(newBlockchainBlock)
+        val newBlock = newBlockchainBlock.toBlock()
 
         val lastStateBlock = getLastKnownBlock()
         logger.info("Last known Block: $lastStateBlock")
@@ -206,9 +206,9 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun fetchBlock(number: Long): Block? {
         val blockchainBlock = blockClient.getBlock(number)
-        return blockchainBlock?.let { mapBlockchainBlock(it) }
+        return blockchainBlock?.toBlock()
     }
 }
 
-fun mapBlockchainBlock(b: BlockchainBlock): Block =
-    Block(b.number, b.hash, b.parentHash, b.timestamp, BlockStatus.PENDING)
+fun BlockchainBlock.toBlock(status: BlockStatus = BlockStatus.PENDING): Block =
+    Block(number, hash, parentHash, timestamp, status)
