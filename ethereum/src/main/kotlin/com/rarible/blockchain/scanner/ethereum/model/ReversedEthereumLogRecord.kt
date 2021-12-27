@@ -32,6 +32,9 @@ data class ReversedEthereumLogRecord(
     val blockNumber: Long? = null,
     val logIndex: Int? = null,
 
+    /**
+     * Timestamp of the block (in epoch seconds).
+     */
     val blockTimestamp: Long? = null,
     val from: Address? = null,
 
