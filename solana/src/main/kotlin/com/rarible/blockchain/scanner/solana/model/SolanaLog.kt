@@ -5,12 +5,16 @@ data class SolanaLog(
     val transactionHash: String,
     val blockHash: String,
     val instructionIndex: Int,
-    val innerInstructionIndex: Int
+    val innerInstructionIndex: Int?
 ) : Comparable<SolanaLog> {
     override fun compareTo(other: SolanaLog): Int = comparator.compare(this, other)
 
     companion object {
         private val comparator =
-            compareBy<SolanaLog>({ it.blockNumber }, { it.instructionIndex }, { it.innerInstructionIndex })
+            compareBy<SolanaLog>(
+                { it.blockNumber },
+                { it.instructionIndex },
+                { it.innerInstructionIndex ?: Int.MIN_VALUE }
+            )
     }
 }

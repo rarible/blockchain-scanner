@@ -58,7 +58,7 @@ class SolanaClient(
                         blockHash,
                         transactionHash,
                         transactionIndex,
-                        Int.MIN_VALUE
+                        innerTransactionIndex = null
                     )
                 }
 

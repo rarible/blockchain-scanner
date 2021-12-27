@@ -132,7 +132,7 @@ fun Instruction.toModel(
     blockHash: String,
     transactionHash: String,
     transactionIndex: Int,
-    innerTransactionIndex: Int
+    innerTransactionIndex: Int?
 ): SolanaBlockchainLog {
     val instruction = SolanaInstruction(
         programId = accountKeys[programIdIndex],
