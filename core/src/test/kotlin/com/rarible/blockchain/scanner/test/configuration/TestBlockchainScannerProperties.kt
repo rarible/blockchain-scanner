@@ -11,9 +11,9 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConstructorBinding
 @ConfigurationProperties(prefix = "blockchain.scanner.test")
 data class TestBlockchainScannerProperties(
-    override val retryPolicy: RetryPolicyProperties,
-    override val scan: ScanProperties,
-    override val monitoring: MonitoringProperties,
+    override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
+    override val scan: ScanProperties = ScanProperties(),
+    override val monitoring: MonitoringProperties = MonitoringProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()
 ) : BlockchainScannerProperties {
 

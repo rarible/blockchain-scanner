@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.test.configuration
 
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
-import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -63,7 +62,6 @@ class TestScannerConfiguration {
 
     @Bean
     fun testScanner(
-        consumer: BlockEventConsumer,
         publisher: BlockEventPublisher,
         blockService: BlockService
     ): TestBlockchainScanner {
@@ -81,9 +79,7 @@ class TestScannerConfiguration {
             blockService = blockService,
             logService = testLogService(),
             logRecordEventPublisher = testLogRecordEventPublisher,
-            properties = properties,
-            blockEventConsumer = consumer,
-            blockEventPublisher = publisher
+            properties = properties
         )
     }
 }

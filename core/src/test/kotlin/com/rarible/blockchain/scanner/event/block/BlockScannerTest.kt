@@ -229,22 +229,13 @@ class BlockScannerTest {
         confirmVerified(client, service)
     }
 
-    private class CollectionBlockEventPublisher : BlockEventPublisher {
-
-        val events = mutableListOf<BlockEvent>()
-
-        override suspend fun publish(event: BlockEvent) {
-            events.add(event)
-        }
-    }
-
     private suspend fun scanOnce(): List<BlockEvent> {
-        val listener = CollectionBlockEventPublisher()
+        TODO()
         try {
-            scanner.scan(listener)
+            scanner.scan(TODO())
         } catch (e: IllegalStateException) {
             // Do nothing, in prod there will be infinite attempts count
         }
-        return listener.events
+        return TODO()
     }
 }

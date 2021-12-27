@@ -51,25 +51,22 @@ class BlockBatcherTest {
             number = 9,
             hash = randomBlockHash()
         )
-        val b3 = ReindexBlockEvent(number = 4)
-        val b4 = ReindexBlockEvent(number = 5)
-        val b5 = NewBlockEvent(
+        val b3 = NewBlockEvent(
             number = 11,
             hash = randomBlockHash()
         )
-        val b6 = NewBlockEvent(
+        val b4 = NewBlockEvent(
             number = 12,
             hash = randomBlockHash()
         )
 
-        val batches = BlockBatcher.toBatches(listOf(b1, b2, b3, b4, b5, b6))
+        val batches = BlockBatcher.toBatches(listOf(b1, b2, b3, b4))
 
-        assertThat(batches).hasSize(4)
+        assertThat(batches).hasSize(3)
 
         val batch1 = batches[0]
         val batch2 = batches[1]
         val batch3 = batches[2]
-        val batch4 = batches[3]
 
         assertThat(batch1).hasSize(1)
         assertThat(batch1[0]).isEqualTo(b1)
@@ -80,10 +77,6 @@ class BlockBatcherTest {
         assertThat(batch3).hasSize(2)
         assertThat(batch3[0]).isEqualTo(b3)
         assertThat(batch3[1]).isEqualTo(b4)
-
-        assertThat(batch4).hasSize(2)
-        assertThat(batch4[0]).isEqualTo(b5)
-        assertThat(batch4[1]).isEqualTo(b6)
     }
 
 
