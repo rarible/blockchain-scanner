@@ -10,11 +10,6 @@ blockchain:
     test:
       reconnectDelay: 2000
       reconnectAttempts: 1
-      scan:
-        block-publish:
-          enabled: true
-        event-consume:
-          enabled: true
       retryPolicy:
         scan:
           reconnectDelay: 2s
@@ -22,10 +17,6 @@ blockchain:
         client:
           delay: 2s
           attempts: 3
-      job:
-        reconciliation:
-          enabled: false
-          batchSize: 5
       monitoring:
         enabled: true
         rootPath: "blockchain.scanner"

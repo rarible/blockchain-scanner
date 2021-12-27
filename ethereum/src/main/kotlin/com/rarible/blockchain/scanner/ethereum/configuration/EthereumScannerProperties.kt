@@ -16,8 +16,8 @@ data class EthereumScannerProperties(
     val optimisticLockRetries: Long = 3,
     override val blockchain: String = "ethereum",
     override val service: String = "log-scanner",
-    override val retryPolicy: RetryPolicyProperties,
-    override val monitoring: MonitoringProperties,
+    override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
+    override val monitoring: MonitoringProperties = MonitoringProperties(),
     override val scan: ScanProperties = ScanProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     val maxPendingLogDuration: Long = Duration.ofHours(2).toMillis()

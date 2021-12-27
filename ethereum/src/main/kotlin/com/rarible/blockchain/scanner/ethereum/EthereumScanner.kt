@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
@@ -27,9 +26,6 @@ class EthereumScanner(
     blockService: BlockService,
     logService: EthereumLogService,
     properties: BlockchainScannerProperties,
-    // Autowired from core
-    blockEventPublisher: BlockEventPublisher,
-    blockEventConsumer: BlockEventConsumer,
     logRecordEventPublisher: LogRecordEventPublisher
 ) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>(
     ethereumClient,
@@ -38,8 +34,6 @@ class EthereumScanner(
     logService,
     EthereumLogRecordComparator,
     properties,
-    blockEventPublisher,
-    blockEventConsumer,
     logRecordEventPublisher,
 ) {
 

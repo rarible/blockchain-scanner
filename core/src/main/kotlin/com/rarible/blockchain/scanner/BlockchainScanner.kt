@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.consumer.BlockEventConsumer
 import com.rarible.blockchain.scanner.event.block.BlockScanner
 import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.event.log.BlockEventListener
@@ -14,7 +13,6 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
-import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 
 abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
@@ -23,9 +21,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     blockService: BlockService,
     logService: LogService<R, D>,
     logRecordComparator: LogRecordComparator<R>,
-    private val properties: BlockchainScannerProperties,
-    private val blockEventPublisher: BlockEventPublisher,
-    private val blockEventConsumer: BlockEventConsumer,
+    properties: BlockchainScannerProperties,
     logRecordEventPublisher: LogRecordEventPublisher
 ) {
 
@@ -53,7 +49,6 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     private val descriptors = subscribers.map { it.getDescriptor() }
 
     suspend fun scan() {
-        blockEventConsumer.start(blockEventListeners)
-        blockScanner.scan(blockEventPublisher)
+        TODO()
     }
 }
