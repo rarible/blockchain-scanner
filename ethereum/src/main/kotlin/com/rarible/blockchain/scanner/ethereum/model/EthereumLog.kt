@@ -65,7 +65,7 @@ data class EthereumLog(
     val blockTimestamp: Long? = null,
 
     /**
-     * Timestamp of the block to which this log event belongs.
+     * Transaction sender's address for a transaction to which this log event belongs.
      *
      * This field is nullable until all log events are updated in the database.
      * For new log events it is not null.
