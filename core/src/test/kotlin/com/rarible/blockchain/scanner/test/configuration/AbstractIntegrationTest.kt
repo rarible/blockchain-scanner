@@ -1,13 +1,13 @@
 package com.rarible.blockchain.scanner.test.configuration
 
 import com.rarible.blockchain.scanner.BlockchainScanner
-import com.rarible.blockchain.scanner.event.block.*
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
+import com.rarible.blockchain.scanner.event.block.Block
+import com.rarible.blockchain.scanner.event.block.BlockRepository
+import com.rarible.blockchain.scanner.event.block.BlockScanner
+import com.rarible.blockchain.scanner.event.block.BlockService
+import com.rarible.blockchain.scanner.event.block.toBlock
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
-import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
@@ -53,26 +53,9 @@ abstract class AbstractIntegrationTest {
         return mongo.findAll<Block>().collectList().awaitFirst()
     }
 
-    protected suspend fun saveBlock(
-        block: TestOriginalBlock
-    ): TestOriginalBlock {
-        testBlockRepository.save(mapBlockchainBlock(TestBlockchainBlock(block)))
+    protected suspend fun saveBlock(block: TestBlockchainBlock): TestBlockchainBlock {
+        testBlockRepository.save(block.toBlock())
         return block
-    }
-
-
-    protected fun newBlockEvent(
-        block: TestOriginalBlock,
-        source: Source = Source.BLOCKCHAIN
-    ): NewBlockEvent {
-        return NewBlockEvent(source, block.number, block.hash)
-    }
-
-    protected fun revertedBlockEvent(
-        block: TestOriginalBlock,
-        source: Source = Source.BLOCKCHAIN
-    ): RevertedBlockEvent {
-        return RevertedBlockEvent(source, block.number, block.hash)
     }
 
     protected suspend fun BlockScanner<*>.scanOnce(publisher: BlockEventPublisher) {

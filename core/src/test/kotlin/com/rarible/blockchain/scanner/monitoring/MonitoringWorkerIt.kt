@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.core.test.wait.BlockingWait
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -25,10 +25,10 @@ class MonitoringWorkerIt : AbstractIntegrationTest() {
 
     @Test
     fun `update block metrics`() = runBlocking {
-        saveBlock(randomOriginalBlock())
-        saveBlock(randomOriginalBlock())
-        saveBlock(randomOriginalBlock())
-        saveBlock(randomOriginalBlock())
+        saveBlock(randomBlockchainBlock())
+        saveBlock(randomBlockchainBlock())
+        saveBlock(randomBlockchainBlock())
+        saveBlock(randomBlockchainBlock())
 
         BlockingWait.waitAssert {
             assertTrue(blockMonitor.getBlockDelay()!!.toLong() > 0)

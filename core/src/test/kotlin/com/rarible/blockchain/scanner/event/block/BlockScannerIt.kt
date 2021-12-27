@@ -9,7 +9,8 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
-import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
+import com.rarible.blockchain.scanner.test.data.randomBlockHash
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -33,7 +34,7 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `block event - first block received`() = runBlocking {
-        val block = randomOriginalBlock().copy(number = 0)
+        val block = randomBlockchainBlock(number = 0)
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(block),
             newBlocks = listOf(block)
@@ -45,7 +46,7 @@ class BlockScannerIt : AbstractIntegrationTest() {
         // New block saved, listener notified with single event
         val savedBlock = findBlock(block.number)
         assertThat(savedBlock).isEqualTo(
-            mapBlockchainBlock(TestBlockchainBlock(block))
+            block.toBlock()
         )
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
@@ -60,8 +61,8 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `block event - new block received, has stored parent`() = runBlocking {
-        val existingBlock = saveBlock(randomOriginalBlock(5))
-        val newBlock = randomOriginalBlock(6).copy(parentHash = existingBlock.hash)
+        val existingBlock = saveBlock(randomBlockchainBlock(number = 5))
+        val newBlock = randomBlockchainBlock(hash = randomBlockHash(), number = 6, parentHash = existingBlock.hash)
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(existingBlock, newBlock),
             newBlocks = listOf(newBlock)
@@ -73,7 +74,7 @@ class BlockScannerIt : AbstractIntegrationTest() {
         val savedNewBlock = findBlock(newBlock.number)
 
         // New block saved, listener notified with single event existing block should not emit event
-        assertThat(savedNewBlock).isEqualTo(mapBlockchainBlock(TestBlockchainBlock(newBlock)))
+        assertThat(savedNewBlock).isEqualTo(newBlock.toBlock())
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 NewBlockEvent(Source.BLOCKCHAIN, newBlock.number, newBlock.hash)
@@ -89,10 +90,10 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `block event - new block received, last known block is far away`() = runBlocking {
-        val firstBlock = saveBlock(randomOriginalBlock(0))
-        val existingBlock = saveBlock(randomOriginalBlock(1)).copy(parentHash = firstBlock.hash)
-        val missedBlock = randomOriginalBlock(2).copy(parentHash = existingBlock.hash)
-        val newBlock = randomOriginalBlock(3).copy(parentHash = missedBlock.hash)
+        val firstBlock = saveBlock(randomBlockchainBlock(number = 0))
+        val existingBlock = saveBlock(randomBlockchainBlock(number = 1, parentHash = firstBlock.hash))
+        val missedBlock = randomBlockchainBlock(number = 2, parentHash = existingBlock.hash)
+        val newBlock = randomBlockchainBlock(number = 3, parentHash = missedBlock.hash)
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(firstBlock, existingBlock, missedBlock, newBlock),
             newBlocks = listOf(newBlock)
@@ -102,8 +103,8 @@ class BlockScannerIt : AbstractIntegrationTest() {
         blockScanner.scanOnce(blockEventPublisher)
 
         // Missed block and new block saved, listener notified with 2 events
-        assertThat(findBlock(missedBlock.number)).isEqualTo(mapBlockchainBlock(TestBlockchainBlock(missedBlock)))
-        assertThat(findBlock(newBlock.number)).isEqualTo(mapBlockchainBlock(TestBlockchainBlock(newBlock)))
+        assertThat(findBlock(missedBlock.number)).isEqualTo(missedBlock.toBlock())
+        assertThat(findBlock(newBlock.number)).isEqualTo(newBlock.toBlock())
 
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
@@ -126,16 +127,16 @@ class BlockScannerIt : AbstractIntegrationTest() {
     @Test
     fun `block event - new block received, block chain changed`() = runBlocking {
         // Data we have in storage
-        val existingRoot = saveBlock(randomOriginalBlock(0))
-        val existingGrandParent = saveBlock(randomOriginalBlock(1).copy(parentHash = existingRoot.hash))
-        val existingParent = saveBlock(randomOriginalBlock(2).copy(parentHash = existingGrandParent.hash))
+        val existingRoot = saveBlock(randomBlockchainBlock(number = 0))
+        val existingGrandParent = saveBlock(randomBlockchainBlock(number = 1, parentHash = existingRoot.hash))
+        val existingParent = saveBlock(randomBlockchainBlock(number = 2, parentHash = existingGrandParent.hash))
 
         // Root block #3 is the same, #4 and #5 were changed
-        val newGrandParent = randomOriginalBlock(1).copy(parentHash = existingRoot.hash)
-        val newParent = randomOriginalBlock(2).copy(parentHash = newGrandParent.hash)
+        val newGrandParent = randomBlockchainBlock(number = 1, parentHash = existingRoot.hash)
+        val newParent = randomBlockchainBlock(number = 2, parentHash = newGrandParent.hash)
 
         // New block refers to the newParent in Blockchain
-        val newBlock = randomOriginalBlock(3).copy(parentHash = newParent.hash)
+        val newBlock = randomBlockchainBlock(number = 3, parentHash = newParent.hash)
 
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(newBlock, newParent, newGrandParent, existingRoot),
@@ -152,16 +153,16 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
         // Now we need to ensure all changed blocks are stored in DB and root was not changed
         assertThat(savedRoot).isEqualTo(
-            mapBlockchainBlock(TestBlockchainBlock(existingRoot))
+            existingRoot.toBlock()
         )
         assertThat(savedNewGrandparent).isEqualTo(
-            mapBlockchainBlock(TestBlockchainBlock(newGrandParent))
+            newGrandParent.toBlock()
         )
         assertThat(savedNewParent).isEqualTo(
-            mapBlockchainBlock(TestBlockchainBlock(newParent))
+            newParent.toBlock()
         )
         assertThat(savedNewBlock).isEqualTo(
-            mapBlockchainBlock(TestBlockchainBlock(newBlock))
+            newBlock.toBlock()
         )
 
         // Changed blocks should emit new events along with new block event, event for root block should not be emitted
@@ -225,7 +226,7 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `block event - existing block received`() = runBlocking {
-        val existingBlock = saveBlock(randomOriginalBlock(4))
+        val existingBlock = saveBlock(randomBlockchainBlock(number = 4))
         val testBlockchainData = TestBlockchainData(
             blocks = listOf(existingBlock),
             newBlocks = listOf(existingBlock)
@@ -238,7 +239,7 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
         // Existing block should not be changed, no events should be emitted
         assertThat(storedExistingBlock).isEqualTo(
-            mapBlockchainBlock(TestBlockchainBlock(existingBlock))
+            existingBlock.toBlock()
         )
         coVerify(exactly = 0) { blockEventPublisher.publish(any()) }
     }

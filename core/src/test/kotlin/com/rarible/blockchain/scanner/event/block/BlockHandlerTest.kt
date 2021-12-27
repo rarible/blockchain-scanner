@@ -6,9 +6,8 @@ import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
-import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
-import com.rarible.blockchain.scanner.test.data.randomString
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -42,7 +41,7 @@ internal class BlockHandlerTest {
             .let { makeChain(it) }
             .associateBy { it.number }
         val testBlocks = testBlockchainBlocks
-            .mapValues { mapBlockchainBlock(it.value) }
+            .mapValues { it.value.toBlock() }
 
         coEvery { blockService.getLastBlock() } returns testBlocks[lastStateBlockNumber]
 
@@ -85,14 +84,10 @@ internal class BlockHandlerTest {
     }
 
     private fun createTestBlockchainBlock(number: Long): TestBlockchainBlock {
-        return TestBlockchainBlock(
-            TestOriginalBlock(
-                number = number,
-                hash = randomBlockHash(),
-                parentHash = randomBlockHash(),
-                timestamp = number,
-                testExtra = randomString()
-            )
+        return randomBlockchainBlock(
+            hash = randomBlockHash(),
+            number = number,
+            parentHash = randomBlockHash()
         )
     }
 
@@ -104,9 +99,8 @@ internal class BlockHandlerTest {
             if (first == block) {
                 first
             } else {
-                val original = block.testOriginalBlock
-                val parentHash = requireNotNull(blockMap[original.number - 1]).hash
-                TestBlockchainBlock(original.copy(parentHash = parentHash))
+                val parentHash = requireNotNull(blockMap[block.number - 1]).hash
+                block.copy(parentHash = parentHash)
             }
         }
     }

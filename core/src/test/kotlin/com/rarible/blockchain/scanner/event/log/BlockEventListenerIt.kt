@@ -17,14 +17,13 @@ import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
-import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomTestLogRecord
 import com.rarible.blockchain.scanner.test.data.testDescriptor1
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
-import com.rarible.blockchain.scanner.test.subscriber.TestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import com.rarible.blockchain.scanner.test.subscriber.TestLogRecordComparator
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -54,12 +53,12 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
         val log1 = randomOriginalLog(block1.hash, topic)
         val log2 = randomOriginalLog(block2.hash, topic)
 
-        saveBlock(block1.testOriginalBlock)
-        saveBlock(block2.testOriginalBlock)
+        saveBlock(block1)
+        saveBlock(block2)
 
         val testBlockchainClient = TestBlockchainClient(
             TestBlockchainData(
-                blocks = listOf(block1.testOriginalBlock, block2.testOriginalBlock),
+                blocks = listOf(block1, block2),
                 logs = listOf(log1, log2)
             )
         )
@@ -75,12 +74,12 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
         assertThat(publishedEvents).isEqualTo(
             listOf(
                 LogRecordEvent(
-                    record = subscriber.getReturnedRecords(block2.testOriginalBlock, log2).single(),
+                    record = subscriber.getReturnedRecords(block2, log2).single(),
                     source = Source.BLOCKCHAIN,
                     reverted = false
                 ),
                 LogRecordEvent(
-                    record = subscriber.getReturnedRecords(block1.testOriginalBlock, log1).single(),
+                    record = subscriber.getReturnedRecords(block1, log1).single(),
                     source = Source.BLOCKCHAIN,
                     reverted = false
                 )
@@ -125,8 +124,8 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
         val subscriber1 = TestLogEventSubscriber(descriptor)
         val subscriber2 = TestLogEventSubscriber(descriptor)
 
-        val block1 = randomOriginalBlock()
-        val block2 = randomOriginalBlock()
+        val block1 = randomBlockchainBlock()
+        val block2 = randomBlockchainBlock()
 
         val log1 = randomOriginalLog(block1.hash, descriptor.id)
         val log2 = randomOriginalLog(block2.hash, descriptor.id)

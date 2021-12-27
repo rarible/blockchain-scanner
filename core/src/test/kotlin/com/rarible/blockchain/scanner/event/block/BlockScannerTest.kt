@@ -9,8 +9,14 @@ import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
-import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
-import io.mockk.*
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -39,8 +45,8 @@ class BlockScannerTest {
 
     @Test
     fun `first event, state is empty`() = runBlocking {
-        val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
-        val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
+        val block0 = randomBlockchainBlock("block0", 0, null)
+        val block1 = randomBlockchainBlock("block1", 1, "block0")
 
         every { client.newBlocks } returns flowOf(block1)
         // We expect both blocks will be requested from the client
@@ -63,10 +69,10 @@ class BlockScannerTest {
         )
 
         // Both blocks should be saved in DB
-        val stateBlock0 = mapBlockchainBlock(block0)
+        val stateBlock0 = block0.toBlock()
         coVerify(exactly = 1) { service.save(stateBlock0) }
         coVerify(exactly = 1) { service.save(stateBlock0.copy(status = BlockStatus.SUCCESS)) }
-        val stateBlock1 = mapBlockchainBlock(block1)
+        val stateBlock1 = block1.toBlock()
         coVerify(exactly = 1) { service.save(stateBlock1) }
         coVerify(exactly = 1) { service.save(stateBlock1.copy(status = BlockStatus.SUCCESS)) }
 
@@ -83,9 +89,9 @@ class BlockScannerTest {
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
     fun `root block in DB, one block is missing in DB`(success: Boolean) = runBlocking {
-        val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
-        val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
-        val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1"))
+        val block0 = randomBlockchainBlock("block0", 0, null)
+        val block1 = randomBlockchainBlock("block1", 1, "block0")
+        val block2 = randomBlockchainBlock("block2", 2, "block1")
 
         // Imitates event for block2 while block0 already in DB, but block1 is missing
         every { client.newBlocks } returns flowOf(block2)
@@ -94,7 +100,7 @@ class BlockScannerTest {
         coEvery { client.getBlock(2) } returns block2
 
         // We already have root block in DB
-        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block0).copy(status = if (success) BlockStatus.SUCCESS else BlockStatus.PENDING)
+        coEvery { service.getLastBlock() } returns block0.toBlock().copy(status = if (success) BlockStatus.SUCCESS else BlockStatus.PENDING)
         coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
 
         val events = scanOnce()
@@ -117,15 +123,15 @@ class BlockScannerTest {
 
         coVerify(exactly = 1) { service.getLastBlock() }
 
-        val stateBlock1 = mapBlockchainBlock(block1)
+        val stateBlock1 = block1.toBlock()
         if (!success) {
-            val stateBlock0 = mapBlockchainBlock(block0)
+            val stateBlock0 = block0.toBlock()
             coVerify(exactly = 1) { service.save(stateBlock0) }
             coVerify(exactly = 1) { service.save(stateBlock0.copy(status = BlockStatus.SUCCESS)) }
         }
         coVerify(exactly = 1) { service.save(stateBlock1) }
         coVerify(exactly = 1) { service.save(stateBlock1.copy(status = BlockStatus.SUCCESS)) }
-        val stateBlock2 = mapBlockchainBlock(block2)
+        val stateBlock2 = block2.toBlock()
         coVerify(exactly = 1) { service.save(stateBlock2) }
         coVerify(exactly = 1) { service.save(stateBlock2.copy(status = BlockStatus.SUCCESS)) }
 
@@ -135,12 +141,12 @@ class BlockScannerTest {
 
     @Test
     fun `chain reorganized`() = runBlocking {
-        val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
-        val block1Reorg = TestBlockchainBlock(randomOriginalBlock("block1-reorg", 1, "block0"))
-        val block2Reorg = TestBlockchainBlock(randomOriginalBlock("block2-reorg", 2, "block1-reorg"))
-        val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
-        val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1"))
-        val block3 = TestBlockchainBlock(randomOriginalBlock("block3", 3, "block2"))
+        val block0 = randomBlockchainBlock("block0", 0, null)
+        val block1Reorg = randomBlockchainBlock("block1-reorg", 1, "block0")
+        val block2Reorg = randomBlockchainBlock("block2-reorg", 2, "block1-reorg")
+        val block1 = randomBlockchainBlock("block1", 1, "block0")
+        val block2 = randomBlockchainBlock("block2", 2, "block1")
+        val block3 = randomBlockchainBlock("block3", 3, "block2")
 
         every { client.newBlocks } returns flowOf(block3)
         coEvery { client.getBlock(0) } returns block0
@@ -149,9 +155,9 @@ class BlockScannerTest {
         coEvery { client.getBlock(3) } returns block3
 
         // We have in DB correct root block, block1 and block2 pretends to be reverted
-        coEvery { service.getBlock(0) } returns mapBlockchainBlock(block0).copy(status = BlockStatus.SUCCESS)
-        coEvery { service.getBlock(1) } returns mapBlockchainBlock(block1Reorg)
-        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block2Reorg)
+        coEvery { service.getBlock(0) } returns block0.toBlock().copy(status = BlockStatus.SUCCESS)
+        coEvery { service.getBlock(1) } returns block1Reorg.toBlock()
+        coEvery { service.getLastBlock() } returns block2Reorg.toBlock()
 
         coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
         coEvery { service.remove(any()) } answers {}
@@ -178,12 +184,12 @@ class BlockScannerTest {
         coVerify(exactly = 1) { service.getLastBlock() }
         coVerify(exactly = 1) { service.getBlock(0) }
         coVerify(exactly = 1) { service.getBlock(1) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block1)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block1).copy(status = BlockStatus.SUCCESS)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block2)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block2).copy(status = BlockStatus.SUCCESS)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block3)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block3).copy(status = BlockStatus.SUCCESS)) }
+        coVerify(exactly = 1) { service.save(block1.toBlock()) }
+        coVerify(exactly = 1) { service.save(block1.toBlock().copy(status = BlockStatus.SUCCESS)) }
+        coVerify(exactly = 1) { service.save(block2.toBlock()) }
+        coVerify(exactly = 1) { service.save(block2.toBlock().copy(status = BlockStatus.SUCCESS)) }
+        coVerify(exactly = 1) { service.save(block3.toBlock()) }
+        coVerify(exactly = 1) { service.save(block3.toBlock().copy(status = BlockStatus.SUCCESS)) }
         coVerify(exactly = 1) { service.remove(block1Reorg.number) }
         coVerify(exactly = 1) { service.remove(block2Reorg.number) }
         confirmVerified(client, service)
@@ -191,10 +197,10 @@ class BlockScannerTest {
 
     @Test
     fun `reorg happens after start`() = runBlocking {
-        val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
-        val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
-        val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1-new"))
-        val block3 = TestBlockchainBlock(randomOriginalBlock("block3", 3, "block2-new"))
+        val block0 = randomBlockchainBlock("block0", 0, null)
+        val block1 = randomBlockchainBlock("block1", 1, "block0")
+        val block2 = randomBlockchainBlock("block2", 2, "block1-new")
+        val block3 = randomBlockchainBlock("block3", 3, "block2-new")
 
         every { client.newBlocks } returns flowOf(block3)
         // For block 1 we received same data as data in DB
@@ -204,8 +210,8 @@ class BlockScannerTest {
         coEvery { client.getBlock(3) } returns block3
 
         // We have only 2 blocks in DB
-        coEvery { service.getBlock(0) } returns mapBlockchainBlock(block0)
-        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block1).copy(status = BlockStatus.SUCCESS)
+        coEvery { service.getBlock(0) } returns block0.toBlock()
+        coEvery { service.getLastBlock() } returns block1.toBlock().copy(status = BlockStatus.SUCCESS)
         coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
         coEvery { service.remove(any()) } answers { }
 

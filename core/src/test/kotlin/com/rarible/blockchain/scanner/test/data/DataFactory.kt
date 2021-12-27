@@ -7,13 +7,11 @@ import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
-import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
 import com.rarible.blockchain.scanner.test.configuration.TestBlockchainScannerProperties
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.core.common.nowMillis
 import com.rarible.core.test.data.randomWord
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
@@ -46,20 +44,17 @@ fun defaultTestProperties(): TestBlockchainScannerProperties {
     )
 }
 
-fun randomBlockchainBlock() = TestBlockchainBlock(randomOriginalBlock())
-
-fun randomOriginalBlock() = randomOriginalBlock(randomPositiveLong())
-fun randomOriginalBlock(number: Long) = randomOriginalBlock(randomBlockHash(), number)
-fun randomOriginalBlock(hash: String, number: Long) = randomOriginalBlock(hash, number, randomBlockHash())
-fun randomOriginalBlock(hash: String, number: Long, parentHash: String?): TestOriginalBlock {
-    return TestOriginalBlock(
-        number,
-        hash,
-        parentHash,
-        randomPositiveLong(nowMillis().epochSecond),
-        randomString(16)
-    )
-}
+fun randomBlockchainBlock(
+    hash: String = randomBlockHash(),
+    number: Long = randomPositiveLong(),
+    parentHash: String? = randomBlockHash()
+) = TestBlockchainBlock(
+    number = number,
+    hash = hash,
+    parentHash = parentHash,
+    timestamp = randomPositiveLong(),
+    testExtra = randomString()
+)
 
 fun randomBlockchainLog(
     block: BlockchainBlock,
@@ -67,7 +62,7 @@ fun randomBlockchainLog(
     index: Int = randomPositiveInt()
 ) = TestBlockchainLog(randomOriginalLog(block.hash, topic), index = index)
 
-fun randomOriginalLog(block: TestOriginalBlock, topic: String) = randomOriginalLog(block.hash, topic)
+fun randomOriginalLog(block: TestBlockchainBlock, topic: String) = randomOriginalLog(block.hash, topic)
 fun randomOriginalLog(blockHash: String?, topic: String): TestOriginalLog {
     return TestOriginalLog(
         transactionHash = randomLogHash(),
@@ -111,11 +106,11 @@ fun randomTestLog(topic: String, blockHash: String): TestLog {
 }
 
 fun randomBlockchainData(blockCount: Int, logsPerBlock: Int, vararg topics: String): TestBlockchainData {
-    val blocks = mutableListOf<TestOriginalBlock>()
+    val blocks = mutableListOf<TestBlockchainBlock>()
     val logs = mutableListOf<TestOriginalLog>()
     var parentHash: String? = null
     for (i in 0L until blockCount) {
-        val block = randomOriginalBlock(i).copy(parentHash = parentHash)
+        val block = randomBlockchainBlock(number = i, parentHash = parentHash)
         blocks.add(block)
         parentHash = block.hash
         for (j in 0 until logsPerBlock) {
