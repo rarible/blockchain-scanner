@@ -17,8 +17,7 @@ data class TestBlockchainScannerProperties(
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties()
 ) : BlockchainScannerProperties {
 
-    override val blockService: String = "test"
-    override val logService: String = "test"
+    override val service: String = "test"
     override val blockchain: String = "test"
 
 }

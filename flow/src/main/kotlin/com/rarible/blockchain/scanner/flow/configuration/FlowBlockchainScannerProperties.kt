@@ -15,8 +15,7 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "blockchain.scanner.flow")
 data class FlowBlockchainScannerProperties(
     override val blockchain: String = "flow",
-    override val logService: String = "log-scanner",
-    override val blockService: String = "block-scanner",
+    override val service: String = "log-scanner",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(
         worker = DaemonWorkerProperties(
