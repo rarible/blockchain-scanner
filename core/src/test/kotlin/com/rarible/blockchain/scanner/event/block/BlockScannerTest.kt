@@ -16,6 +16,8 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 //todo test when block is PENDING - need to reprocess
 class BlockScannerTest {
@@ -78,8 +80,9 @@ class BlockScannerTest {
         confirmVerified(client, service)
     }
 
-    @Test
-    fun `root block in DB, one block is missing in DB`() = runBlocking {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `root block in DB, one block is missing in DB`(success: Boolean) = runBlocking {
         val block0 = TestBlockchainBlock(randomOriginalBlock("block0", 0, null))
         val block1 = TestBlockchainBlock(randomOriginalBlock("block1", 1, "block0"))
         val block2 = TestBlockchainBlock(randomOriginalBlock("block2", 2, "block1"))
@@ -91,17 +94,21 @@ class BlockScannerTest {
         coEvery { client.getBlock(2) } returns block2
 
         // We already have root block in DB
-        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block0).copy(status = BlockStatus.SUCCESS)
+        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block0).copy(status = if (success) BlockStatus.SUCCESS else BlockStatus.PENDING)
         coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
 
         val events = scanOnce()
 
         // Events for both blocks (1 and 2) should be emitted in correct order
+        val requiredEvents = listOf(
+            NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
+            NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
+        )
         assertThat(events).isEqualTo(
-            listOf(
-                NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
-            )
+            if (success)
+                requiredEvents
+            else
+                listOf(NewBlockEvent(Source.BLOCKCHAIN, block0.number, block0.hash)) + requiredEvents
         )
 
         coVerify(exactly = 1) { client.getBlock(0) }
@@ -111,6 +118,11 @@ class BlockScannerTest {
         coVerify(exactly = 1) { service.getLastBlock() }
 
         val stateBlock1 = mapBlockchainBlock(block1)
+        if (!success) {
+            val stateBlock0 = mapBlockchainBlock(block0)
+            coVerify(exactly = 1) { service.save(stateBlock0) }
+            coVerify(exactly = 1) { service.save(stateBlock0.copy(status = BlockStatus.SUCCESS)) }
+        }
         coVerify(exactly = 1) { service.save(stateBlock1) }
         coVerify(exactly = 1) { service.save(stateBlock1.copy(status = BlockStatus.SUCCESS)) }
         val stateBlock2 = mapBlockchainBlock(block2)
