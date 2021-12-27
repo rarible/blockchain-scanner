@@ -75,8 +75,8 @@ fun randomLog(
         logIndex = randomPositiveInt(),
         minorLogIndex = randomPositiveInt(),
         blockTimestamp = randomPositiveLong(),
-        createdAt = nowMillis(),
-        updatedAt = nowMillis(),
+        from = randomAddress(),
+        createdAt = nowMillis()
     )
 }
 

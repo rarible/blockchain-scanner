@@ -33,11 +33,12 @@ data class ReversedEthereumLogRecord(
     val logIndex: Int? = null,
 
     val blockTimestamp: Long? = null,
+    val from: Address? = null,
 
     val visible: Boolean = true,
 
     override val createdAt: Instant = Instant.EPOCH,
-    override val updatedAt: Instant = Instant.EPOCH,
+    override val updatedAt: Instant = createdAt,
 
     val data: EventData
 ) : EthereumLogRecord() {
@@ -60,11 +61,17 @@ data class ReversedEthereumLogRecord(
         visible = visible,
 
         blockTimestamp = blockTimestamp,
+        from = from,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
 
-    constructor(id: String, version: Long? = null, log: EthereumLog, data: EventData) : this(
+    constructor(
+        id: String,
+        version: Long? = null,
+        log: EthereumLog,
+        data: EventData
+    ) : this(
         id = id,
         version = version,
 
@@ -84,8 +91,8 @@ data class ReversedEthereumLogRecord(
         visible = log.visible,
 
         blockTimestamp = log.blockTimestamp,
+        from = log.from,
         createdAt = log.createdAt,
-        updatedAt = log.updatedAt,
 
         data = data
     )

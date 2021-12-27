@@ -47,8 +47,8 @@ abstract class EthereumLogEventSubscriber :
             minorLogIndex = 0, // will be assigned above.
             index = log.index,
             visible = true,
-            createdAt = nowInstant,
-            updatedAt = nowInstant
+            from = log.ethTransaction.from(),
+            createdAt = nowInstant
         )
     }
 }

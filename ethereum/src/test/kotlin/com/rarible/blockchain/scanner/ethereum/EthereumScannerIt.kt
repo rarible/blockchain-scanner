@@ -62,6 +62,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
             val testRecord = allLogs.single() as ReversedEthereumLogRecord
             assertThat(testRecord.log.status).isEqualTo(EthereumLogStatus.CONFIRMED)
+            assertThat(testRecord.log.from).isEqualTo(sender.from())
             assertThat(testRecord.log.blockTimestamp).isEqualTo(receipt.getTimestamp().epochSecond)
 
             val data = testRecord.data as TestEthereumLogData
@@ -102,7 +103,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                 .verifySuccess()
 
             // Artificial PENDING log for transaction that already exists
-            val log = ethLog(transferReceipt.transactionHash().toString()).copy(
+            val log = ethLog(transferReceipt.transactionHash().toString(), transferReceipt.from()).copy(
                 index = randomPositiveInt()
             )
             val record = ethRecord(log, beneficiary, value)
@@ -139,7 +140,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         )
     }
 
-    private fun ethLog(transactionHash: String): EthereumLog {
+    private fun ethLog(transactionHash: String, from: Address): EthereumLog {
         return EthereumLog(
             address = contract.address(),
             topic = TransferEvent.id(),
@@ -148,8 +149,8 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             index = 0,
             minorLogIndex = 0,
             visible = true,
-            createdAt = nowMillis(),
-            updatedAt = nowMillis()
+            from = from,
+            createdAt = nowMillis()
         )
     }
 
