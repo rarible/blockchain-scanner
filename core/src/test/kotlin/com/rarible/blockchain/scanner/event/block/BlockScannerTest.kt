@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+//todo test when block is PENDING - need to reprocess
 class BlockScannerTest {
 
     private val client = mockk<BlockchainBlockClient<TestBlockchainBlock>>()
@@ -47,7 +48,7 @@ class BlockScannerTest {
         // Imitating empty DB
         coEvery { service.getBlock(any()) } returns null
         coEvery { service.getLastBlock() } returns null
-        coEvery { service.save(any()) } answers { }
+        coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
 
         val events = scanOnce()
 
@@ -60,8 +61,12 @@ class BlockScannerTest {
         )
 
         // Both blocks should be saved in DB
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block0)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block1)) }
+        val stateBlock0 = mapBlockchainBlock(block0)
+        coVerify(exactly = 1) { service.save(stateBlock0) }
+        coVerify(exactly = 1) { service.save(stateBlock0.copy(status = BlockStatus.SUCCESS)) }
+        val stateBlock1 = mapBlockchainBlock(block1)
+        coVerify(exactly = 1) { service.save(stateBlock1) }
+        coVerify(exactly = 1) { service.save(stateBlock1.copy(status = BlockStatus.SUCCESS)) }
 
         // Last block should be requested from state only once
         coVerify(exactly = 1) { service.getLastBlock() }
@@ -86,8 +91,8 @@ class BlockScannerTest {
         coEvery { client.getBlock(2) } returns block2
 
         // We already have root block in DB
-        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block0)
-        coEvery { service.save(any()) } answers { }
+        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block0).copy(status = BlockStatus.SUCCESS)
+        coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
 
         val events = scanOnce()
 
@@ -105,8 +110,12 @@ class BlockScannerTest {
 
         coVerify(exactly = 1) { service.getLastBlock() }
 
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block1)) }
-        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block2)) }
+        val stateBlock1 = mapBlockchainBlock(block1)
+        coVerify(exactly = 1) { service.save(stateBlock1) }
+        coVerify(exactly = 1) { service.save(stateBlock1.copy(status = BlockStatus.SUCCESS)) }
+        val stateBlock2 = mapBlockchainBlock(block2)
+        coVerify(exactly = 1) { service.save(stateBlock2) }
+        coVerify(exactly = 1) { service.save(stateBlock2.copy(status = BlockStatus.SUCCESS)) }
 
         verify { client.newBlocks }
         confirmVerified(client, service)
@@ -128,11 +137,11 @@ class BlockScannerTest {
         coEvery { client.getBlock(3) } returns block3
 
         // We have in DB correct root block, block1 and block2 pretends to be reverted
-        coEvery { service.getBlock(0) } returns mapBlockchainBlock(block0)
+        coEvery { service.getBlock(0) } returns mapBlockchainBlock(block0).copy(status = BlockStatus.SUCCESS)
         coEvery { service.getBlock(1) } returns mapBlockchainBlock(block1Reorg)
         coEvery { service.getLastBlock() } returns mapBlockchainBlock(block2Reorg)
 
-        coEvery { service.save(any()) } answers { }
+        coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
         coEvery { service.remove(any()) } answers {}
 
         val events = scanOnce()
@@ -158,8 +167,11 @@ class BlockScannerTest {
         coVerify(exactly = 1) { service.getBlock(0) }
         coVerify(exactly = 1) { service.getBlock(1) }
         coVerify(exactly = 1) { service.save(mapBlockchainBlock(block1)) }
+        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block1).copy(status = BlockStatus.SUCCESS)) }
         coVerify(exactly = 1) { service.save(mapBlockchainBlock(block2)) }
+        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block2).copy(status = BlockStatus.SUCCESS)) }
         coVerify(exactly = 1) { service.save(mapBlockchainBlock(block3)) }
+        coVerify(exactly = 1) { service.save(mapBlockchainBlock(block3).copy(status = BlockStatus.SUCCESS)) }
         coVerify(exactly = 1) { service.remove(block1Reorg.number) }
         coVerify(exactly = 1) { service.remove(block2Reorg.number) }
         confirmVerified(client, service)
@@ -181,8 +193,8 @@ class BlockScannerTest {
 
         // We have only 2 blocks in DB
         coEvery { service.getBlock(0) } returns mapBlockchainBlock(block0)
-        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block1)
-        coEvery { service.save(any()) } answers { }
+        coEvery { service.getLastBlock() } returns mapBlockchainBlock(block1).copy(status = BlockStatus.SUCCESS)
+        coEvery { service.save(any()) } answers { it.invocation.args.first() as Block }
         coEvery { service.remove(any()) } answers { }
 
         val events = scanOnce()

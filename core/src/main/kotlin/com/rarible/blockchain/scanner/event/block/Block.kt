@@ -11,5 +11,11 @@ data class Block(
 
     val hash: String,
     val parentHash: String?,
-    val timestamp: Long
+    val timestamp: Long,
+    val status: BlockStatus
 )
+
+enum class BlockStatus {
+    PENDING,
+    SUCCESS,
+}

@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.event.block
 
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.stereotype.Component
 
@@ -16,8 +17,8 @@ class BlockService(
         return blockRepository.getLastBlock()
     }
 
-    suspend fun save(block: Block) {
-        blockRepository.saveR(block).awaitFirstOrNull()
+    suspend fun save(block: Block): Block {
+        return blockRepository.saveR(block).awaitFirst()
     }
 
     suspend fun remove(id: Long) {
