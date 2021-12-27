@@ -39,10 +39,6 @@ import org.slf4j.LoggerFactory
  *      * if listener completed without an error, block is removed from the db
  *
  * See [onNewBlock] for more information about algorithm
- * TODO
- *  handle statuses
- *  add batch events
- *  we can add constraint to the DB: only one PENDING block can exist. do we need this?
  */
 class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
@@ -52,12 +48,6 @@ class BlockHandler<BB : BlockchainBlock>(
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
-
-    // We can cache lastKnown block in order to avoid huge amount of DB requests in
-    // regular case of block processing
-    @Volatile
-    //TODO do we need this volatile?
-    private var lastBlock: Block? = null
 
     /**
      * Entry-point.
@@ -81,19 +71,19 @@ class BlockHandler<BB : BlockchainBlock>(
             if (lastStateBlock.status == BlockStatus.PENDING) {
                 newBlock(lastStateBlock)
             }
-            lastBlock = newBlock(newBlock)
+            newBlock(newBlock)
             return
         }
 
         // Otherwise, we have missed blocks in our state OR chain was reorganized
-        lastBlock = restoreMissingBlocks(lastStateBlock, newBlock)
+        restoreMissingBlocks(lastStateBlock, newBlock)
     }
 
     private suspend fun restoreMissingBlocks(lastStateBlock: Block, newBlock: Block): Block {
         var currentBlock = checkChainReorgAndRevert(lastStateBlock)
 
         currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
-            batchRestoreMissedBlocks(currentBlock, newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance)
+            batchRestoreMissingBlocks(currentBlock, newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance)
         } else {
             currentBlock
         }
@@ -140,12 +130,8 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun getLastKnownBlock(): Block {
-        if (lastBlock != null) {
-            return lastBlock!!
-        }
         val lastKnownBlock = blockService.getLastBlock()
         if (lastKnownBlock != null) {
-            lastBlock = lastKnownBlock
             return lastKnownBlock
         }
 
@@ -154,7 +140,6 @@ class BlockHandler<BB : BlockchainBlock>(
 
         logger.info("Found first Block in chain [{}:{}]", blockchainBlock.id, blockchainBlock.hash)
 
-        lastBlock = blockchainBlock
         return blockchainBlock
     }
 
@@ -186,7 +171,7 @@ class BlockHandler<BB : BlockchainBlock>(
         error("Can't find previous block for: $startBlock")
     }
 
-    private suspend fun batchRestoreMissedBlocks(lastStateBlock: Block, amount: Long): Block = coroutineScope {
+    private suspend fun batchRestoreMissingBlocks(lastStateBlock: Block, amount: Long): Block = coroutineScope {
         val startBlockId = lastStateBlock.id + 1
         val endBlockId = startBlockId + amount
         require(endBlockId - startBlockId > 0) { "Block batch restore range must be positive" }
@@ -201,10 +186,11 @@ class BlockHandler<BB : BlockchainBlock>(
                 }
             }.awaitAll().asFlow()
         }.onEach { block ->
-            newBlock(block)
+            newBlock(block) // TODO emit one batch event
         }.last()
     }
 
+    //TODO send BB to publisher
     private suspend fun newBlock(block: Block): Block {
         blockService.save(block.copy(status = BlockStatus.PENDING))
         blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
