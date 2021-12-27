@@ -117,6 +117,7 @@ fun ethLog(
     randomPositiveBigInt(100),
     address,
     Binary.apply("0x0"),
+    false,
     CollectionConverters.asScala(listOf(topic)).toList(),
     randomString()
 )

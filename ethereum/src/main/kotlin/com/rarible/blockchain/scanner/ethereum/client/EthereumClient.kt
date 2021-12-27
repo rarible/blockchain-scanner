@@ -57,6 +57,7 @@ class EthereumClient(
         logger.info("Loading logs with filter in range $range with [$filter]")
 
         return ethereum.ethGetLogsJava(filter)
+            .map { allLogs -> allLogs.filterNot { it.removed() } }
             .flatMapIterable { allLogs ->
                 logger.info("Loaded ${allLogs.size} logs for range $range")
                 allLogs.groupBy { log ->

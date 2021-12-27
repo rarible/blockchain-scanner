@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.rarible</groupId>
         <artifactId>rarible-parent-pom</artifactId>
-        <version>2.0.3</version>
+        <version>2.0.4</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -16,8 +16,8 @@
     <properties>
         <revision>2.1.16</revision>
 
-        <rarible.ethereum.version>1.4.0</rarible.ethereum.version>
-        <rarible.core.version>2.0.4</rarible.core.version>
+        <rarible.ethereum.version>1.4.8</rarible.ethereum.version>
+        <rarible.core.version>2.0.13</rarible.core.version>
     </properties>
 
     <repositories>
