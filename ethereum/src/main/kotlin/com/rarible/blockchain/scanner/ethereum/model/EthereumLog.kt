@@ -57,7 +57,7 @@ data class EthereumLog(
     val visible: Boolean = true,
 
     /**
-     * Timestamp of the block to which this log event belongs.
+     * Timestamp of the block (in epoch seconds) to which this log event belongs.
      *
      * This field is nullable until all log events are updated in the database.
      * For new log events it is not null.
