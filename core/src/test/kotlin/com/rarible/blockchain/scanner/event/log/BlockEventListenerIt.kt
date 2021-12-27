@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -65,8 +64,8 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
 
         val blockEventListener = createBlockEventListener(testBlockchainClient, subscriber)
 
-        val event1 = NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
-        val event2 = NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
+        val event1 = NewBlockEvent(block1.number, block1.hash)
+        val event2 = NewBlockEvent(block2.number, block2.hash)
 
         // Explicitly reversed order of events - to check the publishing order.
         blockEventListener.onBlockEvents(listOf(event2, event1))
@@ -75,12 +74,10 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
             listOf(
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(block2, log2).single(),
-                    source = Source.BLOCKCHAIN,
                     reverted = false
                 ),
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(block1, log1).single(),
-                    source = Source.BLOCKCHAIN,
                     reverted = false
                 )
             )
@@ -90,7 +87,7 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
     @Test
     fun `on reverted block event`() = runBlocking<Unit> {
         val revertedBlock = randomBlockchainBlock()
-        val revertedBlockEvent = RevertedBlockEvent(Source.BLOCKCHAIN, revertedBlock.number, revertedBlock.hash)
+        val revertedBlockEvent = RevertedBlockEvent(revertedBlock.number, revertedBlock.hash)
 
         val log1 = randomTestLogRecord(topic = topic, blockHash = revertedBlock.hash)
         val log2 = randomTestLogRecord(topic = topic, blockHash = revertedBlock.hash)
@@ -106,12 +103,10 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
             listOf(
                 LogRecordEvent(
                     record = log1.copy(version = 0),
-                    source = Source.BLOCKCHAIN,
                     reverted = true
                 ),
                 LogRecordEvent(
                     record = log2.copy(version = 0),
-                    source = Source.BLOCKCHAIN,
                     reverted = true
                 )
             ).sortedWith(compareBy(TestLogRecordComparator) { it.record })
@@ -137,8 +132,8 @@ class BlockEventListenerIt : AbstractIntegrationTest() {
             subscriber1, subscriber2
         )
 
-        val event1 = NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
-        val event2 = NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
+        val event1 = NewBlockEvent(block1.number, block1.hash)
+        val event2 = NewBlockEvent(block2.number, block2.hash)
         val logEvents = blockEventProcessor.prepareBlockEvents(listOf(event1, event2))
         assertThat(logEvents).isEqualTo(
             listOf(

@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.util
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ReindexBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -13,7 +12,6 @@ class BlockBatcherTest {
     @Test
     fun `to batches - single`() {
         val b1 = NewBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 1,
             hash = randomBlockHash()
         )
@@ -27,12 +25,10 @@ class BlockBatcherTest {
     @Test
     fun `to batches - one batch`() {
         val b1 = NewBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 1,
             hash = randomBlockHash()
         )
         val b2 = NewBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 2,
             hash = randomBlockHash()
         )
@@ -48,24 +44,20 @@ class BlockBatcherTest {
     @Test
     fun `to batches - mixed`() {
         val b1 = NewBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 10,
             hash = randomBlockHash()
         )
         val b2 = RevertedBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 9,
             hash = randomBlockHash()
         )
         val b3 = ReindexBlockEvent(number = 4)
         val b4 = ReindexBlockEvent(number = 5)
         val b5 = NewBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 11,
             hash = randomBlockHash()
         )
         val b6 = NewBlockEvent(
-            source = Source.BLOCKCHAIN,
             number = 12,
             hash = randomBlockHash()
         )

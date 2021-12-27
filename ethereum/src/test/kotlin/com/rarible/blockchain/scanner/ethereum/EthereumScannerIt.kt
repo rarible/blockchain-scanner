@@ -10,7 +10,6 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
@@ -77,8 +76,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         }
 
         verifyPublishedLogEvent { logRecordEvent ->
-            assertThat(logRecordEvent.source).isEqualTo(Source.BLOCKCHAIN)
-            assertThat(logRecordEvent.reverted).isFalse()
+            assertThat(logRecordEvent.reverted).isFalse
             assertThat(logRecordEvent.record).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
                 assertThat(it.transactionHash).isEqualTo(receipt.transactionHash().toString())
                 assertThat(it.data).isInstanceOfSatisfying(TestEthereumLogData::class.java) { logData ->

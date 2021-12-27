@@ -56,7 +56,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord
                 logger.info("Publishing {} log records to remove for {} of {}", recordsToRemove.size, groupId, blockEvent)
                 if (recordsToRemove.isNotEmpty()) {
                     val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator)
-                        .map { LogRecordEvent(it, blockEvent.source, true) }
+                        .map { LogRecordEvent(it, true) }
                     logRecordEventPublisher.publish(groupId, logRecordEvents)
                 }
             }
@@ -66,7 +66,7 @@ class BlockEventListener<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord
                     logRecordEventPublisher.publish(
                         groupId,
                         recordsToInsert.sortedWith(logRecordComparator)
-                            .map { LogRecordEvent(it, blockEvent.source, false) }
+                            .map { LogRecordEvent(it, false) }
                     )
                 }
             }

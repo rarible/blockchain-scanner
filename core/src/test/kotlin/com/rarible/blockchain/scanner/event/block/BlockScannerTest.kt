@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
@@ -63,8 +62,8 @@ class BlockScannerTest {
         // Events for both blocks should be emitted in correct order
         assertThat(events).isEqualTo(
             listOf(
-                NewBlockEvent(Source.BLOCKCHAIN, block0.number, block0.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash)
+                NewBlockEvent(block0.number, block0.hash),
+                NewBlockEvent(block1.number, block1.hash)
             )
         )
 
@@ -107,14 +106,14 @@ class BlockScannerTest {
 
         // Events for both blocks (1 and 2) should be emitted in correct order
         val requiredEvents = listOf(
-            NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
-            NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash)
+            NewBlockEvent(block1.number, block1.hash),
+            NewBlockEvent(block2.number, block2.hash)
         )
         assertThat(events).isEqualTo(
             if (success)
                 requiredEvents
             else
-                listOf(NewBlockEvent(Source.BLOCKCHAIN, block0.number, block0.hash)) + requiredEvents
+                listOf(NewBlockEvent(block0.number, block0.hash)) + requiredEvents
         )
 
         coVerify(exactly = 1) { client.getBlock(0) }
@@ -167,11 +166,11 @@ class BlockScannerTest {
         // Correct events should be emitted in ASC order right after reverted block events
         assertThat(events).isEqualTo(
             listOf(
-                RevertedBlockEvent(Source.BLOCKCHAIN, block2Reorg.number, block2Reorg.hash),
-                RevertedBlockEvent(Source.BLOCKCHAIN, block1Reorg.number, block1Reorg.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block1.number, block1.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block2.number, block2.hash),
-                NewBlockEvent(Source.BLOCKCHAIN, block3.number, block3.hash),
+                RevertedBlockEvent(block2Reorg.number, block2Reorg.hash),
+                RevertedBlockEvent(block1Reorg.number, block1Reorg.hash),
+                NewBlockEvent(block1.number, block1.hash),
+                NewBlockEvent(block2.number, block2.hash),
+                NewBlockEvent(block3.number, block3.hash),
             )
         )
 
