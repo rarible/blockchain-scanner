@@ -119,7 +119,7 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? {
     }
 
     val (message, code) = requireNotNull(error) { "error field must be not null" }
-    if (code == ErrorCodes.BLOCK_NOT_AVAILABLE) {
+    if (code == ErrorCodes.BLOCK_NOT_AVAILABLE || code == ErrorCodes.SLOT_WAS_SKIPPED) {
         return null
     } else {
         error("Unknown error code: $code, message: $message")
@@ -152,4 +152,5 @@ fun Instruction.toModel(
 
 object ErrorCodes {
     const val BLOCK_NOT_AVAILABLE = -32004
+    const val SLOT_WAS_SKIPPED = -32009
 }
