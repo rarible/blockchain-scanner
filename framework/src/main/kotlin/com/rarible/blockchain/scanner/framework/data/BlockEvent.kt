@@ -11,41 +11,25 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(name = "REINDEX", value = ReindexBlockEvent::class)
 )
 sealed class BlockEvent {
-    abstract val source: Source
     abstract val number: Long
 }
 
 data class NewBlockEvent(
-    override val source: Source,
     override val number: Long,
     val hash: String
 ) : BlockEvent() {
-    override fun toString(): String {
-        return "$number:$hash:$source"
-    }
+    override fun toString(): String = "$number:$hash"
 }
 
 data class RevertedBlockEvent(
-    override val source: Source,
     override val number: Long,
     val hash: String
 ) : BlockEvent() {
-    override fun toString(): String {
-        return "$number:$hash:$source"
-    }
+    override fun toString(): String = "$number:$hash"
 }
 
 data class ReindexBlockEvent(
     override val number: Long
 ) : BlockEvent() {
-    override val source: Source = Source.REINDEX
-
-    override fun toString(): String {
-        return "$number:$source"
-    }
-}
-
-enum class Source {
-    BLOCKCHAIN,
-    REINDEX
+    override fun toString(): String = "$number"
 }

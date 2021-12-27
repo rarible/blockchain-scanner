@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.async
@@ -193,14 +192,14 @@ class BlockHandler<BB : BlockchainBlock>(
     //TODO send BB to publisher
     private suspend fun newBlock(block: Block): Block {
         blockService.save(block.copy(status = BlockStatus.PENDING))
-        blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
+        blockListener.publish(NewBlockEvent(block.id, block.hash))
         val result = blockService.save(block.copy(status = BlockStatus.SUCCESS))
         logger.info("Block [{}:{}] saved", block.id, block.hash)
         return result
     }
 
     private suspend fun revertBlock(block: Block) {
-        blockListener.publish(RevertedBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
+        blockListener.publish(RevertedBlockEvent(number = block.id, hash = block.hash))
         blockService.remove(block.id)
     }
 

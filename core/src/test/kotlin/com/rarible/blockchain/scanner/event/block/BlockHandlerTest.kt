@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.event.block
 
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -68,7 +67,7 @@ internal class BlockHandlerTest {
         coVerifyOrder {
             ((lastStateBlockNumber + 1)..latestBlockNumber).forEach { id ->
                 val block = requireNotNull(testBlocks[id])
-                blockListener.publish(NewBlockEvent(Source.BLOCKCHAIN, block.id, block.hash))
+                blockListener.publish(NewBlockEvent(block.id, block.hash))
             }
         }
 

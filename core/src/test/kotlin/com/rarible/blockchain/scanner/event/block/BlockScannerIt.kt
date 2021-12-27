@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.event.block
 
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.Source
 import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -51,7 +50,6 @@ class BlockScannerIt : AbstractIntegrationTest() {
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 NewBlockEvent(
-                    source = Source.BLOCKCHAIN,
                     number = 0,
                     hash = block.hash
                 )
@@ -77,12 +75,12 @@ class BlockScannerIt : AbstractIntegrationTest() {
         assertThat(savedNewBlock).isEqualTo(newBlock.toBlock())
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
-                NewBlockEvent(Source.BLOCKCHAIN, newBlock.number, newBlock.hash)
+                NewBlockEvent(newBlock.number, newBlock.hash)
             )
         }
         coVerify(exactly = 0) {
             blockEventPublisher.publish(
-                NewBlockEvent(Source.BLOCKCHAIN, existingBlock.number, existingBlock.hash)
+                NewBlockEvent(existingBlock.number, existingBlock.hash)
             )
         }
         confirmVerified(blockEventPublisher)
@@ -108,17 +106,17 @@ class BlockScannerIt : AbstractIntegrationTest() {
 
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
-                NewBlockEvent(source = Source.BLOCKCHAIN, number = newBlock.number, hash = newBlock.hash)
+                NewBlockEvent(number = newBlock.number, hash = newBlock.hash)
             )
         }
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
-                NewBlockEvent(source = Source.BLOCKCHAIN, number = missedBlock.number, hash = missedBlock.hash)
+                NewBlockEvent(number = missedBlock.number, hash = missedBlock.hash)
             )
         }
         coVerify(exactly = 0) {
             blockEventPublisher.publish(
-                NewBlockEvent(source = Source.BLOCKCHAIN, number = existingBlock.number, hash = existingBlock.hash)
+                NewBlockEvent(number = existingBlock.number, hash = existingBlock.hash)
             )
         }
         confirmVerified(blockEventPublisher)
@@ -171,25 +169,22 @@ class BlockScannerIt : AbstractIntegrationTest() {
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 RevertedBlockEvent(
-                    Source.BLOCKCHAIN,
-                    existingGrandParent.number,
-                    existingGrandParent.hash
+                    number = existingGrandParent.number,
+                    hash = existingGrandParent.hash
                 )
             )
         }
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 RevertedBlockEvent(
-                    Source.BLOCKCHAIN,
-                    existingParent.number,
-                    existingParent.hash
+                    number = existingParent.number,
+                    hash = existingParent.hash
                 )
             )
         }
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 NewBlockEvent(
-                    Source.BLOCKCHAIN,
                     newBlock.number,
                     newBlock.hash
                 )
@@ -198,7 +193,6 @@ class BlockScannerIt : AbstractIntegrationTest() {
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 NewBlockEvent(
-                    Source.BLOCKCHAIN,
                     newParent.number,
                     newParent.hash
                 )
@@ -207,7 +201,6 @@ class BlockScannerIt : AbstractIntegrationTest() {
         coVerify(exactly = 1) {
             blockEventPublisher.publish(
                 NewBlockEvent(
-                    Source.BLOCKCHAIN,
                     newGrandParent.number,
                     newGrandParent.hash
                 )
@@ -216,7 +209,6 @@ class BlockScannerIt : AbstractIntegrationTest() {
         coVerify(exactly = 0) {
             blockEventPublisher.publish(
                 NewBlockEvent(
-                    Source.BLOCKCHAIN,
                     existingRoot.number,
                     existingRoot.hash
                 )
