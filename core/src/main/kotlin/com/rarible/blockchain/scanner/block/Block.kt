@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.event.block
 
+import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import org.springframework.data.annotation.Id
 
 /**
@@ -19,3 +20,6 @@ enum class BlockStatus {
     PENDING,
     SUCCESS,
 }
+
+fun BlockchainBlock.toBlock(status: BlockStatus = BlockStatus.PENDING): Block =
+    Block(number, hash, parentHash, timestamp, status)

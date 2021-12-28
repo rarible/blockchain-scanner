@@ -2,7 +2,8 @@ package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.event.block.Block
-import com.rarible.blockchain.scanner.event.block.BlockService
+import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.runBlocking
 import java.time.Instant
@@ -29,9 +30,9 @@ class BlockMonitor(
         lastBlock = blockService.getLastBlock()
     }
 
-    fun getBlockDelay(): Number? {
+    fun getBlockDelay(now: Instant = nowMillis()): Double? {
         val lastSeenBlockTimestamp = lastBlock?.timestamp ?: return null
-        val currentTimestamp = Instant.now().epochSecond
+        val currentTimestamp = now.epochSecond
         return max(currentTimestamp - lastSeenBlockTimestamp, 0).toDouble()
     }
 }

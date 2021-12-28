@@ -9,8 +9,8 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.event.block.Block
-import com.rarible.blockchain.scanner.event.block.BlockRepository
-import com.rarible.blockchain.scanner.event.block.BlockService
+import com.rarible.blockchain.scanner.block.BlockRepository
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait

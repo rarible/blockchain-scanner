@@ -10,3 +10,5 @@ abstract class TestLogRecord : LogRecord {
     abstract val log: TestLog
     abstract fun withIdAndVersion(id: Long, version: Long?): TestLogRecord
 }
+
+fun TestLogRecord.nullVersion() = withIdAndVersion(id = id, version = null)

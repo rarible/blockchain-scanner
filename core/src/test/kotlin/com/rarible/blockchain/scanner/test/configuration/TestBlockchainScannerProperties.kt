@@ -5,11 +5,7 @@ import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.core.daemon.DaemonWorkerProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 
-@ConstructorBinding
-@ConfigurationProperties(prefix = "blockchain.scanner.test")
 data class TestBlockchainScannerProperties(
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val scan: ScanProperties = ScanProperties(),

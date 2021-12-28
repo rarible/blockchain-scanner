@@ -25,6 +25,7 @@ class TestLogEventSubscriber(
         testOriginalLog: TestOriginalLog
     ): List<TestLogRecord> {
         return expectedRecords.getValue(testBlockchainBlock to testOriginalLog)
+            .map { it.withIdAndVersion(it.id, null) } // Make the version field null to simplify comparison.
     }
 
     override fun getDescriptor(): TestDescriptor = descriptor

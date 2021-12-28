@@ -24,7 +24,8 @@ class KafkaConfiguration(
     fun kafkaLogEventPublisher(): LogRecordEventPublisher {
         logger.info(
             "Custom {} is not configured, using {}",
-            LogRecordEventPublisher::class.java.simpleName, KafkaLogRecordEventPublisher::class.java.name
+            LogRecordEventPublisher::class.java.simpleName,
+            KafkaLogRecordEventPublisher::class.java.name
         )
         return KafkaLogRecordEventPublisher(
             properties = kafkaProperties,

@@ -1,13 +1,17 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
-import kotlinx.coroutines.delay
+import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 class SolanaClient(
     url: String
@@ -36,6 +40,16 @@ class SolanaClient(
         api.getBlock(number, TransactionDetails.None).toModel(number)
 
     override fun getBlockLogs(
+        descriptor: SolanaDescriptor,
+        blocks: List<BlockHeader>,
+        stable: Boolean
+    ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> {
+        // Normally, we have only one consequent range here.
+        val ranges = BlockRanges.toRanges(blocks.map { it.number })
+        return ranges.asFlow().map { getBlockLogs(descriptor, it) }.flattenConcat()
+    }
+
+    private fun getBlockLogs(
         descriptor: SolanaDescriptor,
         range: LongRange
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> = flow {
