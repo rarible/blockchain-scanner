@@ -25,11 +25,6 @@
             <artifactId>rarible-blockchain-scanner-framework</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.nftco</groupId>
-            <artifactId>flow-jvm-sdk</artifactId>
-            <version>0.5.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-mongodb</artifactId>
         </dependency>
