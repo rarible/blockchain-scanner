@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
@@ -10,7 +11,6 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
 import com.rarible.core.common.nowMillis
@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import scala.jdk.javaapi.CollectionConverters
 import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
@@ -78,11 +79,27 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
         verifyPublishedLogEvent { logRecordEvent ->
             assertThat(logRecordEvent.reverted).isFalse
-            assertThat(logRecordEvent.record).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
-                assertThat(it.transactionHash).isEqualTo(receipt.transactionHash().toString())
-                assertThat(it.data).isInstanceOfSatisfying(TestEthereumLogData::class.java) { logData ->
-                    assertThat(logData.to).isEqualTo(beneficiary)
-                }
+            assertThat(logRecordEvent.record).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) { record ->
+                assertThat(record).isEqualTo(
+                    ReversedEthereumLogRecord(
+                        id = record.id,
+                        version = record.version,
+                        transactionHash = receipt.transactionHash().toString(),
+                        status = EthereumLogStatus.CONFIRMED,
+                        topic = TransferEvent.id(),
+                        minorLogIndex = 0,
+                        index = 0,
+                        address = contract.address(),
+                        blockHash = receipt.blockHash(),
+                        blockNumber = receipt.blockNumber().toLong(),
+                        logIndex = CollectionConverters.asJava(receipt.logs()).first().logIndex().toInt(),
+                        blockTimestamp = receipt.getTimestamp().epochSecond,
+                        visible = true,
+                        createdAt = record.createdAt,
+                        updatedAt = record.updatedAt,
+                        data = record.data
+                    )
+                )
             }
         }
     }

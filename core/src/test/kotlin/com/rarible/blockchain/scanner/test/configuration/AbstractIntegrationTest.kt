@@ -1,76 +1,81 @@
 package com.rarible.blockchain.scanner.test.configuration
 
-import com.rarible.blockchain.scanner.BlockchainScanner
+import com.rarible.blockchain.scanner.block.BlockRepository
+import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
+import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.event.block.Block
-import com.rarible.blockchain.scanner.event.block.BlockRepository
-import com.rarible.blockchain.scanner.event.block.BlockScanner
-import com.rarible.blockchain.scanner.event.block.BlockService
 import com.rarible.blockchain.scanner.event.block.toBlock
-import com.rarible.blockchain.scanner.publisher.BlockEventPublisher
+import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
+import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import kotlinx.coroutines.reactive.awaitFirst
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.toList
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
-import org.springframework.data.mongodb.core.findAll
 
 abstract class AbstractIntegrationTest {
 
     @Autowired
     protected lateinit var mongo: ReactiveMongoOperations
 
-    @Autowired
-    lateinit var testBlockRepository: BlockRepository
+    private val blockRepository: BlockRepository by lazy {
+        BlockRepository(mongo)
+    }
 
-    @Autowired
-    lateinit var testBlockService: BlockService
+    protected val blockService: BlockService by lazy {
+        BlockService(blockRepository)
+    }
 
-    @Autowired
-    lateinit var testLogRepository: TestLogRepository
+    protected val testLogRepository: TestLogRepository by lazy {
+        TestLogRepository(mongo)
+    }
 
-    @Autowired
-    lateinit var testLogService: TestLogService
+    protected val testLogService: TestLogService by lazy {
+        TestLogService(testLogRepository)
+    }
 
-    @Autowired
-    lateinit var properties: TestBlockchainScannerProperties
+    protected val testLogRecordEventPublisher: TestLogRecordEventPublisher = TestLogRecordEventPublisher()
+
+    protected suspend fun findBlock(number: Long): Block? = blockRepository.findById(number)
 
     protected suspend fun findLog(collection: String, id: Long): TestLogRecord? {
         return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
     }
 
-    protected suspend fun findBlock(number: Long): Block? {
-        return testBlockRepository.findById(number)
+    protected fun createBlockchainScanner(
+        testBlockchainClient: TestBlockchainClient,
+        vararg subscribers: TestLogEventSubscriber
+    ): TestBlockchainScanner {
+        return TestBlockchainScanner(
+            blockchainClient = testBlockchainClient,
+            blockService = blockService,
+            logService = testLogService,
+            properties = TestBlockchainScannerProperties(
+                retryPolicy = RetryPolicyProperties(
+                    scan = ScanRetryPolicyProperties(
+                        reconnectAttempts = 1
+                    )
+                )
+            ),
+            logRecordEventPublisher = testLogRecordEventPublisher,
+            subscribers = subscribers.toList()
+        )
     }
 
-    protected suspend fun findAllLogs(collection: String): List<Any> {
-        return mongo.findAll<Any>(collection).collectList().awaitFirst()
-    }
+    protected suspend fun getAllBlocks(): List<Block> = blockRepository.getAll().toList().sortedBy { it.id }
 
-    protected suspend fun findAllBlocks(): List<Block> {
-        return mongo.findAll<Block>().collectList().awaitFirst()
-    }
+    protected fun TestBlockchainBlock.asNewEvent() = NewBlockEvent(number = number, hash = hash)
+    protected fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent(number = number, hash = hash)
 
-    protected suspend fun saveBlock(block: TestBlockchainBlock): TestBlockchainBlock {
-        testBlockRepository.save(block.toBlock())
-        return block
-    }
-
-    protected suspend fun BlockScanner<*>.scanOnce(publisher: BlockEventPublisher) {
-        try {
-            scan(publisher)
-        } catch (e: Exception) {
-            // Ignore the flow completed.
-        }
-    }
-
-    protected suspend fun BlockchainScanner<*, *, *, *>.scanOnce() {
-        try {
-            scan()
-        } catch (e: IllegalStateException) {
-            // Do nothing, in prod there will be infinite attempts count
-        }
-    }
 }

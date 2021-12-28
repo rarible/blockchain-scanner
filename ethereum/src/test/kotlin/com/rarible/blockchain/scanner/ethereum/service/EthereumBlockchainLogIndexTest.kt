@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
 import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
 import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
+import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.core.common.justOrEmpty
 import com.rarible.core.test.data.randomAddress
@@ -130,7 +131,7 @@ class EthereumBlockchainLogIndexTest {
         every { descriptor.contracts } returns emptyList()
         every { descriptor.ethTopic } returns randomWord()
 
-        val fullBlocks = ethereumClient.getBlockLogs(descriptor, LongRange(1, 1)).toList()
+        val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(BlockHeader(1, "")), true).toList()
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
         for ((block, logs) in fullBlocks) {
             val expectedFullBlock = expectedFullBlocks.find { it.block == block }!!

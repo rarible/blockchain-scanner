@@ -3,12 +3,10 @@ package com.rarible.blockchain.scanner.test.model
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 
 class TestDescriptor(
-    override val id: String,
+    val topic: String,
     val collection: String,
     val contracts: List<String>,
-    override val entityType: Class<*>
-) : Descriptor {
-    override val groupId: String get() = id
-}
-
-
+    override val entityType: Class<*>,
+    override val groupId: String = topic,
+    override val id: String = topic
+) : Descriptor

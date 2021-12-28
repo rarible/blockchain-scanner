@@ -1,15 +1,17 @@
-package com.rarible.blockchain.scanner.event.block
+package com.rarible.blockchain.scanner.block
 
+import com.rarible.blockchain.scanner.event.block.Block
 import com.rarible.core.mongo.repository.AbstractMongoRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
-import org.springframework.data.mongodb.core.findOne
+import org.springframework.data.mongodb.core.findAll
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Mono
 
 @Component
 class BlockRepository(
@@ -29,10 +31,6 @@ class BlockRepository(
         ).awaitFirstOrNull()
     }
 
-    fun findFirstByIdAsc(): Mono<Block> =
-        mongo.findOne(Query().with(Sort.by(Sort.Direction.ASC, Block::id.name)))
-
-    fun findFirstByIdDesc(): Mono<Block> =
-        mongo.findOne(Query().with(Sort.by(Sort.Direction.DESC, Block::id.name)))
+    fun getAll(): Flow<Block> = mongo.findAll<Block>().asFlow()
 
 }

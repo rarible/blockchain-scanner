@@ -12,8 +12,6 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * implementations. Also, subscriber must provide way to generate custom event data from original
  * Blockchain Block and Log.
  */
-
-// Inside of group logs should be processed together
 interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor> {
 
     /**

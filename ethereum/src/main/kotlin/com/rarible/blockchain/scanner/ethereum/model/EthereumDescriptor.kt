@@ -9,9 +9,6 @@ class EthereumDescriptor(
     override val groupId: String,
     val collection: String,
     val contracts: List<Address>,
-    override val entityType: Class<*>
-) : Descriptor {
-
-    override val id: String get() = ethTopic.toString()
-
-}
+    override val entityType: Class<*>,
+    override val id: String = ethTopic.toString()
+) : Descriptor
