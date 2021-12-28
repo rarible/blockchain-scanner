@@ -7,7 +7,7 @@ import com.rarible.blockchain.scanner.monitoring.Monitor
 import com.rarible.blockchain.scanner.monitoring.MonitoringWorker
 import com.rarible.core.task.EnableRaribleTask
 import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -24,13 +24,13 @@ class BlockchainScannerConfiguration(
 ) {
 
     @Bean
-    @ConditionalOnBean(MeterRegistry::class)
+    @ConditionalOnClass(MeterRegistry::class)
     fun blockMonitor(meterRegistry: MeterRegistry, blockService: BlockService<*>): BlockMonitor {
         return BlockMonitor(properties, meterRegistry, blockService)
     }
 
     @Bean
-    @ConditionalOnBean(MeterRegistry::class)
+    @ConditionalOnClass(MeterRegistry::class)
     fun monitoringWorker(meterRegistry: MeterRegistry, monitors: List<Monitor>): MonitoringWorker {
         return MonitoringWorker(properties, meterRegistry, monitors)
     }
