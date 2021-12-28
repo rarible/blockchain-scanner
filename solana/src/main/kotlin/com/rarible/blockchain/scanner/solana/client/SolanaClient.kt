@@ -62,16 +62,18 @@ class SolanaClient(
                     )
                 }
 
-                result += transactionDto.meta.innerInstructions.flatMapIndexed { innerInstructionIndex, innerInstruction ->
-                    innerInstruction.instructions.map { instruction ->
-                        instruction.toModel(
-                            accountKeys,
-                            blockNumber,
-                            blockHash,
-                            transactionHash,
-                            innerInstruction.index,
-                            innerInstructionIndex
-                        )
+                transactionDto.meta?.let { meta ->
+                    result += meta.innerInstructions.flatMapIndexed { innerInstructionIndex, innerInstruction ->
+                        innerInstruction.instructions.map { instruction ->
+                            instruction.toModel(
+                                accountKeys,
+                                blockNumber,
+                                blockHash,
+                                transactionHash,
+                                innerInstruction.index,
+                                innerInstructionIndex
+                            )
+                        }
                     }
                 }
 

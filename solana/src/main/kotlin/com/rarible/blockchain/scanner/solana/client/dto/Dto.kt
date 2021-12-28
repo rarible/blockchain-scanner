@@ -64,7 +64,7 @@ data class ApiResponse<T>(
 
 data class SolanaTransactionDto(
     val transaction: Details,
-    val meta: Meta,
+    val meta: Meta?,
 ) {
     data class Instruction(
         val accounts: List<Int>,
