@@ -96,7 +96,7 @@ class EthereumClient(
             val blockHash = Word.apply(blockHeader.hash)
             val finalFilter = filter.blockHash(blockHash)
             // TODO: filter out Log.removed() records after we fix dependency version problems
-            val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot { it.removed() }
+            val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst()
             logger.info("Loaded {} logs of topic {} for fresh block [{}:{}]", allLogs.size, descriptor.ethTopic, blockHeader.number, blockHash)
             val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
             createFullBlock(ethFullBlock, allLogs)
