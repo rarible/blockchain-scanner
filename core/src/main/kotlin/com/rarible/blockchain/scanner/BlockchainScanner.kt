@@ -52,6 +52,10 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
         }
 
     suspend fun scan(once: Boolean = false) {
+        if (!properties.scan.enabled) {
+            logger.info("Blockchain scanning is disabled")
+            return
+        }
         val retryOnFlowCompleted: RetryPolicy<Throwable> = {
             logger.warn("Blockchain scanning interrupted with cause:", reason)
             logger.info("Will try to reconnect to blockchain in ${properties.retryPolicy.scan.reconnectDelay}")
