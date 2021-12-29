@@ -110,7 +110,6 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? {
             SolanaBlockchainBlock(
                 slot = slot,
                 parentSlot = parentSlot,
-                number = blockHeight,
                 hash = blockhash,
                 parentHash = previousBlockhash,
                 timestamp = blockTime
