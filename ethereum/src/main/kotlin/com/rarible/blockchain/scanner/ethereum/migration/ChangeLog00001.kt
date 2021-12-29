@@ -9,9 +9,6 @@ import org.bson.Document
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.index.Index
 import org.springframework.data.mongodb.core.index.PartialIndexFilter
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 
 @ChangeLog(order = "00001")
 class ChangeLog00001 {
@@ -32,7 +29,7 @@ class ChangeLog00001 {
         collections.forEach { createInitialIndices(template, it) }
     }
 
-    private fun createInitialIndices(template: MongockTemplate, collection: String) {
+    fun createInitialIndices(template: MongockTemplate, collection: String) {
         val indexOps = template.indexOps(collection)
         indexOps.ensureIndex(
             Index()
