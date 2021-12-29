@@ -27,7 +27,7 @@ interface SolanaApi {
     suspend fun getTransaction(signature: String): ApiResponse<SolanaTransactionDto>
 }
 
-internal class SolanaHttpRpcApi(
+class SolanaHttpRpcApi(
     url: String,
     timeoutMillis: Long = DEFAULT_TIMEOUT
 ) : SolanaApi {

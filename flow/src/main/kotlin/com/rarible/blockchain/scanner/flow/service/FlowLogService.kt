@@ -27,7 +27,7 @@ class FlowLogService(
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: FlowDescriptor,
-        newBlock: FullBlock<*, *>
+        fullBlock: FullBlock<*, *>
     ): List<FlowLogRecord> {
         // TODO: there are no pending logs in Flow, so nothing to revert, right?
         return emptyList()

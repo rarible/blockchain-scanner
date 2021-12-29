@@ -7,27 +7,3 @@ blockchain:
     kafka:
       broker-replica-set: ${kafka.hosts}
       maxPollRecords: 10
-    test:
-      reconnectDelay: 2000
-      reconnectAttempts: 1
-      scan:
-        block-publish:
-          enabled: true
-        event-consume:
-          enabled: true
-      retryPolicy:
-        scan:
-          reconnectDelay: 2s
-          reconnectAttempts: 1
-        client:
-          delay: 2s
-          attempts: 3
-      job:
-        reconciliation:
-          enabled: false
-          batchSize: 5
-      monitoring:
-        enabled: true
-        rootPath: "blockchain.scanner"
-        worker:
-          pollingPeriod: 1s

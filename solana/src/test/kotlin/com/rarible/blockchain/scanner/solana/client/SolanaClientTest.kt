@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.solana.client
 
+import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-internal class SolanaClientTest {
+class SolanaClientTest {
     private val mainNetBeta = "https://api.mainnet-beta.solana.com"
     private val client = SolanaClient(mainNetBeta)
 
@@ -23,7 +24,7 @@ internal class SolanaClientTest {
             groupId = "",
             entityType = Any::class.java
         ) {}
-        val events = client.getBlockLogs(descriptor, 91725442L..91725442L)
+        val events = client.getBlockLogs(descriptor, listOf(BlockHeader(91725442L, "")), true)
             .single()
             .logs
             .map(SolanaBlockchainLog::instruction)

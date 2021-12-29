@@ -23,7 +23,7 @@ class SolanaLogService(
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: SolanaDescriptor,
-        newBlock: FullBlock<*, *>
+        fullBlock: FullBlock<*, *>
     ): List<SolanaLogRecord> = emptyList()
 
     override suspend fun prepareLogsToRevertOnRevertedBlock(

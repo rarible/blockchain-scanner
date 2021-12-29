@@ -20,9 +20,6 @@ blockchain:
         pendingLogs:
           interval: 1s
           initialDelay: 1s
-        reconciliation:
-          enabled: false
-          batchSize: 5
       monitoring:
         enabled: false
         rootPath: "blockchain.scanner"

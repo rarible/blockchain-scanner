@@ -72,11 +72,11 @@ class EthereumLogService(
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: EthereumDescriptor,
-        newBlock: FullBlock<*, *>
+        fullBlock: FullBlock<*, *>
     ): List<EthereumLogRecord> {
         @Suppress("UNCHECKED_CAST")
-        val fullBlock = newBlock as FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>
-        return ethereumPendingLogService.getInactivePendingLogs(fullBlock, descriptor)
+        val fullEthBlock = fullBlock as FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>
+        return ethereumPendingLogService.getInactivePendingLogs(fullEthBlock, descriptor)
     }
 
     override suspend fun prepareLogsToRevertOnRevertedBlock(

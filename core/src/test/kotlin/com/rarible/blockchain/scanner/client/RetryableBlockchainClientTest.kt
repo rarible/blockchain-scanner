@@ -2,14 +2,16 @@ package com.rarible.blockchain.scanner.client
 
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
-import com.rarible.blockchain.scanner.test.data.randomBlockchainLog
+import com.rarible.blockchain.scanner.test.data.randomOriginalLog
+import com.rarible.blockchain.scanner.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.test.data.randomString
-import com.rarible.blockchain.scanner.test.data.testDescriptor1
+import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -33,6 +35,12 @@ class RetryableBlockchainClientTest {
     )
     private val client: TestBlockchainClient = mockk()
     private lateinit var retryableClient: BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor>
+    private val descriptor = TestDescriptor(
+        topic = randomString(),
+        collection = randomString(),
+        contracts = listOf(randomString(), randomString()),
+        entityType = TestCustomLogRecord::class.java
+    )
 
     @BeforeEach
     fun beforeEach() {
@@ -55,32 +63,30 @@ class RetryableBlockchainClientTest {
 
     @Test
     fun `get block logs - all attempts failed`() = runBlocking {
-        val descriptor = testDescriptor1()
-        val range = LongRange.EMPTY
+        val blocks = listOf<BlockHeader>()
         var count = 0
-        coEvery { client.getBlockLogs(descriptor, range) } returns flow {
+        coEvery { client.getBlockLogs(any(), blocks, true) } returns flow {
             count++
             throw Exception()
         }
 
         assertThrows(Exception::class.java) {
-            runBlocking { retryableClient.getBlockLogs(descriptor, range).toList() }
+            runBlocking { retryableClient.getBlockLogs(descriptor, blocks, true).toList() }
         }
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 1) { client.getBlockLogs(descriptor, range) }
+        coVerify(exactly = 1) { client.getBlockLogs(descriptor, blocks, true) }
         assertEquals(3, count)
     }
 
     @Test
     fun `get block logs - last attempt succeed`() = runBlocking {
-        val descriptor = testDescriptor1()
-        val range = LongRange(1, 1)
+        val blocks = listOf(BlockHeader(1, "hash"))
         var count = 0
         val block = randomBlockchainBlock()
-        val log = randomBlockchainLog(block, randomString())
+        val log = TestBlockchainLog(randomOriginalLog(block, randomString(), randomPositiveInt()), index = randomPositiveInt())
         val fullBlock = FullBlock(block, listOf(log))
-        coEvery { client.getBlockLogs(descriptor, range) } returns flow {
+        coEvery { client.getBlockLogs(descriptor, blocks, true) } returns flow {
             count++
             if (count < 3) {
                 error("not yet ready")
@@ -88,10 +94,10 @@ class RetryableBlockchainClientTest {
             emit(fullBlock)
         }
 
-        val result = retryableClient.getBlockLogs(descriptor, range)
+        val result = retryableClient.getBlockLogs(descriptor, blocks, true)
 
         // Wrapped by retryable, 3 attempts should be there
-        coVerify(exactly = 1) { client.getBlockLogs(descriptor, range) }
+        coVerify(exactly = 1) { client.getBlockLogs(descriptor, blocks, true) }
         val list = result.toList()
         assertEquals(1, list.size)
         assertEquals(3, count)

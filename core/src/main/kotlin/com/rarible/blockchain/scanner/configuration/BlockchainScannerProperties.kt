@@ -6,13 +6,10 @@ interface BlockchainScannerProperties {
 
     val blockchain: String
 
-    val blockService: String
-    val logService: String
+    val service: String
 
     val retryPolicy: RetryPolicyProperties
     val scan: ScanProperties
-    val job: JobProperties
     val monitoring: MonitoringProperties
     val daemon: DaemonWorkerProperties
 }
-

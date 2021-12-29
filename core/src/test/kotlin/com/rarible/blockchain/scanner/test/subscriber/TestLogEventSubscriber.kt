@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.test.subscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
-import com.rarible.blockchain.scanner.test.client.TestOriginalBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomLogHash
 import com.rarible.blockchain.scanner.test.data.randomPositiveLong
@@ -18,10 +17,15 @@ class TestLogEventSubscriber(
     private val eventDataCount: Int = 1
 ) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor> {
 
-    private val expectedRecords: MutableMap<Pair<TestOriginalBlock, TestOriginalLog>, List<TestLogRecord>> = hashMapOf()
+    private val expectedRecords: MutableMap<Pair<TestBlockchainBlock, TestOriginalLog>, List<TestLogRecord>> =
+        hashMapOf()
 
-    fun getReturnedRecords(testOriginalBlock: TestOriginalBlock, testOriginalLog: TestOriginalLog): List<TestLogRecord> {
-        return expectedRecords.getValue(testOriginalBlock to testOriginalLog)
+    fun getReturnedRecords(
+        testBlockchainBlock: TestBlockchainBlock,
+        testOriginalLog: TestOriginalLog
+    ): List<TestLogRecord> {
+        return expectedRecords.getValue(testBlockchainBlock to testOriginalLog)
+            .map { it.withIdAndVersion(it.id, null) } // Make the version field null to simplify comparison.
     }
 
     override fun getDescriptor(): TestDescriptor = descriptor
@@ -33,13 +37,13 @@ class TestLogEventSubscriber(
         TestCustomLogRecord(
             id = randomPositiveLong(),
             version = null,
-            blockExtra = block.testOriginalBlock.testExtra,
+            blockExtra = block.testExtra,
             logExtra = log.testOriginalLog.testExtra,
             customData = randomString(),
             log = mapLog(log, minorIndex)
         )
     }.also { records ->
-        expectedRecords[block.testOriginalBlock to log.testOriginalLog] = records
+        expectedRecords[block to log.testOriginalLog] = records
     }
 
 

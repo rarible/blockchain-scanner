@@ -6,10 +6,9 @@ import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProp
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
-import com.rarible.blockchain.scanner.reconciliation.DefaultReconciliationFormProvider
-import com.rarible.blockchain.scanner.reconciliation.ReconciliationFromProvider
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.mockk.spyk
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -57,13 +56,10 @@ class TestEthereumScannerConfiguration {
     fun poller(ethereum: MonoEthereum) = MonoTransactionPoller(ethereum)
 
     @Bean
-    fun fromProvider(): ReconciliationFromProvider = DefaultReconciliationFormProvider()
-
-    @Bean
     @Primary
     @Qualifier("testEthereumBlockchainClient")
     fun testEthereumBlockchainClient(originalClient: EthereumBlockchainClient): EthereumBlockchainClient =
-        TestEthereumBlockchainClient(originalClient)
+        spyk(TestEthereumBlockchainClient(originalClient))
 
     @Bean
     @Primary

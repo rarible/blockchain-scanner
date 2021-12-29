@@ -1,46 +1,35 @@
 package com.rarible.blockchain.scanner.monitoring
 
+import com.rarible.blockchain.scanner.event.block.toBlock
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
-import com.rarible.blockchain.scanner.test.data.randomOriginalBlock
-import com.rarible.core.test.wait.BlockingWait
-import io.micrometer.core.instrument.MeterRegistry
+import com.rarible.blockchain.scanner.test.configuration.TestBlockchainScannerProperties
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
+import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Import
 
 @IntegrationTest
-@Import(MonitoringWorkerIt.TestConfiguration::class)
 class MonitoringWorkerIt : AbstractIntegrationTest() {
 
-    @Autowired
-    lateinit var blockMonitor: BlockMonitor
-
-    @Autowired
-    lateinit var registry: MeterRegistry
-
     @Test
-    fun `update block metrics`() = runBlocking {
-        saveBlock(randomOriginalBlock())
-        saveBlock(randomOriginalBlock())
-        saveBlock(randomOriginalBlock())
-        saveBlock(randomOriginalBlock())
-
-        BlockingWait.waitAssert {
-            assertTrue(blockMonitor.getBlockDelay()!!.toLong() > 0)
-            assertTrue(registry.find("blockchain.scanner.block.delay").gauge()!!.value().toLong() > 0)
+    fun `update block metrics`() {
+        val blockMonitor = BlockMonitor(TestBlockchainScannerProperties(), SimpleMeterRegistry(), blockService)
+        val now = nowMillis()
+        val nowTimestamp = now.epochSecond
+        runBlocking {
+            blockService.save(randomBlockchainBlock(number = 1).copy(timestamp = nowTimestamp - 100).toBlock())
+            blockService.save(randomBlockchainBlock(number = 2).copy(timestamp = nowTimestamp - 50).toBlock())
+            blockService.save(randomBlockchainBlock(number = 3).copy(timestamp = nowTimestamp - 20).toBlock())
         }
-    }
-
-    @org.springframework.boot.test.context.TestConfiguration
-    class TestConfiguration {
-        @Bean
-        fun simpleMeterRegistry(): MeterRegistry  {
-            return SimpleMeterRegistry()
+        blockMonitor.refresh()
+        assertThat(blockMonitor.getBlockDelay(now)).isEqualTo(20.0)
+        runBlocking {
+            blockService.save(randomBlockchainBlock(number = 4).copy(timestamp = nowTimestamp - 5).toBlock())
         }
+        blockMonitor.refresh()
+        assertThat(blockMonitor.getBlockDelay(now)).isEqualTo(5.0)
     }
 }

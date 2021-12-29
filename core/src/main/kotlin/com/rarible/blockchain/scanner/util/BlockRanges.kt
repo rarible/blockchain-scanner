@@ -1,9 +1,33 @@
 package com.rarible.blockchain.scanner.util
 
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 
 object BlockRanges {
+
+    /**
+     * Chunks consequent block events by type.
+     */
+    fun toBatches(events: List<BlockEvent>): List<List<BlockEvent>> {
+        val batches = mutableListOf<List<BlockEvent>>()
+        val iterator = events.iterator()
+        var current = iterator.next()
+        var currentBatch = mutableListOf(current)
+        while (iterator.hasNext()) {
+            val next = iterator.next()
+            if (next.javaClass == current.javaClass) {
+                currentBatch.add(next)
+            } else {
+                batches.add(currentBatch)
+                currentBatch = mutableListOf(next)
+            }
+            current = next
+        }
+        batches.add(currentBatch)
+        return batches
+    }
+
     fun getRanges(from: Long, to: Long, step: Int): Flow<LongRange> =
         (from..to).chunked(step) {
             LongRange(it.first(), it.last())

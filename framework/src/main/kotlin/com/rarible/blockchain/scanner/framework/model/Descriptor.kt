@@ -25,4 +25,5 @@ interface Descriptor {
      * explicitly in order to avoid unnecessary mongo reflective field checks in queries.
      */
     val entityType: Class<*>
+
 }

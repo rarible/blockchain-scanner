@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.solana.configuration
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
@@ -14,8 +13,7 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "blockchain.scanner.solana")
 data class SolanaBlockchainScannerProperties(
     override val blockchain: String = "solana",
-    override val logService: String = "log-scanner",
-    override val blockService: String = "block-scanner",
+    override val service: String = "log-scanner",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(
         worker = DaemonWorkerProperties(
@@ -25,7 +23,6 @@ data class SolanaBlockchainScannerProperties(
             buffer = true
         )
     ),
-    override val job: JobProperties = JobProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     val rpcApiUrl: String,
     override val scan: ScanProperties = ScanProperties()

@@ -1,22 +1,20 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.ethereum.mapper.EthereumBlockMapper
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.repository.EthereumBlockRepository
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
-import com.rarible.blockchain.scanner.ethereum.service.EthereumBlockService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.event.block.Block
+import com.rarible.blockchain.scanner.block.BlockRepository
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
@@ -51,13 +49,10 @@ abstract class AbstractIntegrationTest {
     protected lateinit var mongo: ReactiveMongoOperations
 
     @Autowired
-    lateinit var ethereumBlockMapper: EthereumBlockMapper
+    lateinit var ethereumBlockRepository: BlockRepository
 
     @Autowired
-    lateinit var ethereumBlockRepository: EthereumBlockRepository
-
-    @Autowired
-    lateinit var ethereumBlockService: EthereumBlockService
+    lateinit var ethereumBlockService: BlockService
 
     @Autowired
     lateinit var ethereumLogRepository: EthereumLogRepository
@@ -95,7 +90,7 @@ abstract class AbstractIntegrationTest {
         ethereumLogRepository.findLogEvent(ReversedEthereumLogRecord::class.java, collection, id)
     }
 
-    protected fun findBlock(number: Long): EthereumBlock? {
+    protected fun findBlock(number: Long): Block? {
         return mono { ethereumBlockRepository.findById(number) }.block()
     }
 
@@ -108,8 +103,8 @@ abstract class AbstractIntegrationTest {
     }
 
     protected fun saveBlock(
-        block: EthereumBlock
-    ): EthereumBlock {
+        block: Block
+    ): Block {
         return mono { ethereumBlockRepository.save(block) }.block()!!
     }
 

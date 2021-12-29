@@ -60,7 +60,7 @@ class TestLogService(
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: TestDescriptor,
-        newBlock: FullBlock<*, *>
+        fullBlock: FullBlock<*, *>
     ): List<TestLogRecord> = emptyList()
 
 }

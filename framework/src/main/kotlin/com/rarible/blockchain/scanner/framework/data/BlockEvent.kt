@@ -1,51 +1,27 @@
 package com.rarible.blockchain.scanner.framework.data
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-
-
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
-@JsonSubTypes(
-    JsonSubTypes.Type(name = "NEW", value = NewBlockEvent::class),
-    JsonSubTypes.Type(name = "REVERTED", value = RevertedBlockEvent::class),
-    JsonSubTypes.Type(name = "REINDEX", value = ReindexBlockEvent::class)
-)
 sealed class BlockEvent {
-    abstract val source: Source
     abstract val number: Long
+    abstract val hash: String
+}
+
+data class StableBlockEvent(
+    override val number: Long,
+    override val hash: String
+) : BlockEvent() {
+    override fun toString(): String = "stable:$number:$hash"
 }
 
 data class NewBlockEvent(
-    override val source: Source,
     override val number: Long,
-    val hash: String
+    override val hash: String
 ) : BlockEvent() {
-    override fun toString(): String {
-        return "$number:$hash:$source"
-    }
+    override fun toString(): String = "new:$number:$hash"
 }
 
 data class RevertedBlockEvent(
-    override val source: Source,
     override val number: Long,
-    val hash: String
+    override val hash: String
 ) : BlockEvent() {
-    override fun toString(): String {
-        return "$number:$hash:$source"
-    }
-}
-
-data class ReindexBlockEvent(
-    override val number: Long
-) : BlockEvent() {
-    override val source: Source = Source.REINDEX
-
-    override fun toString(): String {
-        return "$number:$source"
-    }
-}
-
-enum class Source {
-    BLOCKCHAIN,
-    REINDEX
+    override fun toString(): String = "revert:$number:$hash"
 }

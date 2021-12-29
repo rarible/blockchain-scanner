@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.flow.configuration
 import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.configuration.JobProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
@@ -16,8 +15,7 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "blockchain.scanner.flow")
 data class FlowBlockchainScannerProperties(
     override val blockchain: String = "flow",
-    override val logService: String = "log-scanner",
-    override val blockService: String = "block-scanner",
+    override val service: String = "log-scanner",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(
         worker = DaemonWorkerProperties(
@@ -27,7 +25,6 @@ data class FlowBlockchainScannerProperties(
             buffer = true
         )
     ),
-    override val job: JobProperties = JobProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     override val scan: ScanProperties = ScanProperties(),
     val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID
