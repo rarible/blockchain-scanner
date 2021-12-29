@@ -89,6 +89,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                         topic = TransferEvent.id(),
                         minorLogIndex = 0,
                         index = 0,
+                        from = sender.from(),
                         address = contract.address(),
                         blockHash = receipt.blockHash(),
                         blockNumber = receipt.blockNumber().toLong(),
