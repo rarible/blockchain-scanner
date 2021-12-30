@@ -1,11 +1,12 @@
 package com.rarible.blockchain.scanner.handler
 
+import com.rarible.blockchain.scanner.block.BlockStatus
+import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
-import com.rarible.blockchain.scanner.event.block.BlockStatus
-import com.rarible.blockchain.scanner.event.block.toBlock
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.data.StableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
@@ -36,6 +37,35 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
         assertThat(blockEventListener.blockEvents.flatten())
             .isEqualTo(blockchain.map { it.asNewEvent() })
+    }
+
+    @Test
+    fun `Remove pending block`() = runBlocking<Unit> {
+        val blockchain1 = randomBlockchain(10)
+        val blockEventListener = TestBlockEventListener()
+        val testBlockchainData1 = TestBlockchainData(blockchain1, emptyList(), emptyList())
+        val blockHandler1 = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData1),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            batchLoad = BlockBatchLoadProperties()
+        )
+        blockHandler1.onNewBlock(blockchain1[4])
+        blockService.save(blockchain1[5].toBlock(BlockStatus.PENDING))
+        blockEventListener.blockEvents.clear()
+
+        val blockchain2 = buildBlockchain(blockchain1.take(5) + randomBlockchain(10).drop(5))
+        val testBlockchainData2 = TestBlockchainData(blockchain2, emptyList(), emptyList())
+        val blockHandler2 = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData2),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            batchLoad = BlockBatchLoadProperties()
+        )
+        blockHandler2.onNewBlock(blockchain2[6])
+
+        assertThat(blockEventListener.blockEvents.flatten())
+            .isEqualTo(listOf(blockchain1[5].asRevertEvent(), blockchain2[5].asNewEvent(), blockchain2[6].asNewEvent()))
     }
 
     @Test
@@ -85,8 +115,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockHandler2.onNewBlock(blockchain2.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain2.map { it.toBlock(BlockStatus.SUCCESS) })
         assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(
-            blockchain1.drop(5).reversed().map { it.asRevertEvent() } +
-                    blockchain2.drop(5).map { it.asNewEvent() }
+            blockchain1.drop(5).reversed().map { it.asRevertEvent() } + blockchain2.drop(5).map { it.asNewEvent() }
         )
     }
 
@@ -140,8 +169,8 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     fun `exception on processing saves pending block`() = runBlocking<Unit> {
         val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
-        val exceptionListener = object : BlockEventListener {
-            override suspend fun process(events: List<BlockEvent>) {
+        val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>) {
                 if (events.any { it.number == 5L }) {
                     throw RuntimeException()
                 }
@@ -198,7 +227,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         assertThat(blockEvents.map { it.number }).isEqualTo((0L..100L).toList())
         assertThat(blockEvents.first()).isInstanceOf(NewBlockEvent::class.java)
         assertThat(blockEvents.drop(1).take(90)).allSatisfy {
-            assertThat(it).isInstanceOf(StableBlockEvent::class.java)
+            assertThat(it).isInstanceOf(NewStableBlockEvent::class.java)
         }
         assertThat(blockEvents.drop(1).drop(90)).allSatisfy {
             assertThat(it).isInstanceOf(NewBlockEvent::class.java)

@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
@@ -44,9 +43,12 @@ class TestEthereumBlockchainClient(
         return delegate.getBlock(number)
     }
 
+    override suspend fun getFirstAvailableBlock(): EthereumBlockchainBlock =
+        getBlock(0) ?: error("Can't find root block")
+
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
-        blocks: List<BlockHeader>,
+        blocks: List<EthereumBlockchainBlock>,
         stable: Boolean
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> =
         delegate.getBlockLogs(descriptor, blocks, stable)

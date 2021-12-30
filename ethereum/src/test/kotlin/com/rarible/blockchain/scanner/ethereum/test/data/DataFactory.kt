@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
-import com.rarible.blockchain.scanner.event.block.BlockStatus
+import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
@@ -19,8 +19,8 @@ import java.math.BigInteger
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.abs
 
-fun randomBlock(): com.rarible.blockchain.scanner.event.block.Block {
-    return com.rarible.blockchain.scanner.event.block.Block(
+fun randomBlock(): com.rarible.blockchain.scanner.block.Block {
+    return com.rarible.blockchain.scanner.block.Block(
         id = randomPositiveLong(),
         hash = randomBlockHash().toString(),
         parentHash = randomBlockHash().toString(),

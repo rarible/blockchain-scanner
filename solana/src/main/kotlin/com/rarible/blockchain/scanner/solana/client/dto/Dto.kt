@@ -22,6 +22,10 @@ object GetSlotRequest : Request(
     )
 )
 
+object GetFirstAvailableBlockRequest : Request(
+    method = "getFirstAvailableBlock"
+)
+
 class GetBlockRequest(
     slot: Long,
     transactionDetails: TransactionDetails
@@ -100,30 +104,22 @@ data class SolanaBlockDto(
     val blockHeight: Long,
     val blockTime: Long,
     val transactions: List<SolanaTransactionDto> = emptyList()
-)
-
-fun ApiResponse<Long>.toModel(): Long = result!!
-
-fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? {
-    if (result != null) {
-        return with(result) {
-            SolanaBlockchainBlock(
-                slot = slot,
-                parentSlot = parentSlot,
-                number = blockHeight,
-                hash = blockhash,
-                parentHash = previousBlockhash,
-                timestamp = blockTime
-            )
-        }
+) {
+    companion object {
+        val errorsToSkip = listOf(ErrorCodes.BLOCK_NOT_AVAILABLE, ErrorCodes.SLOT_WAS_SKIPPED)
     }
+}
 
-    val (message, code) = requireNotNull(error) { "error field must be not null" }
-    if (code == ErrorCodes.BLOCK_NOT_AVAILABLE || code == ErrorCodes.SLOT_WAS_SKIPPED) {
-        return null
-    } else {
-        error("Unknown error code: $code, message: $message")
-    }
+fun ApiResponse<Long>.toModel(): Long = convert { this }
+
+fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = convert(SolanaBlockDto.errorsToSkip) {
+    SolanaBlockchainBlock(
+        slot = slot,
+        parentSlot = parentSlot,
+        hash = blockhash,
+        parentHash = previousBlockhash,
+        timestamp = blockTime
+    )
 }
 
 fun Instruction.toModel(
@@ -148,6 +144,33 @@ fun Instruction.toModel(
     )
 
     return SolanaBlockchainLog(solanaLog, instruction)
+}
+
+private inline fun <reified T, reified R> ApiResponse<T>.convert(
+    block: T.() -> R
+) : R {
+    require(result != null && error == null) {
+        "invalid response: $this"
+    }
+
+    return block(result)
+}
+
+private inline fun <reified T, reified R> ApiResponse<T>.convert(
+    errorsToSkip: List<Int>,
+    block: T.() -> R
+) : R? {
+    return if (result != null) {
+        block(result)
+    } else {
+        val (message, code) = requireNotNull(error) { "error field must be not null" }
+
+        if (code in errorsToSkip) {
+            null
+        } else {
+            error("Unknown error code: $code, message: $message")
+        }
+    }
 }
 
 object ErrorCodes {

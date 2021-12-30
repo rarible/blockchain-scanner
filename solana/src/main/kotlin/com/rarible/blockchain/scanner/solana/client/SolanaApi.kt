@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.solana.client
 import com.rarible.blockchain.scanner.solana.client.dto.ApiResponse
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
+import com.rarible.blockchain.scanner.solana.client.dto.GetFirstAvailableBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
@@ -20,6 +21,8 @@ import reactor.netty.http.client.HttpClient
 import java.time.Duration
 
 interface SolanaApi {
+    suspend fun getFirstAvailableBlock(): ApiResponse<Long>
+
     suspend fun getLatestSlot(): ApiResponse<Long>
 
     suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto>
@@ -43,6 +46,12 @@ class SolanaHttpRpcApi(
         )
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
+
+    override suspend fun getFirstAvailableBlock(): ApiResponse<Long> = client.post()
+        .body(BodyInserters.fromValue(GetFirstAvailableBlockRequest))
+        .retrieve()
+        .bodyToMono<ApiResponse<Long>>()
+        .awaitSingle()
 
     override suspend fun getLatestSlot(): ApiResponse<Long> = client.post()
         .body(BodyInserters.fromValue(GetSlotRequest))

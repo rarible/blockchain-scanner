@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.solana.client
 
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
@@ -24,7 +23,8 @@ class SolanaClientTest {
             groupId = "",
             entityType = Any::class.java
         ) {}
-        val events = client.getBlockLogs(descriptor, listOf(BlockHeader(91725442L, "")), true)
+        val block = SolanaBlockchainBlock(91725442L, 0, "", "", 0)
+        val events = client.getBlockLogs(descriptor, listOf(block), true)
             .single()
             .logs
             .map(SolanaBlockchainLog::instruction)

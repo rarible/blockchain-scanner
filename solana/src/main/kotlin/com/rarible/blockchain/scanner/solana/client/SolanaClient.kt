@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import org.slf4j.LoggerFactory
 
 class SolanaClient(
     url: String
@@ -41,7 +41,7 @@ class SolanaClient(
 
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,
-        blocks: List<BlockHeader>,
+        blocks: List<SolanaBlockchainBlock>,
         stable: Boolean
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> {
         // Normally, we have only one consequent range here.
@@ -97,5 +97,24 @@ class SolanaClient(
 
             emit(FullBlock(solanaBlockchainBlock, solanaBlockchainLogs))
         }
+    }
+
+    override suspend fun getFirstAvailableBlock(): SolanaBlockchainBlock {
+        val slot = api.getFirstAvailableBlock().toModel()
+        val root = getBlock(slot)
+
+        return if (root == null) {
+            error("Can't find root block")
+        } else {
+            if (root.hash != root.parentHash) {
+                logger.error("Root's parent hash != hash")
+            }
+
+            root
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SolanaClient::class.java)
     }
 }

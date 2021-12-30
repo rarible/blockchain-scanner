@@ -4,9 +4,10 @@ import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
-import com.rarible.blockchain.scanner.event.block.Block
-import com.rarible.blockchain.scanner.event.block.toBlock
+import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -17,9 +18,6 @@ import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.toList
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
@@ -75,7 +73,7 @@ abstract class AbstractIntegrationTest {
 
     protected suspend fun getAllBlocks(): List<Block> = blockRepository.getAll().toList().sortedBy { it.id }
 
-    protected fun TestBlockchainBlock.asNewEvent() = NewBlockEvent(number = number, hash = hash)
-    protected fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent(number = number, hash = hash)
+    protected fun TestBlockchainBlock.asNewEvent() = NewUnstableBlockEvent(this)
+    protected fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent<TestBlockchainBlock>(this.number, this.hash)
 
 }

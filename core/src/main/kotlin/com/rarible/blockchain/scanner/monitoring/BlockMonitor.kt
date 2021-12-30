@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.event.block.Block
+import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.MeterRegistry
