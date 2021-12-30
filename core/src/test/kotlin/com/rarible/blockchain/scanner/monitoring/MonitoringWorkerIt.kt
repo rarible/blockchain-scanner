@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.monitoring
 
-import com.rarible.blockchain.scanner.event.block.toBlock
+import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.TestBlockchainScannerProperties

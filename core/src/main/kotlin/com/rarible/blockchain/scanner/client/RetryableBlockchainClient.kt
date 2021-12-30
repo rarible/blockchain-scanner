@@ -8,7 +8,6 @@ import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.delay
@@ -40,7 +39,7 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         }
     }
 
-    override fun getBlockLogs(descriptor: D, blocks: List<BlockHeader>, stable: Boolean): Flow<FullBlock<BB, BL>> {
+    override fun getBlockLogs(descriptor: D, blocks: List<BB>, stable: Boolean): Flow<FullBlock<BB, BL>> {
         return original.getBlockLogs(descriptor, blocks, stable)
             .wrapWithRetry()
     }

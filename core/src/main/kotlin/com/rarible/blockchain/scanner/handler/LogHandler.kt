@@ -4,13 +4,13 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.LogEvent
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.StableBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -32,18 +32,18 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logService: LogService<R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
-) : BlockEventListener {
+) : BlockEventListener<BB> {
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
-    override suspend fun process(events: List<BlockEvent>) {
+    override suspend fun process(events: List<BlockEvent<BB>>) {
         logger.info("Processing BlockEvents: {}", events)
         val logEvents = withSpan("prepareBlockEvents") {
             val batches = BlockRanges.toBatches(events)
             batches.flatMap { prepareBlockEventsBatch(it) }
         }
-        val blockLogsToInsert = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
-        val blockLogsToRemove = hashMapOf<BlockEvent, MutableMap<String, MutableList<R>>>()
+        val blockLogsToInsert = hashMapOf<BlockEvent<*>, MutableMap<String, MutableList<R>>>()
+        val blockLogsToRemove = hashMapOf<BlockEvent<*>, MutableMap<String, MutableList<R>>>()
         for (logEvent in logEvents) {
             blockLogsToInsert.getOrPut(logEvent.blockEvent) { hashMapOf() }
                 .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToInsert
@@ -84,7 +84,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         insertOrRemoveRecords(logEvents)
     }
 
-    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent>): List<LogEvent<R, D>> =
+    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<LogEvent<R, D>> =
         coroutineScope {
             subscribers.map { subscriber ->
                 async {
@@ -93,10 +93,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                         labels = listOf("subscriber" to subscriber.getDescriptor().id)
                     ) {
                         @Suppress("UNCHECKED_CAST")
-                        when (batch[0]) {
-                            is NewBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent>, false)
-                            is StableBlockEvent -> onBlock(subscriber, batch as List<StableBlockEvent>, true)
-                            is RevertedBlockEvent -> onRevertedBlocks(subscriber, batch as List<RevertedBlockEvent>)
+                        when (val first = batch[0]) {
+                            is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true)
+                            is NewUnstableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, false)
+                            is RevertedBlockEvent -> onRevertedBlocks(subscriber, batch as List<RevertedBlockEvent<BB>>)
+                            is NewBlockEvent -> TODO()
                         }
                     }
                 }
@@ -118,7 +119,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private suspend fun onBlock(
         subscriber: LogEventSubscriber<BB, BL, R, D>,
-        events: List<BlockEvent>,
+        events: List<NewBlockEvent<BB>>,
         stable: Boolean
     ): List<LogEvent<R, D>> {
         val blockLogs = withSpan(
@@ -126,10 +127,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             type = SpanType.EXT,
             labels = listOf("subscriber" to subscriber.getDescriptor().id)
         ) {
-            val blockHeaders = events.map { BlockHeader(number = it.number, hash = it.hash) }
             blockchainClient.getBlockLogs(
                 descriptor = subscriber.getDescriptor(),
-                blocks = blockHeaders,
+                blocks = events.map {
+                    it.block
+                },
                 stable = stable
             ).toList()
         }.associateBy { it.block.number }
@@ -173,7 +175,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private suspend fun onRevertedBlocks(
         subscriber: LogEventSubscriber<BB, BL, R, D>,
-        events: List<RevertedBlockEvent>
+        events: List<RevertedBlockEvent<BB>>
     ): List<LogEvent<R, D>> = events.map { event ->
         val toRevertLogs = logService.prepareLogsToRevertOnRevertedBlock(
             descriptor = subscriber.getDescriptor(),

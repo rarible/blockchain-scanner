@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner
 
-import com.rarible.blockchain.scanner.event.block.BlockStatus
-import com.rarible.blockchain.scanner.event.block.toBlock
+import com.rarible.blockchain.scanner.block.BlockStatus
+import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest

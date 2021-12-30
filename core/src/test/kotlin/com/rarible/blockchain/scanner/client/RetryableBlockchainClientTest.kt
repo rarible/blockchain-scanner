@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.client
 
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
@@ -63,7 +62,7 @@ class RetryableBlockchainClientTest {
 
     @Test
     fun `get block logs - all attempts failed`() = runBlocking {
-        val blocks = listOf<BlockHeader>()
+        val blocks = listOf<TestBlockchainBlock>()
         var count = 0
         coEvery { client.getBlockLogs(any(), blocks, true) } returns flow {
             count++
@@ -81,7 +80,7 @@ class RetryableBlockchainClientTest {
 
     @Test
     fun `get block logs - last attempt succeed`() = runBlocking {
-        val blocks = listOf(BlockHeader(1, "hash"))
+        val blocks = listOf(TestBlockchainBlock(1, "hash", "", 0, ""))
         var count = 0
         val block = randomBlockchainBlock()
         val log = TestBlockchainLog(randomOriginalLog(block, randomString(), randomPositiveInt()), index = randomPositiveInt())

@@ -1,9 +1,11 @@
 package com.rarible.blockchain.scanner.util
 
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.StableBlockEvent
+import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
+import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -45,9 +47,8 @@ class BlockRangesTest {
 
     @Test
     fun `to batches - single`() {
-        val b1 = NewBlockEvent(
-            number = 1,
-            hash = randomBlockHash()
+        val b1 = NewUnstableBlockEvent(
+            randomBlockchainBlock(number = 1)
         )
 
         val batches = BlockRanges.toBatches(listOf(b1))
@@ -58,13 +59,11 @@ class BlockRangesTest {
 
     @Test
     fun `to batches - one batch`() {
-        val b1 = NewBlockEvent(
-            number = 1,
-            hash = randomBlockHash()
+        val b1 = NewUnstableBlockEvent(
+            randomBlockchainBlock(number = 1)
         )
-        val b2 = NewBlockEvent(
-            number = 2,
-            hash = randomBlockHash()
+        val b2 = NewUnstableBlockEvent(
+            randomBlockchainBlock(number = 2)
         )
 
         val batches = BlockRanges.toBatches(listOf(b1, b2))
@@ -77,19 +76,21 @@ class BlockRangesTest {
 
     @Test
     fun `to batches - mixed`() {
-        val b0 = StableBlockEvent(number = 9, hash = randomBlockHash())
-        val b1 = NewBlockEvent(number = 10, hash = randomBlockHash())
-        val b2 = RevertedBlockEvent(number = 10, hash = randomBlockHash())
-        val b3 = NewBlockEvent(number = 10, hash = randomBlockHash())
-        val b4 = NewBlockEvent(number = 11, hash = randomBlockHash())
+        val b0 = NewStableBlockEvent(randomBlockchainBlock(number = 9))
+        val b1 = NewUnstableBlockEvent(randomBlockchainBlock(number = 10))
+        val b2 = RevertedBlockEvent<TestBlockchainBlock>(number = 10, hash = randomBlockHash())
+        val b3 = NewUnstableBlockEvent(randomBlockchainBlock(number = 10))
+        val b4 = NewUnstableBlockEvent(randomBlockchainBlock(number = 11))
 
         val batches = BlockRanges.toBatches(listOf(b0, b1, b2, b3, b4))
-        assertThat(batches).isEqualTo(listOf(
-            listOf(b0),
-            listOf(b1),
-            listOf(b2),
-            listOf(b3, b4)
-        ))
+        assertThat(batches).isEqualTo(
+            listOf(
+                listOf(b0),
+                listOf(b1),
+                listOf(b2),
+                listOf(b3, b4)
+            )
+        )
     }
 
     private suspend fun range(from: Long, to: Long, step: Int): List<LongRange> =

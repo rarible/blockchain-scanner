@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.block
 
-import com.rarible.blockchain.scanner.event.block.Block
 import com.rarible.core.mongo.repository.AbstractMongoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow

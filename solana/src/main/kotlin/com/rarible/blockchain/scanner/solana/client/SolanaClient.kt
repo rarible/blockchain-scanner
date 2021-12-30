@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
@@ -42,7 +41,7 @@ class SolanaClient(
 
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,
-        blocks: List<BlockHeader>,
+        blocks: List<SolanaBlockchainBlock>,
         stable: Boolean
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> {
         // Normally, we have only one consequent range here.

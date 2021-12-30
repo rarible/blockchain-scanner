@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.block
 
-import com.rarible.blockchain.scanner.event.block.Block
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.stereotype.Component

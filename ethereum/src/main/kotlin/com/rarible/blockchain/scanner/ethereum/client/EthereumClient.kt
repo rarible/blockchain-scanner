@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.BlockRanges
 import io.daonomic.rpc.domain.Word
@@ -51,7 +50,7 @@ class EthereumClient(
 
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
-        blocks: List<BlockHeader>,
+        blocks: List<EthereumBlockchainBlock>,
         stable: Boolean
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
         return if (stable) {
@@ -87,7 +86,7 @@ class EthereumClient(
 
     private fun getUnstableBlockLogs(
         descriptor: EthereumDescriptor,
-        blocks: List<BlockHeader>
+        blocks: List<EthereumBlockchainBlock>
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
         val addresses = descriptor.contracts.map { Address.apply(it) }.toTypedArray()
         val filter = LogFilter

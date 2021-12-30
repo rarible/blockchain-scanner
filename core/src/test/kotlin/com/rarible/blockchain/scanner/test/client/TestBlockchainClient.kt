@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.test.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
@@ -21,7 +20,7 @@ class TestBlockchainClient(
 
     override fun getBlockLogs(
         descriptor: TestDescriptor,
-        blocks: List<BlockHeader>,
+        blocks: List<TestBlockchainBlock>,
         stable: Boolean
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
         val numbers = blocks.map { it.number }.toSet()

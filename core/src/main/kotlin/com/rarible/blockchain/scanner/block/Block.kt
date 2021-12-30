@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.event.block
+package com.rarible.blockchain.scanner.block
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import org.springframework.data.annotation.Id

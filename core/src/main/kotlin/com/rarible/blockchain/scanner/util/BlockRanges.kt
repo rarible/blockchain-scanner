@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.util
 
+import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -9,22 +10,23 @@ object BlockRanges {
     /**
      * Chunks consequent block events by type.
      */
-    fun toBatches(events: List<BlockEvent>): List<List<BlockEvent>> {
-        val batches = mutableListOf<List<BlockEvent>>()
+    fun <BB : BlockchainBlock> toBatches(events: List<BlockEvent<BB>>): List<List<BlockEvent<BB>>> {
+        val batches = mutableListOf<List<BlockEvent<BB>>>()
         val iterator = events.iterator()
         var current = iterator.next()
         var currentBatch = mutableListOf(current)
+
         while (iterator.hasNext()) {
             val next = iterator.next()
             if (next.javaClass == current.javaClass) {
-                currentBatch.add(next)
+                currentBatch += next
             } else {
-                batches.add(currentBatch)
+                batches += currentBatch
                 currentBatch = mutableListOf(next)
             }
             current = next
         }
-        batches.add(currentBatch)
+        batches += currentBatch
         return batches
     }
 
@@ -46,13 +48,13 @@ object BlockRanges {
         while (iter.hasNext()) {
             val next = iter.next()
             if (next != current + 1) {
-                result.add(LongRange(start, current))
+                result += LongRange(start, current)
                 start = next
             }
             current = next
         }
 
-        result.add(LongRange(start, current))
+        result += LongRange(start, current)
         return result
     }
 }

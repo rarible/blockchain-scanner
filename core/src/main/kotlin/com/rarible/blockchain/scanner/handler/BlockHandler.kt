@@ -2,15 +2,16 @@ package com.rarible.blockchain.scanner.handler
 
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
-import com.rarible.blockchain.scanner.event.block.Block
-import com.rarible.blockchain.scanner.event.block.BlockStatus
-import com.rarible.blockchain.scanner.event.block.toBlock
+import com.rarible.blockchain.scanner.block.Block
+import com.rarible.blockchain.scanner.block.BlockStatus
+import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.framework.data.StableBlockEvent
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -26,7 +27,7 @@ import org.slf4j.LoggerFactory
 class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService,
-    private val blockEventListeners: List<BlockEventListener>,
+    private val blockEventListeners: List<BlockEventListener<BB>>,
     private val batchLoad: BlockBatchLoadProperties
 ) {
 
@@ -61,7 +62,13 @@ class BlockHandler<BB : BlockchainBlock>(
                     lastKnownBlock.id,
                     lastKnownBlock.hash
                 )
-                processBlock(lastKnownBlock, false)
+                val lastKnownBlockchainBlock = fetchBlock(lastKnownBlock.id)
+                if (lastKnownBlockchainBlock == null || lastKnownBlock.hash != lastKnownBlockchainBlock.hash) {
+                    revertBlock(lastKnownBlock)
+                    return
+                }
+
+                processBlock(lastKnownBlockchainBlock, false)
             }
             logger.info(
                 "New block [{}:{}] is consistent with the last known block by parent hash {}",
@@ -70,7 +77,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 lastKnownBlock.hash
             )
             logger.info("Processing the new consistent block [{}:{}]", newBlock.id, newBlock.hash)
-            processBlock(newBlock, false)
+            processBlock(newBlockchainBlock, false)
             return
         }
 
@@ -94,10 +101,16 @@ class BlockHandler<BB : BlockchainBlock>(
                 currentBlock.id,
                 currentBlock.hash
             )
-            currentBlock = processBlock(currentBlock, false)
+            val currentBlockchainBlock = fetchBlock(currentBlock.id)
+            if (currentBlockchainBlock == null || currentBlock.hash != currentBlockchainBlock.hash) {
+                revertBlock(currentBlock)
+                return
+            }
+
+            currentBlock = processBlock(currentBlockchainBlock, false)
         }
         while (currentBlock.id < newBlock.id) {
-            val nextBlock = getNextBlock(currentBlock, newBlock.id - currentBlock.id)
+            val nextBlock = getNextBlockchainBlock(currentBlock.id, newBlock.id - currentBlock.id)
             if (nextBlock == null) {
                 logger.warn(
                     "We haven't found the next block for [{}:{}] up until ${newBlock.id}, " +
@@ -114,7 +127,7 @@ class BlockHandler<BB : BlockchainBlock>(
                     "Blockchain has been reorganized while syncing blocks: [{}:{}] is not a parent of [{}:{}] but expected {}",
                     currentBlock.id,
                     currentBlock.hash,
-                    nextBlock.id,
+                    nextBlock.number,
                     nextBlock.hash,
                     nextBlock.parentHash
                 )
@@ -149,14 +162,15 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
         logger.info("Fetching the block #0 because there is no last known block")
-        val firstBlock = blockClient.getFirstAvailableBlock().toBlock()
+        val firstBlock = blockClient.getFirstAvailableBlock()
 
         return processBlock(firstBlock, false)
     }
 
-    private suspend fun getNextBlock(startBlock: Block, maxSteps: Long): Block? {
-        var id = startBlock.id
-        val maxId = startBlock.id + maxSteps
+    private suspend fun getNextBlockchainBlock(startId: Long, maxSteps: Long): BB? {
+        var id = startId
+        val maxId = startId + maxSteps
+
         while (id < maxId) {
             val block = fetchBlock(id + 1)
             if (block != null) return block
@@ -188,40 +202,45 @@ class BlockHandler<BB : BlockchainBlock>(
             .map { it.filterNotNull() }
             .filter { it.isNotEmpty() }
             .map {
-                logger.info("Processing batch of ${it.size} stable blocks: ${it.first().id}..${it.last().id}")
+                logger.info("Processing batch of ${it.size} stable blocks: ${it.first().number}..${it.last().number}")
                 processBlocks(it, true)
             }
             .lastOrNull()
             ?.lastOrNull()
     }
 
-    private suspend fun processBlocks(blocks: List<Block>, stable: Boolean): List<Block> {
+    private suspend fun processBlocks(blocks: List<BB>, stable: Boolean): List<Block> {
         // TODO: implement this function for the whole batch.
         //  Currently, we can have only one PENDING block at the same time, so we have to process them one by one.
         return blocks.map { processBlock(it, stable) }
     }
 
-    private suspend fun processBlock(block: Block, stable: Boolean): Block {
-        blockService.save(block.copy(status = BlockStatus.PENDING))
+    private suspend fun processBlock(
+        blockchainBlock: BB,
+        stable: Boolean
+    ): Block {
+        blockService.save(blockchainBlock.toBlock(status = BlockStatus.PENDING))
         val event = if (stable) {
-            StableBlockEvent(number = block.id, hash = block.hash)
+            NewStableBlockEvent(blockchainBlock)
         } else {
-            NewBlockEvent(number = block.id, hash = block.hash)
+            NewUnstableBlockEvent(blockchainBlock)
         }
         processBlockEvents(listOf(event))
-        return blockService.save(block.copy(status = BlockStatus.SUCCESS))
+        return blockService.save(blockchainBlock.toBlock(status = BlockStatus.SUCCESS))
     }
 
-    private suspend fun revertBlock(block: Block) {
-        logger.info("Reverting block [{}:{}]: {}", block.id, block.hash, block)
+    private suspend fun revertBlock(
+        block: Block
+    ) {
+        logger.info("Reverting block [{}:{}]", block.id, block.hash)
         processBlockEvents(listOf(RevertedBlockEvent(number = block.id, hash = block.hash)))
         blockService.remove(block.id)
     }
 
-    private suspend fun processBlockEvents(blockEvents: List<BlockEvent>) = coroutineScope {
+    private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>) {
         blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
     }
 
-    private suspend fun fetchBlock(number: Long): Block? =
-        blockClient.getBlock(number)?.toBlock()
+    private suspend fun fetchBlock(number: Long): BB? =
+        blockClient.getBlock(number)
 }

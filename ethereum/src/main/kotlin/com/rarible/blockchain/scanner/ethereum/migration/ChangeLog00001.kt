@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.migration
 import com.github.cloudyrock.mongock.ChangeLog
 import com.github.cloudyrock.mongock.ChangeSet
 import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate
-import com.rarible.blockchain.scanner.event.block.Block
+import com.rarible.blockchain.scanner.block.Block
 import io.changock.migration.api.annotations.NonLockGuarded
 import org.bson.Document
 import org.springframework.data.domain.Sort
