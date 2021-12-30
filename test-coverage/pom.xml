@@ -27,10 +27,10 @@
             <groupId>com.rarible.blockchain.scanner</groupId>
             <artifactId>rarible-blockchain-scanner-ethereum</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.rarible.blockchain.scanner</groupId>-->
-<!--            <artifactId>rarible-blockchain-scanner-flow</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.rarible.blockchain.scanner</groupId>
+            <artifactId>rarible-blockchain-scanner-flow</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.rarible.blockchain.scanner</groupId>
             <artifactId>rarible-blockchain-scanner-solana</artifactId>
