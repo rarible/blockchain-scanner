@@ -38,4 +38,6 @@ class TestBlockchainClient(
         (logsByBlockHash[block.hash] ?: emptyList())
             .filter { it.topic == descriptor.id }
             .mapIndexed { index, log -> TestBlockchainLog(log, index) }
+
+    override suspend fun getFirstAvailableBlock(): TestBlockchainBlock = getBlock(0)
 }

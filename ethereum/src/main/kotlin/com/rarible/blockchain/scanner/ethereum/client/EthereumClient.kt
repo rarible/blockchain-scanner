@@ -47,6 +47,8 @@ class EthereumClient(
         }.awaitFirst()
     }
 
+    override suspend fun getFirstAvailableBlock(): EthereumBlockchainBlock = getBlock(0)
+
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         blocks: List<BlockHeader>,

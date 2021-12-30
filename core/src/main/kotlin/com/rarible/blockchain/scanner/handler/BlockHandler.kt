@@ -149,7 +149,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
         logger.info("Fetching the block #0 because there is no last known block")
-        val firstBlock = fetchBlock(0) ?: error("Root block #0 is not found")
+        val firstBlock = blockClient.getFirstAvailableBlock().toBlock()
 
         return processBlock(firstBlock, false)
     }

@@ -44,6 +44,9 @@ class TestEthereumBlockchainClient(
         return delegate.getBlock(number)
     }
 
+    override suspend fun getFirstAvailableBlock(): EthereumBlockchainBlock =
+        getBlock(0) ?: error("Can't find root block")
+
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         blocks: List<BlockHeader>,

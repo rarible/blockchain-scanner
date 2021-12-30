@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import org.slf4j.LoggerFactory
 
 class SolanaClient(
     url: String
@@ -97,5 +98,24 @@ class SolanaClient(
 
             emit(FullBlock(solanaBlockchainBlock, solanaBlockchainLogs))
         }
+    }
+
+    override suspend fun getFirstAvailableBlock(): SolanaBlockchainBlock {
+        val slot = api.getFirstAvailableBlock().toModel()
+        val root = getBlock(slot)
+
+        return if (root == null) {
+            error("Can't find root block")
+        } else {
+            if (root.hash != root.parentHash) {
+                logger.error("Root's parent hash != hash")
+            }
+
+            root
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SolanaClient::class.java)
     }
 }
