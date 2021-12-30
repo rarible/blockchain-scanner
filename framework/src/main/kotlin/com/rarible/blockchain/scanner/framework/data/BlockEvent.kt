@@ -7,7 +7,7 @@ sealed class BlockEvent<BB : BlockchainBlock> {
     abstract val hash: String
 }
 
-abstract class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
+sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
     abstract val block: BB
     override val number: Long
         get() = block.number

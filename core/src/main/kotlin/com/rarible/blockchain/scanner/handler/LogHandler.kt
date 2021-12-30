@@ -93,11 +93,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                         labels = listOf("subscriber" to subscriber.getDescriptor().id)
                     ) {
                         @Suppress("UNCHECKED_CAST")
-                        when (val first = batch[0]) {
+                        when (batch[0]) {
                             is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true)
                             is NewUnstableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, false)
                             is RevertedBlockEvent -> onRevertedBlocks(subscriber, batch as List<RevertedBlockEvent<BB>>)
-                            is NewBlockEvent -> TODO()
                         }
                     }
                 }

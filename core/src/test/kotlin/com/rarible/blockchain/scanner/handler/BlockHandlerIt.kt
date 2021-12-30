@@ -40,6 +40,35 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
+    fun `Remove pending block`() = runBlocking<Unit> {
+        val blockchain1 = randomBlockchain(10)
+        val blockEventListener = TestBlockEventListener()
+        val testBlockchainData1 = TestBlockchainData(blockchain1, emptyList(), emptyList())
+        val blockHandler1 = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData1),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            batchLoad = BlockBatchLoadProperties()
+        )
+        blockHandler1.onNewBlock(blockchain1[4])
+        blockService.save(blockchain1[5].toBlock(BlockStatus.PENDING))
+        blockEventListener.blockEvents.clear()
+
+        val blockchain2 = buildBlockchain(blockchain1.take(5) + randomBlockchain(10).drop(5))
+        val testBlockchainData2 = TestBlockchainData(blockchain2, emptyList(), emptyList())
+        val blockHandler2 = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData2),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            batchLoad = BlockBatchLoadProperties()
+        )
+        blockHandler2.onNewBlock(blockchain2[6])
+
+        assertThat(blockEventListener.blockEvents.flatten())
+            .isEqualTo(listOf(blockchain1[5].asRevertEvent(), blockchain2[5].asNewEvent(), blockchain2[6].asNewEvent()))
+    }
+
+    @Test
     fun `sync missing blocks`() = runBlocking<Unit> {
         val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
