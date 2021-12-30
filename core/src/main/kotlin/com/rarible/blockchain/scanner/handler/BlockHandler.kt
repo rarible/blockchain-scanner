@@ -218,8 +218,8 @@ class BlockHandler<BB : BlockchainBlock>(
         blockService.remove(block.id)
     }
 
-    private suspend fun processBlockEvents(blockEvents: List<BlockEvent>) {
-        blockEventListeners.forEach { it.process(blockEvents) }
+    private suspend fun processBlockEvents(blockEvents: List<BlockEvent>) = coroutineScope {
+        blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
     }
 
     private suspend fun fetchBlock(number: Long): Block? =
