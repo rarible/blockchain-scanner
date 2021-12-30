@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.flow.FlowGrpcApi
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
-import com.rarible.blockchain.scanner.framework.data.BlockHeader
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
@@ -14,9 +13,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flatMap
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flatten
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -47,7 +43,7 @@ class FlowBlockchainClient(
 
     override fun getBlockLogs(
         descriptor: FlowDescriptor,
-        blocks: List<BlockHeader>,
+        blocks: List<FlowBlockchainBlock>,
         stable: Boolean
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
         // Normally, we have only one consequent range here.
@@ -96,5 +92,7 @@ class FlowBlockchainClient(
                 }
         }
     }
+
+    override suspend fun getFirstAvailableBlock(): FlowBlockchainBlock = getBlock(0)
 
 }
