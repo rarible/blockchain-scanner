@@ -73,8 +73,7 @@ class EthereumClient(
                 BigInteger.valueOf(range.first).encodeForFilter(),
                 BigInteger.valueOf(range.last).encodeForFilter()
             )
-        // TODO: filter out Log.removed() records after we fix dependency version problems
-        val allLogs = ethereum.ethGetLogsJava(filter).awaitFirst()
+        val allLogs = ethereum.ethGetLogsJava(filter).awaitFirst().filterNot { it.removed() }
         logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range")
         allLogs.groupBy { log ->
             log.blockHash()
@@ -95,8 +94,7 @@ class EthereumClient(
         return blocks.asFlow().map { blockHeader ->
             val blockHash = Word.apply(blockHeader.hash)
             val finalFilter = filter.blockHash(blockHash)
-            // TODO: filter out Log.removed() records after we fix dependency version problems
-            val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst()
+            val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot { it.removed() }
             logger.info("Loaded {} logs of topic {} for fresh block [{}:{}]", allLogs.size, descriptor.ethTopic, blockHeader.number, blockHash)
             val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
             createFullBlock(ethFullBlock, allLogs)
