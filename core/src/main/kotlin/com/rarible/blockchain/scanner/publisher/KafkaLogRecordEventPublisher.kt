@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.kafka.KafkaMessage
 import com.rarible.core.kafka.RaribleKafkaProducer
+import com.rarible.core.kafka.RaribleKafkaTopics
 import com.rarible.core.kafka.json.JsonSerializer
 import kotlinx.coroutines.flow.collect
 import java.util.*
@@ -13,18 +14,25 @@ class KafkaLogRecordEventPublisher(
     properties: KafkaProperties,
     environment: String,
     blockchain: String,
-    service: String
+    service: String,
+    private val numberOfPartitionsPerGroup: Int
 ) : LogRecordEventPublisher {
 
     private val topicPrefix = getLogTopicPrefix(environment, service, blockchain)
+    private val brokerReplicaSet = properties.brokerReplicaSet
 
     private val kafkaProducer = RaribleKafkaProducer(
         clientId = "$environment.$blockchain.log-event-producer.$service",
         valueSerializerClass = JsonSerializer::class.java,
         valueClass = LogRecordEvent::class.java,
         defaultTopic = topicPrefix, // ends with .log, not required originally
-        bootstrapServers = properties.brokerReplicaSet
+        bootstrapServers = brokerReplicaSet
     )
+
+    override suspend fun prepareGroup(groupId: String) {
+        val topic = getTopic(groupId)
+        RaribleKafkaTopics.createTopic(brokerReplicaSet, topic, numberOfPartitionsPerGroup)
+    }
 
     override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) {
         val topic = getTopic(groupId)

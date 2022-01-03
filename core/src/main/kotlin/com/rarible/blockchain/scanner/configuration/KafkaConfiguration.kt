@@ -31,7 +31,8 @@ class KafkaConfiguration(
             properties = kafkaProperties,
             environment = applicationEnvironmentInfo.name,
             blockchain = properties.blockchain,
-            service = properties.service
+            service = properties.service,
+            numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup
         )
     }
 }
