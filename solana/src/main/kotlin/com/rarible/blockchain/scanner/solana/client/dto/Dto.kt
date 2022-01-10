@@ -93,7 +93,7 @@ data class SolanaTransactionDto(
     )
 
     data class Meta(
-        val innerInstructions: List<InnerInstruction>
+        val innerInstructions: List<InnerInstruction> = emptyList()
     )
 }
 
