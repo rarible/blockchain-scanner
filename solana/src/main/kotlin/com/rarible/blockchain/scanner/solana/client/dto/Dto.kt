@@ -1,5 +1,7 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
+import com.fasterxml.jackson.annotation.JsonSetter
+import com.fasterxml.jackson.annotation.Nulls
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
@@ -93,6 +95,7 @@ data class SolanaTransactionDto(
     )
 
     data class Meta(
+        @JsonSetter(nulls = Nulls.AS_EMPTY)
         val innerInstructions: List<InnerInstruction> = emptyList()
     )
 }
@@ -103,6 +106,7 @@ data class SolanaBlockDto(
     val previousBlockhash: String?,
     val blockHeight: Long,
     val blockTime: Long,
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
     val transactions: List<SolanaTransactionDto> = emptyList()
 ) {
     companion object {

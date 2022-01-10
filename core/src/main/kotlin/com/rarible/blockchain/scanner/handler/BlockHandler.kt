@@ -134,6 +134,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 return
             }
             currentBlock = processBlock(nextBlock, false)
+            logger.info("Received new Block [{}:{}]: {}", currentBlock.id, currentBlock.hash, currentBlock)
         }
     }
 
@@ -161,7 +162,7 @@ class BlockHandler<BB : BlockchainBlock>(
             return lastKnownBlock
         }
 
-        logger.info("Fetching the block #0 because there is no last known block")
+        logger.info("Fetching root block because there is no last known block")
         val firstBlock = blockClient.getFirstAvailableBlock()
 
         return processBlock(firstBlock, false)
