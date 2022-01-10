@@ -113,9 +113,45 @@ data class SolanaBlockDto(
 fun ApiResponse<Long>.toModel(): Long = convert { this }
 
 fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = convert(SolanaBlockDto.errorsToSkip) {
+    val logs = transactions.flatMapIndexed { transactionIndex, transactionDto ->
+        val transaction = transactionDto.transaction
+        val accountKeys = transaction.message.accountKeys
+        val transactionHash = transactionDto.transaction.signatures.first()
+        val result = arrayListOf<SolanaBlockchainLog>().apply {
+            this += transaction.message.instructions.map {
+                it.toModel(
+                    accountKeys,
+                    slot,
+                    blockhash,
+                    transactionHash,
+                    transactionIndex,
+                    innerTransactionIndex = null
+                )
+            }
+
+            transactionDto.meta?.let { meta ->
+                this += meta.innerInstructions.flatMapIndexed { innerInstructionIndex, innerInstruction ->
+                    innerInstruction.instructions.map { instruction ->
+                        instruction.toModel(
+                            accountKeys,
+                            slot,
+                            blockhash,
+                            transactionHash,
+                            innerInstruction.index,
+                            innerInstructionIndex
+                        )
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
     SolanaBlockchainBlock(
         slot = slot,
         parentSlot = parentSlot,
+        logs = logs,
         hash = blockhash,
         parentHash = previousBlockhash,
         timestamp = blockTime
@@ -150,7 +186,7 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
     block: T.() -> R
 ) : R {
     require(result != null && error == null) {
-        "invalid response: $this"
+        "Invalid response: $this"
     }
 
     return block(result)
@@ -163,7 +199,7 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
     return if (result != null) {
         block(result)
     } else {
-        val (message, code) = requireNotNull(error) { "error field must be not null" }
+        val (message, code) = requireNotNull(error) { "Error field must be not null" }
 
         if (code in errorsToSkip) {
             null
