@@ -67,17 +67,17 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.rarible.blockchain.scanner</groupId>
-                <artifactId>rarible-blockchain-scanner-flow</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.rarible.blockchain.scanner</groupId>-->
+<!--                <artifactId>rarible-blockchain-scanner-flow</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--            </dependency>-->
 
-            <dependency>
-                <groupId>com.rarible.blockchain.scanner</groupId>
-                <artifactId>rarible-blockchain-scanner-flow-model</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.rarible.blockchain.scanner</groupId>-->
+<!--                <artifactId>rarible-blockchain-scanner-flow-model</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--            </dependency>-->
 
             <dependency>
                 <groupId>com.rarible.blockchain.scanner</groupId>
@@ -116,8 +116,8 @@
         <module>framework</module>
         <module>core</module>
         <module>ethereum</module>
-        <module>flow-model</module>
-        <module>flow</module>
+<!--        <module>flow-model</module>-->
+<!--        <module>flow</module>-->
         <module>solana</module>
         <module>test-coverage</module>
     </modules>
