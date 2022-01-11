@@ -14,7 +14,7 @@ sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
     override val hash: String
         get() = block.hash
 
-    override fun toString(): String = "stable:$number:$hash"
+    final override fun toString(): String = "stable:$number:$hash"
 }
 
 data class NewStableBlockEvent<BB : BlockchainBlock>(

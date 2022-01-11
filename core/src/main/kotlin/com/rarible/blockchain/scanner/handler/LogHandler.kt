@@ -167,7 +167,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 logRecordsToInsert.size,
                 logRecordsToRevert.size,
                 subscriber.getDescriptor().id,
-                event,
+                event
             )
             LogEvent(
                 blockEvent = event,
@@ -183,13 +183,19 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         fullBlock: FullBlock<BB, BL>
     ): List<R> {
         if (fullBlock.logs.isEmpty()) {
-            logger.info("No logs in the full block {} for {}", fullBlock.block, subscriber.getDescriptor().id)
+            logger.info(
+                "No logs in the full block [{}:{}] for {}",
+                fullBlock.block.number,
+                fullBlock.block.hash,
+                subscriber.getDescriptor().id
+            )
             return emptyList()
         }
         logger.info(
-            "[{}] Preparing log event records for the full block {}",
-            subscriber.getDescriptor().id,
-            fullBlock.block
+            "Preparing log event records for the full block [{}:{}] for {}",
+            fullBlock.block.number,
+            fullBlock.block.hash,
+            subscriber.getDescriptor().id
         )
         return fullBlock.logs.flatMap { subscriber.getEventRecords(fullBlock.block, it) }
     }
@@ -205,11 +211,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             ).toList()
         }
         logger.info(
-            "Prepared {} logs to revert for subscriber {} and reverted block [{}:{}]",
+            "Prepared {} logs to revert for subscriber {} and {}",
             toRevertLogs.size,
             subscriber.getDescriptor().id,
-            event.number,
-            event.hash
+            event
         )
         LogEvent(
             blockEvent = event,
