@@ -220,7 +220,7 @@ class BlockHandler<BB : BlockchainBlock>(
             step = batchLoad.batchSize
         )
             .map { range ->
-                logger.info("Fetching blockchain blocks $range")
+                logger.info("Fetching blockchain blocks $range (${range.last - range.first + 1})")
                 withSpan(
                     name = "fetchBlocksBatch",
                     type = SpanType.EXT,
@@ -234,7 +234,7 @@ class BlockHandler<BB : BlockchainBlock>(
             .map {
                 val fromId = it.first().number
                 val toId = it.last().number
-                logger.info("Processing batch of ${it.size} stable blocks: $fromId..$toId")
+                logger.info("Processing batch of ${it.size} stable blocks: $fromId..$toId (${toId - fromId + 1}")
                 withSpan(
                     name = "processBlocks",
                     labels = listOf("range" to "$fromId..$toId")
@@ -253,7 +253,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun processBlock(blockchainBlock: BB, stable: Boolean): Block {
-        logger.info("Processing block [{}:{}]", blockchainBlock.number, blockchainBlock.number)
+        logger.info("Processing block [{}:{}]", blockchainBlock.number, blockchainBlock.hash)
         blockService.save(blockchainBlock.toBlock(status = BlockStatus.PENDING))
         val event = if (stable) {
             NewStableBlockEvent(blockchainBlock)
@@ -273,7 +273,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun revertBlock(block: Block) {
-        logger.info("Reverting block [{}:{}]", block.id, block.hash)
+        logger.info("Reverting block [{}:{}]: {}", block.id, block.hash, block)
         withSpan(
             name = "revertBlock",
             labels = listOf("blockNumber" to block.id)

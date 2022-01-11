@@ -37,7 +37,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
     override suspend fun process(events: List<BlockEvent<BB>>) {
-        logger.info("Processing BlockEvents: {}", events)
+        logger.info("Processing block events ({}): {}", events.size, events)
         val logEvents = withSpan("prepareBlockEventsBatch") {
             val batches = BlockRanges.toBatches(events)
             batches.flatMap { prepareBlockEventsBatch(it) }
@@ -72,7 +72,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     ) {
         for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
             logger.info(
-                "Publishing {} log records to insert for {} of {}",
+                "Publishing {} new log records for {} of {}",
                 recordsToInsert.size,
                 groupId,
                 blockEvent
@@ -91,7 +91,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     ) {
         for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
             logger.info(
-                "Publishing {} log records to remove for {} of {}",
+                "Publishing {} reverted log records for {} of {}",
                 recordsToRemove.size,
                 groupId,
                 blockEvent
@@ -163,10 +163,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
             }
             logger.info(
-                "Prepared {} new logs and {} logs to remove for {} of {}",
+                "Prepared logs for '{}': {} new logs and {} logs to remove",
+                subscriber.getDescriptor().id,
                 logRecordsToInsert.size,
                 logRecordsToRevert.size,
-                subscriber.getDescriptor().id,
                 event
             )
             LogEvent(
@@ -184,18 +184,18 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     ): List<R> {
         if (fullBlock.logs.isEmpty()) {
             logger.info(
-                "No logs in the full block [{}:{}] for {}",
+                "Subscriber '{}': no logs in the block [{}:{}]",
+                subscriber.getDescriptor().id,
                 fullBlock.block.number,
                 fullBlock.block.hash,
-                subscriber.getDescriptor().id
             )
             return emptyList()
         }
         logger.info(
-            "Preparing log event records for the full block [{}:{}] for {}",
+            "Subscriber '{}': preparing log records to insert for [{}:{}]",
+            subscriber.getDescriptor().id,
             fullBlock.block.number,
-            fullBlock.block.hash,
-            subscriber.getDescriptor().id
+            fullBlock.block.hash
         )
         return fullBlock.logs.flatMap { subscriber.getEventRecords(fullBlock.block, it) }
     }
@@ -211,9 +211,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             ).toList()
         }
         logger.info(
-            "Prepared {} logs to revert for subscriber {} and {}",
-            toRevertLogs.size,
+            "Subscriber '{}': prepared {} logs to revert for {}",
             subscriber.getDescriptor().id,
+            toRevertLogs.size,
             event
         )
         LogEvent(

@@ -41,7 +41,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     private val logHandlers = subscribers
         .groupBy { it.getDescriptor().groupId }
         .map { (groupId, subscribers) ->
-            logger.info("Injected subscribers of the group {}: {}", groupId, subscribers)
+            logger.info("Injected subscribers of the group {}: {}", groupId, subscribers.joinToString { it.getDescriptor().id })
             LogHandler(
                 blockchainClient = retryableClient,
                 subscribers = subscribers,

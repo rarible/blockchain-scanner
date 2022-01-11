@@ -13,17 +13,19 @@ sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
         get() = block.number
     override val hash: String
         get() = block.hash
-
-    final override fun toString(): String = "stable:$number:$hash"
 }
 
 data class NewStableBlockEvent<BB : BlockchainBlock>(
     override val block: BB
-) : NewBlockEvent<BB>()
+) : NewBlockEvent<BB>() {
+    override fun toString(): String = "stableBlock:$number:$hash"
+}
 
 data class NewUnstableBlockEvent<BB : BlockchainBlock>(
     override val block: BB
-) : NewBlockEvent<BB>()
+) : NewBlockEvent<BB>() {
+    override fun toString(): String = "unstableBlock:$number:$hash"
+}
 
 data class RevertedBlockEvent<BB : BlockchainBlock>(
     override val number: Long,
