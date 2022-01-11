@@ -1,18 +1,20 @@
 package com.rarible.blockchain.scanner.handler
 
-import com.rarible.blockchain.scanner.block.BlockService
-import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.block.Block
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
+import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.util.BlockRanges
+import com.rarible.core.apm.SpanType
+import com.rarible.core.apm.withSpan
+import com.rarible.core.apm.withTransaction
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -48,6 +50,18 @@ class BlockHandler<BB : BlockchainBlock>(
      * while this method was syncing forward. The next call of this method will sync the remaining blocks.
      */
     suspend fun onNewBlock(newBlockchainBlock: BB) {
+        withTransaction(
+            "handleBlock",
+            labels = listOf(
+                "blockNumber" to newBlockchainBlock.number,
+                "blockHash" to newBlockchainBlock.hash,
+                "blockParentHash" to (newBlockchainBlock.parentHash ?: "NONE"),
+                "blockTimestamp" to newBlockchainBlock.timestamp
+            )
+        ) { handleNewBlock(newBlockchainBlock) }
+    }
+
+    private suspend fun handleNewBlock(newBlockchainBlock: BB) {
         val newBlock = newBlockchainBlock.toBlock()
         logger.info("Received new Block [{}:{}]: {}", newBlock.id, newBlock.hash, newBlock)
 
@@ -85,13 +99,21 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun restoreMissingBlocks(lastKnownBlock: Block, newBlock: Block) {
-        var currentBlock = findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
-
+        var currentBlock = withSpan(
+            name = "findLatestCorrectKnownBlockAndRevertOther",
+            labels = listOf("lastKnownBlockNumber" to lastKnownBlock.id, "newBlockNumber" to newBlock.id)
+        ) {
+            findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
+        }
         currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
-            batchSyncMissingBlocks(
-                lastKnownBlock = currentBlock,
-                limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
-            ) ?: currentBlock
+            val limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
+            val batchSyncedBlock = withSpan(
+                name = "batchSyncMissingBlocks",
+                labels = listOf("lastKnownBlock" to lastKnownBlock, "limit" to limit)
+            ) {
+                batchSyncMissingBlocks(lastKnownBlock = currentBlock, limit = limit)
+            }
+            batchSyncedBlock ?: currentBlock
         } else {
             currentBlock
         }
@@ -134,7 +156,6 @@ class BlockHandler<BB : BlockchainBlock>(
                 return
             }
             currentBlock = processBlock(nextBlock, false)
-            logger.info("Received new Block [{}:{}]: {}", currentBlock.id, currentBlock.hash, currentBlock)
         }
     }
 
@@ -191,20 +212,35 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun batchSyncMissingBlocks(lastKnownBlock: Block, limit: Long): Block? = coroutineScope {
+        val finishId = lastKnownBlock.id + limit
+        logger.info("Syncing missing blocks starting from $lastKnownBlock in batches of size ${batchLoad.batchSize} up to $finishId")
         BlockRanges.getRanges(
             from = lastKnownBlock.id + 1,
-            to = lastKnownBlock.id + limit,
+            to = finishId,
             step = batchLoad.batchSize
         )
             .map { range ->
                 logger.info("Fetching blockchain blocks $range")
-                range.map { id -> async { fetchBlock(id) } }.awaitAll()
+                withSpan(
+                    name = "fetchBlocksBatch",
+                    type = SpanType.EXT,
+                    labels = listOf("range" to range.toString())
+                ) {
+                    range.map { id -> async { fetchBlock(id) } }.awaitAll()
+                }
             }
             .map { it.filterNotNull() }
             .filter { it.isNotEmpty() }
             .map {
-                logger.info("Processing batch of ${it.size} stable blocks: ${it.first().number}..${it.last().number}")
-                processBlocks(it, true)
+                val fromId = it.first().number
+                val toId = it.last().number
+                logger.info("Processing batch of ${it.size} stable blocks: $fromId..$toId")
+                withSpan(
+                    name = "processBlocks",
+                    labels = listOf("range" to "$fromId..$toId")
+                ) {
+                    processBlocks(it, true)
+                }
             }
             .lastOrNull()
             ?.lastOrNull()
@@ -216,26 +252,35 @@ class BlockHandler<BB : BlockchainBlock>(
         return blocks.map { processBlock(it, stable) }
     }
 
-    private suspend fun processBlock(
-        blockchainBlock: BB,
-        stable: Boolean
-    ): Block {
+    private suspend fun processBlock(blockchainBlock: BB, stable: Boolean): Block {
+        logger.info("Processing block [{}:{}]", blockchainBlock.number, blockchainBlock.number)
         blockService.save(blockchainBlock.toBlock(status = BlockStatus.PENDING))
         val event = if (stable) {
             NewStableBlockEvent(blockchainBlock)
         } else {
             NewUnstableBlockEvent(blockchainBlock)
         }
-        processBlockEvents(listOf(event))
+        withSpan(
+            name = "processBlock",
+            labels = listOf(
+                "blockNumber" to blockchainBlock.number,
+                "blockHash" to blockchainBlock.hash
+            )
+        ) {
+            processBlockEvents(listOf(event))
+        }
         return blockService.save(blockchainBlock.toBlock(status = BlockStatus.SUCCESS))
     }
 
-    private suspend fun revertBlock(
-        block: Block
-    ) {
+    private suspend fun revertBlock(block: Block) {
         logger.info("Reverting block [{}:{}]", block.id, block.hash)
-        processBlockEvents(listOf(RevertedBlockEvent(number = block.id, hash = block.hash)))
-        blockService.remove(block.id)
+        withSpan(
+            name = "revertBlock",
+            labels = listOf("blockNumber" to block.id)
+        ) {
+            processBlockEvents(listOf(RevertedBlockEvent(number = block.id, hash = block.hash)))
+            blockService.remove(block.id)
+        }
     }
 
     private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>) = coroutineScope {
@@ -243,5 +288,12 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun fetchBlock(number: Long): BB? =
-        blockClient.getBlock(number)
+        withSpan(
+            name = "fetchBlock",
+            type = SpanType.EXT,
+            labels = listOf("blockNumber" to number)
+        ) {
+            blockClient.getBlock(number)
+        }
+
 }
