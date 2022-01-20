@@ -16,6 +16,8 @@ import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.data.buildBlockchain
 import com.rarible.blockchain.scanner.test.data.randomBlockchain
 import com.rarible.blockchain.scanner.test.handler.TestBlockEventListener
+import io.mockk.coEvery
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -201,6 +203,46 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
+    fun `exception on batch processing saves pending blocks`() = runBlocking<Unit> {
+        val blockchain = randomBlockchain(100)
+        val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
+        val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>) {
+                if (events.any { it.number == 55L }) {
+                    throw RuntimeException()
+                }
+            }
+        }
+        val blockHandler = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData),
+            blockService = blockService,
+            blockEventListeners = listOf(exceptionListener),
+            batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10)
+        )
+        assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
+        assertThat(getAllBlocks()).isEqualTo(
+            blockchain.take(51).map { it.toBlock(BlockStatus.SUCCESS) } +
+                    blockchain.drop(51).take(10).map { it.toBlock(BlockStatus.PENDING) }
+        )
+
+        // After restart, collect the events.
+        val testBlockEventListener = TestBlockEventListener()
+        val newBlockHandler = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData),
+            blockService = blockService,
+            blockEventListeners = listOf(testBlockEventListener),
+            batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10)
+        )
+        newBlockHandler.onNewBlock(blockchain.last())
+        assertThat(testBlockEventListener.blockEvents).isEqualTo(
+            blockchain.subList(51, 61).reversed().map { it.asRevertEvent() }.map { listOf(it) } +
+                    blockchain.subList(51, 91).map { it.asNewStableEvent() }.chunked(10) +
+                    blockchain.drop(91).map { it.asNewUnstableEvent() }.map { listOf(it) }
+        )
+        assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
+    }
+
+    @Test
     fun `revert and then process pending log after restart`() = runBlocking<Unit> {
         val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
@@ -238,15 +280,16 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10)
         )
         blockHandler.onNewBlock(blockchain.last())
-        val blockEvents = blockEventListener.blockEvents.flatten()
+        val blockBatchEvents = blockEventListener.blockEvents
 
-        assertThat(blockEvents).hasSize(101)
-        assertThat(blockEvents.map { it.number }).isEqualTo((0L..100L).toList())
-        assertThat(blockEvents.first()).isInstanceOf(NewBlockEvent::class.java)
-        assertThat(blockEvents.drop(1).take(90)).allSatisfy {
+        assertThat(blockBatchEvents.map { batch -> batch.map { it.number } })
+            .isEqualTo(listOf(listOf(0L)) + (1..90L).chunked(10) + (91..100L).map { listOf(it) })
+        val flattenedEvents = blockBatchEvents.flatten()
+        assertThat(flattenedEvents.first()).isInstanceOf(NewBlockEvent::class.java)
+        assertThat(flattenedEvents.drop(1).take(90)).allSatisfy {
             assertThat(it).isInstanceOf(NewStableBlockEvent::class.java)
         }
-        assertThat(blockEvents.drop(1).drop(90)).allSatisfy {
+        assertThat(flattenedEvents.drop(1).drop(90)).allSatisfy {
             assertThat(it).isInstanceOf(NewUnstableBlockEvent::class.java)
         }
     }
@@ -271,26 +314,30 @@ class BlockHandlerIt : AbstractIntegrationTest() {
 
         // Process the remaining blocks #6, #7 ... #100
         blockHandler.onNewBlock(blockchain.last())
-        val blockEvents = blockEventListener.blockEvents.flatten()
+        val blockEventsBatches = blockEventListener.blockEvents
 
-        assertThat(blockEvents).hasSize(97)
-        assertThat(blockEvents.map { it.number }).isEqualTo(listOf(5L) + (5L..100L).toList())
+        assertThat(blockEventsBatches.map { batch -> batch.map { it.number } }).isEqualTo(
+            listOf(listOf(5L)) + (5L..90).chunked(10) + (91L..100).map { listOf(it) }
+        )
+
+        val flattenedEvents = blockEventsBatches.flatten()
         // The pending block #5 must firstly be reverted and then processed with stable.
-        assertThat(blockEvents.first()).isInstanceOf(RevertedBlockEvent::class.java)
-        assertThat(blockEvents[1]).isInstanceOf(NewStableBlockEvent::class.java)
+        assertThat(flattenedEvents.first()).isInstanceOf(RevertedBlockEvent::class.java)
+        assertThat(flattenedEvents[1]).isInstanceOf(NewStableBlockEvent::class.java)
 
         // The blocks #6 ... #90 must be processed with NewStableBlockEvent
-        assertThat(blockEvents.drop(2).take(85)).allSatisfy {
+        assertThat(flattenedEvents.drop(2).take(85)).allSatisfy {
             assertThat(it).isInstanceOf(NewStableBlockEvent::class.java)
         }
 
         // The blocks #91..100 must be processed with NewUnstableBlockEvent
-        assertThat(blockEvents.drop(2).drop(85)).allSatisfy {
+        assertThat(flattenedEvents.drop(2).drop(85)).allSatisfy {
             assertThat(it).isInstanceOf(NewUnstableBlockEvent::class.java)
         }
     }
 
     private fun TestBlockchainBlock.asNewUnstableEvent() = NewUnstableBlockEvent(this)
+    private fun TestBlockchainBlock.asNewStableEvent() = NewStableBlockEvent(this)
 
     private fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent<TestBlockchainBlock>(this.number, this.hash)
 }

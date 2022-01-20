@@ -227,20 +227,24 @@ class BlockHandler<BB : BlockchainBlock>(
             ?.lastOrNull()
     }
 
-    private suspend fun processBlocks(blocks: List<BB>, stable: Boolean): List<Block> {
-        // TODO: implement this function for the whole batch.
-        //  Currently, we can have only one PENDING block at the same time, so we have to process them one by one.
-        return blocks.map { processBlock(it, stable) }
-    }
+    private suspend fun processBlock(blockchainBlock: BB, stable: Boolean): Block =
+        processBlocks(listOf(blockchainBlock), stable).single()
 
-    private suspend fun processBlock(blockchainBlock: BB, stable: Boolean): Block {
-        logger.info("Processing block [{}:{}]", blockchainBlock.number, blockchainBlock.hash)
-        blockService.save(blockchainBlock.toBlock(status = BlockStatus.PENDING))
-        val event = if (stable) {
-            NewStableBlockEvent(blockchainBlock)
+    private suspend fun processBlocks(blockchainBlocks: List<BB>, stable: Boolean): List<Block> {
+        if (blockchainBlocks.size == 1) {
+            logger.info("Processing block [{}:{}]", blockchainBlocks.single().number, blockchainBlocks.single().hash)
         } else {
-            NewUnstableBlockEvent(blockchainBlock)
+            logger.info("Processing blocks from {} to {}", blockchainBlocks.first().number, blockchainBlocks.last().number)
         }
+        blockchainBlocks.forEach { blockService.save(it.toBlock(status = BlockStatus.PENDING)) }
+        val events = blockchainBlocks.map {
+            if (stable) {
+                NewStableBlockEvent(it)
+            } else {
+                NewUnstableBlockEvent(it)
+            }
+        }
+
         /*
         It may very rarely happen that we produce RevertedBlockEvent-s for blocks for which we DID NOT produce NewBlockEvent-s.
         This happens if at this exact line, before calling "processBlockEvents", the blockchain scanner gets terminated.
@@ -252,15 +256,16 @@ class BlockHandler<BB : BlockchainBlock>(
         If we did not call NewBlockEvent-s, there will be nothing to revert.
          */
         withSpan(
-            name = "processBlock",
+            name = "processBlocks",
             labels = listOf(
-                "blockNumber" to blockchainBlock.number,
-                "blockHash" to blockchainBlock.hash
+                "blocksCount" to blockchainBlocks.size,
+                "minId" to blockchainBlocks.first().number,
+                "maxId" to blockchainBlocks.last().number
             )
         ) {
-            processBlockEvents(listOf(event))
+            processBlockEvents(events)
         }
-        return blockService.save(blockchainBlock.toBlock(status = BlockStatus.SUCCESS))
+        return blockchainBlocks.map { blockService.save(it.toBlock(status = BlockStatus.SUCCESS)) }
     }
 
     private suspend fun revertBlock(block: Block) {
