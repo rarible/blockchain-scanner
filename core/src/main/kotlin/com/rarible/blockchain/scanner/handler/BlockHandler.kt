@@ -77,7 +77,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 lastKnownBlock.hash
             )
             logger.info("Processing the new consistent block [{}:{}]", newBlock.id, newBlock.hash)
-            processBlock(newBlockchainBlock, false)
+            processNewUnstableBlock(newBlockchainBlock)
             return
         }
 
@@ -132,7 +132,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 )
                 return
             }
-            currentBlock = processBlock(nextBlock, false)
+            currentBlock = processNewUnstableBlock(nextBlock)
         }
     }
 
@@ -167,7 +167,7 @@ class BlockHandler<BB : BlockchainBlock>(
         logger.info("Fetching root block because there is no last known block")
         val firstBlock = blockClient.getFirstAvailableBlock()
 
-        return processBlock(firstBlock, false)
+        return processNewUnstableBlock(firstBlock)
     }
 
     private suspend fun getNextBlockchainBlock(startId: Long, maxSteps: Long): BB? {
@@ -227,8 +227,8 @@ class BlockHandler<BB : BlockchainBlock>(
             ?.lastOrNull()
     }
 
-    private suspend fun processBlock(blockchainBlock: BB, stable: Boolean): Block =
-        processBlocks(listOf(blockchainBlock), stable).single()
+    private suspend fun processNewUnstableBlock(blockchainBlock: BB): Block =
+        processBlocks(listOf(blockchainBlock), false).single()
 
     private suspend fun processBlocks(blockchainBlocks: List<BB>, stable: Boolean): List<Block> {
         if (blockchainBlocks.size == 1) {
