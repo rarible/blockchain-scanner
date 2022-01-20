@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
@@ -24,7 +25,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
 
     @Test
     fun `start from empty state`() = runBlocking<Unit> {
-        val blockchain = randomBlockchain(1)
+        val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val blockEventListener = TestBlockEventListener()
         val blockHandler = BlockHandler(
@@ -40,7 +41,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `Remove pending block`() = runBlocking<Unit> {
+    fun `revert pending block after restart`() = runBlocking<Unit> {
         val blockchain1 = randomBlockchain(10)
         val blockEventListener = TestBlockEventListener()
         val testBlockchainData1 = TestBlockchainData(blockchain1, emptyList(), emptyList())
@@ -210,7 +211,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `batch load blocks`() = runBlocking<Unit> {
+    fun `batch sync blocks`() = runBlocking<Unit> {
         val blockchain = randomBlockchain(100)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val blockEventListener = TestBlockEventListener()
@@ -230,7 +231,45 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             assertThat(it).isInstanceOf(NewStableBlockEvent::class.java)
         }
         assertThat(blockEvents.drop(1).drop(90)).allSatisfy {
-            assertThat(it).isInstanceOf(NewBlockEvent::class.java)
+            assertThat(it).isInstanceOf(NewUnstableBlockEvent::class.java)
+        }
+    }
+
+    @Test
+    fun `process pending block before batch syncing blocks`() = runBlocking<Unit> {
+        val blockchain = randomBlockchain(100)
+        val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
+        val blockEventListener = TestBlockEventListener()
+        val blockHandler = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10)
+        )
+        // Process blocks #0, #1, #2, #3, #4
+        blockHandler.onNewBlock(blockchain[4])
+
+        // Mark block #5 as PENDING.
+        blockService.save(blockchain[5].toBlock(BlockStatus.PENDING))
+        blockEventListener.blockEvents.clear()
+
+        // Process the remaining blocks #6, #7 ... #100
+        blockHandler.onNewBlock(blockchain.last())
+        val blockEvents = blockEventListener.blockEvents.flatten()
+
+        assertThat(blockEvents).hasSize(96)
+        assertThat(blockEvents.map { it.number }).isEqualTo((5L..100L).toList())
+        // The pending block #5 must be processed with NewUnstableBlockEvent
+        assertThat(blockEvents.first()).isInstanceOf(NewUnstableBlockEvent::class.java)
+
+        // The blocks #6 ... #90 must be processed with NewStableBlockEvent
+        assertThat(blockEvents.drop(1).take(85)).allSatisfy {
+            assertThat(it).isInstanceOf(NewStableBlockEvent::class.java)
+        }
+
+        // The blocks #91..100 must be processed with NewUnstableBlockEvent
+        assertThat(blockEvents.drop(1).drop(85)).allSatisfy {
+            assertThat(it).isInstanceOf(NewUnstableBlockEvent::class.java)
         }
     }
 }

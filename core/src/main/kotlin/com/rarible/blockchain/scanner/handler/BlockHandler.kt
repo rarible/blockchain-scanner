@@ -68,22 +68,8 @@ class BlockHandler<BB : BlockchainBlock>(
         val lastKnownBlock = getLastKnownBlock()
         logger.info("Last known Block [{}:{}]: {}", lastKnownBlock.id, lastKnownBlock.hash, lastKnownBlock)
 
-        // If new block's parent hash is the same as hash of last known block, we could omit blockchain reorg check
-        if (newBlock.parentHash == lastKnownBlock.hash) {
-            if (lastKnownBlock.status == BlockStatus.PENDING) {
-                logger.info(
-                    "Retrying to process the last known pending block [{}:{}]",
-                    lastKnownBlock.id,
-                    lastKnownBlock.hash
-                )
-                val lastKnownBlockchainBlock = fetchBlock(lastKnownBlock.id)
-                if (lastKnownBlockchainBlock == null || lastKnownBlock.hash != lastKnownBlockchainBlock.hash) {
-                    revertBlock(lastKnownBlock)
-                    return
-                }
-
-                processBlock(lastKnownBlockchainBlock, false)
-            }
+        // We could omit heavy blockchain reorg check if the last known block is the parent of the new block.
+        if (newBlock.parentHash == lastKnownBlock.hash && lastKnownBlock.status == BlockStatus.SUCCESS) {
             logger.info(
                 "New block [{}:{}] is consistent with the last known block by parent hash {}",
                 newBlock.id,
@@ -99,13 +85,29 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun restoreMissingBlocks(lastKnownBlock: Block, newBlock: Block) {
-        var currentBlock = withSpan(
+        val (lastCorrectBlock, lastCorrectBlockchainBlock) = withSpan(
             name = "findLatestCorrectKnownBlockAndRevertOther",
             labels = listOf("lastKnownBlockNumber" to lastKnownBlock.id, "newBlockNumber" to newBlock.id)
         ) {
             findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
         }
-        currentBlock = if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
+        var currentBlock = lastCorrectBlock
+        if (currentBlock.status == BlockStatus.PENDING) {
+            logger.info(
+                "Processing the latest correct block [{}:{}]",
+                currentBlock.id,
+                currentBlock.hash
+            )
+            currentBlock = processBlock(lastCorrectBlockchainBlock, false)
+        }
+        if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
+            logger.info(
+                "Last correct block [{}:{}] is far away from the new block [{}:{}]. Using batch sync for the old blocks",
+                currentBlock.id,
+                currentBlock.hash,
+                newBlock.id,
+                newBlock.hash
+            )
             val limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
             val batchSyncedBlock = withSpan(
                 name = "batchSyncMissingBlocks",
@@ -113,23 +115,7 @@ class BlockHandler<BB : BlockchainBlock>(
             ) {
                 batchSyncMissingBlocks(lastKnownBlock = currentBlock, limit = limit)
             }
-            batchSyncedBlock ?: currentBlock
-        } else {
-            currentBlock
-        }
-        if (currentBlock.status == BlockStatus.PENDING) {
-            logger.info(
-                "Processing the latest known pending block [{}:{}]",
-                currentBlock.id,
-                currentBlock.hash
-            )
-            val currentBlockchainBlock = fetchBlock(currentBlock.id)
-            if (currentBlockchainBlock == null || currentBlock.hash != currentBlockchainBlock.hash) {
-                revertBlock(currentBlock)
-                return
-            }
-
-            currentBlock = processBlock(currentBlockchainBlock, false)
+            currentBlock = batchSyncedBlock ?: currentBlock
         }
         while (currentBlock.id < newBlock.id) {
             val nextBlock = getNextBlockchainBlock(currentBlock.id, newBlock.id - currentBlock.id)
@@ -164,7 +150,7 @@ class BlockHandler<BB : BlockchainBlock>(
      * and revert others in the reversed order (from the newest to the oldest).
      * Returns the latest correct known block.
      */
-    private suspend fun findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock: Block): Block {
+    private suspend fun findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock: Block): Pair<Block, BB> {
         var currentBlock = lastKnownBlock
         var blockchainBlock = fetchBlock(currentBlock.id)
 
@@ -174,7 +160,7 @@ class BlockHandler<BB : BlockchainBlock>(
             blockchainBlock = fetchBlock(currentBlock.id)
         }
 
-        return currentBlock
+        return currentBlock to blockchainBlock
     }
 
     private suspend fun getLastKnownBlock(): Block {
