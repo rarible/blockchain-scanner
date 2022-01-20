@@ -220,10 +220,10 @@ class BlockHandler<BB : BlockchainBlock>(
             .map {
                 val fromId = it.first().number
                 val toId = it.last().number
-                logger.info("Processing batch of ${it.size} stable blocks: $fromId..$toId (${toId - fromId + 1}")
+                logger.info("Processing batch of ${it.size} stable blocks with IDs between $fromId and $toId")
                 withSpan(
                     name = "processBlocks",
-                    labels = listOf("range" to "$fromId..$toId")
+                    labels = listOf("batchSize" to it.size, "minId" to fromId, "maxId" to toId)
                 ) {
                     processBlocks(it, true)
                 }
