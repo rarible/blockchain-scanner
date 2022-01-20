@@ -85,20 +85,11 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun restoreMissingBlocks(lastKnownBlock: Block, newBlock: Block) {
-        val (lastCorrectBlock, lastCorrectBlockchainBlock) = withSpan(
+        var currentBlock = withSpan(
             name = "findLatestCorrectKnownBlockAndRevertOther",
             labels = listOf("lastKnownBlockNumber" to lastKnownBlock.id, "newBlockNumber" to newBlock.id)
         ) {
             findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
-        }
-        var currentBlock = lastCorrectBlock
-        if (currentBlock.status == BlockStatus.PENDING) {
-            logger.info(
-                "Processing the latest correct block [{}:{}]",
-                currentBlock.id,
-                currentBlock.hash
-            )
-            currentBlock = processBlock(lastCorrectBlockchainBlock, false)
         }
         if (batchLoad.enabled && newBlock.id - currentBlock.id > batchLoad.confirmationBlockDistance) {
             logger.info(
@@ -146,21 +137,25 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     /**
-     * Checks if chain reorg happened. Find the latest correct block
+     * Checks if chain reorg happened. Find the latest correct block having status SUCCESS
      * and revert others in the reversed order (from the newest to the oldest).
-     * Returns the latest correct known block.
+     * Returns the latest correct known block with status SUCCESS.
      */
-    private suspend fun findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock: Block): Pair<Block, BB> {
+    private suspend fun findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock: Block): Block {
         var currentBlock = lastKnownBlock
         var blockchainBlock = fetchBlock(currentBlock.id)
 
-        while (blockchainBlock == null || currentBlock.hash != blockchainBlock.hash) {
+        while (
+            blockchainBlock == null
+            || currentBlock.hash != blockchainBlock.hash
+            || currentBlock.status == BlockStatus.PENDING
+        ) {
             revertBlock(currentBlock)
             currentBlock = getPreviousBlock(currentBlock)
             blockchainBlock = fetchBlock(currentBlock.id)
         }
 
-        return currentBlock to blockchainBlock
+        return currentBlock
     }
 
     private suspend fun getLastKnownBlock(): Block {
@@ -246,6 +241,16 @@ class BlockHandler<BB : BlockchainBlock>(
         } else {
             NewUnstableBlockEvent(blockchainBlock)
         }
+        /*
+        It may very rarely happen that we produce RevertedBlockEvent-s for blocks for which we DID NOT produce NewBlockEvent-s.
+        This happens if at this exact line, before calling "processBlockEvents", the blockchain scanner gets terminated.
+        The blocks are already marked as PENDING.
+        After restart, we will produce RevertedBlockEvent-s, although we did not call
+        "processBlockEvents" with NewBlockEvent-s for those blocks.
+
+        This is OK because handling of reverted blocks simply reverts logs that we might have had chance to record.
+        If we did not call NewBlockEvent-s, there will be nothing to revert.
+         */
         withSpan(
             name = "processBlock",
             labels = listOf(

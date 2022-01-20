@@ -1,16 +1,11 @@
 package com.rarible.blockchain.scanner.test.configuration
 
+import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
-import com.rarible.blockchain.scanner.block.Block
-import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
-import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
-import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
-import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
-import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -35,11 +30,11 @@ abstract class AbstractIntegrationTest {
         BlockService(blockRepository)
     }
 
-    protected val testLogRepository: TestLogRepository by lazy {
+    private val testLogRepository: TestLogRepository by lazy {
         TestLogRepository(mongo)
     }
 
-    protected val testLogService: TestLogService by lazy {
+    private val testLogService: TestLogService by lazy {
         TestLogService(testLogRepository)
     }
 
@@ -72,8 +67,4 @@ abstract class AbstractIntegrationTest {
     }
 
     protected suspend fun getAllBlocks(): List<Block> = blockRepository.getAll().toList().sortedBy { it.id }
-
-    protected fun TestBlockchainBlock.asNewEvent() = NewUnstableBlockEvent(this)
-    protected fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent<TestBlockchainBlock>(this.number, this.hash)
-
 }

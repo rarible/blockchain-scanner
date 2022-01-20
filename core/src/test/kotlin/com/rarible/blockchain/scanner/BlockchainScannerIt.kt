@@ -185,4 +185,79 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             )
         )
     }
+
+    @Test
+    fun `revert logs of pending block after restart but then process them again`() = runBlocking<Unit> {
+        val blocks = randomBlockchain(2)
+
+        val log11 = randomOriginalLog(block = blocks[1], topic = descriptor.topic, logIndex = 1)
+        val log12 = randomOriginalLog(block = blocks[1], topic = descriptor.topic, logIndex = 2)
+        val log21 = randomOriginalLog(block = blocks[2], topic = descriptor.topic, logIndex = 1)
+
+        val testBlockchainData = TestBlockchainData(
+            blocks = blocks,
+            logs = listOf(log11, log12, log21),
+            newBlocks = blocks
+        )
+
+        val subscriber = TestLogEventSubscriber(descriptor)
+        val blockScanner = createBlockchainScanner(
+            // Process only the blocks #0 and #1.
+            TestBlockchainClient(testBlockchainData.copy(newBlocks = blocks.take(2))),
+            subscriber
+        )
+        blockScanner.scan(once = true)
+
+        assertThat(findBlock(blocks[1].number)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
+        val confirmedLogs = listOf(
+            LogRecordEvent(
+                record = subscriber.getReturnedRecords(blocks[1], log11).single(),
+                reverted = false
+            ),
+            LogRecordEvent(
+                record = subscriber.getReturnedRecords(blocks[1], log12).single(),
+                reverted = false
+            )
+        )
+        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
+            mapOf(descriptor.groupId to confirmedLogs)
+        )
+
+        // Imitate the block #1 is PENDING.
+        blockService.save(blocks[1].toBlock(BlockStatus.PENDING))
+        val newBlockchainScanner = createBlockchainScanner(
+            // Process all the blocks
+            TestBlockchainClient(testBlockchainData),
+            subscriber
+        )
+        newBlockchainScanner.scan(once = true)
+
+        // Block #1 was PENDING, so we, firstly, revert all possibly saved logs and then apply them again.
+        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
+            mapOf(
+                descriptor.groupId to confirmedLogs + listOf(
+                    LogRecordEvent(
+                        record = subscriber.getReturnedRecords(blocks[1], log11).single(),
+                        reverted = true
+                    ),
+                    LogRecordEvent(
+                        record = subscriber.getReturnedRecords(blocks[1], log12).single(),
+                        reverted = true
+                    ),
+                    LogRecordEvent(
+                        record = subscriber.getReturnedRecords(blocks[1], log11).single(),
+                        reverted = false
+                    ),
+                    LogRecordEvent(
+                        record = subscriber.getReturnedRecords(blocks[1], log12).single(),
+                        reverted = false
+                    ),
+                    LogRecordEvent(
+                        record = subscriber.getReturnedRecords(blocks[2], log21).single(),
+                        reverted = false
+                    )
+                )
+            )
+        )
+    }
 }

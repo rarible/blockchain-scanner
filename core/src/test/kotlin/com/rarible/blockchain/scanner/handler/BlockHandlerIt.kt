@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
@@ -37,11 +38,11 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockHandler.onNewBlock(blockchain.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
         assertThat(blockEventListener.blockEvents.flatten())
-            .isEqualTo(blockchain.map { it.asNewEvent() })
+            .isEqualTo(blockchain.map { it.asNewUnstableEvent() })
     }
 
     @Test
-    fun `revert pending block after restart`() = runBlocking<Unit> {
+    fun `revert pending block after restart if blockchain reorged`() = runBlocking<Unit> {
         val blockchain1 = randomBlockchain(10)
         val blockEventListener = TestBlockEventListener()
         val testBlockchainData1 = TestBlockchainData(blockchain1, emptyList(), emptyList())
@@ -66,7 +67,13 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockHandler2.onNewBlock(blockchain2[6])
 
         assertThat(blockEventListener.blockEvents.flatten())
-            .isEqualTo(listOf(blockchain1[5].asRevertEvent(), blockchain2[5].asNewEvent(), blockchain2[6].asNewEvent()))
+            .isEqualTo(
+                listOf(
+                    blockchain1[5].asRevertEvent(),
+                    blockchain2[5].asNewUnstableEvent(),
+                    blockchain2[6].asNewUnstableEvent()
+                )
+            )
     }
 
     @Test
@@ -82,12 +89,14 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         )
         blockHandler.onNewBlock(blockchain[5])
         assertThat(getAllBlocks()).isEqualTo(blockchain.take(6).map { it.toBlock(BlockStatus.SUCCESS) })
-        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(blockchain.take(6).map { it.asNewEvent() })
+        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(
+            blockchain.take(6).map { it.asNewUnstableEvent() })
 
         blockEventListener.blockEvents.clear()
         blockHandler.onNewBlock(blockchain.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
-        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(blockchain.drop(6).map { it.asNewEvent() })
+        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(
+            blockchain.drop(6).map { it.asNewUnstableEvent() })
     }
 
     @Test
@@ -102,7 +111,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         )
         blockHandler1.onNewBlock(blockchain1.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain1.map { it.toBlock(BlockStatus.SUCCESS) })
-        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(blockchain1.map { it.asNewEvent() })
+        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(blockchain1.map { it.asNewUnstableEvent() })
 
         val blockchain2 = buildBlockchain(blockchain1.take(5) + randomBlockchain(10).drop(5))
         val blockHandler2 = BlockHandler(
@@ -116,7 +125,8 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockHandler2.onNewBlock(blockchain2.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain2.map { it.toBlock(BlockStatus.SUCCESS) })
         assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(
-            blockchain1.drop(5).reversed().map { it.asRevertEvent() } + blockchain2.drop(5).map { it.asNewEvent() }
+            blockchain1.drop(5).reversed().map { it.asRevertEvent() } + blockchain2.drop(5)
+                .map { it.asNewUnstableEvent() }
         )
     }
 
@@ -142,7 +152,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
 
         blockEventListener.blockEvents.clear()
         blockHandler2.onNewBlock(blockchain2.last())
-        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(listOf(blockchain1[6].asNewEvent()))
+        assertThat(blockEventListener.blockEvents.flatten()).isEqualTo(listOf(blockchain1[6].asNewUnstableEvent()))
     }
 
     @Test
@@ -191,7 +201,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `process pending log after restart`() = runBlocking<Unit> {
+    fun `revert and then process pending log after restart`() = runBlocking<Unit> {
         val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val blockEventListener = TestBlockEventListener()
@@ -207,7 +217,13 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockEventListener.blockEvents.clear()
         blockHandler.onNewBlock(blockchain[6])
         assertThat(blockEventListener.blockEvents.flatten())
-            .isEqualTo(listOf(blockchain[5].asNewEvent(), blockchain[6].asNewEvent()))
+            .isEqualTo(
+                listOf(
+                    blockchain[5].asRevertEvent(),
+                    blockchain[5].asNewUnstableEvent(),
+                    blockchain[6].asNewUnstableEvent()
+                )
+            )
     }
 
     @Test
@@ -236,7 +252,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `process pending block before batch syncing blocks`() = runBlocking<Unit> {
+    fun `revert and then process pending block before batch syncing blocks`() = runBlocking<Unit> {
         val blockchain = randomBlockchain(100)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val blockEventListener = TestBlockEventListener()
@@ -257,19 +273,24 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockHandler.onNewBlock(blockchain.last())
         val blockEvents = blockEventListener.blockEvents.flatten()
 
-        assertThat(blockEvents).hasSize(96)
-        assertThat(blockEvents.map { it.number }).isEqualTo((5L..100L).toList())
-        // The pending block #5 must be processed with NewUnstableBlockEvent
-        assertThat(blockEvents.first()).isInstanceOf(NewUnstableBlockEvent::class.java)
+        assertThat(blockEvents).hasSize(97)
+        assertThat(blockEvents.map { it.number }).isEqualTo(listOf(5L) + (5L..100L).toList())
+        // The pending block #5 must firstly be reverted and then processed with stable.
+        assertThat(blockEvents.first()).isInstanceOf(RevertedBlockEvent::class.java)
+        assertThat(blockEvents[1]).isInstanceOf(NewStableBlockEvent::class.java)
 
         // The blocks #6 ... #90 must be processed with NewStableBlockEvent
-        assertThat(blockEvents.drop(1).take(85)).allSatisfy {
+        assertThat(blockEvents.drop(2).take(85)).allSatisfy {
             assertThat(it).isInstanceOf(NewStableBlockEvent::class.java)
         }
 
         // The blocks #91..100 must be processed with NewUnstableBlockEvent
-        assertThat(blockEvents.drop(1).drop(85)).allSatisfy {
+        assertThat(blockEvents.drop(2).drop(85)).allSatisfy {
             assertThat(it).isInstanceOf(NewUnstableBlockEvent::class.java)
         }
     }
+
+    private fun TestBlockchainBlock.asNewUnstableEvent() = NewUnstableBlockEvent(this)
+
+    private fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent<TestBlockchainBlock>(this.number, this.hash)
 }

@@ -33,17 +33,20 @@ class TestLogEventSubscriber(
     override suspend fun getEventRecords(
         block: TestBlockchainBlock,
         log: TestBlockchainLog
-    ): List<TestLogRecord> = (0 until eventDataCount).map { minorIndex ->
-        TestCustomLogRecord(
-            id = randomPositiveLong(),
-            version = null,
-            blockExtra = block.testExtra,
-            logExtra = log.testOriginalLog.testExtra,
-            customData = randomString(),
-            log = mapLog(log, minorIndex)
-        )
-    }.also { records ->
+    ): List<TestLogRecord> {
+        expectedRecords[block to log.testOriginalLog]?.let { return it }
+        val records = (0 until eventDataCount).map { minorIndex ->
+            TestCustomLogRecord(
+                id = randomPositiveLong(),
+                version = null,
+                blockExtra = block.testExtra,
+                logExtra = log.testOriginalLog.testExtra,
+                customData = randomString(),
+                log = mapLog(log, minorIndex)
+            )
+        }
         expectedRecords[block to log.testOriginalLog] = records
+        return records
     }
 
 
