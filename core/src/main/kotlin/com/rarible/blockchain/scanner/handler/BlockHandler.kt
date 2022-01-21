@@ -234,9 +234,13 @@ class BlockHandler<BB : BlockchainBlock>(
         if (blockchainBlocks.size == 1) {
             logger.info("Processing block [{}:{}]", blockchainBlocks.single().number, blockchainBlocks.single().hash)
         } else {
-            logger.info("Processing blocks from {} to {}", blockchainBlocks.first().number, blockchainBlocks.last().number)
+            logger.info(
+                "Processing blocks from {} to {}",
+                blockchainBlocks.first().number,
+                blockchainBlocks.last().number
+            )
         }
-        blockchainBlocks.forEach { blockService.save(it.toBlock(status = BlockStatus.PENDING)) }
+        saveBlocks(blockchainBlocks, BlockStatus.PENDING)
         val events = blockchainBlocks.map {
             if (stable) {
                 NewStableBlockEvent(it)
@@ -265,8 +269,11 @@ class BlockHandler<BB : BlockchainBlock>(
         ) {
             processBlockEvents(events)
         }
-        return blockchainBlocks.map { blockService.save(it.toBlock(status = BlockStatus.SUCCESS)) }
+        return saveBlocks(blockchainBlocks, BlockStatus.SUCCESS)
     }
+
+    private suspend fun saveBlocks(blocks: List<BB>, status: BlockStatus): List<Block> =
+        coroutineScope { blocks.map { async { blockService.save(it.toBlock(status)) } }.awaitAll() }
 
     private suspend fun revertBlock(block: Block) {
         logger.info("Reverting block [{}:{}]: {}", block.id, block.hash, block)
