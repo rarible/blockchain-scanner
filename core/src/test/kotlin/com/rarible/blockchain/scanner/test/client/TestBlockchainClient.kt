@@ -18,7 +18,7 @@ class TestBlockchainClient(
 
     private val blocksByNumber = data.blocks.associateBy { it.number }
     private val blocksByHash = data.blocks.associateBy { it.hash }
-    private val lastBlock = data.blocks.maxBy { it.number }
+    private val lastBlock = data.blocks.maxByOrNull { it.number }
     private val logs = data.logs
     private val logsByBlock = data.logs.filter { it.blockHash != null }.groupBy { it.blockHash }
     private val newBlocks = data.newBlocks
