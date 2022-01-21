@@ -124,16 +124,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
 
     private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        logEvents.flatMap { logEvent ->
-            listOf(
-                async {
-                    logService.delete(logEvent.descriptor, logEvent.logRecordsToRemove)
-                },
-                async {
-                    logService.save(logEvent.descriptor, logEvent.logRecordsToInsert)
-                }
-            )
-        }.awaitAll()
+        logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToRemove) } }.awaitAll()
+        logEvents.map { async { logService.save(it.descriptor, it.logRecordsToInsert) } }.awaitAll()
     }
 
     private suspend fun onBlock(
