@@ -148,12 +148,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         // Preserve the order of events.
         return events.mapNotNull { event ->
             val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-            val logRecordsToInsert = withSpan(name = "prepareLogsToInsert") {
-                prepareLogsToInsert(subscriber, fullBlock)
-            }
-            val logRecordsToRevert = withSpan(name = "prepareLogsToRevert") {
-                logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
-            }
+            val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
+            val logRecordsToRevert = logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
             logger.info(
                 "Prepared logs for '{}': {} new logs and {} logs to remove",
                 subscriber.getDescriptor().id,
