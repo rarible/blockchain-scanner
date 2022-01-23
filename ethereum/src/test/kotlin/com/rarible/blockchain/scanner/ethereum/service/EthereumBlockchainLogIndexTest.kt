@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
 import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.core.common.justOrEmpty
 import com.rarible.core.test.data.randomAddress
 import io.daonomic.rpc.domain.Word
 import io.mockk.every
@@ -25,18 +24,17 @@ import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
 import scalether.domain.response.Block
+import scalether.domain.response.Transaction
 
 class EthereumBlockchainLogIndexTest {
     @Test
-    fun `index is calculated in group of transactionHash, topic, address`() = runBlocking<Unit> {
-        val allBlocks = listOf(
-            ethBlock(),
-            ethBlock(),
-            ethBlock(),
-            ethBlock(),
-            ethBlock(),
-            ethBlock()
-        )
+    fun `index is calculated in group of transactionHash, topic, address`() = runBlocking {
+        val blockHash0 = randomWord()
+        val blockHash1 = randomWord()
+        val blockHash2 = randomWord()
+        val blockHash3 = randomWord()
+        val blockHash4 = randomWord()
+        val blockHash5 = randomWord()
 
         val transactionHash1 = randomWord()
         val topic1 = randomWord()
@@ -52,48 +50,57 @@ class EthereumBlockchainLogIndexTest {
             topic: Word,
             address: Address,
             logIndex: Int,
-            block: Block<Word>
+            blockHash: Word,
+            blockNumber: Long
         ) = EthereumBlockchainLog(
             ethLog = ethLog(
                 transactionHash = transactionHash,
                 topic = topic,
                 address = address,
                 logIndex = logIndex,
-                blockHash = block.hash()
+                blockHash = blockHash
             ),
             ethTransaction = ethTransaction(
                 transactionHash = transactionHash,
-                blockHash = block.hash(),
-                blockNumber = block.number()
+                blockHash = blockHash,
+                blockNumber = blockNumber.toBigInteger()
             ),
             index = index
         )
 
         val expectedLogs = listOf(
             /* 0 */
-            createEthereumBL(0, randomWord(), topic1, randomAddress(), 0, allBlocks[0]),
+            createEthereumBL(0, randomWord(), topic1, randomAddress(), 0, blockHash0, 0),
             /* 1 */
-            createEthereumBL(0, randomWord(), randomWord(), address1, 1, allBlocks[1]),
+            createEthereumBL(0, randomWord(), randomWord(), address1, 1, blockHash1, 1),
             /* 2 */
-            createEthereumBL(0, randomWord(), topic1, address1, 2, allBlocks[2]),
+            createEthereumBL(0, randomWord(), topic1, address1, 2, blockHash2, 2),
             /* 3 */
-            createEthereumBL(0, randomWord(), randomWord(), address2, 3, allBlocks[3]),
+            createEthereumBL(0, randomWord(), randomWord(), address2, 3, blockHash3, 3),
 
             // Group #1 of <transactionHash, topic, address>
             /* 4 */
-            createEthereumBL(0, transactionHash1, topic1, address1, 4, allBlocks[4]),
+            createEthereumBL(0, transactionHash1, topic1, address1, 4, blockHash4, 4),
             /* 5 */
-            createEthereumBL(1, transactionHash1, topic1, address1, 5, allBlocks[4]),
+            createEthereumBL(1, transactionHash1, topic1, address1, 5, blockHash4, 4),
             /* 6 */
-            createEthereumBL(2, transactionHash1, topic1, address1, 6, allBlocks[4]),
+            createEthereumBL(2, transactionHash1, topic1, address1, 6, blockHash4, 4),
 
             // Group #2 of <transactionHash, topic, address>
             /* 7 */
-            createEthereumBL(0, transactionHash2, topic2, address2, 7, allBlocks[5]),
+            createEthereumBL(0, transactionHash2, topic2, address2, 7, blockHash5, 5),
             /* 8 */
-            createEthereumBL(1, transactionHash2, topic2, address2, 8, allBlocks[5]),
+            createEthereumBL(1, transactionHash2, topic2, address2, 8, blockHash5, 5),
             /* 9 */
-            createEthereumBL(2, transactionHash2, topic2, address2, 9, allBlocks[5]),
+            createEthereumBL(2, transactionHash2, topic2, address2, 9, blockHash5, 5),
+        )
+        val allBlocks = listOf(
+            ethBlock(0, blockHash0, expectedLogs),
+            ethBlock(1, blockHash1, expectedLogs),
+            ethBlock(2, blockHash2, expectedLogs),
+            ethBlock(3, blockHash3, expectedLogs),
+            ethBlock(4, blockHash4, expectedLogs),
+            ethBlock(5, blockHash5, expectedLogs)
         )
 
         val expectedFullBlocks = listOf(
@@ -130,7 +137,7 @@ class EthereumBlockchainLogIndexTest {
         every { descriptor.contracts } returns emptyList()
         every { descriptor.ethTopic } returns randomWord()
 
-        val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(1, "", "", 0)), true).toList()
+        val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(allBlocks[0])), true).toList()
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
         for ((block, logs) in fullBlocks) {
             val expectedFullBlock = expectedFullBlocks.find { it.block == block }!!
@@ -140,15 +147,11 @@ class EthereumBlockchainLogIndexTest {
 
     @Suppress("ReactiveStreamsUnusedPublisher")
     private fun createEthereumClient(
-        allBlocks: List<Block<Word>>,
+        allBlocks: List<Block<Transaction>>,
         logs: List<EthereumBlockchainLog>
     ): EthereumClient {
         val monoEthereum = mockk<MonoEthereum>()
         every { monoEthereum.ethGetLogsJava(any()) } returns logs.map { it.ethLog }.toMono()
-        every { monoEthereum.ethGetBlockByHash(any()) } answers {
-            val blockHash = firstArg<Word>()
-            allBlocks.find { it.hash() == blockHash }.justOrEmpty()
-        }
         every { monoEthereum.ethGetFullBlockByHash(any()) } answers {
             val blockHash = firstArg<Word>()
             val block = allBlocks.find { it.hash() == blockHash } ?: return@answers null

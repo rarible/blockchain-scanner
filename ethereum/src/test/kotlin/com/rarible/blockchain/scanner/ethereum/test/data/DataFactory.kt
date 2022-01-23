@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.block.BlockStatus
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
@@ -141,8 +142,7 @@ fun ethTransaction(
     Binary.empty()
 )
 
-fun ethBlock() = ethBlock(randomInt(), randomWord())
-fun ethBlock(number: Int, hash: Word): Block<Word> = Block<Word>(
+fun ethBlock(number: Int, hash: Word, logs: List<EthereumBlockchainLog> = emptyList()): Block<Transaction> = Block(
     number.toBigInteger(),
     hash,
     randomWord(),
@@ -158,6 +158,11 @@ fun ethBlock(number: Int, hash: Word): Block<Word> = Block<Word>(
     BigInteger.ZERO,
     BigInteger.ZERO,
     BigInteger.ZERO,
-    CollectionConverters.asScala(emptyList<Word>()).toList(),
+    CollectionConverters.asScala(
+        logs.filter {
+            it.ethTransaction.blockNumber() == number.toBigInteger()
+                && it.ethTransaction.blockHash() == hash
+        }.map { it.ethTransaction }
+    ).toList(),
     BigInteger.ZERO,
 )
