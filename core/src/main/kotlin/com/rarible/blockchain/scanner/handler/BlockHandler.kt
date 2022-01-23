@@ -93,13 +93,8 @@ class BlockHandler<BB : BlockchainBlock>(
                 newBlock.hash
             )
             val limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
-            val batchSyncedBlock = withTransaction(
-                name = "batchSyncMissingBlocks",
-                labels = listOf("lastKnownBlock" to lastKnownBlock, "limit" to limit)
-            ) {
-                batchSyncMissingBlocks(lastKnownBlock = currentBlock, limit = limit)
-            }
-            currentBlock = batchSyncedBlock ?: currentBlock
+            currentBlock = batchSyncMissingBlocks(lastKnownBlock = currentBlock, limit = limit)
+                ?: currentBlock
         }
         withTransaction(
             name = "syncMissingBlocks",
@@ -200,9 +195,8 @@ class BlockHandler<BB : BlockchainBlock>(
         )
             .map { range ->
                 logger.info("Fetching blockchain blocks $range (${range.last - range.first + 1})")
-                withSpan(
+                withTransaction(
                     name = "fetchBlocksBatch",
-                    type = SpanType.EXT,
                     labels = listOf("range" to range.toString())
                 ) {
                     range.map { id -> async { fetchBlock(id) } }.awaitAll()
@@ -214,7 +208,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 val fromId = it.first().number
                 val toId = it.last().number
                 logger.info("Processing batch of ${it.size} stable blocks with IDs between $fromId and $toId")
-                withSpan(
+                withTransaction(
                     name = "processBlocks",
                     labels = listOf("batchSize" to it.size, "minId" to fromId, "maxId" to toId)
                 ) {
