@@ -50,18 +50,6 @@ class BlockHandler<BB : BlockchainBlock>(
      * while this method was syncing forward. The next call of this method will sync the remaining blocks.
      */
     suspend fun onNewBlock(newBlockchainBlock: BB) {
-        withTransaction(
-            "handleBlock",
-            labels = listOf(
-                "blockNumber" to newBlockchainBlock.number,
-                "blockHash" to newBlockchainBlock.hash,
-                "blockParentHash" to (newBlockchainBlock.parentHash ?: "NONE"),
-                "blockTimestamp" to newBlockchainBlock.timestamp
-            )
-        ) { handleNewBlock(newBlockchainBlock) }
-    }
-
-    private suspend fun handleNewBlock(newBlockchainBlock: BB) {
         val newBlock = newBlockchainBlock.toBlock()
         logger.info("Received new Block [{}:{}]: {}", newBlock.id, newBlock.hash, newBlock)
 
@@ -77,7 +65,12 @@ class BlockHandler<BB : BlockchainBlock>(
                 lastKnownBlock.hash
             )
             logger.info("Processing the new consistent block [{}:{}]", newBlock.id, newBlock.hash)
-            processNewUnstableBlock(newBlockchainBlock)
+            withTransaction(
+                name = "processNewUnstableBlock",
+                labels = listOf("number" to newBlockchainBlock.number, "hash" to newBlockchainBlock.hash)
+            ) {
+                processNewUnstableBlock(newBlockchainBlock)
+            }
             return
         }
 
@@ -85,7 +78,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun restoreMissingBlocks(lastKnownBlock: Block, newBlock: Block) {
-        var currentBlock = withSpan(
+        var currentBlock = withTransaction(
             name = "findLatestCorrectKnownBlockAndRevertOther",
             labels = listOf("lastKnownBlockNumber" to lastKnownBlock.id, "newBlockNumber" to newBlock.id)
         ) {
@@ -100,7 +93,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 newBlock.hash
             )
             val limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
-            val batchSyncedBlock = withSpan(
+            val batchSyncedBlock = withTransaction(
                 name = "batchSyncMissingBlocks",
                 labels = listOf("lastKnownBlock" to lastKnownBlock, "limit" to limit)
             ) {
@@ -108,31 +101,36 @@ class BlockHandler<BB : BlockchainBlock>(
             }
             currentBlock = batchSyncedBlock ?: currentBlock
         }
-        while (currentBlock.id < newBlock.id) {
-            val nextBlock = getNextBlockchainBlock(currentBlock.id, newBlock.id - currentBlock.id)
-            if (nextBlock == null) {
-                logger.warn(
-                    "We haven't found the next block for [{}:{}] up until ${newBlock.id}, " +
+        withTransaction(
+            name = "syncMissingBlocks",
+            labels = listOf("currentBlock" to currentBlock.id, "newBlock" to newBlock.id)
+        ) {
+            while (currentBlock.id < newBlock.id) {
+                val nextBlock = getNextBlockchainBlock(currentBlock.id, newBlock.id - currentBlock.id)
+                if (nextBlock == null) {
+                    logger.warn(
+                        "We haven't found the next block for [{}:{}] up until ${newBlock.id}, " +
                             "apparently, a reorganization has happened and the block [{}:{}] has disappeared",
-                    currentBlock.id,
-                    currentBlock.hash,
-                    newBlock.id,
-                    newBlock.hash
-                )
-                return
+                        currentBlock.id,
+                        currentBlock.hash,
+                        newBlock.id,
+                        newBlock.hash
+                    )
+                    return@withTransaction
+                }
+                if (currentBlock.hash != nextBlock.parentHash) {
+                    logger.info(
+                        "Blockchain has been reorganized while syncing blocks: [{}:{}] is not a parent of [{}:{}] but expected {}",
+                        currentBlock.id,
+                        currentBlock.hash,
+                        nextBlock.number,
+                        nextBlock.hash,
+                        nextBlock.parentHash
+                    )
+                    return@withTransaction
+                }
+                currentBlock = processNewUnstableBlock(nextBlock)
             }
-            if (currentBlock.hash != nextBlock.parentHash) {
-                logger.info(
-                    "Blockchain has been reorganized while syncing blocks: [{}:{}] is not a parent of [{}:{}] but expected {}",
-                    currentBlock.id,
-                    currentBlock.hash,
-                    nextBlock.number,
-                    nextBlock.hash,
-                    nextBlock.parentHash
-                )
-                return
-            }
-            currentBlock = processNewUnstableBlock(nextBlock)
         }
     }
 
