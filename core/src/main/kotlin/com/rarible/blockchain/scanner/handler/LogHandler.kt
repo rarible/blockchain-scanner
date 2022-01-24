@@ -50,12 +50,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             blockLogsToRemove.getOrPut(logEvent.blockEvent) { hashMapOf() }
                 .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToRemove
         }
-        for (blockEvent in events) {
-            val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
-            val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
-            publishRecordsToRemove(blockEvent, toRemoveGroupIdMap)
-            publishRecordsToInsert(blockEvent, toInsertGroupIdMap)
-            logger.info("Sent events for {}", blockEvent)
+        withSpan(name = "publishEvents") {
+            for (blockEvent in events) {
+                val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
+                val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
+                publishRecordsToRemove(blockEvent, toRemoveGroupIdMap)
+                publishRecordsToInsert(blockEvent, toInsertGroupIdMap)
+                logger.info("Sent events for {}", blockEvent)
+            }
         }
         withSpan("insertOrRemoveRecords", type = SpanType.DB) {
             insertOrRemoveRecords(logEvents)
@@ -141,24 +143,32 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             ).toList()
         }.associateBy { it.block.number }
 
-        // Preserve the order of events.
-        return events.mapNotNull { event ->
-            val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-            val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
-            val logRecordsToRevert = logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
-            logger.info(
-                "Prepared logs for '{}': {} new logs and {} logs to remove",
-                subscriber.getDescriptor().id,
-                logRecordsToInsert.size,
-                logRecordsToRevert.size,
-                event
-            )
-            LogEvent(
-                blockEvent = event,
-                descriptor = subscriber.getDescriptor(),
-                logRecordsToInsert = logRecordsToInsert,
-                logRecordsToRemove = logRecordsToRevert
-            )
+        val total = events.sumOf {
+            blockLogs[it.number]?.logs?.size ?: 0
+        }
+        return withSpan(
+            name = "extractLogEvents",
+            labels = listOf("total" to total)
+        ) {
+            // Preserve the order of events.
+            events.mapNotNull { event ->
+                val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
+                val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
+                val logRecordsToRevert = logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
+                logger.info(
+                    "Prepared logs for '{}': {} new logs and {} logs to remove",
+                    subscriber.getDescriptor().id,
+                    logRecordsToInsert.size,
+                    logRecordsToRevert.size,
+                    event
+                )
+                LogEvent(
+                    blockEvent = event,
+                    descriptor = subscriber.getDescriptor(),
+                    logRecordsToInsert = logRecordsToInsert,
+                    logRecordsToRemove = logRecordsToRevert
+                )
+            }
         }
     }
 
