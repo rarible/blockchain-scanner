@@ -7,6 +7,5 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConfigurationProperties(prefix = "blockchain.scanner.kafka")
 data class KafkaProperties(
     val brokerReplicaSet: String,
-    val maxPollRecords: Int = 10,
     val numberOfPartitionsPerLogGroup: Int = 10
 )
