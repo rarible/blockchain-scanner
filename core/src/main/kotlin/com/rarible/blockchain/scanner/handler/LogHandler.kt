@@ -53,12 +53,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         for (blockEvent in events) {
             val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
             val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
-            withSpan("publishRecordsToRemove", type = SpanType.KAFKA) {
-                publishRecordsToRemove(blockEvent, toRemoveGroupIdMap)
-            }
-            withSpan("publishRecordsToInsert", type = SpanType.KAFKA) {
-                publishRecordsToInsert(blockEvent, toInsertGroupIdMap)
-            }
+            publishRecordsToRemove(blockEvent, toRemoveGroupIdMap)
+            publishRecordsToInsert(blockEvent, toInsertGroupIdMap)
             logger.info("Sent events for {}", blockEvent)
         }
         withSpan("insertOrRemoveRecords", type = SpanType.DB) {
