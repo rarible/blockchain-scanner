@@ -154,7 +154,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             events.mapNotNull { event ->
                 val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
                 val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
-                val logRecordsToRevert = logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
+                val logRecordsToRevert = if (!stable)
+                    logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
+                else
+                    emptyList()
                 logger.info(
                     "Prepared logs for '{}': {} new logs and {} logs to remove",
                     subscriber.getDescriptor().id,
