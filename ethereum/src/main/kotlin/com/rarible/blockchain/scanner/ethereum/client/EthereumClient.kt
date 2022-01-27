@@ -46,7 +46,7 @@ class EthereumClient(
     private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
     init {
-        logger.info("Created EthereumClient with maxBatches: $maxBatches")
+        logger.info("Creating EthereumClient with maxBatches: $maxBatches")
     }
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = ethPubSub.newHeads()

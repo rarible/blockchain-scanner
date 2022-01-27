@@ -36,7 +36,7 @@ class BlockHandler<BB : BlockchainBlock>(
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
     init {
-        logger.info("Created BlockHandler with config: $batchLoad")
+        logger.info("Creating BlockHandler with config: $batchLoad")
     }
 
     /**
