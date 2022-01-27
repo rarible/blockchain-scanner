@@ -34,7 +34,7 @@ import java.time.Duration
 @Component
 class EthereumClient(
     private val ethereum: MonoEthereum,
-    @Value("\${blockchain.scanner.ethereum.maxBatchSize:10}") private val maxBatchSize: Int,
+    @Value("\${blockchain.scanner.ethereum.maxBatches}") private val maxBatches: Map<String, Int>,
     ethPubSub: EthPubSub
 ) : EthereumBlockchainClient {
 
@@ -74,7 +74,8 @@ class EthereumClient(
         range: LongRange
     ) = flow {
         val allLogs = coroutineScope {
-            range.chunked(maxBatchSize)
+            val maxBatchSize = maxBatches[descriptor.ethTopic.toString()]
+            range.chunked(maxBatchSize ?: range.count())
                 .map { LongRange(it.first(), it.last()) }
                 .map {
                     async {
