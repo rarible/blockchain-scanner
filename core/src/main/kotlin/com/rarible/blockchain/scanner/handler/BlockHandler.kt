@@ -35,6 +35,10 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
+    init {
+        logger.info("Created BlockHandler with config: $batchLoad")
+    }
+
     /**
      * Handle a new block event and synchronize the database state with blockchain.
      *

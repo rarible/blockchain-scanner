@@ -38,14 +38,16 @@ class EthereumClient(
     ethPubSub: EthPubSub
 ) : EthereumBlockchainClient {
 
-    private val maxBatches = maxBatches
-        .map {
-            val parts = it.split(":")
-            Word.apply(parts[0]) to Integer.parseInt(parts[1])
-        }
-        .toMap()
+    private val maxBatches = maxBatches.associate {
+        val parts = it.split(":")
+        Word.apply(parts[0]) to Integer.parseInt(parts[1])
+    }
 
     private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
+
+    init {
+        logger.info("Created EthereumClient with maxBatches: $maxBatches")
+    }
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = ethPubSub.newHeads()
         .flatMap { ethereum.ethGetFullBlockByHash(it.hash()) }
