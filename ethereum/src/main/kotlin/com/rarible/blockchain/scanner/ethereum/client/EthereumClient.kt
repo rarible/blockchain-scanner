@@ -88,7 +88,7 @@ class EthereumClient(
                 .map { LongRange(it.first(), it.last()) }
                 .map {
                     async {
-                        withSpan(name = "getLogs", labels = listOf("topic" to descriptor.ethTopic, "range" to it)) {
+                        withSpan(name = "getLogs", labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())) {
                             getLogsByRange(descriptor, it)
                         }
                     }
