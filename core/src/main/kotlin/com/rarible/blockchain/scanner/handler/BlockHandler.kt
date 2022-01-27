@@ -232,7 +232,9 @@ class BlockHandler<BB : BlockchainBlock>(
                 blockchainBlocks.last().number
             )
         }
-        saveBlocks(blockchainBlocks, BlockStatus.PENDING)
+        if (!stable) {
+            saveBlocks(blockchainBlocks, BlockStatus.PENDING)
+        }
         val events = blockchainBlocks.map {
             if (stable) {
                 NewStableBlockEvent(it)

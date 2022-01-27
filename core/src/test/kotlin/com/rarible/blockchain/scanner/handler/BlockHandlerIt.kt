@@ -16,8 +16,6 @@ import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.data.buildBlockchain
 import com.rarible.blockchain.scanner.test.data.randomBlockchain
 import com.rarible.blockchain.scanner.test.handler.TestBlockEventListener
-import io.mockk.coEvery
-import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -221,8 +219,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         )
         assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
         assertThat(getAllBlocks()).isEqualTo(
-            blockchain.take(51).map { it.toBlock(BlockStatus.SUCCESS) } +
-                    blockchain.drop(51).take(10).map { it.toBlock(BlockStatus.PENDING) }
+            blockchain.take(51).map { it.toBlock(BlockStatus.SUCCESS) }
         )
 
         // After restart, collect the events.
@@ -235,9 +232,8 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         )
         newBlockHandler.onNewBlock(blockchain.last())
         assertThat(testBlockEventListener.blockEvents).isEqualTo(
-            blockchain.subList(51, 61).reversed().map { it.asRevertEvent() }.map { listOf(it) } +
-                    blockchain.subList(51, 91).map { it.asNewStableEvent() }.chunked(10) +
-                    blockchain.drop(91).map { it.asNewUnstableEvent() }.map { listOf(it) }
+            blockchain.subList(51, 91).map { it.asNewStableEvent() }.chunked(10) +
+                blockchain.drop(91).map { it.asNewUnstableEvent() }.map { listOf(it) }
         )
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
     }
