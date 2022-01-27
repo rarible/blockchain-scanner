@@ -183,6 +183,6 @@ class EthereumBlockchainLogIndexTest {
         val ethPubSub = mockk<EthPubSub>()
         every { ethPubSub.newHeads() } returns Flux.empty()
 
-        return EthereumClient(monoEthereum, ethPubSub)
+        return EthereumClient(monoEthereum, 10, ethPubSub)
     }
 }
