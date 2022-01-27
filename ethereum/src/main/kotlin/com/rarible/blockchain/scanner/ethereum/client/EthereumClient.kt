@@ -34,7 +34,7 @@ import java.time.Duration
 @Component
 class EthereumClient(
     private val ethereum: MonoEthereum,
-    @Value("\${blockchain.scanner.ethereum.maxBatches}") maxBatches: List<String>,
+    @Value("\${blockchain.scanner.ethereum.maxBatches:}") maxBatches: List<String>,
     ethPubSub: EthPubSub
 ) : EthereumBlockchainClient {
 
