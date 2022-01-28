@@ -35,6 +35,10 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
+    init {
+        logger.info("Creating BlockHandler with config: $batchLoad")
+    }
+
     /**
      * Handle a new block event and synchronize the database state with blockchain.
      *
@@ -232,7 +236,9 @@ class BlockHandler<BB : BlockchainBlock>(
                 blockchainBlocks.last().number
             )
         }
-        saveBlocks(blockchainBlocks, BlockStatus.PENDING)
+        if (!stable) {
+            saveBlocks(blockchainBlocks, BlockStatus.PENDING)
+        }
         val events = blockchainBlocks.map {
             if (stable) {
                 NewStableBlockEvent(it)

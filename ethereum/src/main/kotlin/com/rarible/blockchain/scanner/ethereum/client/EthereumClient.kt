@@ -5,6 +5,9 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
@@ -13,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import scala.jdk.javaapi.CollectionConverters
 import scalether.core.EthPubSub
@@ -30,10 +34,20 @@ import java.time.Duration
 @Component
 class EthereumClient(
     private val ethereum: MonoEthereum,
+    @Value("\${blockchain.scanner.ethereum.maxBatches:}") maxBatches: List<String>,
     ethPubSub: EthPubSub
 ) : EthereumBlockchainClient {
 
+    private val maxBatches = maxBatches.associate {
+        val parts = it.split(":")
+        Word.apply(parts[0]) to Integer.parseInt(parts[1])
+    }
+
     private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
+
+    init {
+        logger.info("Creating EthereumClient with maxBatches: $maxBatches")
+    }
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = ethPubSub.newHeads()
         .flatMap { ethereum.ethGetFullBlockByHash(it.hash()) }
@@ -68,17 +82,24 @@ class EthereumClient(
         blocks: List<EthereumBlockchainBlock>,
         range: LongRange
     ) = flow {
-        val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
-        val addresses = descriptor.contracts.map { Address.apply(it) }.toTypedArray()
-        val filter = LogFilter
-            .apply(TopicFilter.simple(descriptor.ethTopic))
-            .let { if (addresses.isNotEmpty()) it.address(*addresses) else it }
-            .blocks(
-                BigInteger.valueOf(range.first).encodeForFilter(),
-                BigInteger.valueOf(range.last).encodeForFilter()
-            )
-        val allLogs = ethereum.ethGetLogsJava(filter).awaitFirst().filterNot { it.removed() }
+        val allLogs = coroutineScope {
+            val maxBatchSize = maxBatches[descriptor.ethTopic]
+            range.chunked(maxBatchSize ?: range.count())
+                .map { LongRange(it.first(), it.last()) }
+                .map {
+                    async {
+                        withSpan(name = "getLogs", labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())) {
+                            getLogsByRange(descriptor, it)
+                        }
+                    }
+                }
+                .awaitAll()
+                .flatten()
+        }
+
         logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range")
+
+        val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
         allLogs.groupBy { log ->
             log.blockHash()
         }.entries.map { (blockHash, blockLogs) ->
@@ -89,6 +110,18 @@ class EthereumClient(
             }
             createFullBlock(ethFullBlock, blockLogs)
         }.forEach { emit(it) }
+    }
+
+    private suspend fun getLogsByRange(descriptor: EthereumDescriptor, range: LongRange): List<Log> {
+        val addresses = descriptor.contracts.map { Address.apply(it) }.toTypedArray()
+        val filter = LogFilter
+            .apply(TopicFilter.simple(descriptor.ethTopic))
+            .let { if (addresses.isNotEmpty()) it.address(*addresses) else it }
+            .blocks(
+                BigInteger.valueOf(range.first).encodeForFilter(),
+                BigInteger.valueOf(range.last).encodeForFilter()
+            )
+        return ethereum.ethGetLogsJava(filter).awaitFirst().filterNot { it.removed() }
     }
 
     private fun getUnstableBlockLogs(
@@ -136,7 +169,7 @@ class EthereumClient(
                 val transaction = transactions[ethLog.transactionHash()]
                     ?: error(
                         "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
-                                "All transactions: $transactions"
+                            "All transactions: $transactions"
                     )
                 EthereumBlockchainLog(
                     ethLog = ethLog,
