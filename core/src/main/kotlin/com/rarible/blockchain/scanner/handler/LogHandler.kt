@@ -148,7 +148,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
         return withSpan(
             name = "extractLogEvents",
-            labels = listOf("total" to total)
+            labels = listOf("size" to total)
         ) {
             // Preserve the order of events.
             events.mapNotNull { event ->
