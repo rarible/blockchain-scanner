@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.handler
 
+import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -32,6 +33,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logService: LogService<R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
+    private val batchLoad: BlockBatchLoadProperties
 ) : BlockEventListener<BB> {
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
@@ -150,28 +152,37 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             name = "extractLogEvents",
             labels = listOf("size" to total)
         ) {
-            // Preserve the order of events.
-            events.mapNotNull { event ->
-                val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-                val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
-                val logRecordsToRevert = if (!stable)
-                    logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
-                else
-                    emptyList()
-                logger.info(
-                    "Prepared logs for '{}': {} new logs and {} logs to remove",
-                    subscriber.getDescriptor().id,
-                    logRecordsToInsert.size,
-                    logRecordsToRevert.size,
-                    event
-                )
-                LogEvent(
-                    blockEvent = event,
-                    descriptor = subscriber.getDescriptor(),
-                    logRecordsToInsert = logRecordsToInsert,
-                    logRecordsToRemove = logRecordsToRevert
-                )
+            coroutineScope {
+                events
+                    .chunked(batchLoad.recordBatchSize)
+                    .map { events ->
+                        events.mapNotNull { event ->
+                            val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
+
+                            async {
+                                val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
+                                val logRecordsToRevert = if (!stable)
+                                    logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
+                                else
+                                    emptyList()
+                                logger.info(
+                                    "Prepared logs for '{}': {} new logs and {} logs to remove",
+                                    subscriber.getDescriptor().id,
+                                    logRecordsToInsert.size,
+                                    logRecordsToRevert.size,
+                                    event
+                                )
+                                LogEvent(
+                                    blockEvent = event,
+                                    descriptor = subscriber.getDescriptor(),
+                                    logRecordsToInsert = logRecordsToInsert,
+                                    logRecordsToRemove = logRecordsToRevert
+                                )
+                            }
+                        }
+                    }.flatten().awaitAll()
             }
+            // Preserve the order of events.
         }
     }
 

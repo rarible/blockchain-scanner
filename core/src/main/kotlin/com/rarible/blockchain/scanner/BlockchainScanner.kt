@@ -47,7 +47,8 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                 subscribers = subscribers,
                 logService = logService,
                 logRecordComparator = logRecordComparator,
-                logRecordEventPublisher = logRecordEventPublisher
+                logRecordEventPublisher = logRecordEventPublisher,
+                batchLoad = properties.scan.batchLoad
             )
         }
 
