@@ -81,7 +81,7 @@ class SolanaHttpRpcApi(
         .awaitSingle()
 
     companion object {
-        const val MAX_BODY_SIZE = 25 * 1024 * 1024
+        const val MAX_BODY_SIZE = 100 * 1024 * 1024
         const val DEFAULT_TIMEOUT = 5000L
     }
 }
