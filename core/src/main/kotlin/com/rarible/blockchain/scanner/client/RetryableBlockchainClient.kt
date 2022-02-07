@@ -60,7 +60,7 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         } catch (e: Throwable) {
             logger.error(
                 "Unable to perform BlockchainClient operation '{}' with params [{}] after {} attempts: {}",
-                method, listOf(args), retryPolicy.attempts, e.message
+                method, args.contentToString(), retryPolicy.attempts, e.message
             )
             throw e
         }
