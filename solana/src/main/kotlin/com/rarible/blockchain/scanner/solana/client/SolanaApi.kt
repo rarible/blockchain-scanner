@@ -8,16 +8,22 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
+import io.netty.handler.codec.http.HttpResponse
+import kotlinx.coroutines.async
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.runBlocking
+import org.springframework.boot.web.servlet.server.Encoding
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.netty.http.client.HttpClient
 import java.time.Duration
+import kotlin.system.measureTimeMillis
 
 interface SolanaApi {
     suspend fun getFirstAvailableBlock(): ApiResponse<Long>
@@ -41,7 +47,11 @@ class SolanaHttpRpcApi(
                 .build()
         )
         .clientConnector(
-            ReactorClientHttpConnector(HttpClient.create().responseTimeout(Duration.ofMillis(timeoutMillis)))
+            ReactorClientHttpConnector(
+                HttpClient.create()
+                    .responseTimeout(Duration.ofMillis(timeoutMillis))
+                    .compress(true)
+            )
         )
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
