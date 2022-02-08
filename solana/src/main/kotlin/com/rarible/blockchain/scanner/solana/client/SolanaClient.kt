@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
 
 class SolanaClient(
-    url: String
+    urls: List<String>
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
-    private val api = SolanaHttpRpcApi(url)
+    private val api = SolanaHttpRpcApi(urls)
 
     override val newBlocks: Flow<SolanaBlockchainBlock>
         get() = flow {

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class SolanaClientTest {
     private val mainNetBeta = "https://api.mainnet-beta.solana.com"
-    private val client = SolanaClient(mainNetBeta)
+    private val client = SolanaClient(listOf(mainNetBeta))
 
     @Test
     @Disabled

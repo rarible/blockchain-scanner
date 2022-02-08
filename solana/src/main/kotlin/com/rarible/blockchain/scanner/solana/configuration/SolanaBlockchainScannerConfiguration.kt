@@ -17,5 +17,5 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 @EnableConfigurationProperties(SolanaBlockchainScannerProperties::class)
 class SolanaBlockchainScannerConfiguration {
     @Bean
-    fun client(properties: SolanaBlockchainScannerProperties): SolanaClient = SolanaClient(properties.rpcApiUrl)
+    fun client(properties: SolanaBlockchainScannerProperties): SolanaClient = SolanaClient(properties.rpcApiUrls)
 }

@@ -8,22 +8,17 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
-import io.netty.handler.codec.http.HttpResponse
-import kotlinx.coroutines.async
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.runBlocking
-import org.springframework.boot.web.servlet.server.Encoding
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.netty.http.client.HttpClient
 import java.time.Duration
-import kotlin.system.measureTimeMillis
+import kotlin.random.Random
 
 interface SolanaApi {
     suspend fun getFirstAvailableBlock(): ApiResponse<Long>
@@ -36,11 +31,13 @@ interface SolanaApi {
 }
 
 class SolanaHttpRpcApi(
-    url: String,
+    private val urls: List<String>,
     timeoutMillis: Long = DEFAULT_TIMEOUT
 ) : SolanaApi {
+    private val uri
+        get() = urls[Random.nextInt() % urls.size]
+
     private val client = WebClient.builder()
-        .baseUrl(url)
         .exchangeStrategies(
             ExchangeStrategies.builder()
                 .codecs { it.defaultCodecs().maxInMemorySize(MAX_BODY_SIZE) }
@@ -57,24 +54,28 @@ class SolanaHttpRpcApi(
         .build()
 
     override suspend fun getFirstAvailableBlock(): ApiResponse<Long> = client.post()
+        .uri(uri)
         .body(BodyInserters.fromValue(GetFirstAvailableBlockRequest))
         .retrieve()
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
 
     override suspend fun getLatestSlot(): ApiResponse<Long> = client.post()
+        .uri(uri)
         .body(BodyInserters.fromValue(GetSlotRequest))
         .retrieve()
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
 
     override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
+        .uri(uri)
         .body(BodyInserters.fromValue(GetBlockRequest(slot, details)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaBlockDto>>()
         .awaitSingle()
 
     override suspend fun getTransaction(signature: String) = client.post()
+        .uri(uri)
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaTransactionDto>>()
