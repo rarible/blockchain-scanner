@@ -35,7 +35,7 @@ class SolanaHttpRpcApi(
     timeoutMillis: Long = DEFAULT_TIMEOUT
 ) : SolanaApi {
     private val uri
-        get() = urls[Random.nextInt() % urls.size]
+        get() = urls[Random.nextInt(urls.size)]
 
     private val client = WebClient.builder()
         .exchangeStrategies(
