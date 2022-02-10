@@ -110,7 +110,11 @@ data class SolanaBlockDto(
     val transactions: List<SolanaTransactionDto> = emptyList()
 ) {
     companion object {
-        val errorsToSkip = listOf(ErrorCodes.BLOCK_NOT_AVAILABLE, ErrorCodes.SLOT_WAS_SKIPPED)
+        val errorsToSkip = listOf(
+            ErrorCodes.BLOCK_NOT_AVAILABLE,
+            ErrorCodes.SLOT_WAS_SKIPPED_OR_MISSING_IN_LONG_TERM_STORAGE,
+            ErrorCodes.SLOT_WAS_SKIPPED_OR_MISSING_DUE_TO_LEDGER_JUMP_TO_RECENT_SNAPSHOT
+        )
     }
 }
 
@@ -188,7 +192,7 @@ fun Instruction.toModel(
 
 private inline fun <reified T, reified R> ApiResponse<T>.convert(
     block: T.() -> R
-) : R {
+): R {
     require(result != null && error == null) {
         "Invalid response: $this"
     }
@@ -199,7 +203,7 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
 private inline fun <reified T, reified R> ApiResponse<T>.convert(
     errorsToSkip: List<Int>,
     block: T.() -> R
-) : R? {
+): R? {
     return if (result != null) {
         block(result)
     } else {
@@ -215,5 +219,6 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
 
 object ErrorCodes {
     const val BLOCK_NOT_AVAILABLE = -32004
-    const val SLOT_WAS_SKIPPED = -32009
+    const val SLOT_WAS_SKIPPED_OR_MISSING_IN_LONG_TERM_STORAGE = -32009
+    const val SLOT_WAS_SKIPPED_OR_MISSING_DUE_TO_LEDGER_JUMP_TO_RECENT_SNAPSHOT = -32007
 }
