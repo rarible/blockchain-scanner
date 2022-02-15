@@ -6,12 +6,14 @@ import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.Log
 import com.rarible.blockchain.scanner.framework.service.LogService
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
+@ExperimentalCoroutinesApi
 @FlowPreview
 @Service
 class FlowLogService(
@@ -22,7 +24,11 @@ class FlowLogService(
 
 
     override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord<*>>): List<FlowLogRecord<*>> {
-        return logRepository.saveAll(descriptor.collection, records).toList()
+        return if (descriptor.optLockOnSave) {
+            logRepository.saveAll(descriptor.collection, records).toList()
+        } else {
+            logRepository.insert(descriptor.collection, records).toList()
+        }
     }
 
     override fun findPendingLogs(descriptor: FlowDescriptor): Flow<FlowLogRecord<*>> = emptyFlow()

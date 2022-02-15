@@ -25,5 +25,7 @@ data class FlowBlockchainScannerProperties(
     ),
     override val job: JobProperties = JobProperties(),
     override val blockBufferSize: Int = 8 * 1024,
-    val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID
+    val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID,
+    val apiBean: String = "spork-api",
+    val alchemyKey: String? = null
 ): BlockchainScannerProperties

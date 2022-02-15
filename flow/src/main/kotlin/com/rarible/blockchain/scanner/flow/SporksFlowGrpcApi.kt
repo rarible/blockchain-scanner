@@ -12,7 +12,7 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Primary
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
@@ -21,10 +21,13 @@ import java.util.*
 @ExperimentalCoroutinesApi
 @FlowPreview
 @Component
-@Primary
+@ConditionalOnProperty(prefix = "blockchain.scanner.flow",
+    value = ["apiBean"],
+    havingValue = "spork-api",
+    matchIfMissing = true)
 class SporksFlowGrpcApi(
-    private val sporkService: SporkService
-): FlowGrpcApi {
+    private val sporkService: SporkService,
+) : FlowGrpcApi {
 
     private val log: Logger = LoggerFactory.getLogger(SporksFlowGrpcApi::class.java)
 
@@ -113,7 +116,7 @@ class SporksFlowGrpcApi(
         }
 
     override fun chunk(range: LongRange): Flow<LongRange> {
-        return when(sporkService.chainId) {
+        return when (sporkService.chainId) {
             FlowChainId.MAINNET -> range.chunked(250) { it.first()..it.last() }.asFlow()
             FlowChainId.TESTNET -> range.chunked(25) { it.first()..it.last() }.asFlow()
             else -> flowOf(range)

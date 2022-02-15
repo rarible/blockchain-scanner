@@ -6,5 +6,6 @@ class FlowDescriptor(
     override val id: String,
     val events: Set<String>,
     val collection: String,
-    val startFrom: Long? = null
+    val startFrom: Long? = null,
+    val optLockOnSave: Boolean = false
 ): Descriptor

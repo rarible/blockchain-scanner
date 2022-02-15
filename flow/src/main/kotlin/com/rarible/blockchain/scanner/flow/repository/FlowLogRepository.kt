@@ -1,9 +1,8 @@
 package com.rarible.blockchain.scanner.flow.repository
 
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
@@ -11,6 +10,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import reactor.kotlin.core.publisher.toMono
 
 @Component
 class FlowLogRepository(
@@ -26,10 +26,17 @@ class FlowLogRepository(
         return mongo.remove(record, collection).thenReturn(record).awaitSingle()
     }
 
-    suspend fun saveAll(collection: String, records: List<FlowLogRecord<*>>): Flow<FlowLogRecord<*>> =
-        records.asFlow().map { save(collection, it) }
+    fun saveAll(collection: String, records: List<FlowLogRecord<*>>): Flow<FlowLogRecord<*>> =
+        records.asFlow().map {
+            save(collection, it)
+        }
 
     suspend fun save(collection: String, record: FlowLogRecord<*>): FlowLogRecord<*> =
         mongo.save(record, collection).awaitSingle()
 
+    fun insert(collection: String, records: List<FlowLogRecord<*>>): Flow<FlowLogRecord<*>> = flow {
+        emitAll(
+            mongo.insertAll(records.toMono(), collection).asFlow()
+        )
+    }
 }
