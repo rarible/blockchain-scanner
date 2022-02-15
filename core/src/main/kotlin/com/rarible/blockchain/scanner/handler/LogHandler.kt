@@ -95,7 +95,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 blockEvent
             )
             if (recordsToRemove.isNotEmpty()) {
-                val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator)
+                val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator.reversed())
                     .map { LogRecordEvent(it, true) }
                 logRecordEventPublisher.publish(groupId, logRecordEvents)
             }

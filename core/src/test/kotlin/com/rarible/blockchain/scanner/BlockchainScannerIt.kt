@@ -166,11 +166,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             mapOf(
                 descriptor.groupId to confirmedLogs + listOf(
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[2], log21).single(),
+                        record = subscriber.getReturnedRecords(blocks[2], log22).single(),
                         reverted = true
                     ),
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[2], log22).single(),
+                        record = subscriber.getReturnedRecords(blocks[2], log21).single(),
                         reverted = true
                     ),
                     LogRecordEvent(
@@ -237,11 +237,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             mapOf(
                 descriptor.groupId to confirmedLogs + listOf(
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log11).single(),
+                        record = subscriber.getReturnedRecords(blocks[1], log12).single(),
                         reverted = true
                     ),
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log12).single(),
+                        record = subscriber.getReturnedRecords(blocks[1], log11).single(),
                         reverted = true
                     ),
                     LogRecordEvent(
