@@ -59,7 +59,13 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 logger.info("Sent events for {}", blockEvent)
             }
         }
-        withSpan("insertOrRemoveRecords", type = SpanType.DB) {
+        val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
+        val toDelete = logEvents.sumOf { it.logRecordsToRemove.size }
+        withSpan(
+            name = "insertOrRemoveRecords",
+            type = SpanType.DB,
+            labels = listOf("toInsert" to toInsert, "toDelete" to toDelete)
+        ) {
             insertOrRemoveRecords(logEvents)
         }
     }
@@ -148,7 +154,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
         return withSpan(
             name = "extractLogEvents",
-            labels = listOf("total" to total)
+            labels = listOf("size" to total)
         ) {
             // Preserve the order of events.
             events.mapNotNull { event ->

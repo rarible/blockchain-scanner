@@ -37,6 +37,7 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         records: List<EthereumLogRecord>
     ): List<EthereumLogRecord> {
+        logger.info("Saving records: {} for {}", records.size, descriptor.ethTopic)
         return records.map { record ->
             optimisticLock(properties.optimisticLockRetries) {
 
