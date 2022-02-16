@@ -2,10 +2,47 @@ package com.rarible.blockchain.scanner.util
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
+import com.rarible.blockchain.scanner.handler.BlocksRange
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 
 object BlockRanges {
+
+    fun getStableUnstableBlockRanges(
+        lastKnownBlockNumber: Long,
+        newBlockNumber: Long,
+        batchSize: Int,
+        stableDistance: Int
+    ): Sequence<BlocksRange> {
+        val fromId = lastKnownBlockNumber + 1
+        if (fromId + stableDistance > newBlockNumber) {
+            // All blocks are unstable.
+            return getRanges(
+                from = fromId,
+                to = newBlockNumber,
+                step = batchSize
+            ).map { BlocksRange(it, false) }
+        }
+        val stableId = newBlockNumber - stableDistance
+        val stableBlocks = getRanges(
+            from = fromId,
+            to = stableId,
+            step = batchSize
+        ).map { BlocksRange(it, true) }
+
+        val unstableBlocks = getRanges(
+            from = stableId + 1,
+            to = newBlockNumber,
+            step = batchSize
+        ).map { BlocksRange(it, false) }
+
+        return stableBlocks + unstableBlocks
+    }
 
     /**
      * Chunks consequent block events by type.
@@ -30,10 +67,15 @@ object BlockRanges {
         return batches
     }
 
-    fun getRanges(from: Long, to: Long, step: Int): Flow<LongRange> =
-        (from..to).chunked(step) {
+    fun getRanges(from: Long, to: Long, step: Int): Sequence<LongRange> {
+        check(from >= 0) { "$from "}
+        check(to >= 0) { "$to" }
+        if (from > to) return emptySequence()
+        if (from == to) return sequenceOf(LongRange(from, to))
+        return (from..to).asSequence().chunked(step) {
             LongRange(it.first(), it.last())
-        }.asFlow()
+        }
+    }
 
     fun toRanges(blockNumbers: List<Long>): List<LongRange> {
         if (blockNumbers.isEmpty()) {

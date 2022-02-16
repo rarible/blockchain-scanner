@@ -3,22 +3,67 @@ package com.rarible.blockchain.scanner.util
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.handler.BlocksRange
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class BlockRangesTest {
+class BlocksRangesTest {
 
     @Test
-    fun `get ranges`() = runBlocking<Unit> {
+    fun `get ranges`() {
         assertThat(range(1, 9, 10)).isEqualTo(listOf(1L..9L))
         assertThat(range(1, 10, 10)).isEqualTo(listOf(1L..10L))
         assertThat(range(1, 11, 10)).isEqualTo(listOf(1L..10L, 11L..11L))
         assertThat(range(5, 5, 10)).isEqualTo(listOf(5L..5L))
+        assertThat(range(6, 5, 10)).isEqualTo(emptyList<Long>())
+    }
+
+    @Test
+    fun `get stable unstable block ranges`() {
+        assertThat(
+            BlockRanges.getStableUnstableBlockRanges(
+                lastKnownBlockNumber = 1,
+                newBlockNumber = 5,
+                batchSize = 10,
+                stableDistance = 100
+            ).toList()
+        ).isEqualTo(
+            listOf(
+                BlocksRange(2..5L, false)
+            )
+        )
+
+        assertThat(
+            BlockRanges.getStableUnstableBlockRanges(
+                lastKnownBlockNumber = 1,
+                newBlockNumber = 10,
+                batchSize = 100,
+                stableDistance = 8
+            ).toList()
+        ).isEqualTo(
+            listOf(
+                BlocksRange(2..2L, true),
+                BlocksRange(3..10L, false)
+            )
+        )
+
+        assertThat(
+            BlockRanges.getStableUnstableBlockRanges(
+                lastKnownBlockNumber = 1,
+                newBlockNumber = 10,
+                batchSize = 4,
+                stableDistance = 5
+            ).toList()
+        ).isEqualTo(
+            listOf(
+                BlocksRange(2..5L, true),
+                BlocksRange(6..9L, false),
+                BlocksRange(10..10L, false)
+            )
+        )
     }
 
     @Test
@@ -93,7 +138,7 @@ class BlockRangesTest {
         )
     }
 
-    private suspend fun range(from: Long, to: Long, step: Int): List<LongRange> =
+    private fun range(from: Long, to: Long, step: Int): List<LongRange> =
         BlockRanges.getRanges(from, to, step).toList()
 
 }
