@@ -82,6 +82,9 @@ class BlockHandler<BB : BlockchainBlock>(
                     lastKnownBlock = lastProcessedBlock,
                     blocksRange = blocksRange
                 )
+                if (blocksBatch.blocks.isEmpty()) {
+                    return@fold lastProcessedBlock
+                }
                 val processedBlocks = processBlocks(blocksBatch)
                 if (parentHashesAreConsistent) {
                     processedBlocks.last()
@@ -158,6 +161,10 @@ class BlockHandler<BB : BlockchainBlock>(
             labels = listOf("range" to blocksRange.range.toString())
         ) {
             blocksRange.range.map { id -> async { fetchBlock(id) } }.awaitAll().filterNotNull()
+        }
+        logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
+        if (fetchedBlocks.isEmpty()) {
+            return@coroutineScope BlocksBatch(BlocksRange(LongRange.EMPTY, blocksRange.stable), emptyList<BB>()) to true
         }
         var parentBlockHash = lastKnownBlock.hash
         val blocks = arrayListOf<BB>()
