@@ -8,6 +8,7 @@ import com.rarible.core.test.wait.BlockingWait
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -32,12 +33,15 @@ class MonitoringWorkerIt : AbstractIntegrationTest() {
         saveBlock(randomOriginalBlock(), status = Block.Status.ERROR)
         saveBlock(randomOriginalBlock(), status = Block.Status.SUCCESS)
 
+        val lastBlockNumber = testBlockRepository.getLastBlock().awaitFirst().id
+
         BlockingWait.waitAssert {
             assertEquals(2, blockMonitor.getErrorBlockCount().toLong())
             assertEquals(1, blockMonitor.getPendingBlockCount().toLong())
             assertTrue(blockMonitor.getBlockDelay()!!.toLong() > 0)
             assertEquals(2, registry.find("blockchain.scanner.block.error").gauge()!!.value().toLong())
             assertEquals(1, registry.find("blockchain.scanner.block.pending").gauge()!!.value().toLong())
+            assertEquals(lastBlockNumber, registry.find("blockchain.scanner.block.last_number").gauge()!!.value().toLong())
             assertTrue(registry.find("blockchain.scanner.block.delay").gauge()!!.value().toLong() > 0)
         }
     }
