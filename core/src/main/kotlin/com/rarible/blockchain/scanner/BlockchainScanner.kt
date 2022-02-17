@@ -19,7 +19,6 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.handler.BlockHandler
-import com.rarible.blockchain.scanner.handler.BlockHandlerException
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import kotlinx.coroutines.flow.collect
 import org.slf4j.LoggerFactory
@@ -71,22 +70,13 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
         val maxAttempts = properties.retryPolicy.scan.reconnectAttempts.takeIf { it > 0 } ?: Integer.MAX_VALUE
         val delayMillis = properties.retryPolicy.scan.reconnectDelay.toMillis()
         if (once) {
-            handleBlocks(blockHandler)
+            retryableClient.newBlocks.collect { blockHandler.onNewBlock(it) }
             return
         }
         retry(retryOnFlowCompleted + limitAttempts(maxAttempts) + constantDelay(delayMillis)) {
             logger.info("Connecting to blockchain...")
-            handleBlocks(blockHandler)
-            throw IllegalStateException("Disconnected from Blockchain, event flow completed")
-        }
-    }
-
-    private suspend fun handleBlocks(blockHandler: BlockHandler<BB>) {
-        try {
             retryableClient.newBlocks.collect { blockHandler.onNewBlock(it) }
-        } catch (e: Exception) {
-            logger.error("Block handler terminated with an exception", e)
-            throw e
+            throw IllegalStateException("Disconnected from Blockchain, event flow completed")
         }
     }
 
