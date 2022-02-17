@@ -33,6 +33,7 @@ class BlockMonitor(
         addGauge("delay", Supplier { getBlockDelay() })
         addGauge("error", Supplier { getErrorBlockCount() })
         addGauge("pending", Supplier { getPendingBlockCount() })
+        addGauge("last_number", Supplier { getLastKnownBlockNumber() })
     }
 
     override fun refresh() = runBlocking {
@@ -53,5 +54,9 @@ class BlockMonitor(
 
     fun getPendingBlockCount(): Double {
         return blocksWithPendingStatus.toDouble()
+    }
+
+    fun getLastKnownBlockNumber(): Long {
+        return lastBlock?.id ?: 0
     }
 }
