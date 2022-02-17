@@ -269,8 +269,6 @@ class BlockHandler<BB : BlockchainBlock>(
         ) {
             try {
                 blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
-            } catch (e: BlockHandlerException) {
-                throw e
             } catch (e: Exception) {
                 throw BlockHandlerException("Failed to process $blocksRange", e)
             }
