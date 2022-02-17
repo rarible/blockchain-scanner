@@ -200,7 +200,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             fullBlock.block.number,
             fullBlock.block.hash
         )
-        return fullBlock.logs.flatMap { subscriber.getEventRecords(fullBlock.block, it) }
+        return try {
+            fullBlock.logs.flatMap { subscriber.getEventRecords(fullBlock.block, it) }
+        } catch (e: Exception) {
+            throw BlockHandlerException(
+                "Subscriber '${subscriber.getDescriptor().id}': " +
+                        "failed to prepare log records for [${fullBlock.block.number}:${fullBlock.block.hash}]",
+                e
+            )
+        }
     }
 
     private suspend fun onRevertedBlocks(
