@@ -76,21 +76,23 @@ class BlockHandler<BB : BlockchainBlock>(
             .asFlow()
             .fold(lastCorrectBlock as Block?) { lastProcessedBlock, blocksRange ->
                 if (lastProcessedBlock == null) {
+                    // Some blocks in the previous batches are inconsistent by parent-child hash.
                     return@fold null
                 }
                 val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
                     lastKnownBlock = lastProcessedBlock,
                     blocksRange = blocksRange
                 )
-                if (blocksBatch.blocks.isEmpty()) {
-                    return@fold lastProcessedBlock
+                val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
+                    processBlocks(blocksBatch).last()
+                } else {
+                    null
                 }
-                val processedBlocks = processBlocks(blocksBatch)
                 if (parentHashesAreConsistent) {
-                    processedBlocks.last()
+                    newLastProcessedBlock ?: lastProcessedBlock
                 } else {
                     // Skip further batches from processing.
-                    return@fold null
+                    null
                 }
             }
     }
