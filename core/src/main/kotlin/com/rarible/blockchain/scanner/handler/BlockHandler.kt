@@ -202,11 +202,16 @@ class BlockHandler<BB : BlockchainBlock>(
         blocksRange: BlocksRange
     ): Pair<BlocksBatch<BB>, Boolean /* Whether all parent-child hashes match */> = coroutineScope {
         logger.info("Fetching $blocksRange")
-        val fetchedBlocks = withTransaction(
-            name = "fetchBlocks",
-            labels = listOf("range" to blocksRange.range.toString())
-        ) {
-            blocksRange.range.map { id -> async { fetchBlock(id) } }.awaitAll().filterNotNull()
+        val fetchBlocksSample = Timer.start()
+        val fetchedBlocks = try {
+            withTransaction(
+                name = "fetchBlocks",
+                labels = listOf("range" to blocksRange.range.toString())
+            ) {
+                blocksRange.range.map { id -> async { fetchBlock(id) } }.awaitAll().filterNotNull()
+            }
+        } finally {
+            monitor.recordGetBlocks(fetchBlocksSample)
         }
         logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
         if (fetchedBlocks.isEmpty()) {
