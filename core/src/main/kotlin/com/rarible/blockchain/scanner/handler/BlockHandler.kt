@@ -228,7 +228,7 @@ class BlockHandler<BB : BlockchainBlock>(
              This is OK because handling of reverted blocks simply reverts logs that we might have had chance to record.
              If we did not call NewBlockEvent-s, there will be nothing to revert.
             */
-            processBlockEvents(blockEvents)
+            processBlockEvents(blocksRange, blockEvents)
             saveBlocks(blocks, BlockStatus.SUCCESS)
         }
     }
@@ -247,12 +247,18 @@ class BlockHandler<BB : BlockchainBlock>(
             name = "revertBlock",
             labels = listOf("blockNumber" to block.id)
         ) {
-            processBlockEvents(listOf(RevertedBlockEvent(number = block.id, hash = block.hash)))
+            processBlockEvents(
+                blocksRange = BlocksRange(block.id..block.id, false),
+                blockEvents = listOf(RevertedBlockEvent(number = block.id, hash = block.hash))
+            )
             blockService.remove(block.id)
         }
     }
 
-    private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>) = coroutineScope {
+    private suspend fun processBlockEvents(
+        blocksRange: BlocksRange,
+        blockEvents: List<BlockEvent<BB>>
+    ) = coroutineScope {
         withSpan(
             name = "processBlocks",
             labels = listOf(
@@ -261,7 +267,11 @@ class BlockHandler<BB : BlockchainBlock>(
                 "maxId" to blockEvents.last().number
             )
         ) {
-            blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            try {
+                blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            } catch (e: Exception) {
+                throw BlockHandlerException("Failed to process $blocksRange", e)
+            }
         }
     }
 
