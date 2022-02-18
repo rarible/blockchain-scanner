@@ -7,7 +7,8 @@ package com.rarible.blockchain.scanner.framework.model
  */
 interface Descriptor {
     /**
-     * Identifier of descriptor without specific format, should be unique across application instance
+     * Identifier of descriptor without specific format used for logging and debugging purposes,
+     * should be unique across application instance
      */
     val id: String
 

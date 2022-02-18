@@ -36,7 +36,7 @@ class EthereumPendingLogService(
         if (pendingLogs.isEmpty()) {
             return emptyList()
         }
-        logger.info("Found {} pending logs for {}", pendingLogs.size, descriptor.id)
+        logger.info("Found {} pending logs for '{}'", pendingLogs.size, descriptor.id)
         val confirmedTransactions = fullBlock.logs.map { it.ethLog.transactionHash().toString() }.toSet()
         val toConfirmLogs = pendingLogs.filter { it.log.transactionHash in confirmedTransactions }
 
