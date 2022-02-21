@@ -12,10 +12,6 @@
     <artifactId>rarible-blockchain-scanner-solana</artifactId>
     <version>${project.parent.version}</version>
 
-    <properties>
-        <bitcoinj-core.version>0.16.1</bitcoinj-core.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -24,11 +20,6 @@
         <dependency>
             <groupId>com.rarible.blockchain.scanner</groupId>
             <artifactId>rarible-blockchain-scanner-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.bitcoinj</groupId>
-            <artifactId>bitcoinj-core</artifactId>
-            <version>${bitcoinj-core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
