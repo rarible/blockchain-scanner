@@ -11,10 +11,12 @@ import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
+import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -29,7 +31,8 @@ class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService,
     private val blockEventListeners: List<BlockEventListener<BB>>,
-    private val batchLoad: BlockBatchLoadProperties
+    private val batchLoad: BlockBatchLoadProperties,
+    private val monitor: BlockMonitor
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
@@ -271,7 +274,12 @@ class BlockHandler<BB : BlockchainBlock>(
             type = SpanType.EXT,
             labels = listOf("blockNumber" to number)
         ) {
-            blockClient.getBlock(number)
-        }
+            val sample = Timer.start()
 
+            try {
+                blockClient.getBlock(number)
+            } finally {
+                monitor.recordGetBlock(sample)
+            }
+        }
 }

@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
@@ -62,7 +63,8 @@ abstract class AbstractIntegrationTest {
                 )
             ),
             logRecordEventPublisher = testLogRecordEventPublisher,
-            subscribers = subscribers.toList()
+            subscribers = subscribers.toList(),
+            monitor = mockk()
         )
     }
 

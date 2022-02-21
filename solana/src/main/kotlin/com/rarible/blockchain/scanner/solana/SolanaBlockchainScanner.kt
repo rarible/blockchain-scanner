@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.solana
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
@@ -24,7 +25,8 @@ class SolanaBlockchainScanner(
     blockService: BlockService,
     logService: SolanaLogService,
     properties: BlockchainScannerProperties,
-    logEventPublisher: LogRecordEventPublisher
+    logEventPublisher: LogRecordEventPublisher,
+    monitor: BlockMonitor
 ) : BlockchainScanner<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, SolanaDescriptor>(
     blockchainClient,
     subscribers,
@@ -32,7 +34,8 @@ class SolanaBlockchainScanner(
     logService,
     SolanaLogRecordComparator,
     properties,
-    logEventPublisher
+    logEventPublisher,
+    monitor
 ) {
 
     @EventListener(ApplicationReadyEvent::class)
