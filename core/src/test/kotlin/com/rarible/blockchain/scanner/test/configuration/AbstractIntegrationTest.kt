@@ -64,7 +64,7 @@ abstract class AbstractIntegrationTest {
             ),
             logRecordEventPublisher = testLogRecordEventPublisher,
             subscribers = subscribers.toList(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
     }
 

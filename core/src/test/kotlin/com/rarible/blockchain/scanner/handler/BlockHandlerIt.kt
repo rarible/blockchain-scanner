@@ -35,7 +35,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
@@ -58,7 +58,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler1.onNewBlock(blockchain1[4])
         blockService.save(blockchain1[5].toBlock(BlockStatus.PENDING))
@@ -71,7 +71,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler2.onNewBlock(blockchain2[6])
 
@@ -95,7 +95,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain[5])
         assertThat(getAllBlocks()).isEqualTo(blockchain.take(6).map { it.toBlock(BlockStatus.SUCCESS) })
@@ -123,7 +123,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler1.onNewBlock(blockchain1.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain1.map { it.toBlock(BlockStatus.SUCCESS) })
@@ -141,7 +141,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
 
         blockEventListener.blockEvents.clear()
@@ -162,7 +162,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler1.onNewBlock(blockchain1[5])
 
@@ -172,7 +172,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
 
         blockEventListener.blockEvents.clear()
@@ -190,7 +190,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
         assertThat(blockEventListener.blockEvents).isNotEmpty
@@ -218,7 +218,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(exceptionListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
         assertThat(getAllBlocks()).isEqualTo(
@@ -242,7 +242,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(exceptionListener),
             batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
         assertThat(getAllBlocks()).isEqualTo(
@@ -256,7 +256,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(testBlockEventListener),
             batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         newBlockHandler.onNewBlock(blockchain.last())
         assertThat(testBlockEventListener.blockEvents).isEqualTo(
@@ -276,7 +276,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain[4])
         blockService.save(blockchain[5].toBlock(BlockStatus.PENDING))
@@ -303,7 +303,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
         val blockBatchEvents = blockEventListener.blockEvents
@@ -326,7 +326,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
             batchLoad = BlockBatchLoadProperties(enabled = true, confirmationBlockDistance = 10, batchSize = 10),
-            monitor = mockk()
+            monitor = mockk(relaxed = true)
         )
         // Process blocks #0, #1, #2, #3, #4
         blockHandler.onNewBlock(blockchain[4])
