@@ -18,6 +18,7 @@ import com.rarible.core.apm.withTransaction
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
@@ -97,8 +98,9 @@ class BlockHandler<BB : BlockchainBlock>(
                 newBlock.hash
             )
             val limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
-            currentBlock = batchSyncMissingBlocks(lastKnownBlock = currentBlock, limit = limit)
-                ?: currentBlock
+            val fromId = lastKnownBlock.id + 1
+            val finishId = fromId + limit - 1
+            currentBlock = batchIndexBlocks(fromId = fromId, finishId = finishId).lastOrNull() ?: currentBlock
         }
         withTransaction(
             name = "syncMissingBlocks",
@@ -109,7 +111,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 if (nextBlock == null) {
                     logger.warn(
                         "We haven't found the next block for [{}:{}] up until ${newBlock.id}, " +
-                            "apparently, a reorganization has happened and the block [{}:{}] has disappeared",
+                                "apparently, a reorganization has happened and the block [{}:{}] has disappeared",
                         currentBlock.id,
                         currentBlock.hash,
                         newBlock.id,
@@ -189,11 +191,13 @@ class BlockHandler<BB : BlockchainBlock>(
         error("Can't find previous block for: $startBlock")
     }
 
-    private suspend fun batchSyncMissingBlocks(lastKnownBlock: Block, limit: Long): Block? = coroutineScope {
-        val finishId = lastKnownBlock.id + limit
-        logger.info("Syncing missing blocks starting from $lastKnownBlock in batches of size ${batchLoad.batchSize} up to $finishId")
+    private suspend fun batchIndexBlocks(
+        fromId: Long,
+        finishId: Long
+    ): Flow<Block> = coroutineScope {
+        logger.info("Indexing blocks $fromId..$finishId (${finishId - fromId + 1}) in batches of size ${batchLoad.batchSize}")
         BlockRanges.getRanges(
-            from = lastKnownBlock.id + 1,
+            from = fromId,
             to = finishId,
             step = batchLoad.batchSize
         )
@@ -209,18 +213,17 @@ class BlockHandler<BB : BlockchainBlock>(
             .map { it.filterNotNull() }
             .filter { it.isNotEmpty() }
             .map {
-                val fromId = it.first().number
-                val toId = it.last().number
-                logger.info("Processing batch of ${it.size} stable blocks with IDs between $fromId and $toId")
+                val rangeFromId = it.first().number
+                val rangeToId = it.last().number
+                logger.info("Processing batch of ${it.size} stable blocks with IDs between $rangeFromId and $rangeToId")
                 withTransaction(
                     name = "processBlocks",
-                    labels = listOf("batchSize" to it.size, "minId" to fromId, "maxId" to toId)
+                    labels = listOf("batchSize" to it.size, "minId" to rangeFromId, "maxId" to rangeToId)
                 ) {
                     processBlocks(it, true)
                 }
             }
-            .lastOrNull()
-            ?.lastOrNull()
+            .map { it.last() }
     }
 
     private suspend fun processNewUnstableBlock(blockchainBlock: BB): Block =
