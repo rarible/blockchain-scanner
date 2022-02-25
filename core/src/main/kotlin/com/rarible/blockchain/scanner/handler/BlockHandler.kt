@@ -191,9 +191,9 @@ class BlockHandler<BB : BlockchainBlock>(
     suspend fun batchIndexBlocks(
         fromId: Long,
         finishId: Long
-    ): Flow<Block> = coroutineScope {
+    ): Flow<Block> {
         logger.info("Indexing blocks $fromId..$finishId (${finishId - fromId + 1}) in batches of size ${batchLoad.batchSize}")
-        BlockRanges.getRanges(
+        return BlockRanges.getRanges(
             from = fromId,
             to = finishId,
             step = batchLoad.batchSize
@@ -204,7 +204,9 @@ class BlockHandler<BB : BlockchainBlock>(
                     name = "fetchBlocksBatch",
                     labels = listOf("range" to range.toString())
                 ) {
-                    range.map { id -> async { fetchBlock(id) } }.awaitAll()
+                    coroutineScope {
+                        range.map { id -> async { fetchBlock(id) } }.awaitAll()
+                    }
                 }
             }
             .map { it.filterNotNull() }
