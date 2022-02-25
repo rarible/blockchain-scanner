@@ -18,10 +18,7 @@ import com.rarible.core.apm.withTransaction
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.lastOrNull
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import org.slf4j.LoggerFactory
 
 /**
@@ -98,7 +95,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 newBlock.hash
             )
             val limit = newBlock.id - currentBlock.id - batchLoad.confirmationBlockDistance
-            val fromId = lastKnownBlock.id + 1
+            val fromId = currentBlock.id + 1
             val finishId = fromId + limit - 1
             currentBlock = batchIndexBlocks(fromId = fromId, finishId = finishId).lastOrNull() ?: currentBlock
         }
