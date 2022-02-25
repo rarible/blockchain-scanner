@@ -6,8 +6,10 @@ import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.merge
 import org.springframework.stereotype.Component
 import scalether.domain.Address
+import java.util.regex.Pattern
 
 @Component
 class ReindexBlocksTaskHandler(
@@ -20,56 +22,86 @@ class ReindexBlocksTaskHandler(
         return param.isNotBlank()
     }
 
-    // param pattern example: `blocks:1,2,4;from:1;topics:0x0000,0x000;addresses:0x00000,0x00000`
+    // param pattern example: `blocks:1,2,4;topics:0x0000,0x000;addresses:0x00000,0x00000`
     // blocks - section  with list of single blocks to reindex
     // from - section to rescribe reindex from target block to current block (current block is getting from state repository or from blockchain)
     // topics - section with topics witch should be reindex
     // addresses - section with addresses witch should be reindex
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
         val taskParam = TaskParam.parse(param)
-        return if (taskParam.fromBlock != null) {
-            val start = from ?: taskParam.fromBlock
-            flow { emitAll(reindexHandler.reindexFrom(start, taskParam.topics, taskParam.addresses)) }
+        val topics = taskParam.topics
+        val addresses = taskParam.addresses
+        return if (taskParam.blocks != null && taskParam.blocks.isNotEmpty()) {
+            val blocks = taskParam.blocks.sorted().filter { block -> block > (from ?: -1) }
+            flow {
+                emitAll(
+                    blocks.map { block ->
+                        reindexHandler.reindexRange(LongRange(block, block), topics, addresses)
+                    }.merge()
+                )
+            }
+        } else if (taskParam.range != null) {
+            val range = LongRange(from ?: taskParam.range.first, taskParam.range.last)
+            flow {
+                emitAll(
+                    reindexHandler.reindexRange(range, topics, addresses)
+                )
+            }
+        } else if (taskParam.from != null) {
+            flow {
+                emitAll(
+                    reindexHandler.reindexFrom(from ?: taskParam.from, topics, addresses)
+                )
+            }
         } else {
-            throw UnsupportedOperationException("Block list reindex to supported")
+            throw IllegalArgumentException("Invalid param to run task (param=$param)")
         }
     }
 
     data class TaskParam(
-        val blocks: List<Long>,
-        val fromBlock: Long?,
+        val blocks: List<Long>?,
+        val range: LongRange?,
+        val from: Long?,
         val topics: List<Word>,
         val addresses: List<Address>
     ) {
         companion object {
             fun parse(value: String): TaskParam {
                 val parts = value.split(";")
+                val blocks = parts
+                    .firstOrNull { it.startsWith(BLOCKS_PARAM) }
+                    ?.split(":")
+                    ?.let { BLOCK_PATTERN.matcher(it.getOrNull(1) ?: "") }
+                    ?.takeIf { it.matches() }
+                val topics = parts
+                    .firstOrNull { it.startsWith(TOPICS_PARAM) }
+                val addresses = parts
+                    .firstOrNull { it.startsWith(ADDRESSES_PARAM) }
+
                 return TaskParam(
                     blocks = run {
-                        parts
-                            .firstOrNull { it.startsWith(BLOCKS_PARAM) }
-                            ?.let { parseSection(it, BLOCKS_PARAM, ) { param -> param.toLong() } }
-                            ?: emptyList()
+                        blocks
+                            ?.group("blockList")
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { it.split(",").filter { block -> block.isNotBlank() }.map { block -> block.toLong() } }
                     },
-                    fromBlock = run {
-                        parts
-                            .firstOrNull { it.startsWith(FROM_BLOCK_PARAM) }
-                            ?.let {
-                                parseSection(it, BLOCKS_PARAM, ) { param -> param.toLong() }.firstOrNull()
-                            }
+                    range = run {
+                        val rangeFrom = blocks?.group("rangeFrom")
+                        val rangeTo = blocks?.group("rangeTo")
+                        if (rangeFrom?.isNotBlank() == true && rangeTo?.isNotBlank() == true) LongRange(rangeFrom.toLong(), rangeTo.toLong()) else null
+                    },
+                    from = run {
+                        blocks?.group("rangeFrom")?.takeIf { it.isNotBlank() }?.let { it.toLong() }
                     },
                     topics = run {
-                        parts
-                            .firstOrNull { it.startsWith(TOPICS_PARAM) }
+                        topics
                             ?.let { parseSection(it, TOPICS_PARAM, ) { param -> Word.apply(param) } }
                             ?: emptyList()
                     },
                     addresses = run {
-                        parts
-                            .firstOrNull { it.startsWith(ADDRESSES_PARAM) }
+                        addresses
                             ?.let { parseSection(it, ADDRESSES_PARAM, ) { param -> Address.apply(param) } }
                             ?: emptyList()
-
                     }
                 )
             }
@@ -86,8 +118,8 @@ class ReindexBlocksTaskHandler(
 
     companion object {
         const val BLOCKS_PARAM = "blocks"
-        const val FROM_BLOCK_PARAM = "from"
         const val TOPICS_PARAM = "topics"
         const val ADDRESSES_PARAM = "addresses"
+        val BLOCK_PATTERN: Pattern = Pattern.compile("((?<rangeFrom>\\d+)-(?<rangeTo>\\d+)?)|(?<blockList>[\\d+,?]+)")
     }
 }

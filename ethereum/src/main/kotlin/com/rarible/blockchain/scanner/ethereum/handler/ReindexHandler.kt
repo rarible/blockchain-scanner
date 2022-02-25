@@ -32,7 +32,6 @@ class ReindexHandler(
     private val logService: EthereumLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties
 ) {
-
     private val retryableClient = RetryableBlockchainClient(
         original = ethereumClient,
         retryPolicy = blockchainScannerProperties.retryPolicy.client
@@ -52,7 +51,7 @@ class ReindexHandler(
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList()
     ): Flow<Long> {
-        logger.info("Reindex blocks $blockRange")
+        logger.info("Re-index blocks $blockRange")
 
         val filteredSubscribers = if (topics.isNotEmpty()) {
             allSubscribers.filter { subscriber -> subscriber.getDescriptor().ethTopic in topics }
@@ -87,7 +86,6 @@ class ReindexHandler(
             blockEventListeners = logHandlers,
             batchLoad = blockchainScannerProperties.scan.batchLoad
         )
-
         return blockHandler
             .batchIndexBlocks(fromId = blockRange.first, finishId = blockRange.last)
             .map {
