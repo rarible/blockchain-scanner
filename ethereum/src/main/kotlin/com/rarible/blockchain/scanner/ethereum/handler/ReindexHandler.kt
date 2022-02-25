@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.handler
 
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
@@ -13,8 +14,7 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.handler.ReindexBlockHandler
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -23,7 +23,8 @@ import scalether.domain.Address
 @Component
 class ReindexHandler(
     private val subscribers: List<EthereumLogEventSubscriber>,
-    ethereumClient: EthereumBlockchainClient,
+    private val blockService: BlockService,
+    private val ethereumClient: EthereumBlockchainClient,
     logService: EthereumLogService,
     properties: BlockchainScannerProperties
 ) {
@@ -34,15 +35,28 @@ class ReindexHandler(
         properties
     )
 
-    fun reindex(
+    fun reindexFrom(
+        fromBlock: Long,
+        topics: List<Word> = emptyList(),
+        addresses: List<Address> = emptyList()
+    ): Flow<Long> = flow {
+        val lastBlock =
+            blockService.getLastBlock()?.id ?: ethereumClient.newBlocks.first().number
+
+        emitAll(
+            reindexRange(LongRange(fromBlock, lastBlock), topics, addresses)
+        )
+    }
+
+    fun reindexBlock(
         block: Long,
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList()
     ): Flow<Long> {
-        return reindex(LongRange(block, block), topics, addresses)
+        return reindexRange(LongRange(block, block), topics, addresses)
     }
 
-    fun reindex(
+    fun reindexRange(
         blockRange: LongRange,
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList()
