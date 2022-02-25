@@ -4,6 +4,8 @@ import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandler
 import com.rarible.core.task.TaskHandler
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import org.springframework.stereotype.Component
 import scalether.domain.Address
 
@@ -27,7 +29,7 @@ class ReindexBlocksTaskHandler(
         val taskParam = TaskParam.parse(param)
         return if (taskParam.fromBlock != null) {
             val start = from ?: taskParam.fromBlock
-            reindexHandler.reindexFrom(start, taskParam.topics, taskParam.addresses)
+            flow { emitAll(reindexHandler.reindexFrom(start, taskParam.topics, taskParam.addresses)) }
         } else {
             throw UnsupportedOperationException("Block list reindex to supported")
         }

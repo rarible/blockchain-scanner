@@ -191,7 +191,7 @@ class BlockHandler<BB : BlockchainBlock>(
         error("Can't find previous block for: $startBlock")
     }
 
-    private suspend fun batchIndexBlocks(
+    suspend fun batchIndexBlocks(
         fromId: Long,
         finishId: Long
     ): Flow<Block> = coroutineScope {
