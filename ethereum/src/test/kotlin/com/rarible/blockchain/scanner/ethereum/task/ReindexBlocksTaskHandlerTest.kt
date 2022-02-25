@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.task
 
 import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandler
-import com.rarible.core.test.wait.Wait
 import io.daonomic.rpc.domain.Word
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -80,5 +79,20 @@ internal class ReindexBlocksTaskHandlerTest {
                 Address.apply("0xa7a1462a3f067e959a4ddd0630f49be15716341e")
             )
         )
+    }
+
+    @Test
+    fun `should parse task block from param without addresses`() {
+        val param = "blocks:100-1001;topics:0x750d13f39f16526306cffdefb909852b055c2ea79ee21d21b36402eddaae7036,0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        val taskParams = ReindexBlocksTaskHandler.TaskParam.parse(param)
+        assertThat(taskParams.range).isEqualTo(LongRange(100, 1001))
+        assertThat(taskParams.blocks).isNull()
+        assertThat(taskParams.topics).isEqualTo(
+            listOf(
+                Word.apply("0x750d13f39f16526306cffdefb909852b055c2ea79ee21d21b36402eddaae7036"),
+                Word.apply("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
+            )
+        )
+        assertThat(taskParams.addresses).hasSize(0)
     }
 }
