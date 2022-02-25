@@ -188,7 +188,7 @@ class BlockHandler<BB : BlockchainBlock>(
         error("Can't find previous block for: $startBlock")
     }
 
-    suspend fun batchIndexBlocks(
+    fun batchIndexBlocks(
         fromId: Long,
         finishId: Long
     ): Flow<Block> {

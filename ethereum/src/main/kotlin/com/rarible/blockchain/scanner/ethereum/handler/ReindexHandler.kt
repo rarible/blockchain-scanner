@@ -46,7 +46,7 @@ class ReindexHandler(
         return reindexRange(LongRange(fromBlock, lastBlock), topics, addresses)
     }
 
-    suspend fun reindexRange(
+    fun reindexRange(
         blockRange: LongRange,
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList()
