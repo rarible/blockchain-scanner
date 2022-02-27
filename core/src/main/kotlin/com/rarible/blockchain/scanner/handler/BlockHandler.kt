@@ -20,8 +20,12 @@ import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.fold
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.runningFold
 import org.slf4j.LoggerFactory
 
 /**
@@ -69,36 +73,55 @@ class BlockHandler<BB : BlockchainBlock>(
             findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
         }
 
-        logger.info("Syncing missing blocks from the last correct known block ${lastCorrectBlock.id} to ${newBlock.id}: from $lastCorrectBlock to $newBlock")
-        BlockRanges.getStableUnstableBlockRanges(
-            lastKnownBlockNumber = lastCorrectBlock.id,
-            newBlockNumber = newBlock.id,
-            batchSize = batchLoad.batchSize,
-            stableDistance = batchLoad.confirmationBlockDistance
-        )
-            .asFlow()
-            .fold(lastCorrectBlock as Block?) { lastProcessedBlock, blocksRange ->
-                if (lastProcessedBlock == null) {
-                    // Some blocks in the previous batches are inconsistent by parent-child hash.
-                    return@fold null
-                }
-                val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
-                    lastKnownBlock = lastProcessedBlock,
-                    blocksRange = blocksRange
-                )
-                val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
-                    processBlocks(blocksBatch).last()
-                } else {
-                    null
-                }
-                if (parentHashesAreConsistent) {
-                    newLastProcessedBlock ?: lastProcessedBlock
-                } else {
-                    // Skip further batches from processing.
-                    null
-                }
-            }
+        logger.info("Syncing missing blocks from the last correct known block {} to {}", lastCorrectBlock, newBlock)
+        val lastSyncedBlock = syncBlocks(lastCorrectBlock, newBlock).lastOrNull()
+        if (lastSyncedBlock != null) {
+            logger.info(
+                "Syncing completed {} on block [{}:{}]: {}",
+                lastSyncedBlock.id,
+                lastSyncedBlock.hash,
+                if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
+                lastSyncedBlock
+            )
+        } else {
+            logger.info("Syncing completed prematurely")
+        }
     }
+
+    @Suppress("EXPERIMENTAL_API_USAGE")
+    private fun syncBlocks(
+        lastCorrectBlock: Block,
+        newBlock: Block
+    ): Flow<Block> = BlockRanges.getStableUnstableBlockRanges(
+        lastKnownBlockNumber = lastCorrectBlock.id,
+        newBlockNumber = newBlock.id,
+        batchSize = batchLoad.batchSize,
+        stableDistance = batchLoad.confirmationBlockDistance
+    )
+        .asFlow()
+        .runningFold(lastCorrectBlock as Block?) { lastProcessedBlock, blocksRange ->
+            if (lastProcessedBlock == null) {
+                // Some blocks in the previous batches are inconsistent by parent-child hash.
+                return@runningFold null
+            }
+            val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
+                lastKnownBlock = lastProcessedBlock,
+                blocksRange = blocksRange
+            )
+            val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
+                processBlocks(blocksBatch).last()
+            } else {
+                null
+            }
+            if (parentHashesAreConsistent) {
+                newLastProcessedBlock ?: lastProcessedBlock
+            } else {
+                // Skip further batches from processing.
+                null
+            }
+        }
+        .drop(1) // Drop the lastCorrectBlock
+        .filterNotNull()
 
     /**
      * Checks if chain reorg happened. Find the latest correct block having status SUCCESS
