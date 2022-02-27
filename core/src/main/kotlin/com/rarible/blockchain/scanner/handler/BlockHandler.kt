@@ -51,9 +51,10 @@ class BlockHandler<BB : BlockchainBlock>(
      * Implementation of this method is approximately as follows:
      * 1) Firstly, we find the latest known block that is synced with the blockchain (by comparing block hashes)
      * and revert all out-of-sync blocks in the reversed order (from the newest to the oldest).
-     * 2) Secondly, we process blocks from the last known correct block to the newest block.
-     * For stable enough blocks we use batch processing that is faster in some blockchain clients
-     * (Ethereum API has batch log requests).
+     * 2) Secondly, we process blocks from the last known correct block to the newest block,
+     * we use batches for performance and there is distinction for "stable" and not yet stable blocks,
+     * which is determined by [BlockBatchLoadProperties.confirmationBlockDistance]. Ethereum client,
+     * for example, can return block results faster for the stable blocks.
      *
      * Upon returning from this method the database is consistent with the blockchain up to some point,
      * not necessarily up to the [newBlockchainBlock]. It may happen that the chain has been reorganized
@@ -78,9 +79,9 @@ class BlockHandler<BB : BlockchainBlock>(
         if (lastSyncedBlock != null) {
             logger.info(
                 "Syncing completed {} on block [{}:{}]: {}",
+                if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
                 lastSyncedBlock.id,
                 lastSyncedBlock.hash,
-                if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
                 lastSyncedBlock
             )
         } else {
@@ -105,7 +106,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 return@runningFold null
             }
             val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
-                lastKnownBlock = lastProcessedBlock,
+                lastProcessedBlock = lastProcessedBlock,
                 blocksRange = blocksRange
             )
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
@@ -180,7 +181,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun fetchBlocksBatchWithHashConsistencyCheck(
-        lastKnownBlock: Block,
+        lastProcessedBlock: Block,
         blocksRange: BlocksRange
     ): Pair<BlocksBatch<BB>, Boolean /* Whether all parent-child hashes match */> = coroutineScope {
         logger.info("Fetching $blocksRange")
@@ -194,7 +195,7 @@ class BlockHandler<BB : BlockchainBlock>(
         if (fetchedBlocks.isEmpty()) {
             return@coroutineScope BlocksBatch(BlocksRange(LongRange.EMPTY, blocksRange.stable), emptyList<BB>()) to true
         }
-        var parentBlockHash = lastKnownBlock.hash
+        var parentBlockHash = lastProcessedBlock.hash
         val blocks = arrayListOf<BB>()
         var consistentRange = blocksRange
         for (block in fetchedBlocks) {
