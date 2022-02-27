@@ -67,6 +67,23 @@ class BlockHandler<BB : BlockchainBlock>(
         val lastKnownBlock = getLastKnownBlock()
         logger.info("Last known Block [{}:{}]: {}", lastKnownBlock.id, lastKnownBlock.hash, lastKnownBlock)
 
+        val alreadyIndexedBlock = blockService.getBlock(newBlock.id)
+        if (alreadyIndexedBlock != null) {
+            if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status)) {
+                logger.info("The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock)
+                return
+            }
+            logger.warn(
+                "The new Block [{}:{}]: {} was already indexed but differs from [{}:{}]: {}",
+                newBlock.id,
+                newBlock.hash,
+                newBlock,
+                alreadyIndexedBlock.id,
+                alreadyIndexedBlock.hash,
+                alreadyIndexedBlock
+            )
+        }
+
         val lastCorrectBlock = withTransaction(
             name = "findLatestCorrectKnownBlockAndRevertOther",
             labels = listOf("lastKnownBlockNumber" to lastKnownBlock.id, "newBlockNumber" to newBlock.id)

@@ -12,6 +12,9 @@ object BlockRanges {
         batchSize: Int,
         stableDistance: Int
     ): Sequence<BlocksRange> {
+        if (baseBlockNumber >= lastBlockNumber) {
+            return emptySequence()
+        }
         val fromId = baseBlockNumber + 1
         if (fromId + stableDistance > lastBlockNumber) {
             // All blocks are unstable.

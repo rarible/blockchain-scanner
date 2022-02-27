@@ -64,6 +64,24 @@ class BlocksRangesTest {
                 BlocksRange(10..10L, false)
             )
         )
+
+        assertThat(
+            BlockRanges.getStableUnstableBlockRanges(
+                baseBlockNumber = 15,
+                lastBlockNumber = 10,
+                batchSize = 4,
+                stableDistance = 5
+            ).toList()
+        ).isEqualTo(emptyList<BlocksRange>())
+
+        assertThat(
+            BlockRanges.getStableUnstableBlockRanges(
+                baseBlockNumber = 15,
+                lastBlockNumber = 15,
+                batchSize = 4,
+                stableDistance = 5
+            ).toList()
+        ).isEqualTo(emptyList<BlocksRange>())
     }
 
     @Test
