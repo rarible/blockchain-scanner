@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import io.daonomic.rpc.domain.Word
 import scalether.domain.Address
 
-class EthereumDescriptor(
+data class EthereumDescriptor(
     val ethTopic: Word,
     override val groupId: String,
     val collection: String,
