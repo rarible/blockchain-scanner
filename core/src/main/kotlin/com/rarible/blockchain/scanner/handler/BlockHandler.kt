@@ -69,7 +69,7 @@ class BlockHandler<BB : BlockchainBlock>(
             findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
         }
 
-        logger.info("Syncing missing blocks from the last known ${lastCorrectBlock.id} to ${newBlock.id}: from $lastCorrectBlock to $newBlock")
+        logger.info("Syncing missing blocks from the last correct known block ${lastCorrectBlock.id} to ${newBlock.id}: from $lastCorrectBlock to $newBlock")
         BlockRanges.getStableUnstableBlockRanges(
             lastKnownBlockNumber = lastCorrectBlock.id,
             newBlockNumber = newBlock.id,
