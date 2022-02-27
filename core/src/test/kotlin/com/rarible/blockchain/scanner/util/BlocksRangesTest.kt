@@ -25,8 +25,8 @@ class BlocksRangesTest {
     fun `get stable unstable block ranges`() {
         assertThat(
             BlockRanges.getStableUnstableBlockRanges(
-                lastKnownBlockNumber = 1,
-                newBlockNumber = 5,
+                baseBlockNumber = 1,
+                lastBlockNumber = 5,
                 batchSize = 10,
                 stableDistance = 100
             ).toList()
@@ -38,8 +38,8 @@ class BlocksRangesTest {
 
         assertThat(
             BlockRanges.getStableUnstableBlockRanges(
-                lastKnownBlockNumber = 1,
-                newBlockNumber = 10,
+                baseBlockNumber = 1,
+                lastBlockNumber = 10,
                 batchSize = 100,
                 stableDistance = 8
             ).toList()
@@ -52,8 +52,8 @@ class BlocksRangesTest {
 
         assertThat(
             BlockRanges.getStableUnstableBlockRanges(
-                lastKnownBlockNumber = 1,
-                newBlockNumber = 10,
+                baseBlockNumber = 1,
+                lastBlockNumber = 10,
                 batchSize = 4,
                 stableDistance = 5
             ).toList()

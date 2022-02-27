@@ -3,32 +3,25 @@ package com.rarible.blockchain.scanner.util
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.handler.BlocksRange
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
 
 object BlockRanges {
 
     fun getStableUnstableBlockRanges(
-        lastKnownBlockNumber: Long,
-        newBlockNumber: Long,
+        baseBlockNumber: Long,
+        lastBlockNumber: Long,
         batchSize: Int,
         stableDistance: Int
     ): Sequence<BlocksRange> {
-        val fromId = lastKnownBlockNumber + 1
-        if (fromId + stableDistance > newBlockNumber) {
+        val fromId = baseBlockNumber + 1
+        if (fromId + stableDistance > lastBlockNumber) {
             // All blocks are unstable.
             return getRanges(
                 from = fromId,
-                to = newBlockNumber,
+                to = lastBlockNumber,
                 step = batchSize
             ).map { BlocksRange(it, false) }
         }
-        val stableId = newBlockNumber - stableDistance
+        val stableId = lastBlockNumber - stableDistance
         val stableBlocks = getRanges(
             from = fromId,
             to = stableId,
@@ -37,7 +30,7 @@ object BlockRanges {
 
         val unstableBlocks = getRanges(
             from = stableId + 1,
-            to = newBlockNumber,
+            to = lastBlockNumber,
             step = batchSize
         ).map { BlocksRange(it, false) }
 

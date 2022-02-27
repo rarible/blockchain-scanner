@@ -75,7 +75,13 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
         logger.info("Syncing missing blocks from the last correct known block {} to {}", lastCorrectBlock, newBlock)
-        val lastSyncedBlock = syncBlocks(lastCorrectBlock, newBlock).lastOrNull()
+        val stableUnstableBlockRanges = BlockRanges.getStableUnstableBlockRanges(
+            baseBlockNumber = lastCorrectBlock.id,
+            lastBlockNumber = newBlock.id,
+            batchSize = batchLoad.batchSize,
+            stableDistance = batchLoad.confirmationBlockDistance
+        ).asFlow()
+        val lastSyncedBlock = syncBlocks(stableUnstableBlockRanges, lastCorrectBlock).lastOrNull()
         if (lastSyncedBlock != null) {
             logger.info(
                 "Syncing completed {} on block [{}:{}]: {}",
@@ -90,17 +96,11 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     @Suppress("EXPERIMENTAL_API_USAGE")
-    private fun syncBlocks(
-        lastCorrectBlock: Block,
-        newBlock: Block
-    ): Flow<Block> = BlockRanges.getStableUnstableBlockRanges(
-        lastKnownBlockNumber = lastCorrectBlock.id,
-        newBlockNumber = newBlock.id,
-        batchSize = batchLoad.batchSize,
-        stableDistance = batchLoad.confirmationBlockDistance
-    )
-        .asFlow()
-        .runningFold(lastCorrectBlock as Block?) { lastProcessedBlock, blocksRange ->
+    fun syncBlocks(
+        blockRanges: Flow<BlocksRange>,
+        baseBlock: Block
+    ): Flow<Block> = blockRanges
+        .runningFold(baseBlock as Block?) { lastProcessedBlock, blocksRange ->
             if (lastProcessedBlock == null) {
                 // Some blocks in the previous batches are inconsistent by parent-child hash.
                 return@runningFold null

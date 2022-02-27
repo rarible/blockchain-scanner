@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.handler
 
+import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
@@ -13,6 +14,7 @@ import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscr
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.handler.BlockHandler
+import com.rarible.blockchain.scanner.handler.BlocksRange
 import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -20,8 +22,6 @@ import com.rarible.core.logging.RaribleMDCContext
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -33,7 +33,7 @@ import scalether.domain.Address
 class ReindexHandler(
     private val allSubscribers: List<EthereumLogEventSubscriber>,
     private val blockService: BlockService,
-    private val ethereumClient: EthereumBlockchainClient,
+    ethereumClient: EthereumBlockchainClient,
     private val logService: EthereumLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties,
     private val blockMonitor: BlockMonitor
@@ -43,23 +43,13 @@ class ReindexHandler(
         retryPolicy = blockchainScannerProperties.retryPolicy.client
     )
 
-    suspend fun reindexFrom(
-        fromBlock: Long,
+    suspend fun reindex(
+        baseBlock: Block,
+        blocksRanges: Flow<BlocksRange>,
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList()
-    ): Flow<Long> {
-        val lastBlock = blockService.getLastBlock()?.id ?: ethereumClient.newBlocks.first().number
-        return reindexRange(LongRange(fromBlock, lastBlock), topics, addresses)
-    }
-
-    suspend fun reindexRange(
-        blockRange: LongRange,
-        topics: List<Word> = emptyList(),
-        addresses: List<Address> = emptyList()
-    ): Flow<Long> {
+    ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {
-            logger.info("Re-index blocks $blockRange")
-
             val filteredSubscribers = if (topics.isNotEmpty()) {
                 allSubscribers.filter { subscriber -> subscriber.getDescriptor().ethTopic in topics }
             } else {
@@ -94,15 +84,8 @@ class ReindexHandler(
                 batchLoad = blockchainScannerProperties.scan.batchLoad,
                 monitor = blockMonitor
             )
-            blockHandler
-                .syncBlocks(
-                    fromId = blockRange.first,
-                    finishId = blockRange.last
-                )
-                .map {
-                    logger.info("Re-index finished up to block $it")
-                    it.id
-                }
+
+            blockHandler.syncBlocks(blocksRanges, baseBlock)
         }
     }
 
