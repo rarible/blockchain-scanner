@@ -5,8 +5,8 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandler
 import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandlerPlanner
+import com.rarible.blockchain.scanner.ethereum.model.ReindexParam
 import com.rarible.core.task.TaskHandler
-import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.map
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import scalether.domain.Address
 
 @Component
 @ExperimentalCoroutinesApi
@@ -32,7 +31,7 @@ class ReindexBlocksTaskHandler(
     }
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
-        val taskParam = mapper.readValue(param, TaskParam::class.java)
+        val taskParam = mapper.readValue(param, ReindexParam::class.java)
 
         val topics = taskParam.topics
         val addresses = taskParam.addresses
@@ -44,17 +43,6 @@ class ReindexBlocksTaskHandler(
             logger.info("Re-index finished up to block $it")
             it.id
         }
-    }
-
-    data class TaskParam(
-        val range: BlockRange,
-        val topics: List<Word>,
-        val addresses: List<Address>
-    ) {
-        data class BlockRange(
-            val from: Long,
-            val to: Long?
-        )
     }
 
     private companion object {

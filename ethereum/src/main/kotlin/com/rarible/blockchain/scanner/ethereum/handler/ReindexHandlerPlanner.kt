@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
-import com.rarible.blockchain.scanner.ethereum.task.ReindexBlocksTaskHandler
+import com.rarible.blockchain.scanner.ethereum.model.ReindexParam
 import com.rarible.blockchain.scanner.handler.BlocksRange
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +20,7 @@ class ReindexHandlerPlanner(
 ) {
     @Suppress("EXPERIMENTAL_API_USAGE")
     suspend fun getReindexPlan(
-        taskParam: ReindexBlocksTaskHandler.TaskParam,
+        taskParam: ReindexParam,
         from: Long?
     ): ReindexPlan {
         val baseBlockId = from ?: taskParam.range.from
