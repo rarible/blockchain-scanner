@@ -20,5 +20,7 @@ data class EthereumScannerProperties(
     override val monitoring: MonitoringProperties = MonitoringProperties(),
     override val scan: ScanProperties = ScanProperties(),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
+    val task: TaskProperties = TaskProperties(),
     val maxPendingLogDuration: Long = Duration.ofHours(2).toMillis()
 ) : BlockchainScannerProperties
+

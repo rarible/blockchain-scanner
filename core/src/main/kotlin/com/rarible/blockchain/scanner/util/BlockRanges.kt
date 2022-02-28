@@ -73,6 +73,14 @@ object BlockRanges {
         }
     }
 
+    fun getRanges(from: Long, to: Long): LongRange {
+        check(from >= 0) { "$from "}
+        check(to >= 0) { "$to" }
+        if (from > to) return LongRange.EMPTY
+        if (from == to) return LongRange(from, to)
+        return LongRange(from, to)
+    }
+
     fun toRanges(blockNumbers: List<Long>): List<LongRange> {
         if (blockNumbers.isEmpty()) {
             return emptyList()

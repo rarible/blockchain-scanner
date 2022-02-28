@@ -7,9 +7,5 @@ data class ReindexParam(
     val range: BlockRange,
     val topics: List<Word>,
     val addresses: List<Address>
-) {
-    data class BlockRange(
-        val from: Long,
-        val to: Long?
-    )
-}
+)
+

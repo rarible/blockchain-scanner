@@ -3,9 +3,9 @@ package com.rarible.blockchain.scanner.ethereum.task
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandler
+import com.rarible.blockchain.scanner.ethereum.handler.CheckHandler
 import com.rarible.blockchain.scanner.ethereum.handler.HandlerPlanner
-import com.rarible.blockchain.scanner.ethereum.model.ReindexParam
+import com.rarible.blockchain.scanner.ethereum.model.BlockRange
 import com.rarible.core.task.TaskHandler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -18,35 +18,32 @@ import org.springframework.stereotype.Component
 
 @Component
 @ExperimentalCoroutinesApi
-class ReindexBlocksTaskHandler(
-    private val reindexHandler: ReindexHandler,
+class CheckBlocksHashConsistencyTask(
+    private val checkHandler: CheckHandler,
     private val reindexHandlerPlanner: HandlerPlanner,
     private val blockchainScannerProperties: EthereumScannerProperties
 ) : TaskHandler<Long> {
 
-    override val type = "BLOCK_SCANNER_REINDEX_TASK"
+    override val type = "BLOCK_SCANNER_CHECK_BLOCKS_HASH_CONSISTENCY_TASK"
 
     override suspend fun isAbleToRun(param: String): Boolean {
-        return param.isNotBlank() && blockchainScannerProperties.task.runReindexTask
+        return param.isNotBlank() && blockchainScannerProperties.task.runCheckTask
     }
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
-        val taskParam = mapper.readValue(param, ReindexParam::class.java)
-
-        val topics = taskParam.topics
-        val addresses = taskParam.addresses
+        val taskParam = mapper.readValue(param, BlockRange::class.java)
 
         return flow {
-            val (reindexRanges, baseBlock) = reindexHandlerPlanner.getPlan(taskParam.range, from)
-            emitAll(reindexHandler.reindex(baseBlock, reindexRanges, topics, addresses))
+            val (checkRanges, _) = reindexHandlerPlanner.getPlan(taskParam, from)
+            emitAll(checkHandler.check(checkRanges))
         }.map {
-            logger.info("Re-index finished up to block $it")
+            logger.info("Check finished up to block $it")
             it.id
         }
     }
 
     private companion object {
-        val logger: Logger = LoggerFactory.getLogger(ReindexBlocksTaskHandler::class.java)
+        val logger: Logger = LoggerFactory.getLogger(CheckBlocksHashConsistencyTask::class.java)
         val mapper = ObjectMapper().registerModules().registerKotlinModule()
     }
 }
