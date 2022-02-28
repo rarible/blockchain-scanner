@@ -3,8 +3,8 @@ package com.rarible.blockchain.scanner.ethereum.handler
 import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.BlockRange
 import com.rarible.blockchain.scanner.handler.BlocksRange
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,7 +22,7 @@ class CheckHandler(
     private val blockService: BlockService,
     private val reindexHandler: ReindexHandler,
     private val handlerPlanner: HandlerPlanner,
-    blockchainScannerProperties: BlockchainScannerProperties
+    private val blockchainScannerProperties: EthereumScannerProperties
 ) {
     private val retryableClient = RetryableBlockchainClient(
         original = ethereumClient,
@@ -46,7 +46,7 @@ class CheckHandler(
                         )
                         invalidBlocks.add(checkBlock)
                     } else {
-                        if (invalidBlocks.isNotEmpty()) {
+                        if (invalidBlocks.isNotEmpty() && blockchainScannerProperties.task.checkBlocks.reindexBlocks) {
                             val blockRange = BlockRange(
                                 from = invalidBlocks.first().id,
                                 to = invalidBlocks.last().id
@@ -54,8 +54,8 @@ class CheckHandler(
                             logger.info("Start reindex invalid blocks: range=${blockRange.from}..${blockRange.to}")
                             val plan = handlerPlanner.getPlan(blockRange, from = null)
                             reindexHandler.reindex(plan.baseBlock, plan.ranges)
-                            invalidBlocks.clear()
                         }
+                        invalidBlocks.clear()
                     }
                     emit(checkBlock)
                 }

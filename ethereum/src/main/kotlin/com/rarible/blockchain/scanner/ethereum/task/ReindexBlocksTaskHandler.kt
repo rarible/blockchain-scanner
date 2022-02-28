@@ -27,7 +27,7 @@ class ReindexBlocksTaskHandler(
     override val type = "BLOCK_SCANNER_REINDEX_TASK"
 
     override suspend fun isAbleToRun(param: String): Boolean {
-        return param.isNotBlank() && blockchainScannerProperties.task.runReindexTask
+        return param.isNotBlank() && blockchainScannerProperties.task.reindex.enabled
     }
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {

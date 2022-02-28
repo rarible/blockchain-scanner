@@ -27,7 +27,7 @@ class CheckBlocksHashConsistencyTask(
     override val type = "BLOCK_SCANNER_CHECK_BLOCKS_HASH_CONSISTENCY_TASK"
 
     override suspend fun isAbleToRun(param: String): Boolean {
-        return param.isNotBlank() && blockchainScannerProperties.task.runCheckTask
+        return param.isNotBlank() && blockchainScannerProperties.task.checkBlocks.enabled
     }
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
