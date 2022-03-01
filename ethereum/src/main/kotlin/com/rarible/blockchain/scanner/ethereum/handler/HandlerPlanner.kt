@@ -26,11 +26,11 @@ class HandlerPlanner(
         val baseBlockId = from ?: maxOf(range.from - 1, 0)
         val baseBlock = blockService.getBlock(baseBlockId)
             ?: throw IllegalStateException("Block #$baseBlockId was never indexed")
-        val lastBlock = ethereumClient.newBlocks.first()
+        val lastBlockNumber = ethereumClient.getLatestBlockNumber()
         val blockRanges = BlockRanges.getRanges(
             from = baseBlock.id + 1,
             to = minOf(
-                lastBlock.number - blockchainScannerProperties.scan.batchLoad.confirmationBlockDistance,
+                lastBlockNumber - blockchainScannerProperties.scan.batchLoad.confirmationBlockDistance,
                 range.to ?: Long.MAX_VALUE
             ),
             step = blockchainScannerProperties.scan.batchLoad.batchSize

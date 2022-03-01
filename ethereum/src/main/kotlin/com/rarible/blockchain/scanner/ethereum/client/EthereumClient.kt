@@ -49,6 +49,10 @@ class EthereumClient(
         logger.info("Creating EthereumClient with maxBatches: $maxBatches")
     }
 
+    override suspend fun getLatestBlockNumber(): Long {
+        return ethereum.ethBlockNumber().awaitFirst().toLong()
+    }
+
     override val newBlocks: Flow<EthereumBlockchainBlock> = ethPubSub.newHeads()
         .flatMap { ethereum.ethGetFullBlockByHash(it.hash()) }
         .map { EthereumBlockchainBlock(it) }
