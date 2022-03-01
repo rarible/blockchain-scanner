@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.lastOrNull
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -32,7 +33,6 @@ class CheckHandler(
     suspend fun check(blocksRanges: Flow<BlocksRange>): Flow<Block> {
         return flow {
             blocksRanges.collect { checkRange ->
-                val invalidBlocks = mutableListOf<Block>()
                 for (blockNumber in checkRange.range) {
                     val blockchainBlock = retryableClient.getBlock(blockNumber)
                         ?: throw IllegalStateException("Can't get stable block $blockNumber from blockchain")
@@ -44,18 +44,13 @@ class CheckHandler(
                                 "indexed block hash ${checkBlock.hash}," +
                                 " expected blockchain hash ${blockchainBlock.hash}"
                         )
-                        invalidBlocks.add(checkBlock)
-                    } else {
-                        if (invalidBlocks.isNotEmpty() && blockchainScannerProperties.task.checkBlocks.reindexBlocks) {
-                            val blockRange = BlockRange(
-                                from = invalidBlocks.first().id,
-                                to = invalidBlocks.last().id
-                            )
-                            logger.info("Start reindex invalid blocks: range=${blockRange.from}..${blockRange.to}")
-                            val plan = handlerPlanner.getPlan(blockRange, from = null)
-                            reindexHandler.reindex(plan.baseBlock, plan.ranges)
-                        }
-                        invalidBlocks.clear()
+                        val blockRange = BlockRange(
+                            from = blockNumber,
+                            to = blockNumber
+                        )
+                        logger.info("Start reindex invalid blocks: range=${blockRange.from}..${blockRange.to}")
+                        val plan = handlerPlanner.getPlan(blockRange, from = null)
+                        reindexHandler.reindex(plan.baseBlock, plan.ranges).lastOrNull()
                     }
                     emit(checkBlock)
                 }
