@@ -43,7 +43,7 @@ class BlockMonitor(
     }
 
     fun recordGetBlocks(sample: Timer.Sample) {
-        getBlockTimer?.let { sample.stop(it) }
+        getBlocksTimer?.let { sample.stop(it) }
     }
 
     fun getLastBlockNumber(): Long? = lastBlock?.id
