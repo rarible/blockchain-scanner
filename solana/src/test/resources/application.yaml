@@ -6,7 +6,6 @@ blockchain:
   scanner:
     kafka:
       broker-replica-set: ${kafka.hosts}
-      maxPollRecords: 10
     solana:
       scan:
         enabled: false

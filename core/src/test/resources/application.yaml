@@ -6,4 +6,3 @@ blockchain:
   scanner:
     kafka:
       broker-replica-set: ${kafka.hosts}
-      maxPollRecords: 10
