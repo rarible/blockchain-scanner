@@ -16,6 +16,9 @@ class SolanaLogService(
     override suspend fun delete(descriptor: SolanaDescriptor, record: SolanaLogRecord): SolanaLogRecord =
         logRepository.delete(descriptor.collection, record)
 
+    override suspend fun delete(descriptor: SolanaDescriptor, records: List<SolanaLogRecord>): List<SolanaLogRecord> =
+        logRepository.delete(descriptor.collection, records)
+
     override suspend fun save(
         descriptor: SolanaDescriptor,
         records: List<SolanaLogRecord>
