@@ -47,7 +47,8 @@ class ReindexHandler(
         baseBlock: Block,
         blocksRanges: Flow<BlocksRange>,
         topics: List<Word> = emptyList(),
-        addresses: List<Address> = emptyList()
+        addresses: List<Address> = emptyList(),
+        batchSize: Int? = null
     ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {
             val filteredSubscribers = if (topics.isNotEmpty()) {
@@ -77,14 +78,15 @@ class ReindexHandler(
                     )
                 }
 
+            val batchLoad = blockchainScannerProperties.scan.batchLoad
+
             val blockHandler = BlockHandler(
                 blockClient = retryableClient,
                 blockService = blockService,
                 blockEventListeners = logHandlers,
-                batchLoad = blockchainScannerProperties.scan.batchLoad,
+                batchLoad = batchLoad.copy(batchSize = batchSize ?: batchLoad.batchSize),
                 monitor = blockMonitor
             )
-
             blockHandler.syncBlocks(blocksRanges, baseBlock)
         }
     }

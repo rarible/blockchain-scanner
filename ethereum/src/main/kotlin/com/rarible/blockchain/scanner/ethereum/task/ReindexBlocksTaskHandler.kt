@@ -38,7 +38,7 @@ class ReindexBlocksTaskHandler(
 
         return flow {
             val (reindexRanges, baseBlock) = reindexHandlerPlanner.getPlan(taskParam.range, from)
-            emitAll(reindexHandler.reindex(baseBlock, reindexRanges, topics, addresses))
+            emitAll(reindexHandler.reindex(baseBlock, reindexRanges, topics, addresses, taskParam.range.batchSize))
         }.map {
             logger.info("Re-index finished up to block $it")
             it.id
