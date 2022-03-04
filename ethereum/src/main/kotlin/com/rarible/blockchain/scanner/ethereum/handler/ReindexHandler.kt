@@ -68,7 +68,7 @@ class ReindexHandler(
                     logger.info(
                         "Reindex with subscribers of the group {}: {}",
                         groupId,
-                        subscribers.joinToString { it.getDescriptor().id })
+                        subscribers.joinToString { it.getDescriptor().toString() })
                     LogHandler(
                         blockchainClient = retryableClient,
                         subscribers = subscribers,
