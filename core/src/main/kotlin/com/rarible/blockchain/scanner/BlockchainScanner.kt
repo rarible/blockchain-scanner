@@ -67,7 +67,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
             blockClient = retryableClient,
             blockService = blockService,
             blockEventListeners = logHandlers,
-            batchLoad = properties.scan.batchLoad,
+            scanProperties = properties.scan,
             monitor = monitor
         )
         val maxAttempts = properties.retryPolicy.scan.reconnectAttempts.takeIf { it > 0 } ?: Integer.MAX_VALUE

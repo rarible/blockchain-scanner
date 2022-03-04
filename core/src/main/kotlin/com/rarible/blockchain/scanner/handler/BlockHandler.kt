@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
@@ -35,14 +36,14 @@ class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService,
     private val blockEventListeners: List<BlockEventListener<BB>>,
-    private val batchLoad: BlockBatchLoadProperties,
+    private val scanProperties: ScanProperties,
     private val monitor: BlockMonitor
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
     init {
-        logger.info("Creating BlockHandler with config: $batchLoad")
+        logger.info("Creating BlockHandler with config: ${scanProperties.batchLoad}")
     }
 
     /**
@@ -95,8 +96,8 @@ class BlockHandler<BB : BlockchainBlock>(
         val stableUnstableBlockRanges = BlockRanges.getStableUnstableBlockRanges(
             baseBlockNumber = lastCorrectBlock.id,
             lastBlockNumber = newBlock.id,
-            batchSize = batchLoad.batchSize,
-            stableDistance = batchLoad.confirmationBlockDistance
+            batchSize = scanProperties.batchLoad.batchSize,
+            stableDistance = scanProperties.batchLoad.confirmationBlockDistance
         ).asFlow()
         val lastSyncedBlock = syncBlocks(stableUnstableBlockRanges, lastCorrectBlock).lastOrNull()
         if (lastSyncedBlock != null) {
@@ -310,7 +311,9 @@ class BlockHandler<BB : BlockchainBlock>(
                 "maxId" to blockEvents.last().number
             )
         ) {
-            blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            if (scanProperties.logProcessingEnabled) {
+                blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            }
         }
     }
 

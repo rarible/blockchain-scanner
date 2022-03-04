@@ -81,7 +81,7 @@ class ReindexHandler(
                 blockClient = retryableClient,
                 blockService = blockService,
                 blockEventListeners = logHandlers,
-                batchLoad = blockchainScannerProperties.scan.batchLoad,
+                scanProperties = blockchainScannerProperties.scan,
                 monitor = blockMonitor
             )
 
