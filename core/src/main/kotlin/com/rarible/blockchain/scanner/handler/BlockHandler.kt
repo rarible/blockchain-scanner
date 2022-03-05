@@ -279,7 +279,12 @@ class BlockHandler<BB : BlockchainBlock>(
              If we did not call NewBlockEvent-s, there will be nothing to revert.
             */
             processBlockEvents(blockEvents)
-            saveBlocks(blocks, BlockStatus.SUCCESS)
+            withSpan(
+                name = "saveBlocks",
+                labels = listOf("count" to blocks.size)
+            ) {
+                saveBlocks(blocks, BlockStatus.SUCCESS)
+            }
         }
     }
 
