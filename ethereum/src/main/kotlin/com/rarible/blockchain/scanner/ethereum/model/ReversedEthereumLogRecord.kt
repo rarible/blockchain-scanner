@@ -37,6 +37,7 @@ data class ReversedEthereumLogRecord(
      */
     val blockTimestamp: Long? = null,
     val from: Address? = null,
+    val to: Address? = null,
 
     val visible: Boolean = true,
 
@@ -65,6 +66,7 @@ data class ReversedEthereumLogRecord(
 
         blockTimestamp = blockTimestamp,
         from = from,
+        to = to,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -95,6 +97,7 @@ data class ReversedEthereumLogRecord(
 
         blockTimestamp = log.blockTimestamp,
         from = log.from,
+        to = log.to,
         createdAt = log.createdAt,
 
         data = data

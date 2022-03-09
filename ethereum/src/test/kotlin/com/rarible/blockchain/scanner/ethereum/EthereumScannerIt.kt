@@ -90,6 +90,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                         minorLogIndex = 0,
                         index = 0,
                         from = sender.from(),
+                        to = contract.address(),
                         address = contract.address(),
                         blockHash = receipt.blockHash(),
                         blockNumber = receipt.blockNumber().toLong(),
