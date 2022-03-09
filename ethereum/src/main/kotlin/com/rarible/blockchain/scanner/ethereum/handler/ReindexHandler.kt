@@ -36,7 +36,7 @@ class ReindexHandler(
     ethereumClient: EthereumBlockchainClient,
     private val logService: EthereumLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties,
-    private val blockMonitor: BlockMonitor
+    private val blockMonitor: BlockMonitor,
 ) {
     private val retryableClient = RetryableBlockchainClient(
         original = ethereumClient,
@@ -48,7 +48,8 @@ class ReindexHandler(
         blocksRanges: Flow<BlocksRange>,
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList(),
-        batchSize: Int? = null
+        batchSize: Int? = null,
+        logRecordEventPublisher: LogRecordEventPublisher? = null
     ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {
             val filteredSubscribers = if (topics.isNotEmpty()) {
@@ -74,7 +75,7 @@ class ReindexHandler(
                         subscribers = subscribers,
                         logService = logService,
                         logRecordComparator = EthereumLogRecordComparator,
-                        logRecordEventPublisher = reindexLogRecordEventPublisher
+                        logRecordEventPublisher = logRecordEventPublisher ?: reindexLogRecordEventPublisher
                     )
                 }
 
