@@ -10,6 +10,10 @@ data class SolanaLog(
 ) : Comparable<SolanaLog> {
     override fun compareTo(other: SolanaLog): Int = comparator.compare(this, other)
 
+    override fun toString(): String =
+        "#$blockNumber:$blockHash:$transactionHash:#$instructionIndex" +
+                if (innerInstructionIndex != null) ":$innerInstructionIndex" else ""
+
     companion object {
         private val comparator =
             compareBy<SolanaLog>(

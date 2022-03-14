@@ -23,6 +23,13 @@ class SolanaClientTest {
 
     @Test
     @Disabled
+    fun testGetBlockByNumber() = runBlocking {
+        val block = client.getBlock(115362921)
+        println(block)
+    }
+
+    @Test
+    @Disabled
     fun testBlockFlow() = runBlocking {
         val blocks = client.newBlocks.take(3).toList()
 
