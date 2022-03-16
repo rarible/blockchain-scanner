@@ -126,14 +126,15 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = co
         val accountKeys = transaction.message.accountKeys
         val transactionHash = transactionDto.transaction.signatures.first()
         val result = arrayListOf<SolanaBlockchainLog>().apply {
-            this += transaction.message.instructions.map {
-                it.toModel(
+            this += transaction.message.instructions.mapIndexed { instructionIndex, instruction ->
+                instruction.toModel(
                     accountKeys,
                     slot,
                     blockhash,
                     transactionHash,
-                    transactionIndex,
-                    innerTransactionIndex = null
+                    transactionIndex = transactionIndex,
+                    instructionIndex = instructionIndex,
+                    innerInstructionIndex = null
                 )
             }
 
@@ -145,8 +146,9 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = co
                             slot,
                             blockhash,
                             transactionHash,
-                            innerInstruction.index,
-                            innerInstructionIndex
+                            transactionIndex = transactionIndex,
+                            instructionIndex = innerInstruction.index,
+                            innerInstructionIndex = innerInstructionIndex
                         )
                     }
                 }
@@ -172,7 +174,8 @@ fun Instruction.toModel(
     blockHash: String,
     transactionHash: String,
     transactionIndex: Int,
-    innerTransactionIndex: Int?
+    instructionIndex: Int,
+    innerInstructionIndex: Int?
 ): SolanaBlockchainLog {
     val instruction = SolanaInstruction(
         programId = accountKeys[programIdIndex],
@@ -183,8 +186,9 @@ fun Instruction.toModel(
         blockNumber = blockNumber,
         transactionHash = transactionHash,
         blockHash = blockHash,
-        instructionIndex = transactionIndex,
-        innerInstructionIndex = innerTransactionIndex
+        transactionIndex = transactionIndex,
+        instructionIndex = instructionIndex,
+        innerInstructionIndex = innerInstructionIndex
     )
 
     return SolanaBlockchainLog(solanaLog, instruction)

@@ -47,6 +47,7 @@ class SolanaLogRepositoryIt : AbstractIntegrationTest() {
         blockNumber = randomLong(),
         transactionHash = randomString(),
         blockHash = randomString(),
+        transactionIndex = randomInt(),
         instructionIndex = randomInt(),
         innerInstructionIndex = randomInt()
     )
