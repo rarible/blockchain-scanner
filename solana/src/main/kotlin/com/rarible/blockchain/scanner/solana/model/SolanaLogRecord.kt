@@ -7,9 +7,11 @@ import org.springframework.data.annotation.Id
 abstract class SolanaLogRecord : LogRecord {
     @get:Id
     @get:AccessType(AccessType.Type.PROPERTY)
-    var id: String
-        get() = log.stringValue
+    var mongoId: String
+        get() = id
         set(_) {}
 
     abstract val log: SolanaLog
+
+    open val id: String get() = log.stringValue
 }
