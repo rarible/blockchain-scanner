@@ -23,7 +23,7 @@ class SolanaLogRepository(
     suspend fun delete(collection: String, records: List<SolanaLogRecord>): List<SolanaLogRecord> =
         records.map { delete(collection, it) }
 
-    suspend fun saveAll(collection: String, records: List<SolanaLogRecord>): Flow<SolanaLogRecord> =
+    fun saveAll(collection: String, records: List<SolanaLogRecord>): Flow<SolanaLogRecord> =
         mongo.insertAll(records.toMono(), collection).asFlow()
 
     suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =

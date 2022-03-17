@@ -37,7 +37,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
     override suspend fun process(events: List<BlockEvent<BB>>) {
-        logger.info("Processing block events ({}): {}", events.size, events)
+        logger.info(
+            "Processing ${events.size} events for group '${subscribers.first().getDescriptor().groupId}': $events"
+        )
         val logEvents = withSpan("prepareBlockEventsBatch") {
             val batches = BlockRanges.toBatches(events)
             batches.flatMap { prepareBlockEventsBatch(it) }
@@ -56,7 +58,6 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
                 publishRecordsToRemove(blockEvent, toRemoveGroupIdMap)
                 publishRecordsToInsert(blockEvent, toInsertGroupIdMap)
-                logger.info("Sent events for {}", blockEvent)
             }
         }
         val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
@@ -75,11 +76,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         toInsertGroupIdMap: MutableMap<String, MutableList<R>>
     ) {
         for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
-            logger.info(
-                "Publishing {} new log records for {} of {}",
-                recordsToInsert.size,
-                groupId,
-                blockEvent
+            logging(
+                message = "publishing ${recordsToInsert.size} new log records",
+                event = blockEvent
             )
             if (recordsToInsert.isNotEmpty()) {
                 val logRecordEvents = recordsToInsert.sortedWith(logRecordComparator)
@@ -90,17 +89,12 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private suspend fun publishRecordsToRemove(
-        blockEvent: BlockEvent<BB>,
+        event: BlockEvent<BB>,
         toRemoveGroupIdMap: MutableMap<String, MutableList<R>>
     ) {
         for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
-            logger.info(
-                "Publishing {} reverted log records for {} of {}",
-                recordsToRemove.size,
-                groupId,
-                blockEvent
-            )
             if (recordsToRemove.isNotEmpty()) {
+                logging(message = "publishing ${recordsToRemove.size} reverted log records", event = event)
                 val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator.reversed())
                     .map { LogRecordEvent(it, true) }
                 logRecordEventPublisher.publish(groupId, logRecordEvents)
@@ -128,8 +122,20 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
 
     private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToRemove) } }.awaitAll()
-        logEvents.map { async { logService.save(it.descriptor, it.logRecordsToInsert) } }.awaitAll()
+        logEvents.map {
+            async {
+                runRethrowingBlockHandlerException("Delete log records for ${it.blockEvent} by ${it.descriptor.groupId}") {
+                    logService.delete(it.descriptor, it.logRecordsToRemove)
+                }
+            }
+        }.awaitAll()
+        logEvents.map {
+            async {
+                runRethrowingBlockHandlerException("Insert log records for ${it.blockEvent} by ${it.descriptor.groupId}") {
+                    logService.save(it.descriptor, it.logRecordsToInsert)
+                }
+            }
+        }.awaitAll()
     }
 
     private suspend fun onBlock(
@@ -159,17 +165,19 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             // Preserve the order of events.
             events.mapNotNull { event ->
                 val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-                val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock)
-                val logRecordsToRevert = if (!stable)
-                    logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock)
-                else
+                val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock, event)
+                val logRecordsToRevert = if (!stable) {
+                    runRethrowingBlockHandlerException(
+                        actionName = "Prepare log records to revert for $event by ${subscriber.getDescriptor().id}"
+                    ) { logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock) }
+                } else {
                     emptyList()
-                logger.info(
-                    "Prepared logs for '{}': {} new logs and {} logs to remove",
-                    subscriber.getDescriptor().id,
-                    logRecordsToInsert.size,
-                    logRecordsToRevert.size,
-                    event
+                }
+                logging(
+                    message = "prepared ${logRecordsToInsert.size} records to insert " +
+                            "and ${logRecordsToRevert.size} records to remove",
+                    event = event,
+                    subscriber = subscriber
                 )
                 LogEvent(
                     blockEvent = event,
@@ -183,32 +191,26 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private suspend fun prepareLogsToInsert(
         subscriber: LogEventSubscriber<BB, BL, R, D>,
-        fullBlock: FullBlock<BB, BL>
+        fullBlock: FullBlock<BB, BL>,
+        event: NewBlockEvent<BB>
     ): List<R> {
         if (fullBlock.logs.isEmpty()) {
-            logger.info(
-                "Subscriber '{}': no logs in the block [{}:{}]",
-                subscriber.getDescriptor().id,
-                fullBlock.block.number,
-                fullBlock.block.hash,
+            logging(
+                message = "no logs in the block",
+                event = event,
+                subscriber = subscriber
             )
             return emptyList()
         }
-        logger.info(
-            "Subscriber '{}': preparing log records to insert for [{}:{}]",
-            subscriber.getDescriptor().id,
-            fullBlock.block.number,
-            fullBlock.block.hash
+        val logRecords = runRethrowingBlockHandlerException(
+            actionName = "Prepare log records to insert for $event by ${subscriber.getDescriptor().id}"
+        ) { fullBlock.logs.flatMap { subscriber.getEventRecords(fullBlock.block, it) } }
+        logging(
+            message = "prepared ${logRecords.size} log records to insert",
+            event = event,
+            subscriber = subscriber
         )
-        return try {
-            fullBlock.logs.flatMap { subscriber.getEventRecords(fullBlock.block, it) }
-        } catch (e: Exception) {
-            throw BlockHandlerException(
-                "Subscriber '${subscriber.getDescriptor().id}': " +
-                        "failed to prepare log records for [${fullBlock.block.number}:${fullBlock.block.hash}]",
-                e
-            )
-        }
+        return logRecords
     }
 
     private suspend fun onRevertedBlocks(
@@ -221,11 +223,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 revertedBlockHash = event.hash
             ).toList()
         }
-        logger.info(
-            "Subscriber '{}': prepared {} logs to revert for {}",
-            subscriber.getDescriptor().id,
-            toRevertLogs.size,
-            event
+        logging(
+            message = "prepared ${toRevertLogs.size} logs to revert",
+            event = event,
+            subscriber = subscriber
         )
         LogEvent(
             blockEvent = event,
@@ -233,6 +234,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             logRecordsToInsert = emptyList(),
             logRecordsToRemove = toRevertLogs
         )
+    }
+
+    private fun logging(
+        message: String,
+        event: BlockEvent<BB>,
+        subscriber: LogEventSubscriber<BB, BL, R, D>? = null
+    ) {
+        val id = subscriber?.getDescriptor()?.id ?: ("group " + subscribers.first().getDescriptor().groupId)
+        logger.info("Logs for $event by '$id': $message")
     }
 
 }
