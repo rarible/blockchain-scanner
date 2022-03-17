@@ -2,9 +2,12 @@ package com.rarible.blockchain.scanner.solana.repository
 
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import org.jetbrains.annotations.TestOnly
+import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
 import org.springframework.data.mongodb.core.query.Criteria
@@ -23,8 +26,29 @@ class SolanaLogRepository(
     suspend fun delete(collection: String, records: List<SolanaLogRecord>): List<SolanaLogRecord> =
         records.map { delete(collection, it) }
 
-    fun saveAll(collection: String, records: List<SolanaLogRecord>): Flow<SolanaLogRecord> =
-        mongo.insertAll(records.toMono(), collection).asFlow()
+    // TODO [CHARLIE-149]: implement this properly.
+    suspend fun saveAll(collection: String, records: List<SolanaLogRecord>): List<SolanaLogRecord> {
+        val logger = LoggerFactory.getLogger(SolanaLogRepository::class.java)
+        return try {
+            mongo.insertAll(records.toMono(), collection).asFlow().toList()
+        } catch (e: DuplicateKeyException) {
+            val logs = records.map { it.log }
+            logger.warn("WARN: there are the same log records in the database: $logs")
+            try {
+                delete(collection, records)
+            } catch (e: Exception) {
+                logger.error("FAIL: cannot remove records from the database to insert new: $logs")
+            }
+            try {
+                val insertedRecords = mongo.insertAll(records.toMono(), collection).asFlow().toList()
+                logger.info("SUCCESS: removed and inserted new records to the database: $logs")
+                insertedRecords
+            } catch (e: Exception) {
+                logger.error("FAIL: cannot insert new records to the database: $logs")
+                throw e
+            }
+        }
+    }
 
     suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =
         mongo.save(record, collection).awaitSingle()

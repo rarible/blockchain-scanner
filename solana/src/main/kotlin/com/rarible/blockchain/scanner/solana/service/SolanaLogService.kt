@@ -22,7 +22,7 @@ class SolanaLogService(
     override suspend fun save(
         descriptor: SolanaDescriptor,
         records: List<SolanaLogRecord>
-    ): List<SolanaLogRecord> = logRepository.saveAll(descriptor.collection, records).toList()
+    ): List<SolanaLogRecord> = logRepository.saveAll(descriptor.collection, records)
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: SolanaDescriptor,

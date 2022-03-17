@@ -51,10 +51,22 @@ class SolanaLogRepositoryIt : AbstractIntegrationTest() {
             TestSolanaLogRecord(createRandomSolanaLog(), randomString())
         }
         assertThat(
-            solanaLogRepository.saveAll(testRecordsCollection, solanaRecords).toList().sortedBy { it.toString() })
+            solanaLogRepository.saveAll(testRecordsCollection, solanaRecords).sortedBy { it.toString() })
             .isEqualTo(solanaRecords.sortedBy { it.toString() })
         assertThat(solanaLogRepository.findAll(testRecordsCollection).toList().sortedBy { it.toString() })
             .isEqualTo(solanaRecords.sortedBy { it.toString() })
+    }
+
+    @Test
+    fun `save all with override of an existing record`() = runBlocking<Unit> {
+        val oldRecord = TestSolanaLogRecord(createRandomSolanaLog(), randomString())
+        solanaLogRepository.save(testRecordsCollection, oldRecord)
+        val newRecords = (0 until 10).map {
+            TestSolanaLogRecord(createRandomSolanaLog(), randomString())
+        } + listOf(oldRecord)
+        solanaLogRepository.saveAll(testRecordsCollection, newRecords)
+        assertThat(solanaLogRepository.findAll(testRecordsCollection).toList().sortedBy { it.log })
+            .isEqualTo(newRecords.sortedBy { it.log })
     }
 
     @Test
