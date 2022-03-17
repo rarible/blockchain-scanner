@@ -7,6 +7,9 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.jetbrains.annotations.TestOnly
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toMono
 
@@ -25,6 +28,12 @@ class SolanaLogRepository(
 
     suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =
         mongo.save(record, collection).awaitSingle()
+
+    fun findByBlockHash(collection: String, blockHash: String): Flow<SolanaLogRecord> {
+        val criteria = Criteria
+            .where("log.blockHash").isEqualTo(blockHash)
+        return mongo.find(Query(criteria), SolanaLogRecord::class.java, collection).asFlow()
+    }
 
     @TestOnly
     fun findAll(collection: String): Flow<SolanaLogRecord> =

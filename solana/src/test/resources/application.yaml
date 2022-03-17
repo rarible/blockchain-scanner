@@ -14,3 +14,7 @@ blockchain:
 testcontainers:
   reuse:
     enable: true
+
+mongock:
+  change-logs-scan-package:
+    - com.rarible.blockchain.scanner.solana.migration

@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.solana.configuration
 
+import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.solana.client.SolanaClient
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 @Configuration
 @EnableBlockchainScanner
 @EnableRaribleMongo
+@EnableMongock
 @ComponentScan(basePackages = ["com.rarible.blockchain.scanner.solana"])
 @EnableReactiveMongoRepositories(basePackages = ["com.rarible.blockchain.scanner.solana.repository"])
 @EnableConfigurationProperties(SolanaBlockchainScannerProperties::class)
