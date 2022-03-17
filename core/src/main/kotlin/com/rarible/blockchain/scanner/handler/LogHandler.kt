@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory
 class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+    private val logFilters: List<LogEventFilter<R, D>>,
     private val logService: LogService<R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
@@ -108,8 +110,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
     }
 
-    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<LogEvent<R, D>> =
-        coroutineScope {
+    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<LogEvent<R, D>> {
+        var events = coroutineScope {
             subscribers.map { subscriber ->
                 async {
                     withSpan(
@@ -126,6 +128,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 }
             }.awaitAll().flatten()
         }
+        if (logFilters.isNotEmpty()) {
+            withSpan("filterLogEvents") {
+                for (filter in logFilters) {
+                    events = filter.filter(events)
+                }
+            }
+        }
+        return events
+    }
 
     private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
         logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToRemove) } }.awaitAll()

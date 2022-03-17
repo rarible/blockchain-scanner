@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
-import com.rarible.blockchain.scanner.test.data.randomLogHash
 import com.rarible.blockchain.scanner.test.data.randomPositiveLong
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
@@ -53,7 +52,7 @@ class TestLogEventSubscriber(
     private fun mapLog(log: TestBlockchainLog, minorLogIndex: Int): TestLog {
         val testLog = log.testOriginalLog
         return TestLog(
-            transactionHash = randomLogHash(),
+            transactionHash = log.testOriginalLog.transactionHash,
             topic = log.testOriginalLog.topic,
             extra = testLog.testExtra,
             visible = true,

@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
@@ -49,7 +50,8 @@ abstract class AbstractIntegrationTest {
 
     protected fun createBlockchainScanner(
         testBlockchainClient: TestBlockchainClient,
-        vararg subscribers: TestLogEventSubscriber
+        subscribers: List<TestLogEventSubscriber>,
+        logFilters: List<TestLogEventFilter> = emptyList()
     ): TestBlockchainScanner {
         return TestBlockchainScanner(
             blockchainClient = testBlockchainClient,
@@ -64,6 +66,7 @@ abstract class AbstractIntegrationTest {
             ),
             logRecordEventPublisher = testLogRecordEventPublisher,
             subscribers = subscribers.toList(),
+            logFilters = logFilters,
             monitor = mockk(relaxed = true)
         )
     }

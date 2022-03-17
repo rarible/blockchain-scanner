@@ -6,19 +6,20 @@ import com.github.michaelbull.retry.policy.constantDelay
 import com.github.michaelbull.retry.policy.limitAttempts
 import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.block.BlockService
-import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.handler.BlockHandler
+import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import kotlinx.coroutines.flow.collect
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory
 abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+    logFilters: List<LogEventFilter<R, D>>,
     private val blockService: BlockService,
     private val logService: LogService<R, D>,
     logRecordComparator: LogRecordComparator<R>,
@@ -49,7 +51,8 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                 subscribers = subscribers,
                 logService = logService,
                 logRecordComparator = logRecordComparator,
-                logRecordEventPublisher = logRecordEventPublisher
+                logRecordEventPublisher = logRecordEventPublisher,
+                logFilters = logFilters
             )
         }
 
