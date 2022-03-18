@@ -8,16 +8,22 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
+import io.netty.channel.ChannelOption
+import io.netty.channel.epoll.EpollChannelOption
+import io.netty.handler.timeout.ReadTimeoutHandler
+import io.netty.handler.timeout.WriteTimeoutHandler
 import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.boot.web.reactive.function.client.WebClientCustomizer
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.netty.http.client.HttpClient
+import reactor.netty.resources.ConnectionProvider
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 interface SolanaApi {
@@ -37,21 +43,12 @@ class SolanaHttpRpcApi(
     private val uri
         get() = urls[Random.nextInt(urls.size)]
 
-    private val client = WebClient.builder()
-        .exchangeStrategies(
-            ExchangeStrategies.builder()
-                .codecs { it.defaultCodecs().maxInMemorySize(MAX_BODY_SIZE) }
-                .build()
-        )
-        .clientConnector(
-            ReactorClientHttpConnector(
-                HttpClient.create()
-                    .responseTimeout(Duration.ofMillis(timeoutMillis))
-                    .compress(true)
-            )
-        )
-        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-        .build()
+    private val client = WebClient.builder().apply {
+        SolanaRpcApiWebClientCustomizer(
+            timeout = Duration.ofMillis(timeoutMillis),
+            maxBodySize = MAX_BODY_SIZE
+        ).customize(it)
+    }.build()
 
     override suspend fun getFirstAvailableBlock(): ApiResponse<Long> = client.post()
         .uri(uri)
@@ -84,5 +81,46 @@ class SolanaHttpRpcApi(
     companion object {
         const val MAX_BODY_SIZE = 100 * 1024 * 1024
         const val DEFAULT_TIMEOUT = 5000L
+    }
+}
+
+private class SolanaRpcApiWebClientCustomizer(
+    private val timeout: Duration,
+    private val maxBodySize: Int
+) : WebClientCustomizer {
+
+    override fun customize(webClientBuilder: WebClient.Builder) {
+        webClientBuilder.codecs { clientCodecConfigurer ->
+            clientCodecConfigurer.defaultCodecs().maxInMemorySize(maxBodySize)
+        }
+        val provider = ConnectionProvider.builder("protocol-default-connection-provider")
+            .maxConnections(200)
+            .pendingAcquireMaxCount(-1)
+            .maxIdleTime(timeout)
+            .maxLifeTime(timeout)
+            .lifo()
+            .build()
+
+        val client = HttpClient
+            .create(provider)
+            .tcpConfiguration {
+                it.option(ChannelOption.SO_KEEPALIVE, true)
+                    .option(EpollChannelOption.TCP_KEEPIDLE, 300)
+                    .option(EpollChannelOption.TCP_KEEPINTVL, 60)
+                    .option(EpollChannelOption.TCP_KEEPCNT, 8)
+                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.toMillis().toInt())
+                    .doOnConnected { connection ->
+                        connection.addHandlerLast(ReadTimeoutHandler(timeout.toMillis(), TimeUnit.MILLISECONDS))
+                        connection.addHandlerLast(WriteTimeoutHandler(timeout.toMillis(), TimeUnit.MILLISECONDS))
+                    }
+            }
+            .compress(true)
+            .responseTimeout(timeout)
+            .followRedirect(true)
+
+        val connector = ReactorClientHttpConnector(client)
+        webClientBuilder
+            .clientConnector(connector)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
     }
 }

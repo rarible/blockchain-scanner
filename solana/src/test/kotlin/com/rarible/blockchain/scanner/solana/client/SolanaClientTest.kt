@@ -10,7 +10,10 @@ import org.junit.jupiter.api.Test
 
 class SolanaClientTest {
     private val mainNetBeta = "https://api.mainnet-beta.solana.com"
-    private val client = SolanaClient(listOf(mainNetBeta))
+    private val client = SolanaClient(
+        rpcUrls = listOf(mainNetBeta),
+        timeout = 30000
+    )
 
     @Test
     @Disabled
