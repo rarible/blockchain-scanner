@@ -39,8 +39,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
     override suspend fun process(events: List<BlockEvent<BB>>) {
+        if (events.isEmpty()) {
+            return
+        }
         logger.info(
-            "Processing ${events.size} events for group '${subscribers.first().getDescriptor().groupId}': $events"
+            "Processing ${events.size} block events ${events.first().number}..${events.last().number} for group '${subscribers.first().getDescriptor().groupId}'"
         )
         val logEvents = withSpan("prepareBlockEventsBatch") {
             val batches = BlockRanges.toBatches(events)
