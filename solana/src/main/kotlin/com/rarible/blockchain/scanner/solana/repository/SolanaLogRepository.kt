@@ -26,9 +26,11 @@ class SolanaLogRepository(
     suspend fun delete(collection: String, records: List<SolanaLogRecord>): List<SolanaLogRecord> =
         records.map { delete(collection, it) }
 
-    // TODO [CHARLIE-149]: implement this properly.
     suspend fun saveAll(collection: String, records: List<SolanaLogRecord>): List<SolanaLogRecord> {
-        val logger = LoggerFactory.getLogger(SolanaLogRepository::class.java)
+        return records.map { save(collection, it) }
+
+        // TODO [CHARLIE-149]: implement this properly.
+        /*val logger = LoggerFactory.getLogger(SolanaLogRepository::class.java)
         return try {
             mongo.insertAll(records.toMono(), collection).asFlow().toList()
         } catch (e: DuplicateKeyException) {
@@ -47,7 +49,7 @@ class SolanaLogRepository(
                 logger.error("FAIL: cannot insert new records to the database: $logs", e)
                 throw e
             }
-        }
+        }*/
     }
 
     suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =
