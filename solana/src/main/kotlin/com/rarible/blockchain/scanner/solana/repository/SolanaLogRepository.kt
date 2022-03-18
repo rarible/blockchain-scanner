@@ -37,14 +37,14 @@ class SolanaLogRepository(
             try {
                 delete(collection, records)
             } catch (e: Exception) {
-                logger.error("FAIL: cannot remove records from the database to insert new: $logs")
+                logger.error("FAIL: cannot remove records from the database to insert new: $logs", e)
             }
             try {
                 val insertedRecords = mongo.insertAll(records.toMono(), collection).asFlow().toList()
                 logger.info("SUCCESS: removed and inserted new records to the database: $logs")
                 insertedRecords
             } catch (e: Exception) {
-                logger.error("FAIL: cannot insert new records to the database: $logs")
+                logger.error("FAIL: cannot insert new records to the database: $logs", e)
                 throw e
             }
         }
