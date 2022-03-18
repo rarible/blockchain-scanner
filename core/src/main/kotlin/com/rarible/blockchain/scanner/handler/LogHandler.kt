@@ -78,11 +78,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         toInsertGroupIdMap: MutableMap<String, MutableList<R>>
     ) {
         for ((groupId, recordsToInsert) in toInsertGroupIdMap) {
-            logging(
-                message = "publishing ${recordsToInsert.size} new log records",
-                event = blockEvent
-            )
             if (recordsToInsert.isNotEmpty()) {
+                logging(message = "publishing ${recordsToInsert.size} new log records", event = blockEvent)
                 val logRecordEvents = recordsToInsert.sortedWith(logRecordComparator)
                     .map { LogRecordEvent(it, false) }
                 logRecordEventPublisher.publish(groupId, logRecordEvents)
@@ -133,15 +130,23 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        logEvents.map {
+        logEvents.mapNotNull {
+            if (it.logRecordsToRemove.isEmpty()) {
+                return@mapNotNull null
+            }
             async {
+                logging(message = "removing ${it.logRecordsToRemove.size} log records", event = it.blockEvent)
                 runRethrowingBlockHandlerException("Delete log records for ${it.blockEvent} by ${it.descriptor.groupId}") {
                     logService.delete(it.descriptor, it.logRecordsToRemove)
                 }
             }
         }.awaitAll()
-        logEvents.map {
+        logEvents.mapNotNull {
+            if (it.logRecordsToInsert.isEmpty()) {
+                return@mapNotNull null
+            }
             async {
+                logging(message = "inserting ${it.logRecordsToInsert.size} log records", event = it.blockEvent)
                 runRethrowingBlockHandlerException("Insert log records for ${it.blockEvent} by ${it.descriptor.groupId}") {
                     logService.save(it.descriptor, it.logRecordsToInsert)
                 }
@@ -249,8 +254,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private fun logging(
         message: String,
-        event: BlockEvent<BB>,
-        subscriber: LogEventSubscriber<BB, BL, R, D>? = null
+        event: BlockEvent<*>,
+        subscriber: LogEventSubscriber<*, *, *, *>? = null
     ) {
         val id = subscriber?.getDescriptor()?.id ?: ("group " + subscribers.first().getDescriptor().groupId)
         logger.info("Logs for $event by '$id': $message")
