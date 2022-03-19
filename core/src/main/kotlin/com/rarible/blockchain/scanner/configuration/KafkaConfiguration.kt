@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.configuration
 
+import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventPublisher
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.core.application.ApplicationEnvironmentInfo
@@ -22,17 +23,24 @@ class KafkaConfiguration(
     @Bean
     @ConditionalOnMissingBean(LogRecordEventPublisher::class)
     fun kafkaLogEventPublisher(): LogRecordEventPublisher {
-        logger.info(
-            "Custom {} is not configured, using {}",
-            LogRecordEventPublisher::class.java.simpleName,
-            KafkaLogRecordEventPublisher::class.java.name
-        )
-        return KafkaLogRecordEventPublisher(
-            properties = kafkaProperties,
-            environment = applicationEnvironmentInfo.name,
-            blockchain = properties.blockchain,
-            service = properties.service,
-            numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup
-        )
+        if (kafkaProperties.enabled) {
+            logger.info(
+                "Custom {} is not configured, using {}",
+                LogRecordEventPublisher::class.java.simpleName,
+                KafkaLogRecordEventPublisher::class.java.name
+            )
+            return KafkaLogRecordEventPublisher(
+                properties = kafkaProperties,
+                environment = applicationEnvironmentInfo.name,
+                blockchain = properties.blockchain,
+                service = properties.service,
+                numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup
+            )
+        } else {
+            logger.info("Kafka topics for log records are disabled")
+            return object : LogRecordEventPublisher {
+                override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) = Unit
+            }
+        }
     }
 }

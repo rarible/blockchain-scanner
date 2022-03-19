@@ -316,9 +316,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 "maxId" to blockEvents.last().number
             )
         ) {
-            if (scanProperties.logProcessingEnabled) {
-                blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
-            }
+            blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
         }
     }
 
