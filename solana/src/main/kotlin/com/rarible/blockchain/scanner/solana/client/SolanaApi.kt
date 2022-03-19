@@ -8,8 +8,6 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
-import io.netty.channel.ChannelOption
-import io.netty.channel.epoll.EpollChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import kotlinx.coroutines.reactor.awaitSingle
@@ -93,7 +91,7 @@ private class SolanaRpcApiWebClientCustomizer(
         webClientBuilder.codecs { clientCodecConfigurer ->
             clientCodecConfigurer.defaultCodecs().maxInMemorySize(maxBodySize)
         }
-        val provider = ConnectionProvider.builder("protocol-default-connection-provider")
+        val provider = ConnectionProvider.builder("solana-connection-provider")
             .maxConnections(200)
             .pendingAcquireMaxCount(-1)
             .maxIdleTime(timeout)
@@ -103,16 +101,9 @@ private class SolanaRpcApiWebClientCustomizer(
 
         val client = HttpClient
             .create(provider)
-            .tcpConfiguration {
-                it.option(ChannelOption.SO_KEEPALIVE, true)
-                    .option(EpollChannelOption.TCP_KEEPIDLE, 300)
-                    .option(EpollChannelOption.TCP_KEEPINTVL, 60)
-                    .option(EpollChannelOption.TCP_KEEPCNT, 8)
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.toMillis().toInt())
-                    .doOnConnected { connection ->
-                        connection.addHandlerLast(ReadTimeoutHandler(timeout.toMillis(), TimeUnit.MILLISECONDS))
-                        connection.addHandlerLast(WriteTimeoutHandler(timeout.toMillis(), TimeUnit.MILLISECONDS))
-                    }
+            .doOnConnected {
+                it.addHandlerLast(ReadTimeoutHandler(timeout.toMillis(), TimeUnit.MILLISECONDS))
+                it.addHandlerLast(WriteTimeoutHandler(timeout.toMillis(), TimeUnit.MILLISECONDS))
             }
             .compress(true)
             .responseTimeout(timeout)
