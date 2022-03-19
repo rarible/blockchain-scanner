@@ -70,8 +70,11 @@ data class ApiResponse<T>(
 
 data class SolanaTransactionDto(
     val transaction: Details,
-    val meta: Meta?,
+    val meta: Meta?
 ) {
+    val isSuccessful: Boolean get() =
+        meta?.err == null && meta?.status?.get("Err") == null
+
     data class Instruction(
         val accounts: List<Int>,
         val data: String,
@@ -96,7 +99,9 @@ data class SolanaTransactionDto(
 
     data class Meta(
         @JsonSetter(nulls = Nulls.AS_EMPTY)
-        val innerInstructions: List<InnerInstruction> = emptyList()
+        val innerInstructions: List<InnerInstruction> = emptyList(),
+        val err: Map<String, Any>?,
+        val status: Map<String, Any>?
     )
 }
 
@@ -122,6 +127,9 @@ fun ApiResponse<Long>.toModel(): Long = convert { this }
 
 fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = convert(SolanaBlockDto.errorsToSkip) {
     val logs = transactions.flatMapIndexed { transactionIndex, transactionDto ->
+        if (!transactionDto.isSuccessful) {
+            return@flatMapIndexed emptyList()
+        }
         val transaction = transactionDto.transaction
         val accountKeys = transaction.message.accountKeys
         val transactionHash = transactionDto.transaction.signatures.first()
