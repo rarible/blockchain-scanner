@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventFilter
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogRecordComparator
 import kotlinx.coroutines.reactor.mono
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -40,9 +41,10 @@ class SolanaBlockchainScanner(
     logEventPublisher,
     monitor
 ) {
+    private val logger = LoggerFactory.getLogger(SolanaBlockchainScanner::class.java)
 
     @EventListener(ApplicationReadyEvent::class)
     fun start() {
-        mono { (scan()) }.subscribe()
+        mono { scan() }.subscribe({}, { logger.error("Solana blockchain scanner stopped.", it) })
     }
 }
