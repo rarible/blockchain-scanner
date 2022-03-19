@@ -27,7 +27,7 @@ class SolanaClientTest {
     @Test
     @Disabled
     fun testGetBlockByNumber() = runBlocking {
-        val block = client.getBlock(115362921)
+        val block = client.getBlock(114371623)
         println(block)
     }
 

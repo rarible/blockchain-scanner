@@ -139,8 +139,8 @@ fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = co
             }
 
             transactionDto.meta?.let { meta ->
-                this += meta.innerInstructions.flatMapIndexed { innerInstructionIndex, innerInstruction ->
-                    innerInstruction.instructions.map { instruction ->
+                this += meta.innerInstructions.flatMap { innerInstruction ->
+                    innerInstruction.instructions.mapIndexed { innerInstructionIndex, instruction ->
                         instruction.toModel(
                             accountKeys,
                             slot,

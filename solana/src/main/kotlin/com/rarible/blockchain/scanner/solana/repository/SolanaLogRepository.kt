@@ -20,6 +20,8 @@ import reactor.kotlin.core.publisher.toMono
 class SolanaLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
+    private val logger = LoggerFactory.getLogger(SolanaLogRepository::class.java)
+
     suspend fun delete(collection: String, record: SolanaLogRecord): SolanaLogRecord =
         mongo.remove(record, collection).thenReturn(record).awaitSingle()
 
@@ -27,13 +29,10 @@ class SolanaLogRepository(
         records.map { delete(collection, it) }
 
     suspend fun saveAll(collection: String, records: List<SolanaLogRecord>): List<SolanaLogRecord> {
-        return records.map { save(collection, it) }
-
-        // TODO [CHARLIE-149]: implement this properly.
-        /*val logger = LoggerFactory.getLogger(SolanaLogRepository::class.java)
         return try {
             mongo.insertAll(records.toMono(), collection).asFlow().toList()
         } catch (e: DuplicateKeyException) {
+            // Workaround log records left from the previous run.
             val logs = records.map { it.log }
             logger.warn("WARN: there are the same log records in the database: $logs")
             try {
@@ -49,7 +48,7 @@ class SolanaLogRepository(
                 logger.error("FAIL: cannot insert new records to the database: $logs", e)
                 throw e
             }
-        }*/
+        }
     }
 
     suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =
