@@ -184,36 +184,38 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             ).toList()
         }.associateBy { it.block.number }
 
-        val total = events.sumOf {
-            blockLogs[it.number]?.logs?.size ?: 0
-        }
+        val total = events.sumOf { blockLogs[it.number]?.logs?.size ?: 0 }
         return withSpan(
             name = "extractLogEvents",
             labels = listOf("size" to total)
         ) {
-            // Preserve the order of events.
-            events.mapNotNull { event ->
-                val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-                val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock, event)
-                val logRecordsToRevert = if (!stable) {
-                    runRethrowingBlockHandlerException(
-                        actionName = "Prepare log records to revert for $event by ${subscriber.getDescriptor().id}"
-                    ) { logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock) }
-                } else {
-                    emptyList()
-                }
-                logging(
-                    message = "prepared ${logRecordsToInsert.size} records to insert " +
-                        "and ${logRecordsToRevert.size} records to remove",
-                    event = event,
-                    subscriber = subscriber
-                )
-                LogEvent(
-                    blockEvent = event,
-                    descriptor = subscriber.getDescriptor(),
-                    logRecordsToInsert = logRecordsToInsert,
-                    logRecordsToRemove = logRecordsToRevert
-                )
+            coroutineScope {
+                // Preserve the order of events.
+                events.mapNotNull { event ->
+                    val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
+                    async {
+                        val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock, event)
+                        val logRecordsToRevert = if (!stable) {
+                            runRethrowingBlockHandlerException(
+                                actionName = "Prepare log records to revert for $event by ${subscriber.getDescriptor().id}"
+                            ) { logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock) }
+                        } else {
+                            emptyList()
+                        }
+                        logging(
+                            message = "prepared ${logRecordsToInsert.size} records to insert " +
+                                    "and ${logRecordsToRevert.size} records to remove",
+                            event = event,
+                            subscriber = subscriber
+                        )
+                        LogEvent(
+                            blockEvent = event,
+                            descriptor = subscriber.getDescriptor(),
+                            logRecordsToInsert = logRecordsToInsert,
+                            logRecordsToRemove = logRecordsToRevert
+                        )
+                    }
+                }.awaitAll()
             }
         }
     }
