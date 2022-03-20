@@ -71,7 +71,9 @@ class BlockHandler<BB : BlockchainBlock>(
         val alreadyIndexedBlock = blockService.getBlock(newBlock.id)
         if (alreadyIndexedBlock != null) {
             if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status)) {
-                logger.info("The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock)
+                logger.info(
+                    "The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock
+                )
                 return
             }
             logger.warn(
@@ -195,6 +197,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private data class BlocksBatch<BB>(val blocksRange: BlocksRange, val blocks: List<BB>) {
+
         override fun toString(): String = "$blocksRange (present ${blocks.size})"
     }
 
@@ -229,8 +232,8 @@ class BlockHandler<BB : BlockchainBlock>(
                 )
                 logger.info(
                     "Blocks $blocksRange have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
-                            "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
-                            "the consistent range is $consistentRange"
+                        "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
+                        "the consistent range is $consistentRange"
                 )
                 break
             }
@@ -258,7 +261,8 @@ class BlockHandler<BB : BlockchainBlock>(
                 On restart, the scanner will process the same stable blocks and send the same events.
                 The clients of the blockchain scanner are ready to receive duplicated events.
                  */
-                saveBlocks(blocks, BlockStatus.PENDING)
+                val toSave = blocks.map { it.toBlock(BlockStatus.PENDING) }
+                saveUnstableBlocks(toSave)
             }
             val blockEvents = blocks.map {
                 if (blocksRange.stable) {
@@ -283,17 +287,27 @@ class BlockHandler<BB : BlockchainBlock>(
                 name = "saveBlocks",
                 labels = listOf("count" to blocks.size)
             ) {
-                saveBlocks(blocks, BlockStatus.SUCCESS)
+                val toSave = blocks.map { it.toBlock(BlockStatus.SUCCESS) }
+                if (blocksRange.stable) {
+                    saveStableBlocks(toSave)
+                } else {
+                    saveUnstableBlocks(toSave)
+                }
             }
         }
     }
 
-    private suspend fun saveBlocks(blocks: List<BB>, status: BlockStatus): List<Block> =
+    private suspend fun saveStableBlocks(blocks: List<Block>): List<Block> {
+        val result = blockService.insertAll(blocks)
+        logger.info("Saved blocks: $blocks")
+        return result
+    }
+
+    private suspend fun saveUnstableBlocks(blocks: List<Block>): List<Block> =
         blocks.map {
-            val block = it.toBlock(status)
-            blockService.save(block)
-            logger.info("Saved block $block")
-            block
+            blockService.save(it)
+            logger.info("Saved block $it")
+            it
         }
 
     private suspend fun revertBlock(block: Block) {
