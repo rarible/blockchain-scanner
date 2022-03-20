@@ -14,7 +14,6 @@ import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
 import io.micrometer.core.instrument.Timer
@@ -291,7 +290,7 @@ class BlockHandler<BB : BlockchainBlock>(
             ) {
                 val toSave = blocks.map { it.toBlock(BlockStatus.SUCCESS) }
                 if (blocksRange.stable) {
-                    saveStableBlocks(toSave)
+                    saveStableBlocks(toSave, blocksRange)
                 } else {
                     saveUnstableBlocks(toSave)
                 }
@@ -299,8 +298,12 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    private suspend fun saveStableBlocks(blocks: List<Block>): List<Block> {
-        val result = blockService.insertAll(blocks)
+    private suspend fun saveStableBlocks(blocks: List<Block>, blocksRange: BlocksRange): List<Block> {
+        val result = runRethrowingBlockHandlerException(
+            actionName = "Save $blocksRange"
+        ) {
+            blockService.insertAll(blocks)
+        }
         logger.info("Saved blocks: $blocks")
         return result
     }
