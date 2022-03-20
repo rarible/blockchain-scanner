@@ -125,10 +125,15 @@ class BlockHandler<BB : BlockchainBlock>(
                 // Some blocks in the previous batches are inconsistent by parent-child hash.
                 return@runningFold null
             }
-            val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
-                lastProcessedBlock = lastProcessedBlock,
-                blocksRange = blocksRange
-            )
+            val (blocksBatch, parentHashesAreConsistent) = withTransaction(
+                name = "fetchBlocksBatchWithHashConsistencyCheck",
+                labels = listOf("range" to blocksRange.range.toString())
+            ) {
+                fetchBlocksBatchWithHashConsistencyCheck(
+                    lastProcessedBlock = lastProcessedBlock,
+                    blocksRange = blocksRange
+                )
+            }
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
                 processBlocks(blocksBatch).last()
             } else {
@@ -208,10 +213,7 @@ class BlockHandler<BB : BlockchainBlock>(
         logger.info("Fetching $blocksRange")
         val fetchBlocksSample = Timer.start()
         val fetchedBlocks = try {
-            withTransaction(
-                name = "fetchBlocks",
-                labels = listOf("range" to blocksRange.range.toString())
-            ) {
+            withSpan(name = "fetchBlocks") {
                 blocksRange.range.map { id -> async { fetchBlock(id) } }.awaitAll().filterNotNull()
             }
         } finally {
