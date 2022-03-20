@@ -17,6 +17,7 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
+import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.SpanType
@@ -35,6 +36,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logService: LogService<R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
+    private val logMonitor: LogMonitor
 ) : BlockEventListener<BB> {
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
@@ -160,6 +162,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 ) {
                     logService.save(it.descriptor, it.logRecordsToInsert)
                 }
+                logMonitor.onLogsInserted(descriptor = it.descriptor, inserted = it.logRecordsToRemove.size)
             }
         }.awaitAll()
     }

@@ -18,6 +18,7 @@ import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.BlocksRange
 import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
+import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.core.logging.RaribleMDCContext
 import io.daonomic.rpc.domain.Word
@@ -38,7 +39,8 @@ class ReindexHandler(
     ethereumClient: EthereumBlockchainClient,
     private val logService: EthereumLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties,
-    private val blockMonitor: BlockMonitor
+    private val blockMonitor: BlockMonitor,
+    private val logMonitor: LogMonitor
 ) {
     private val retryableClient = RetryableBlockchainClient(
         original = ethereumClient,
@@ -77,7 +79,8 @@ class ReindexHandler(
                         logFilters = logFilters,
                         logService = logService,
                         logRecordComparator = EthereumLogRecordComparator,
-                        logRecordEventPublisher = reindexLogRecordEventPublisher
+                        logRecordEventPublisher = reindexLogRecordEventPublisher,
+                        logMonitor = logMonitor
                     )
                 }
 

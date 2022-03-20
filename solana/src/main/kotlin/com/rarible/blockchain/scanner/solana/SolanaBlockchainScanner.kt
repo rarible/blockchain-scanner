@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
+import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
@@ -29,17 +30,19 @@ class SolanaBlockchainScanner(
     logService: SolanaLogService,
     properties: BlockchainScannerProperties,
     logEventPublisher: LogRecordEventPublisher,
-    monitor: BlockMonitor
+    blockMonitor: BlockMonitor,
+    logMonitor: LogMonitor
 ) : BlockchainScanner<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, SolanaDescriptor>(
-    blockchainClient,
-    subscribers,
-    logFilters,
-    blockService,
-    logService,
-    SolanaLogRecordComparator,
-    properties,
-    logEventPublisher,
-    monitor
+    blockchainClient = blockchainClient,
+    subscribers = subscribers,
+    logFilters = logFilters,
+    blockService = blockService,
+    logService = logService,
+    logRecordComparator = SolanaLogRecordComparator,
+    properties = properties,
+    logRecordEventPublisher = logEventPublisher,
+    blockMonitor = blockMonitor,
+    logMonitor = logMonitor
 ) {
     private val logger = LoggerFactory.getLogger(SolanaBlockchainScanner::class.java)
 

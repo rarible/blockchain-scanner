@@ -21,6 +21,7 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
+import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import kotlinx.coroutines.flow.collect
 import org.slf4j.LoggerFactory
@@ -34,7 +35,8 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     logRecordComparator: LogRecordComparator<R>,
     private val properties: BlockchainScannerProperties,
     logRecordEventPublisher: LogRecordEventPublisher,
-    private val monitor: BlockMonitor
+    private val blockMonitor: BlockMonitor,
+    private val logMonitor: LogMonitor
 ) {
 
     private val retryableClient = RetryableBlockchainClient(
@@ -53,7 +55,8 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                 logService = logService,
                 logRecordComparator = logRecordComparator,
                 logRecordEventPublisher = logRecordEventPublisher,
-                logFilters = logFilters
+                logFilters = logFilters,
+                logMonitor = logMonitor
             )
         }
 
@@ -72,7 +75,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
             blockService = blockService,
             blockEventListeners = logHandlers,
             scanProperties = properties.scan,
-            monitor = monitor
+            monitor = blockMonitor
         )
         val maxAttempts = properties.retryPolicy.scan.reconnectAttempts.takeIf { it > 0 } ?: Integer.MAX_VALUE
         val delayMillis = properties.retryPolicy.scan.reconnectDelay.toMillis()
