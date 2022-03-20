@@ -47,6 +47,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
         .map { (groupId, subscribers) ->
             logger.info("Injected subscribers of the group {}: {}", groupId, subscribers.joinToString { it.getDescriptor().id })
             LogHandler(
+                groupId = groupId,
                 blockchainClient = retryableClient,
                 subscribers = subscribers,
                 logService = logService,

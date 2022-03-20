@@ -39,6 +39,7 @@ class KafkaConfiguration(
         } else {
             logger.info("Kafka topics for log records are disabled")
             return object : LogRecordEventPublisher {
+                override suspend fun isEnabled() = false
                 override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) = Unit
             }
         }

@@ -13,7 +13,7 @@ class ChangeLog00001 {
 
     private val logger = LoggerFactory.getLogger(ChangeLog00001::class.java)
 
-    @ChangeSet(id = "createInitialIndexes", order = "00001", author = "Sergey.Patrikeev")
+    @ChangeSet(id = "createInitialIndexes", order = "00001", author = "Sergey.Patrikeev", runAlways = true)
     fun createInitialIndexes(
         template: MongockTemplate,
         @NonLockGuarded solanaLogEventSubscriberHolder: SolanaLogEventSubscriberHolder
