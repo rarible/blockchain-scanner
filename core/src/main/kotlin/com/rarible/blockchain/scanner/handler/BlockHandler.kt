@@ -336,18 +336,12 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    private suspend fun fetchBlock(number: Long): BB? =
-        withSpan(
-            name = "fetchBlock",
-            type = SpanType.EXT,
-            labels = listOf("blockNumber" to number)
-        ) {
-            val sample = Timer.start()
-
-            try {
-                blockClient.getBlock(number)
-            } finally {
-                monitor.recordGetBlock(sample)
-            }
+    private suspend fun fetchBlock(number: Long): BB? {
+        val sample = Timer.start()
+        return try {
+            blockClient.getBlock(number)
+        } finally {
+            monitor.recordGetBlock(sample)
         }
+    }
 }
