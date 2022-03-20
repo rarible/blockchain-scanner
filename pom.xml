@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.2.117-SOLANA</revision>
+        <revision>2.2.118-SOLANA</revision>
 
         <rarible.ethereum.version>1.5.2</rarible.ethereum.version>
         <rarible.core.version>2.2.2</rarible.core.version>
