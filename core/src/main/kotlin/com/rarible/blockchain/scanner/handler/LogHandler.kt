@@ -162,7 +162,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 ) {
                     logService.save(it.descriptor, it.logRecordsToInsert)
                 }
-                logMonitor.onLogsInserted(descriptor = it.descriptor, inserted = it.logRecordsToRemove.size)
+                logMonitor.onLogsInserted(descriptor = it.descriptor, inserted = it.logRecordsToInsert.size)
             }
         }.awaitAll()
     }
