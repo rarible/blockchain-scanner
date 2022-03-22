@@ -17,14 +17,16 @@ import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
 import io.micrometer.core.instrument.Timer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.runningFold
 import org.slf4j.LoggerFactory
 
@@ -100,17 +102,24 @@ class BlockHandler<BB : BlockchainBlock>(
             batchSize = scanProperties.batchLoad.batchSize,
             stableDistance = scanProperties.batchLoad.confirmationBlockDistance
         ).asFlow()
-        val lastSyncedBlock = syncBlocks(stableUnstableBlockRanges, lastCorrectBlock).lastOrNull()
-        if (lastSyncedBlock != null) {
-            logger.info(
-                "Syncing completed {} on block [{}:{}]: {}",
-                if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
-                lastSyncedBlock.id,
-                lastSyncedBlock.hash,
-                lastSyncedBlock
-            )
-        } else {
-            logger.info("Syncing completed prematurely")
+        coroutineScope {
+            val channel = produceBlocks(stableUnstableBlockRanges, lastCorrectBlock, capacity = scanProperties.batchLoad.batchBufferSize)
+            var lastSyncedBlock: Block? = null
+
+            for (batch in channel) {
+                lastSyncedBlock = processBlocks(batch).last()
+            }
+            if (lastSyncedBlock != null) {
+                logger.info(
+                    "Syncing completed {} on block [{}:{}]: {}",
+                    if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
+                    lastSyncedBlock.id,
+                    lastSyncedBlock.hash,
+                    lastSyncedBlock
+                )
+            } else {
+                logger.info("Syncing completed prematurely")
+            }
         }
     }
 
@@ -129,7 +138,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 labels = listOf("range" to blocksRange.range.toString())
             ) {
                 fetchBlocksBatchWithHashConsistencyCheck(
-                    lastProcessedBlock = lastProcessedBlock,
+                    lastProcessedBlockHash = lastProcessedBlock.hash,
                     blocksRange = blocksRange
                 )
             }
@@ -147,6 +156,29 @@ class BlockHandler<BB : BlockchainBlock>(
         }
         .drop(1) // Drop the lastCorrectBlock
         .filterNotNull()
+
+    @Suppress("EXPERIMENTAL_API_USAGE")
+    private fun CoroutineScope.produceBlocks(
+        blockRanges: Flow<BlocksRange>,
+        baseBlock: Block,
+        capacity: Int
+    ) = produce(capacity = capacity) {
+        var lastProcessedBlockHash = baseBlock.hash
+
+        blockRanges.collect { range ->
+            val (batch, isConsistent) = fetchBlocksBatchWithHashConsistencyCheck(lastProcessedBlockHash, range)
+
+            if (batch.blocks.isNotEmpty()) {
+                lastProcessedBlockHash = batch.blocks.last().hash
+
+                send(batch)
+            }
+
+            if (!isConsistent) {
+                return@collect
+            }
+        }
+    }
 
     /**
      * Checks if chain reorg happened. Find the latest correct block having status SUCCESS
@@ -206,7 +238,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun fetchBlocksBatchWithHashConsistencyCheck(
-        lastProcessedBlock: Block,
+        lastProcessedBlockHash: String,
         blocksRange: BlocksRange
     ): Pair<BlocksBatch<BB>, Boolean /* Whether all parent-child hashes match */> = coroutineScope {
         logger.info("Fetching $blocksRange")
@@ -222,7 +254,7 @@ class BlockHandler<BB : BlockchainBlock>(
         if (fetchedBlocks.isEmpty()) {
             return@coroutineScope BlocksBatch(BlocksRange(LongRange.EMPTY, blocksRange.stable), emptyList<BB>()) to true
         }
-        var parentBlockHash = lastProcessedBlock.hash
+        var parentBlockHash = lastProcessedBlockHash
         val blocks = arrayListOf<BB>()
         var consistentRange = blocksRange
         for (block in fetchedBlocks) {
@@ -233,8 +265,8 @@ class BlockHandler<BB : BlockchainBlock>(
                 )
                 logger.info(
                     "Blocks $blocksRange have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
-                        "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
-                        "the consistent range is $consistentRange"
+                            "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
+                            "the consistent range is $consistentRange"
                 )
                 break
             }
