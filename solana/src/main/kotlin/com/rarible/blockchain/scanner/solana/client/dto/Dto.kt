@@ -85,13 +85,13 @@ data class SolanaTransactionDto(
 
     data class InnerInstruction(
         val index: Int,
-        val instructions: List<Instruction>,
+        val instructions: List<Instruction?>,
     )
 
     data class Message(
         val recentBlockhash: String?,
         val accountKeys: List<String>,
-        val instructions: List<Instruction>
+        val instructions: List<Instruction?>
     )
 
     data class Details(
@@ -137,7 +137,7 @@ class SolanaBlockDtoParser(
             val transactionHash = transactionDto.transaction.signatures.first()
             val result = arrayListOf<SolanaBlockchainLog>().apply {
                 this += transaction.message.instructions.mapIndexedNotNull { instructionIndex, instruction ->
-                    instruction.toModel(
+                    instruction?.toModel(
                         accountKeys = accountKeys,
                         blockNumber = slot,
                         blockHash = blockhash,
@@ -151,7 +151,7 @@ class SolanaBlockDtoParser(
                 transactionDto.meta?.let { meta ->
                     this += meta.innerInstructions.flatMap { innerInstruction ->
                         innerInstruction.instructions.mapIndexedNotNull { innerInstructionIndex, instruction ->
-                            instruction.toModel(
+                            instruction?.toModel(
                                 accountKeys = accountKeys,
                                 blockNumber = slot,
                                 blockHash = blockhash,
