@@ -69,7 +69,7 @@ data class ApiResponse<T>(
 }
 
 data class SolanaTransactionDto(
-    val transaction: Details,
+    val transaction: Details?,
     val meta: Meta?
 ) {
     val isSuccessful: Boolean get() =
@@ -131,7 +131,7 @@ class SolanaBlockDtoParser(
             if (!transactionDto.isSuccessful) {
                 return@flatMapIndexed emptyList()
             }
-            val transaction = transactionDto.transaction
+            val transaction = transactionDto.transaction ?: return@flatMapIndexed emptyList()
             val accountKeys = transaction.message.accountKeys
             val transactionHash = transactionDto.transaction.signatures.first()
             val result = arrayListOf<SolanaBlockchainLog>().apply {
