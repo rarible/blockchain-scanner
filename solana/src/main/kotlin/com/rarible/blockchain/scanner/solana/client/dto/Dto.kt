@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
@@ -72,8 +73,9 @@ data class SolanaTransactionDto(
     val transaction: Details?,
     val meta: Meta?
 ) {
+    @get:JsonIgnore
     val isSuccessful: Boolean get() =
-        meta?.err == null && meta?.status?.get("Err") == null
+        meta != null && meta.err == null
 
     data class Instruction(
         val accounts: List<Int>,
@@ -100,8 +102,7 @@ data class SolanaTransactionDto(
     data class Meta(
         @JsonSetter(nulls = Nulls.AS_EMPTY)
         val innerInstructions: List<InnerInstruction> = emptyList(),
-        val err: Map<String, Any>?,
-        val status: Map<String, Any>?
+        val err: Any?
     )
 }
 
