@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.solana.configuration
 
 import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
+import com.rarible.blockchain.scanner.solana.client.SolanaApi
 import com.rarible.blockchain.scanner.solana.client.SolanaClient
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
@@ -21,11 +22,11 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 class SolanaBlockchainScannerConfiguration {
     @Bean
     fun client(
+        api: SolanaApi,
         properties: SolanaBlockchainScannerProperties,
         subscribers: List<SolanaLogEventSubscriber>
     ): SolanaClient = SolanaClient(
-        rpcUrls = properties.rpcApiUrls,
-        timeout = properties.rpcApiTimeout,
+        api,
         programIds = subscribers.map { it.getDescriptor().programId }.toSet()
     )
 }

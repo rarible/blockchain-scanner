@@ -15,15 +15,9 @@ import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
 
 class SolanaClient(
-    rpcUrls: List<String>,
-    timeout: Long,
+    private val api: SolanaApi,
     programIds: Set<String>
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
-
-    private val api = SolanaHttpRpcApi(
-        urls = rpcUrls,
-        timeoutMillis = timeout
-    )
 
     private val solanaBlockDtoParser = SolanaBlockDtoParser(
         programIds = programIds
