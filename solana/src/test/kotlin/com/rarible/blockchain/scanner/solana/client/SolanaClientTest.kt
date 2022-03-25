@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.solana.client
 
+import com.rarible.blockchain.scanner.solana.client.test.TestSolanaScannerConfiguration
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -9,10 +10,9 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class SolanaClientTest {
-    private val mainNetBeta = "https://api.mainnet-beta.solana.com"
     private val client = SolanaClient(
         SolanaHttpRpcApi(
-            urls = listOf(mainNetBeta),
+            urls = listOf(TestSolanaScannerConfiguration.MAIN_NET_BETA),
             timeoutMillis = 30000
         ),
         programIds = emptySet() // All programs.
