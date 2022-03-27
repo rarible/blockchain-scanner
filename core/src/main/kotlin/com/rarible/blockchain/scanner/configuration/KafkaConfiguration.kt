@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.configuration
 
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
+import com.rarible.blockchain.scanner.publisher.DefaultKafkaLogRecordEventWrapper
 import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventPublisher
 import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventWrapper
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -23,23 +24,18 @@ class KafkaConfiguration(
 
     @Bean
     @ConditionalOnMissingBean(KafkaLogRecordEventWrapper::class)
-    fun kafkaLogRecordEventWrapper(): KafkaLogRecordEventWrapper<LogRecordEvent> {
-        return object : KafkaLogRecordEventWrapper<LogRecordEvent> {
-            override val targetClass: Class<LogRecordEvent>
-                get() = LogRecordEvent::class.java
-
-            override fun wrap(logRecordEvent: LogRecordEvent): LogRecordEvent = logRecordEvent
-        }
-    }
+    fun kafkaLogRecordEventWrapper(): KafkaLogRecordEventWrapper<LogRecordEvent> =
+        DefaultKafkaLogRecordEventWrapper()
 
     @Bean
     @ConditionalOnMissingBean(LogRecordEventPublisher::class)
     fun kafkaLogEventPublisher(kafkaLogRecordEventWrapper: KafkaLogRecordEventWrapper<*>): LogRecordEventPublisher {
         if (kafkaProperties.enabled) {
             logger.info(
-                "Custom {} is not configured, using {}",
+                "Custom {} is not configured, using {} with {}",
                 LogRecordEventPublisher::class.java.simpleName,
-                KafkaLogRecordEventPublisher::class.java.name
+                KafkaLogRecordEventPublisher::class.java.name,
+                kafkaLogRecordEventWrapper::class.java
             )
             return KafkaLogRecordEventPublisher(
                 properties = kafkaProperties,
