@@ -112,7 +112,7 @@ class ReindexHandler(
     }
 
     private val reindexLogRecordEventPublisher = object : LogRecordEventPublisher {
-        override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) {
+        override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {
             val blockNumber = (logRecordEvents.firstOrNull()?.record as? EthereumLogRecord)?.log?.blockNumber
             logger.info("Re-indexed log events for block $blockNumber: groupId=$groupId, size=${logRecordEvents.size}")
         }

@@ -3,9 +3,9 @@ package com.rarible.blockchain.scanner.framework.data
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 
 /**
- * Serialized log record.
+ * Log record with [reverted] flag.
  */
-data class LogRecordEvent<T : LogRecord>(
-    val record: T,
+data class LogRecordEvent(
+    val record: LogRecord,
     val reverted: Boolean
 )

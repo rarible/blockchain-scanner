@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.configuration
 
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventWrapper
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.core.application.ApplicationEnvironmentInfo
 import org.slf4j.LoggerFactory
@@ -21,8 +22,19 @@ class KafkaConfiguration(
     private val logger = LoggerFactory.getLogger(KafkaConfiguration::class.java)
 
     @Bean
+    @ConditionalOnMissingBean(KafkaLogRecordEventWrapper::class)
+    fun kafkaLogRecordEventWrapper(): KafkaLogRecordEventWrapper<LogRecordEvent> {
+        return object : KafkaLogRecordEventWrapper<LogRecordEvent> {
+            override val targetClass: Class<LogRecordEvent>
+                get() = LogRecordEvent::class.java
+
+            override fun wrap(logRecordEvent: LogRecordEvent): LogRecordEvent = logRecordEvent
+        }
+    }
+
+    @Bean
     @ConditionalOnMissingBean(LogRecordEventPublisher::class)
-    fun kafkaLogEventPublisher(): LogRecordEventPublisher {
+    fun kafkaLogEventPublisher(kafkaLogRecordEventWrapper: KafkaLogRecordEventWrapper<*>): LogRecordEventPublisher {
         if (kafkaProperties.enabled) {
             logger.info(
                 "Custom {} is not configured, using {}",
@@ -34,13 +46,14 @@ class KafkaConfiguration(
                 environment = applicationEnvironmentInfo.name,
                 blockchain = properties.blockchain,
                 service = properties.service,
+                kafkaLogRecordEventWrapper = kafkaLogRecordEventWrapper,
                 numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup
             )
         } else {
             logger.info("Kafka topics for log records are disabled")
             return object : LogRecordEventPublisher {
                 override suspend fun isEnabled() = false
-                override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) = Unit
+                override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) = Unit
             }
         }
     }

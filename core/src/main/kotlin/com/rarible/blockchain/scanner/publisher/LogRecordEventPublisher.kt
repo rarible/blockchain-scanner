@@ -18,6 +18,6 @@ interface LogRecordEventPublisher {
     /**
      * Publish LogRecordEvents merged for the descriptor group and sorted using the blockchain-specific comparator.
      */
-    suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>)
+    suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>)
 
 }

@@ -1,3 +1,5 @@
+@file:OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+
 package com.rarible.blockchain.scanner.ethereum.test
 
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
@@ -15,6 +17,8 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
@@ -125,7 +129,7 @@ abstract class AbstractIntegrationTest {
         testEthereumLogEventPublisher.publishedLogRecords.clear()
     }
 
-    protected fun verifyPublishedLogEvent(asserter: (LogRecordEvent<*>) -> Unit) {
+    protected fun verifyPublishedLogEvent(asserter: (LogRecordEvent) -> Unit) {
         BlockingWait.waitAssert {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).anySatisfy(asserter)
         }
