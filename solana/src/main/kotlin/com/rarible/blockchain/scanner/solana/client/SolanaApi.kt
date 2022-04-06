@@ -32,7 +32,7 @@ interface SolanaApi {
 
     suspend fun getLatestSlot(): ApiResponse<Long>
 
-    suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): List<ApiResponse<SolanaBlockDto>>
+    suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): Map<Long, ApiResponse<SolanaBlockDto>>
 
     suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto>
 
@@ -67,8 +67,8 @@ class SolanaHttpRpcApi(
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
 
-    override suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): List<ApiResponse<SolanaBlockDto>> =
-        coroutineScope { slots.map { async { getBlock(it, details) } }.awaitAll() }
+    override suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): Map<Long, ApiResponse<SolanaBlockDto>> =
+        coroutineScope { slots.map { async { it to getBlock(it, details) } }.awaitAll().toMap() }
 
     override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
         .uri(uri)

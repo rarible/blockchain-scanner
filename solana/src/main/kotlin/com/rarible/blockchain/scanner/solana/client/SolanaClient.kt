@@ -42,10 +42,9 @@ class SolanaClient(
 
     override suspend fun getBlocks(numbers: List<Long>): List<SolanaBlockchainBlock> {
         val blocks = api.getBlocks(numbers, TransactionDetails.Full)
-            .map { it.getSafeResult(SolanaBlockDto.errorsToSkip) }
+            .mapValues { it.value.getSafeResult(SolanaBlockDto.errorsToSkip) }
 
-        return numbers.zip(blocks)
-            .mapNotNull { (slot, block) -> block?.let { solanaBlockDtoParser.toModel(it, slot) } }
+        return blocks.mapNotNull { (slot, block) -> block?.let { solanaBlockDtoParser.toModel(block, slot) } }
     }
 
     override suspend fun getBlock(number: Long): SolanaBlockchainBlock? {
