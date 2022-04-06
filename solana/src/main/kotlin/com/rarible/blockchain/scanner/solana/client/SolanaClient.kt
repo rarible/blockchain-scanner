@@ -2,9 +2,9 @@ package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDtoParser
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDtoParser
 import com.rarible.blockchain.scanner.solana.client.dto.getSafeResult
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
@@ -40,8 +40,17 @@ class SolanaClient(
 
     suspend fun getLatestSlot(): Long = api.getLatestSlot().toModel()
 
+    override suspend fun getBlocks(numbers: List<Long>): List<SolanaBlockchainBlock> {
+        val blocks = api.getBlocks(numbers, TransactionDetails.Full)
+            .map { it.getSafeResult(SolanaBlockDto.errorsToSkip) }
+
+        return numbers.zip(blocks)
+            .mapNotNull { (slot, block) -> block?.let { solanaBlockDtoParser.toModel(it, slot) } }
+    }
+
     override suspend fun getBlock(number: Long): SolanaBlockchainBlock? {
         val blockDto = api.getBlock(number, TransactionDetails.Full).getSafeResult(SolanaBlockDto.errorsToSkip)
+
         return blockDto?.let { solanaBlockDtoParser.toModel(it, number) }
     }
 

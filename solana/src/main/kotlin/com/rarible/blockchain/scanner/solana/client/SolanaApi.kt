@@ -10,6 +10,9 @@ import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.boot.web.reactive.function.client.WebClientCustomizer
 import org.springframework.http.HttpHeaders
@@ -28,6 +31,8 @@ interface SolanaApi {
     suspend fun getFirstAvailableBlock(): ApiResponse<Long>
 
     suspend fun getLatestSlot(): ApiResponse<Long>
+
+    suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): List<ApiResponse<SolanaBlockDto>>
 
     suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto>
 
@@ -61,6 +66,9 @@ class SolanaHttpRpcApi(
         .retrieve()
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
+
+    override suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): List<ApiResponse<SolanaBlockDto>> =
+        coroutineScope { slots.map { async { getBlock(it, details) } }.awaitAll() }
 
     override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
         .uri(uri)

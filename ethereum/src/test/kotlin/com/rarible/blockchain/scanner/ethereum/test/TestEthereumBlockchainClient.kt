@@ -32,6 +32,9 @@ class TestEthereumBlockchainClient(
         return delegate.getLatestBlockNumber()
     }
 
+    override suspend fun getBlocks(numbers: List<Long>): List<EthereumBlockchainBlock> =
+        numbers.mapNotNull { getBlock(it) }
+
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock? {
         val zeroBlock = delegate.getBlock(0L)
         if (number == 0L) {

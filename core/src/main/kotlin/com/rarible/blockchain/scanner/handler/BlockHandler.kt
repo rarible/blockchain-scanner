@@ -20,7 +20,6 @@ import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -28,14 +27,8 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.takeWhile
-import kotlinx.coroutines.job
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
 /**
@@ -259,7 +252,7 @@ class BlockHandler<BB : BlockchainBlock>(
             val fetchBlocksSample = Timer.start()
             val fetchedBlocks = try {
                 withSpan(name = "fetchBlocks") {
-                    blocksRange.range.map { id -> async { fetchBlock(id) } }.awaitAll().filterNotNull()
+                    blockClient.getBlocks(blocksRange.range.toList())
                 }
             } finally {
                 monitor.recordGetBlocks(fetchBlocksSample)

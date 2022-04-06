@@ -59,6 +59,9 @@ class EthereumClient(
         .timeout(Duration.ofMinutes(5))
         .asFlow()
 
+    override suspend fun getBlocks(numbers: List<Long>): List<EthereumBlockchainBlock> =
+        coroutineScope { numbers.map { async { getBlock(it) } }.awaitAll() }
+
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
         return ethereum.ethGetFullBlockByNumber(BigInteger.valueOf(number)).map {
             EthereumBlockchainBlock(it)
@@ -92,7 +95,10 @@ class EthereumClient(
                 .map { LongRange(it.first(), it.last()) }
                 .map {
                     async {
-                        withSpan(name = "getLogs", labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())) {
+                        withSpan(
+                            name = "getLogs",
+                            labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())
+                        ) {
                             getLogsByRange(descriptor, it)
                         }
                     }
@@ -140,7 +146,13 @@ class EthereumClient(
             val blockHash = Word.apply(blockHeader.hash)
             val finalFilter = filter.blockHash(blockHash)
             val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot { it.removed() }
-            logger.info("Loaded {} logs of topic {} for fresh block [{}:{}]", allLogs.size, descriptor.ethTopic, blockHeader.number, blockHash)
+            logger.info(
+                "Loaded {} logs of topic {} for fresh block [{}:{}]",
+                allLogs.size,
+                descriptor.ethTopic,
+                blockHeader.number,
+                blockHash
+            )
             val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
             createFullBlock(ethFullBlock, allLogs)
         }
@@ -173,7 +185,7 @@ class EthereumClient(
                 val transaction = transactions[ethLog.transactionHash()]
                     ?: error(
                         "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
-                            "All transactions: $transactions"
+                                "All transactions: $transactions"
                     )
                 EthereumBlockchainLog(
                     ethLog = ethLog,
