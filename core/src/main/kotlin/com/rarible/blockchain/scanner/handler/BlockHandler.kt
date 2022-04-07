@@ -113,6 +113,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
             for (batch in channel) {
                 lastSyncedBlock = processBlocks(batch).last()
+                monitor.recordLastIndexedBlock(lastSyncedBlock)
             }
             if (lastSyncedBlock != null) {
                 logger.info(
@@ -176,7 +177,7 @@ class BlockHandler<BB : BlockchainBlock>(
             if (batch.blocks.isNotEmpty()) {
                 val last = batch.blocks.last()
                 lastFetchedBlockHash = last.hash
-                monitor.recordLastLoadedBlockNumber(last.number)
+                monitor.recordLastFetchedBlockNumber(last.number)
 
                 send(batch)
             }

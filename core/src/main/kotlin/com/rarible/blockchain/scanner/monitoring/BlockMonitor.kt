@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
-import kotlinx.coroutines.runBlocking
 import java.time.Instant
 import kotlin.math.max
 
@@ -41,12 +40,14 @@ class BlockMonitor(
         processBlocksTimer = addTimer("process_blocks")
     }
 
-    override fun refresh() = runBlocking {
-        lastIndexedBlock = blockService.getLastBlock()
+    override fun refresh() = Unit
+
+    fun recordLastIndexedBlock(lastIndexedBlock: Block) {
+        this.lastIndexedBlock = lastIndexedBlock
     }
 
-    fun recordLastLoadedBlockNumber(lastLoadedBlockNumber: Long) {
-        this.lastLoadedBlockNumber = lastLoadedBlockNumber
+    fun recordLastFetchedBlockNumber(lastFetchedBlockNumber: Long) {
+        this.lastLoadedBlockNumber = lastFetchedBlockNumber
     }
 
     fun recordGetBlock(sample: Timer.Sample) {
