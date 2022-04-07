@@ -129,7 +129,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    @Suppress("EXPERIMENTAL_API_USAGE")
+    @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     fun syncBlocks(
         blockRanges: Flow<BlocksRange>,
         baseBlock: Block
@@ -139,15 +139,10 @@ class BlockHandler<BB : BlockchainBlock>(
                 // Some blocks in the previous batches are inconsistent by parent-child hash.
                 return@runningFold null
             }
-            val (blocksBatch, parentHashesAreConsistent) = withTransaction(
-                name = "fetchBlocksBatchWithHashConsistencyCheck",
-                labels = listOf("range" to blocksRange.range.toString())
-            ) {
-                fetchBlocksBatchWithHashConsistencyCheck(
-                    lastProcessedBlockHash = lastProcessedBlock.hash,
-                    blocksRange = blocksRange
-                )
-            }
+            val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
+                lastProcessedBlockHash = lastProcessedBlock.hash,
+                blocksRange = blocksRange
+            )
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
                 processBlocks(blocksBatch).last()
             } else {
@@ -163,7 +158,7 @@ class BlockHandler<BB : BlockchainBlock>(
         .drop(1) // Drop the baseBlock (the first item in the runningFold's Flow)
         .filterNotNull()
 
-    @Suppress("EXPERIMENTAL_API_USAGE")
+    @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     private fun CoroutineScope.produceBlocks(
         blockRanges: Flow<BlocksRange>,
         baseBlock: Block,
@@ -246,37 +241,61 @@ class BlockHandler<BB : BlockchainBlock>(
     private suspend fun fetchBlocksBatchWithHashConsistencyCheck(
         lastProcessedBlockHash: String,
         blocksRange: BlocksRange
-    ): Pair<BlocksBatch<BB>, Boolean> = withTransaction(
-        name = "fetchBlocks",
-        labels = listOf("range" to blocksRange.toString())
-    ) {
+    ): Pair<BlocksBatch<BB>, Boolean> {
+        val blocksBatch = fetchBlocksByRange(blocksRange)
+        return checkBlocksBatchHashConsistency(
+            baseBlockHash = lastProcessedBlockHash,
+            blocksBatch = blocksBatch
+        )
+    }
+
+    private suspend fun fetchBlocksByRange(blocksRange: BlocksRange): BlocksBatch<BB> {
         logger.info("Fetching $blocksRange")
         val fetchBlocksSample = Timer.start()
-        val fetchedBlocks = try {
-            withSpan(name = "fetchBlocks") {
-                blockClient.getBlocks(blocksRange.range.toList())
+        return withTransaction(
+            name = "fetchBlocks",
+            labels = listOf("range" to blocksRange.toString())
+        ) {
+            val fetchedBlocks = try {
+                withSpan(name = "fetchBlocks") {
+                    blockClient.getBlocks(blocksRange.range.toList())
+                }
+            } finally {
+                monitor.recordGetBlocks(fetchBlocksSample)
             }
-        } finally {
-            monitor.recordGetBlocks(fetchBlocksSample)
+            logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
+            BlocksBatch(blocksRange, fetchedBlocks)
         }
-        logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
+    }
+
+    /**
+     * Checks parent-child hash consistency of the [blocksBatch].
+     * The first block of the [blocksBatch] must be the child block of the [baseBlockHash].
+     * If all the blocks in the range are consistent, returns the [blocksBatch] and `true`.
+     * Otherwise, returns the prefix of consistent blocks and `false`.
+     */
+    private fun checkBlocksBatchHashConsistency(
+        baseBlockHash: String,
+        blocksBatch: BlocksBatch<BB>
+    ): Pair<BlocksBatch<BB>, Boolean> {
+        val fetchedBlocks = blocksBatch.blocks
         if (fetchedBlocks.isEmpty()) {
-            return@withTransaction BlocksBatch(
-                BlocksRange(LongRange.EMPTY, blocksRange.stable),
-                emptyList<BB>()
+            return BlocksBatch(
+                blocksRange = BlocksRange(range = LongRange.EMPTY, stable = blocksBatch.blocksRange.stable),
+                blocks = emptyList<BB>()
             ) to true
         }
-        var parentBlockHash = lastProcessedBlockHash
+        var parentBlockHash = baseBlockHash
         val blocks = arrayListOf<BB>()
-        var consistentRange = blocksRange
+        var consistentRange = blocksBatch.blocksRange
         for (block in fetchedBlocks) {
             if (parentBlockHash != block.parentHash) {
                 consistentRange = BlocksRange(
-                    range = blocksRange.range.first until block.number,
-                    stable = blocksRange.stable
+                    range = fetchedBlocks.first().number until block.number,
+                    stable = blocksBatch.blocksRange.stable
                 )
                 logger.info(
-                    "Blocks $blocksRange have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
+                    "Blocks ${blocksBatch.blocksRange} have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
                             "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
                             "the consistent range is $consistentRange"
                 )
@@ -285,8 +304,8 @@ class BlockHandler<BB : BlockchainBlock>(
             blocks += block
             parentBlockHash = block.hash
         }
-        val parentHashesAreConsistent = consistentRange == blocksRange
-        BlocksBatch(consistentRange, blocks) to parentHashesAreConsistent
+        val parentHashesAreConsistent = consistentRange == blocksBatch.blocksRange
+        return BlocksBatch(consistentRange, blocks) to parentHashesAreConsistent
     }
 
     private suspend fun processBlocks(blocksBatch: BlocksBatch<BB>): List<Block> {
