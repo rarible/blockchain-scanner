@@ -380,7 +380,9 @@ class BlockHandler<BB : BlockchainBlock>(
                 "maxId" to blockEvents.last().number
             )
         ) {
+            val processingStart = Timer.start()
             blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            monitor.recordProcessBlocks(processingStart)
         }
     }
 

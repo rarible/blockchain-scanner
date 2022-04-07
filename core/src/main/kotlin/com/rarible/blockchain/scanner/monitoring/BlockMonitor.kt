@@ -30,12 +30,15 @@ class BlockMonitor(
 
     private var getBlocksTimer: Timer? = null
 
+    private var processBlocksTimer: Timer? = null
+
     override fun register() {
         addGauge("delay") { getBlockDelay() }
         addGauge("last_block_number") { lastIndexedBlock?.id }
         addGauge("last_loaded_block_number") { lastLoadedBlockNumber }
         getBlockTimer = addTimer("get_block")
         getBlocksTimer = addTimer("get_blocks")
+        processBlocksTimer = addTimer("process_blocks")
     }
 
     override fun refresh() = runBlocking {
@@ -52,6 +55,10 @@ class BlockMonitor(
 
     fun recordGetBlocks(sample: Timer.Sample) {
         getBlocksTimer?.let { sample.stop(it) }
+    }
+
+    fun recordProcessBlocks(sample: Timer.Sample) {
+        processBlocksTimer?.let { sample.stop(it) }
     }
 
     fun getBlockDelay(now: Instant = nowMillis()): Double? {
