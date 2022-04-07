@@ -105,8 +105,8 @@ class BlockHandler<BB : BlockchainBlock>(
         ).asFlow()
         coroutineScope {
             val channel = produceBlocks(
-                stableUnstableBlockRanges,
-                lastCorrectBlock,
+                blockRanges = stableUnstableBlockRanges,
+                baseBlock = lastCorrectBlock,
                 capacity = scanProperties.batchLoad.batchBufferSize
             )
             var lastSyncedBlock: Block? = null
@@ -168,13 +168,15 @@ class BlockHandler<BB : BlockchainBlock>(
         baseBlock: Block,
         capacity: Int
     ) = produce(capacity = capacity) {
-        var lastProcessedBlockHash = baseBlock.hash
+        var lastFetchedBlockHash = baseBlock.hash
 
         blockRanges.takeWhile { range ->
-            val (batch, isConsistent) = fetchBlocksBatchWithHashConsistencyCheck(lastProcessedBlockHash, range)
+            val (batch, isConsistent) = fetchBlocksBatchWithHashConsistencyCheck(lastFetchedBlockHash, range)
 
             if (batch.blocks.isNotEmpty()) {
-                lastProcessedBlockHash = batch.blocks.last().hash
+                val last = batch.blocks.last()
+                lastFetchedBlockHash = last.hash
+                monitor.recordLastLoadedBlockNumber(last.number)
 
                 send(batch)
             }

@@ -21,7 +21,10 @@ class BlockMonitor(
 ) {
 
     @Volatile
-    private var lastBlock: Block? = null
+    private var lastIndexedBlock: Block? = null
+
+    @Volatile
+    private var lastLoadedBlockNumber: Long? = null
 
     private var getBlockTimer: Timer? = null
 
@@ -29,13 +32,18 @@ class BlockMonitor(
 
     override fun register() {
         addGauge("delay") { getBlockDelay() }
-        addGauge("last_block_number") { getLastBlockNumber() }
+        addGauge("last_block_number") { lastIndexedBlock?.id }
+        addGauge("last_loaded_block_number") { lastLoadedBlockNumber }
         getBlockTimer = addTimer("get_block")
         getBlocksTimer = addTimer("get_blocks")
     }
 
     override fun refresh() = runBlocking {
-        lastBlock = blockService.getLastBlock()
+        lastIndexedBlock = blockService.getLastBlock()
+    }
+
+    fun recordLastLoadedBlockNumber(lastLoadedBlockNumber: Long) {
+        this.lastLoadedBlockNumber = lastLoadedBlockNumber
     }
 
     fun recordGetBlock(sample: Timer.Sample) {
@@ -46,10 +54,8 @@ class BlockMonitor(
         getBlocksTimer?.let { sample.stop(it) }
     }
 
-    fun getLastBlockNumber(): Long? = lastBlock?.id
-
     fun getBlockDelay(now: Instant = nowMillis()): Double? {
-        val lastSeenBlockTimestamp = lastBlock?.timestamp ?: return null
+        val lastSeenBlockTimestamp = lastIndexedBlock?.timestamp ?: return null
         val currentTimestamp = now.epochSecond
         return max(currentTimestamp - lastSeenBlockTimestamp, 0).toDouble()
     }
