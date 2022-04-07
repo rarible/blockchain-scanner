@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
+import com.rarible.core.kafka.chunked
 import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -166,18 +167,31 @@ class BlockHandler<BB : BlockchainBlock>(
     ) = produce(capacity = capacity) {
         var lastFetchedBlockHash = baseBlock.hash
 
-        blockRanges.takeWhile { range ->
-            val (batch, isConsistent) = fetchBlocksBatchWithHashConsistencyCheck(lastFetchedBlockHash, range)
+        blockRanges.chunked(capacity / 2, 1000 /* Any is enough */).takeWhile { batchOfRanges ->
+            val batchOfBlockBatches = coroutineScope {
+                batchOfRanges.map { range ->
+                    async {
+                        fetchBlocksByRange(range)
+                    }
+                }
+            }.awaitAll()
+            for (blocksBatch in batchOfBlockBatches) {
+                val (batch, isConsistent) = checkBlocksBatchHashConsistency(
+                    baseBlockHash = lastFetchedBlockHash,
+                    blocksBatch = blocksBatch
+                )
+                if (batch.blocks.isNotEmpty()) {
+                    val last = batch.blocks.last()
+                    lastFetchedBlockHash = last.hash
+                    monitor.recordLastFetchedBlockNumber(last.number)
 
-            if (batch.blocks.isNotEmpty()) {
-                val last = batch.blocks.last()
-                lastFetchedBlockHash = last.hash
-                monitor.recordLastFetchedBlockNumber(last.number)
-
-                send(batch)
+                    send(batch)
+                }
+                if (!isConsistent) {
+                    return@takeWhile false
+                }
             }
-
-            isConsistent
+            true
         }.collect()
     }
 
