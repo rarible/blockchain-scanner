@@ -26,8 +26,8 @@ class BlockchainScannerConfiguration(
 
     @Bean
     @ConditionalOnClass(MeterRegistry::class)
-    fun blockMonitor(meterRegistry: MeterRegistry, blockService: BlockService): BlockMonitor {
-        return BlockMonitor(properties, meterRegistry, blockService)
+    fun blockMonitor(meterRegistry: MeterRegistry): BlockMonitor {
+        return BlockMonitor(properties, meterRegistry)
     }
 
     @Bean

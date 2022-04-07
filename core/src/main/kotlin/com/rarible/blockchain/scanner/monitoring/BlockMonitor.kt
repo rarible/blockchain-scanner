@@ -11,8 +11,7 @@ import kotlin.math.max
 
 class BlockMonitor(
     properties: BlockchainScannerProperties,
-    meterRegistry: MeterRegistry,
-    private val blockService: BlockService
+    meterRegistry: MeterRegistry
 ) : AbstractMonitor(
     properties,
     meterRegistry,
