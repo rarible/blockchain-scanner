@@ -159,7 +159,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 null
             }
         }
-        .drop(1) // Drop the lastCorrectBlock
+        .drop(1) // Drop the baseBlock (the first item in the runningFold's Flow)
         .filterNotNull()
 
     @Suppress("EXPERIMENTAL_API_USAGE")
