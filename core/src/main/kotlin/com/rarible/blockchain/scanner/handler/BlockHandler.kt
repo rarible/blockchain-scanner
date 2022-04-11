@@ -308,7 +308,7 @@ class BlockHandler<BB : BlockchainBlock>(
                     range = fetchedBlocks.first().number until block.number,
                     stable = blocksBatch.blocksRange.stable
                 )
-                logger.info(
+                logger.warn(
                     "Blocks ${blocksBatch.blocksRange} have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
                             "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
                             "the consistent range is $consistentRange"
