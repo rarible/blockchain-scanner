@@ -65,7 +65,7 @@ class GetTransactionRequest(
 data class ApiResponse<T>(
     val result: T?,
     val error: Error?,
-    val jsonRpc: String?
+    val jsonrpc: String?
 ) {
     data class Error(
         val message: String,
