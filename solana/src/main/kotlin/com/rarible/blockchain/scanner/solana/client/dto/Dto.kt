@@ -62,10 +62,12 @@ class GetTransactionRequest(
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ApiResponse<T>(
     val result: T?,
     val error: Error?,
-    val jsonrpc: String?
+    val jsonrpc: String?,
+    val id: Long
 ) {
     data class Error(
         val message: String,
