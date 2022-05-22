@@ -234,11 +234,14 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
     return block(result)
 }
 
-fun <T> ApiResponse<T>.getSafeResult(errorsToSkip: List<Int>): T? {
+fun <T> ApiResponse<T>.getSafeResult(
+    slot: Long,
+    errorsToSkip: List<Int>
+): T? {
     return if (result != null) {
         result
     } else {
-        val (message, code) = requireNotNull(error) { "Error field must be not null" }
+        val (message, code) = requireNotNull(error) { "Invalid ApiResponse for block $slot, both 'result' and 'error' fields are null" }
 
         if (code in errorsToSkip) {
             null
