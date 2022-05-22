@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
@@ -71,6 +72,7 @@ data class ApiResponse<T>(
     )
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaTransactionDto(
     val transaction: Details?,
     val meta: Meta?
@@ -79,28 +81,33 @@ data class SolanaTransactionDto(
     val isSuccessful: Boolean get() =
         meta != null && meta.err == null
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Instruction(
         val accounts: List<Int>,
         val data: String,
         val programIdIndex: Int
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class InnerInstruction(
         val index: Int,
         val instructions: List<Instruction?>,
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Message(
         val recentBlockhash: String?,
         val accountKeys: List<String>,
         val instructions: List<Instruction?>
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Details(
         val message: Message,
         val signatures: List<String>
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Meta(
         @JsonSetter(nulls = Nulls.AS_EMPTY)
         val innerInstructions: List<InnerInstruction> = emptyList(),
@@ -108,6 +115,7 @@ data class SolanaTransactionDto(
     )
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaBlockDto(
     val parentSlot: Long,
     val blockhash: String,
