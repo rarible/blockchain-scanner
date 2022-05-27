@@ -112,7 +112,7 @@ data class ReversedEthereumLogRecord(
     }
 
     override fun withUpdatedAt(updatedAt: Instant): ReversedEthereumLogRecord {
-        return copy(updatedAt = Instant.now())
+        return copy(updatedAt = updatedAt)
     }
 
     override fun getKey(): String {
