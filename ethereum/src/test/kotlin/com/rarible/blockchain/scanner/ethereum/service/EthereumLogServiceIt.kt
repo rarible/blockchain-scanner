@@ -68,7 +68,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
 
         assertNotNull(savedVisibleRecord)
         assertEquals(savedVisibleRecord.data, newLog.data)
-        assertEquals(newLog.log, savedVisibleRecord.log)
+        assertEquals(newLog.log, savedVisibleRecord.log.copy(updatedAt = newLog.log.updatedAt))
     }
 
     @Test
@@ -132,8 +132,8 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val updatedLog = findLog(collection, log.id) as ReversedEthereumLogRecord
 
         assertNotNull(updatedLog)
-        assertEquals(savedLog.version, updatedLog.version)
-        assertEquals(log.log, updatedLog.log)
+        assertEquals(savedLog, updatedLog.copy(version = savedLog.version, updatedAt = savedLog.updatedAt))
+        assertEquals(log.log, updatedLog.log.copy(updatedAt = log.log.updatedAt))
     }
 
     @Test
