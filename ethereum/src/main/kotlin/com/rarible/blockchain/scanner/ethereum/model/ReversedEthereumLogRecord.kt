@@ -111,6 +111,10 @@ data class ReversedEthereumLogRecord(
         return copy(id = id, version = version, updatedAt = updatedAt)
     }
 
+    override fun withUpdatedAt(updatedAt: Instant): ReversedEthereumLogRecord {
+        return copy(updatedAt = updatedAt)
+    }
+
     override fun getKey(): String {
         return data.getKey(log)
     }
