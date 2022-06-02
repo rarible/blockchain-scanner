@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.takeWhile
 import org.slf4j.LoggerFactory
@@ -127,6 +128,26 @@ class BlockHandler<BB : BlockchainBlock>(
             } else {
                 logger.info("Syncing completed prematurely")
             }
+        }
+    }
+
+    fun syncBlocks(
+        blocks: List<Long>
+    ): Flow<Block> = flow {
+        for (block in blocks) {
+            val blockchainBlock = blockClient.getBlock(block) ?: error("Can't get block: $block")
+
+            emit(
+                processBlocks(
+                    BlocksBatch(
+                        blocksRange = BlocksRange(
+                            range = blockchainBlock.number..blockchainBlock.number,
+                            stable = true
+                        ),
+                        blocks = listOf(blockchainBlock)
+                    )
+                ).single()
+            )
         }
     }
 
