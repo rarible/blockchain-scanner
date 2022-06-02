@@ -18,7 +18,6 @@ import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import scala.jdk.javaapi.CollectionConverters
@@ -129,8 +128,9 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         }
 
         BlockingWait.waitAssert {
-            // The inactive log must be removed.
-            assertNull(findLog(collection, pendingLog.id))
+            val ethLog = findLog(collection, pendingLog.id) as ReversedEthereumLogRecord
+            assertThat(ethLog.status).isEqualTo(EthereumLogStatus.INACTIVE)
+
         }
 
         verifyPublishedLogEvent { logRecord ->

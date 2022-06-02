@@ -43,30 +43,30 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             batches.flatMap { prepareBlockEventsBatch(it) }
         }
         val blockLogsToInsert = hashMapOf<BlockEvent<*>, MutableMap<String, MutableList<R>>>()
-        val blockLogsToRemove = hashMapOf<BlockEvent<*>, MutableMap<String, MutableList<R>>>()
+        val blockLogsToUpdate = hashMapOf<BlockEvent<*>, MutableMap<String, MutableList<R>>>()
         for (logEvent in logEvents) {
             blockLogsToInsert.getOrPut(logEvent.blockEvent) { hashMapOf() }
                 .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToInsert
-            blockLogsToRemove.getOrPut(logEvent.blockEvent) { hashMapOf() }
-                .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToRemove
+            blockLogsToUpdate.getOrPut(logEvent.blockEvent) { hashMapOf() }
+                .getOrPut(logEvent.descriptor.groupId) { arrayListOf() } += logEvent.logRecordsToUpdate
         }
         withSpan(name = "publishEvents") {
             for (blockEvent in events) {
                 val toInsertGroupIdMap = blockLogsToInsert[blockEvent] ?: continue
-                val toRemoveGroupIdMap = blockLogsToRemove.getValue(blockEvent)
-                publishRecordsToRemove(blockEvent, toRemoveGroupIdMap)
+                val toUpdateGroupIdMap = blockLogsToUpdate.getValue(blockEvent)
+                publishRecordsToUpdate(blockEvent, toUpdateGroupIdMap)
                 publishRecordsToInsert(blockEvent, toInsertGroupIdMap)
                 logger.info("Sent events for {}", blockEvent)
             }
         }
         val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
-        val toDelete = logEvents.sumOf { it.logRecordsToRemove.size }
+        val toDelete = logEvents.sumOf { it.logRecordsToUpdate.size }
         withSpan(
-            name = "insertOrRemoveRecords",
+            name = "insertOrUpdateRecords",
             type = SpanType.DB,
             labels = listOf("toInsert" to toInsert, "toDelete" to toDelete)
         ) {
-            insertOrRemoveRecords(logEvents)
+            insertOrUpdateRecords(logEvents)
         }
     }
 
@@ -89,19 +89,19 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
     }
 
-    private suspend fun publishRecordsToRemove(
+    private suspend fun publishRecordsToUpdate(
         blockEvent: BlockEvent<BB>,
-        toRemoveGroupIdMap: MutableMap<String, MutableList<R>>
+        toUpdateGroupIdMap: MutableMap<String, MutableList<R>>
     ) {
-        for ((groupId, recordsToRemove) in toRemoveGroupIdMap) {
+        for ((groupId, recordsToUpdate) in toUpdateGroupIdMap) {
             logger.info(
                 "Publishing {} reverted log records for {} of {}",
-                recordsToRemove.size,
+                recordsToUpdate.size,
                 groupId,
                 blockEvent
             )
-            if (recordsToRemove.isNotEmpty()) {
-                val logRecordEvents = recordsToRemove.sortedWith(logRecordComparator.reversed())
+            if (recordsToUpdate.isNotEmpty()) {
+                val logRecordEvents = recordsToUpdate.sortedWith(logRecordComparator.reversed())
                     .map { LogRecordEvent(it, true) }
                 logRecordEventPublisher.publish(groupId, logRecordEvents)
             }
@@ -127,9 +127,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             }.awaitAll().flatten()
         }
 
-    private suspend fun insertOrRemoveRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToRemove) } }.awaitAll()
-        logEvents.map { async { logService.save(it.descriptor, it.logRecordsToInsert) } }.awaitAll()
+    private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
+        //logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToUpdate) } }.awaitAll()
+        logEvents.map { async { logService.save(it.descriptor, it.logRecordsToInsert + it.logRecordsToUpdate) } }
+            .awaitAll()
     }
 
     private suspend fun onBlock(
@@ -165,7 +166,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 else
                     emptyList()
                 logger.info(
-                    "Prepared logs for '{}': {} new logs and {} logs to remove",
+                    "Prepared logs for '{}': {} new logs and {} logs to update",
                     subscriber.getDescriptor().id,
                     logRecordsToInsert.size,
                     logRecordsToRevert.size,
@@ -175,7 +176,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                     blockEvent = event,
                     descriptor = subscriber.getDescriptor(),
                     logRecordsToInsert = logRecordsToInsert,
-                    logRecordsToRemove = logRecordsToRevert
+                    logRecordsToUpdate = logRecordsToRevert
                 )
             }
         }
@@ -231,7 +232,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             blockEvent = event,
             descriptor = subscriber.getDescriptor(),
             logRecordsToInsert = emptyList(),
-            logRecordsToRemove = toRevertLogs
+            logRecordsToUpdate = toRevertLogs
         )
     }
 
