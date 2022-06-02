@@ -142,7 +142,7 @@ class BlockHandler<BB : BlockchainBlock>(
                     BlocksBatch(
                         blocksRange = BlocksRange(
                             range = blockchainBlock.number..blockchainBlock.number,
-                            stable = true
+                            stable = false
                         ),
                         blocks = listOf(blockchainBlock)
                     )
