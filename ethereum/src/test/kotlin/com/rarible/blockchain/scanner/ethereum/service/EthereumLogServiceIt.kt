@@ -1,9 +1,11 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
+import com.rarible.blockchain.scanner.ethereum.test.data.createLogList
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLog
@@ -12,8 +14,11 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import io.mockk.mockk
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -152,5 +157,65 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val revertedLogs = ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
         assertEquals(1, revertedLogs.size)
         assertEquals(reverted.id, revertedLogs[0].id)
+    }
+
+    @Test
+    fun `make logs reverted`() = runBlocking {
+        val blockHash = randomBlockHash()
+        val revertLogAmount = 20
+        val insertLogAmount = 10
+
+        repeat(revertLogAmount){
+            saveLog(collection, randomLogRecord(topic, blockHash))
+        }
+
+        val logsToInsert = createLogList(insertLogAmount, randomBlockHash(), topic = topic)
+        val logsToRevert = ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
+
+        assertThat(logsToRevert).hasSize(revertLogAmount)
+        ethereumLogService.save(descriptor, logsToRevert + logsToInsert)
+
+        logsToRevert.forEach {
+            val revertedLog = findLog(collection, it.id)
+            assertThat(revertedLog).isNotNull
+            assertThat(revertedLog!!.log.status).isEqualTo(EthereumLogStatus.REVERTED)
+            assertThat(revertedLog.log.visible).isFalse()
+        }
+    }
+
+    @Test
+    fun `make logs inactive`() = runBlocking<Unit> {
+        val pendingLogAmount = 10
+        val blockHash = randomBlockHash()
+
+        val pendingLog = createLogList(pendingLogAmount, null, EthereumLogStatus.PENDING, topic = topic)
+        ethereumLogService.save(descriptor, pendingLog)
+
+        val logToInactive =
+            pendingLog.map { it.copy(status = EthereumLogStatus.INACTIVE, visible = false, id = randomString()) }
+        val logToConfirmed =
+            pendingLog.map { it.copy(status = EthereumLogStatus.CONFIRMED, blockHash = blockHash, id = randomString()) }
+
+        ethereumLogService.save(descriptor, logToInactive)
+        ethereumLogService.save(descriptor, logToConfirmed)
+
+        assertThat(logToInactive).hasSize(pendingLogAmount)
+
+        val all = mongo.findAll(ReversedEthereumLogRecord::class.java, collection).asFlow().toList()
+
+        val allInvisible = all.filter { !it.visible }
+        val allVisible = all.filter { it.visible }
+
+        assertThat(all).hasSize(pendingLogAmount * 2)
+        assertThat(allInvisible).hasSize(pendingLogAmount)
+        assertThat(allVisible).hasSize(pendingLogAmount)
+
+        allInvisible.forEach {
+            assertThat(it.status).isEqualTo(EthereumLogStatus.INACTIVE)
+        }
+
+        allVisible.forEach {
+            assertThat(it.status).isEqualTo(EthereumLogStatus.CONFIRMED)
+        }
     }
 }

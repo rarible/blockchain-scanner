@@ -37,6 +37,20 @@ fun randomLogRecord(
     status: EthereumLogStatus = EthereumLogStatus.CONFIRMED
 ) = randomLogRecord(randomLog(transactionHash, topic, blockHash, status = status))
 
+fun createLogList(
+    size: Int,
+    blockHash: Word?,
+    status: EthereumLogStatus = EthereumLogStatus.CONFIRMED,
+    topic: Word = randomWord()
+): List<ReversedEthereumLogRecord> {
+    val result: MutableList<ReversedEthereumLogRecord> = mutableListOf()
+
+    repeat(size) {
+        result.add(randomLogRecord(topic, blockHash, status = status))
+    }
+    return result
+}
+
 fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
     return ReversedEthereumLogRecord(
         id = randomString(),

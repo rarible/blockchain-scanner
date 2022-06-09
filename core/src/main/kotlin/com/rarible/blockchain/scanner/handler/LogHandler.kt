@@ -60,11 +60,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             }
         }
         val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
-        val toDelete = logEvents.sumOf { it.logRecordsToUpdate.size }
+        val toUpdate = logEvents.sumOf { it.logRecordsToUpdate.size }
         withSpan(
             name = "insertOrUpdateRecords",
             type = SpanType.DB,
-            labels = listOf("toInsert" to toInsert, "toDelete" to toDelete)
+            labels = listOf("toInsert" to toInsert, "toUpdate" to toUpdate)
         ) {
             insertOrUpdateRecords(logEvents)
         }
@@ -128,9 +128,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
 
     private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        //logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToUpdate) } }.awaitAll()
-        logEvents.map { async { logService.save(it.descriptor, it.logRecordsToInsert + it.logRecordsToUpdate) } }
-            .awaitAll()
+        logEvents.map { async { logService.delete(it.descriptor, it.logRecordsToUpdate) } }.awaitAll()
+        logEvents.map { async { logService.save(it.descriptor, it.logRecordsToInsert) } }.awaitAll()
     }
 
     private suspend fun onBlock(

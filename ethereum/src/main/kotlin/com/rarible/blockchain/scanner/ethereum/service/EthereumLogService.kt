@@ -88,5 +88,5 @@ class EthereumLogService(
         collection = descriptor.collection,
         blockHash = Word.apply(revertedBlockHash),
         topic = descriptor.ethTopic
-    ).toList().map { it.withLog(it.log.copy(status = EthereumLogStatus.REVERTED)) }
+    ).toList().map { it.withLog(it.log.copy(status = EthereumLogStatus.REVERTED, visible = false)) }
 }

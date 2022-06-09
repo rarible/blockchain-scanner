@@ -41,12 +41,13 @@ class EthereumPendingLogService(
         val toConfirmLogs = pendingLogs.filter { it.log.transactionHash in confirmedTransactions }
 
         // Logs that have received confirmation in this new block (mark them as INACTIVE).
-        val confirmedLogs = toConfirmLogs.map { it.withLog(it.log.copy(status = EthereumLogStatus.INACTIVE)) }
+        val confirmedLogs =
+            toConfirmLogs.map { it.withLog(it.log.copy(status = EthereumLogStatus.INACTIVE, visible = false)) }
 
         // Logs that have not received confirmation in max pending time (mark them as DROPPED).
-        val expiredLogs = (pendingLogs - confirmedLogs)
+        val expiredLogs = (pendingLogs - confirmedLogs.toSet())
             .filter { Duration.between(it.updatedAt, nowMillis()) > maxPendingLogDuration }
-            .map { it.withLog(it.log.copy(status = EthereumLogStatus.DROPPED)) }
+            .map { it.withLog(it.log.copy(status = EthereumLogStatus.DROPPED, visible = false)) }
         logger.info(
             "Found {} confirmed logs and {} dropped logs for {}",
             confirmedLogs.size,
