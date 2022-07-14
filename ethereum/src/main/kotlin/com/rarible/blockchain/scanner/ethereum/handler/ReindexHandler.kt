@@ -51,7 +51,9 @@ class ReindexHandler(
         baseBlock: Block,
         blocksRanges: Flow<BlocksRange>,
         topics: List<Word> = emptyList(),
-        addresses: List<Address> = emptyList()
+        addresses: List<Address> = emptyList(),
+        batchSize: Int? = null,
+        logRecordEventPublisher: LogRecordEventPublisher? = null
     ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {
             val filteredSubscribers = if (topics.isNotEmpty()) {
@@ -71,7 +73,7 @@ class ReindexHandler(
                     logger.info(
                         "Reindex with subscribers of the group {}: {}",
                         groupId,
-                        subscribers.joinToString { it.getDescriptor().id })
+                        subscribers.joinToString { it.getDescriptor().toString() })
                     LogHandler(
                         groupId = groupId,
                         blockchainClient = retryableClient,
@@ -91,7 +93,6 @@ class ReindexHandler(
                 scanProperties = blockchainScannerProperties.scan,
                 monitor = blockMonitor
             )
-
             blockHandler.syncBlocks(blocksRanges, baseBlock)
         }
     }

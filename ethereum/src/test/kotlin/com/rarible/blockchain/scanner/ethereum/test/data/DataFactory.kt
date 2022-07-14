@@ -1,11 +1,11 @@
 package com.rarible.blockchain.scanner.ethereum.test.data
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
-import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
@@ -78,6 +78,7 @@ fun randomLog(
         minorLogIndex = randomPositiveInt(),
         blockTimestamp = randomPositiveLong(),
         from = randomAddress(),
+        to = randomAddress(),
         createdAt = nowMillis()
     )
 }

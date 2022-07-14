@@ -61,7 +61,7 @@ data class EthereumLog(
      *
      * This field is nullable until all log events are updated in the database.
      * For new log events it is not null.
-    */
+     */
     val blockTimestamp: Long? = null,
 
     /**
@@ -71,6 +71,7 @@ data class EthereumLog(
      * For new log events it is not null.
      */
     val from: Address? = null,
+    val to: Address? = null,
     val createdAt: Instant = Instant.EPOCH,
     val updatedAt: Instant = createdAt
 

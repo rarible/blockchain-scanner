@@ -48,6 +48,7 @@ abstract class EthereumLogEventSubscriber :
             index = log.index,
             visible = true,
             from = log.ethTransaction.from(),
+            to = log.ethTransaction.to(),
             createdAt = nowInstant
         )
     }
