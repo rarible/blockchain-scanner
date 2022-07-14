@@ -2,13 +2,11 @@ package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
-import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -21,9 +19,6 @@ import scalether.domain.Address
 class EthereumLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
-
-    private val logger = LoggerFactory.getLogger(EthereumLogRepository::class.java)
-
     suspend fun findLogEvent(entityType: Class<*>, collection: String, id: String): EthereumLogRecord? {
         return mongo.findById(id, entityType, collection).awaitFirstOrNull() as EthereumLogRecord?
     }
@@ -57,22 +52,6 @@ class EthereumLogRepository(
 
     suspend fun save(collection: String, event: EthereumLogRecord): EthereumLogRecord {
         return mongo.save(event, collection).awaitFirst()
-    }
-
-    fun findPendingLogs(
-        entityType: Class<*>,
-        collection: String,
-        topic: Word
-    ): Flow<EthereumLogRecord> {
-        val criteria = Criteria
-            .where("topic").isEqualTo(topic)
-            .and("status").`is`(EthereumLogStatus.PENDING)
-
-        return mongo.find(
-            Query(criteria),
-            entityType,
-            collection
-        ).asFlow() as Flow<EthereumLogRecord>
     }
 
     fun find(

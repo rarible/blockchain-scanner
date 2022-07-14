@@ -1,7 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
-import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
-import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumLogService(
     private val ethereumLogRepository: EthereumLogRepository,
-    private val ethereumPendingLogService: EthereumPendingLogService,
     private val properties: EthereumScannerProperties
 ) : LogService<EthereumLogRecord, EthereumDescriptor> {
 
@@ -75,9 +72,7 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         fullBlock: FullBlock<*, *>
     ): List<EthereumLogRecord> {
-        @Suppress("UNCHECKED_CAST")
-        val fullEthBlock = fullBlock as FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>
-        return ethereumPendingLogService.getInactivePendingLogs(fullEthBlock, descriptor)
+        return emptyList()
     }
 
     override suspend fun prepareLogsToRevertOnRevertedBlock(

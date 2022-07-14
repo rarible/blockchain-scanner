@@ -17,18 +17,16 @@ class EthereumLogRecordComparatorTest {
         val r3 = record(1, 2, 2)
         val r4 = record(2, 1, 2)
         val r5 = record(2, 3, 0)
-        val r6 = record(null, null, 0, EthereumLogStatus.PENDING)
 
-        val list = listOf(r1, r2, r3, r4, r5, r6).shuffled()
+        val list = listOf(r1, r2, r3, r4, r5).shuffled()
 
         val sorted = list.sortedWith(EthereumLogRecordComparator)
 
-        assertThat(sorted[0]).isEqualTo(r6) // pending logs should be first
-        assertThat(sorted[1]).isEqualTo(r1)
-        assertThat(sorted[2]).isEqualTo(r2)
-        assertThat(sorted[3]).isEqualTo(r3)
-        assertThat(sorted[4]).isEqualTo(r4)
-        assertThat(sorted[5]).isEqualTo(r5)
+        assertThat(sorted[0]).isEqualTo(r1)
+        assertThat(sorted[1]).isEqualTo(r2)
+        assertThat(sorted[2]).isEqualTo(r3)
+        assertThat(sorted[3]).isEqualTo(r4)
+        assertThat(sorted[4]).isEqualTo(r5)
     }
 
     private fun record(

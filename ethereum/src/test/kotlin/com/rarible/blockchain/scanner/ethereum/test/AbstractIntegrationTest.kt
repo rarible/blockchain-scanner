@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
-import com.rarible.blockchain.scanner.ethereum.service.EthereumPendingLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.block.Block
@@ -63,9 +62,6 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var ethereumLogService: EthereumLogService
-
-    @Autowired
-    lateinit var ethereumPendingLogService: EthereumPendingLogService
 
     @Autowired
     lateinit var testTransferSubscriber: TestTransferSubscriber

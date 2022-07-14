@@ -1,24 +1,19 @@
 package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
-import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveInt
-import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
-import com.rarible.core.common.nowMillis
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import scala.jdk.javaapi.CollectionConverters
@@ -104,71 +99,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                 )
             }
         }
-    }
-
-    @Test
-    fun `scan - mark pending logs as inactive`() {
-        val value = randomPositiveBigInt(1000000)
-        val pendingLog = delayBlockHandling {
-            // First - log from mint
-            mintAndVerify(sender.from(), value)
-
-            // Second - log from transfer
-            val beneficiary = randomAddress()
-            val transferReceipt = contract.transfer(beneficiary, value)
-                .execute()
-                .verifySuccess()
-
-            // Artificial PENDING log for transaction that already exists
-            val log = ethLog(transferReceipt.transactionHash().toString(), transferReceipt.from()).copy(
-                index = randomPositiveInt()
-            )
-            val record = ethRecord(log, beneficiary, value)
-
-            saveLog(collection, record)
-        }
-
-        BlockingWait.waitAssert {
-            // The inactive log must be removed.
-            assertNull(findLog(collection, pendingLog.id))
-        }
-
-        verifyPublishedLogEvent { logRecord ->
-            assertThat(logRecord.reverted).isTrue()
-            assertThat(logRecord.record).isInstanceOfSatisfying(ReversedEthereumLogRecord::class.java) {
-                assertThat(it.id).isEqualTo(pendingLog.id)
-                assertThat(it.log.status).isEqualTo(EthereumLogStatus.INACTIVE)
-            }
-        }
-    }
-
-    private fun ethRecord(log: EthereumLog, beneficiary: Address, value: BigInteger): ReversedEthereumLogRecord {
-        return ReversedEthereumLogRecord(
-            id = randomString(),
-            version = null,
-            log = log,
-            data = TestEthereumLogData(
-                customData = randomString(),
-                from = sender.from(),
-                to = beneficiary,
-                value = value,
-                transactionInput = randomString()
-            )
-        )
-    }
-
-    private fun ethLog(transactionHash: String, from: Address): EthereumLog {
-        return EthereumLog(
-            address = contract.address(),
-            topic = TransferEvent.id(),
-            transactionHash = transactionHash,
-            status = EthereumLogStatus.PENDING,
-            index = 0,
-            minorLogIndex = 0,
-            visible = true,
-            from = from,
-            createdAt = nowMillis()
-        )
     }
 
     private fun mintAndVerify(beneficiary: Address, value: BigInteger): TransactionReceipt {
