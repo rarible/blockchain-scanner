@@ -6,9 +6,9 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 class TestEthereumLogRecordEventPublisher : LogRecordEventPublisher {
 
-    val publishedLogRecords: MutableList<LogRecordEvent<*>> = CopyOnWriteArrayList()
+    val publishedLogRecords: MutableList<LogRecordEvent> = CopyOnWriteArrayList()
 
-    override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) {
+    override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {
         publishedLogRecords += logRecordEvents
     }
 

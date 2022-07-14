@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventFilter
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
@@ -17,6 +18,7 @@ import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.BlocksRange
 import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
+import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.core.logging.RaribleMDCContext
 import io.daonomic.rpc.domain.Word
@@ -32,11 +34,13 @@ import scalether.domain.Address
 @Component
 class ReindexHandler(
     private val allSubscribers: List<EthereumLogEventSubscriber>,
+    private val logFilters: List<EthereumLogEventFilter>,
     private val blockService: BlockService,
     ethereumClient: EthereumBlockchainClient,
     private val logService: EthereumLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties,
     private val blockMonitor: BlockMonitor,
+    private val logMonitor: LogMonitor
 ) {
     private val retryableClient = RetryableBlockchainClient(
         original = ethereumClient,
@@ -71,21 +75,22 @@ class ReindexHandler(
                         groupId,
                         subscribers.joinToString { it.getDescriptor().toString() })
                     LogHandler(
+                        groupId = groupId,
                         blockchainClient = retryableClient,
                         subscribers = subscribers,
+                        logFilters = logFilters,
                         logService = logService,
                         logRecordComparator = EthereumLogRecordComparator,
-                        logRecordEventPublisher = logRecordEventPublisher ?: reindexLogRecordEventPublisher
+                        logRecordEventPublisher = reindexLogRecordEventPublisher,
+                        logMonitor = logMonitor
                     )
                 }
-
-            val batchLoad = blockchainScannerProperties.scan.batchLoad
 
             val blockHandler = BlockHandler(
                 blockClient = retryableClient,
                 blockService = blockService,
                 blockEventListeners = logHandlers,
-                batchLoad = batchLoad.copy(batchSize = batchSize ?: batchLoad.batchSize),
+                scanProperties = blockchainScannerProperties.scan,
                 monitor = blockMonitor
             )
             blockHandler.syncBlocks(blocksRanges, baseBlock)
@@ -108,7 +113,7 @@ class ReindexHandler(
     }
 
     private val reindexLogRecordEventPublisher = object : LogRecordEventPublisher {
-        override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>) {
+        override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {
             val blockNumber = (logRecordEvents.firstOrNull()?.record as? EthereumLogRecord)?.log?.blockNumber
             logger.info("Re-indexed log events for block $blockNumber: groupId=$groupId, size=${logRecordEvents.size}")
         }

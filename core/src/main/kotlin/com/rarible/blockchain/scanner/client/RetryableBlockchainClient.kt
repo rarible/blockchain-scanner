@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.retry
 import org.slf4j.LoggerFactory
+import kotlin.coroutines.cancellation.CancellationException
 
 class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor>(
     private val original: BlockchainClient<BB, BL, D>,
@@ -30,6 +31,12 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
     override suspend fun getFirstAvailableBlock(): BB {
         return wrapWithRetry("getBlock") {
             original.getFirstAvailableBlock()
+        }
+    }
+
+    override suspend fun getBlocks(numbers: List<Long>): List<BB> {
+        return wrapWithRetry("getBlocks", numbers) {
+            original.getBlocks(numbers)
         }
     }
 
@@ -52,11 +59,13 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
             }
     }
 
-    protected suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
+    private suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
             return retry(limitAttempts(attempts) + constantDelay(delay)) {
                 clientCall.invoke()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             logger.error(
                 "Unable to perform BlockchainClient operation '{}' with params [{}] after {} attempts: {}",

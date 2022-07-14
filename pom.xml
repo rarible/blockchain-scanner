@@ -14,10 +14,10 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.2.26</revision>
+        <revision>2.2.145-SOLANA</revision>
 
         <rarible.ethereum.version>1.5.6</rarible.ethereum.version>
-        <rarible.core.version>2.3.44</rarible.core.version>
+        <rarible.core.version>2.3.79</rarible.core.version>
     </properties>
 
     <repositories>

@@ -11,8 +11,13 @@ interface LogRecordEventPublisher {
     suspend fun prepareGroup(groupId: String): Unit = Unit
 
     /**
+     * Determines is publisher enabled or not
+     */
+    suspend fun isEnabled(): Boolean = true
+
+    /**
      * Publish LogRecordEvents merged for the descriptor group and sorted using the blockchain-specific comparator.
      */
-    suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent<*>>)
+    suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>)
 
 }

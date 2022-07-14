@@ -1,8 +1,11 @@
 package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Timer
 import java.util.function.Supplier
 
@@ -21,9 +24,17 @@ abstract class AbstractMonitor(
             .register(meterRegistry)
     }
 
-    protected fun addTimer(metricName: String): Timer {
+    protected fun addTimer(metricName: String, vararg tags: Tag): Timer {
         return Timer.builder("$fullPrefix.$metricName")
             .tag("blockchain", blockchain)
+            .tags(tags.toList())
+            .register(meterRegistry)
+    }
+
+    protected fun addCounter(metricName: String, vararg tags: Tag): Counter {
+        return Counter.builder("$fullPrefix.$metricName")
+            .tag("blockchain", blockchain)
+            .tags(tags.toList())
             .register(meterRegistry)
     }
 

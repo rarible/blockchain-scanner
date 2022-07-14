@@ -3,6 +3,9 @@ package com.rarible.blockchain.scanner.solana.client
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDtoParser
+import com.rarible.blockchain.scanner.solana.client.dto.getSafeResult
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.flow.Flow
@@ -12,9 +15,13 @@ import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
 
 class SolanaClient(
-    urls: List<String>
+    private val api: SolanaApi,
+    programIds: Set<String>
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
-    private val api = SolanaHttpRpcApi(urls)
+
+    private val solanaBlockDtoParser = SolanaBlockDtoParser(
+        programIds = programIds
+    )
 
     override val newBlocks: Flow<SolanaBlockchainBlock>
         get() = flow {
@@ -24,8 +31,7 @@ class SolanaClient(
                 val slot = getLatestSlot()
 
                 if (slot != latestSlot) {
-                    val block = api.getBlock(slot, TransactionDetails.Full).toModel(slot)
-
+                    val block = getBlock(slot)
                     latestSlot = slot
                     block?.let { emit(it) }
                 }
@@ -34,8 +40,18 @@ class SolanaClient(
 
     suspend fun getLatestSlot(): Long = api.getLatestSlot().toModel()
 
-    override suspend fun getBlock(number: Long): SolanaBlockchainBlock? =
-        api.getBlock(number, TransactionDetails.Full).toModel(number)
+    override suspend fun getBlocks(numbers: List<Long>): List<SolanaBlockchainBlock> {
+        val blocks = api.getBlocks(numbers, TransactionDetails.Full)
+            .mapValues { it.value.getSafeResult(it.key, SolanaBlockDto.errorsToSkip) }
+
+        return blocks.mapNotNull { (slot, block) -> block?.let { solanaBlockDtoParser.toModel(block, slot) } }
+    }
+
+    override suspend fun getBlock(number: Long): SolanaBlockchainBlock? {
+        val blockDto = api.getBlock(number, TransactionDetails.Full).getSafeResult(number, SolanaBlockDto.errorsToSkip)
+
+        return blockDto?.let { solanaBlockDtoParser.toModel(it, number) }
+    }
 
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,

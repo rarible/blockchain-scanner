@@ -16,6 +16,8 @@ class TestBlockchainClient(
 
     override val newBlocks: Flow<TestBlockchainBlock> get() = data.newBlocks.asFlow()
 
+    override suspend fun getBlocks(numbers: List<Long>): List<TestBlockchainBlock> = numbers.map { getBlock(it) }
+
     override suspend fun getBlock(number: Long): TestBlockchainBlock = blocksByNumber.getValue(number)
 
     override fun getBlockLogs(

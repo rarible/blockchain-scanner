@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import reactor.kotlin.core.publisher.toMono
 
 @Component
 class BlockRepository(
@@ -28,6 +29,10 @@ class BlockRepository(
             Query(Criteria.where("_id").isEqualTo(id)),
             Block::class.java
         ).awaitFirstOrNull()
+    }
+
+    suspend fun insertAll(blocks: List<Block>): Flow<Block> {
+        return mongo.insertAll(blocks.toMono(), Block::class.java).asFlow()
     }
 
     fun getAll(): Flow<Block> = mongo.findAll<Block>().asFlow()

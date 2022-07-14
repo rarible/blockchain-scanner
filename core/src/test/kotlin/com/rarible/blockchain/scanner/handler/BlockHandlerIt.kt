@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.handler
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
@@ -33,7 +34,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
@@ -56,7 +57,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData1),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler1.onNewBlock(blockchain1[4])
@@ -69,7 +70,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData2),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler2.onNewBlock(blockchain2[6])
@@ -93,7 +94,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain[5])
@@ -121,7 +122,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(TestBlockchainData(blockchain1, emptyList(), emptyList())),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler1.onNewBlock(blockchain1.last())
@@ -139,7 +140,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(TestBlockchainData(blockchain2, emptyList(), emptyList())),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
 
@@ -160,7 +161,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(TestBlockchainData(blockchain1, emptyList(), emptyList())),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler1.onNewBlock(blockchain1[5])
@@ -170,7 +171,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(TestBlockchainData(blockchain2, emptyList(), emptyList())),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
 
@@ -188,7 +189,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
@@ -216,7 +217,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(exceptionListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
@@ -240,7 +241,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(exceptionListener),
-            batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10),
+            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
             monitor = mockk(relaxed = true)
         )
         assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
@@ -254,7 +255,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(testBlockEventListener),
-            batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10),
+            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
             monitor = mockk(relaxed = true)
         )
         newBlockHandler.onNewBlock(blockchain.last())
@@ -274,7 +275,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(),
+            scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain[4])
@@ -301,7 +302,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10),
+            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
             monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
@@ -324,7 +325,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10),
+            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
             monitor = mockk(relaxed = true)
         )
         // Process blocks #0, #1, #2, #3, #4

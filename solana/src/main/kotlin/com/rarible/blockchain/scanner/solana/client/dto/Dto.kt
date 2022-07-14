@@ -1,5 +1,8 @@
 package com.rarible.blockchain.scanner.solana.client.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
@@ -58,9 +61,13 @@ class GetTransactionRequest(
     )
 )
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ApiResponse<T>(
     val result: T?,
-    val error: Error?
+    val error: Error?,
+    val jsonrpc: String?,
+    val id: Long
 ) {
     data class Error(
         val message: String,
@@ -68,38 +75,50 @@ data class ApiResponse<T>(
     )
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaTransactionDto(
-    val transaction: Details,
-    val meta: Meta?,
+    val transaction: Details?,
+    val meta: Meta?
 ) {
+    @get:JsonIgnore
+    val isSuccessful: Boolean get() =
+        meta != null && meta.err == null
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Instruction(
         val accounts: List<Int>,
         val data: String,
         val programIdIndex: Int
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class InnerInstruction(
         val index: Int,
-        val instructions: List<Instruction>,
+        val instructions: List<Instruction?>,
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Message(
         val recentBlockhash: String?,
         val accountKeys: List<String>,
-        val instructions: List<Instruction>
+        val instructions: List<Instruction?>
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Details(
         val message: Message,
         val signatures: List<String>
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Meta(
         @JsonSetter(nulls = Nulls.AS_EMPTY)
-        val innerInstructions: List<InnerInstruction> = emptyList()
+        val innerInstructions: List<InnerInstruction> = emptyList(),
+        val err: Any?
     )
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaBlockDto(
     val parentSlot: Long,
     val blockhash: String,
@@ -111,84 +130,99 @@ data class SolanaBlockDto(
 ) {
     companion object {
         val errorsToSkip = listOf(
-            ErrorCodes.BLOCK_NOT_AVAILABLE,
-            ErrorCodes.SLOT_WAS_SKIPPED_OR_MISSING_IN_LONG_TERM_STORAGE,
-            ErrorCodes.SLOT_WAS_SKIPPED_OR_MISSING_DUE_TO_LEDGER_JUMP_TO_RECENT_SNAPSHOT
+            -32004, // BLOCK_NOT_AVAILABLE,
+            -32009, // SLOT_WAS_SKIPPED_OR_MISSING_IN_LONG_TERM_STORAGE,
+            -32007, // SLOT_WAS_SKIPPED_OR_MISSING_DUE_TO_LEDGER_JUMP_TO_RECENT_SNAPSHOT
         )
     }
 }
 
-fun ApiResponse<Long>.toModel(): Long = convert { this }
-
-fun ApiResponse<SolanaBlockDto>.toModel(slot: Long): SolanaBlockchainBlock? = convert(SolanaBlockDto.errorsToSkip) {
-    val logs = transactions.flatMapIndexed { transactionIndex, transactionDto ->
-        val transaction = transactionDto.transaction
-        val accountKeys = transaction.message.accountKeys
-        val transactionHash = transactionDto.transaction.signatures.first()
-        val result = arrayListOf<SolanaBlockchainLog>().apply {
-            this += transaction.message.instructions.map {
-                it.toModel(
-                    accountKeys,
-                    slot,
-                    blockhash,
-                    transactionHash,
-                    transactionIndex,
-                    innerTransactionIndex = null
-                )
+class SolanaBlockDtoParser(
+    private val programIds: Set<String>
+) {
+    fun toModel(blockDto: SolanaBlockDto, slot: Long): SolanaBlockchainBlock = with(blockDto) {
+        val logs = transactions.flatMapIndexed { transactionIndex, transactionDto ->
+            if (!transactionDto.isSuccessful) {
+                return@flatMapIndexed emptyList()
             }
+            val transaction = transactionDto.transaction ?: return@flatMapIndexed emptyList()
+            val accountKeys = transaction.message.accountKeys
+            val transactionHash = transactionDto.transaction.signatures.first()
+            val result = arrayListOf<SolanaBlockchainLog>().apply {
+                this += transaction.message.instructions.mapIndexedNotNull { instructionIndex, instruction ->
+                    instruction?.toModel(
+                        accountKeys = accountKeys,
+                        blockNumber = slot,
+                        blockHash = blockhash,
+                        transactionHash = transactionHash,
+                        transactionIndex = transactionIndex,
+                        instructionIndex = instructionIndex,
+                        innerInstructionIndex = null
+                    )
+                }
 
-            transactionDto.meta?.let { meta ->
-                this += meta.innerInstructions.flatMapIndexed { innerInstructionIndex, innerInstruction ->
-                    innerInstruction.instructions.map { instruction ->
-                        instruction.toModel(
-                            accountKeys,
-                            slot,
-                            blockhash,
-                            transactionHash,
-                            innerInstruction.index,
-                            innerInstructionIndex
-                        )
+                transactionDto.meta?.let { meta ->
+                    this += meta.innerInstructions.flatMap { innerInstruction ->
+                        innerInstruction.instructions.mapIndexedNotNull { innerInstructionIndex, instruction ->
+                            instruction?.toModel(
+                                accountKeys = accountKeys,
+                                blockNumber = slot,
+                                blockHash = blockhash,
+                                transactionHash = transactionHash,
+                                transactionIndex = transactionIndex,
+                                instructionIndex = innerInstruction.index,
+                                innerInstructionIndex = innerInstructionIndex
+                            )
+                        }
                     }
                 }
             }
+
+            result
         }
 
-        result
+        return SolanaBlockchainBlock(
+            slot = slot,
+            parentSlot = parentSlot,
+            logs = logs,
+            hash = blockhash,
+            parentHash = previousBlockhash,
+            timestamp = blockTime
+        )
     }
 
-    SolanaBlockchainBlock(
-        slot = slot,
-        parentSlot = parentSlot,
-        logs = logs,
-        hash = blockhash,
-        parentHash = previousBlockhash,
-        timestamp = blockTime
-    )
+    private fun Instruction.toModel(
+        accountKeys: List<String>,
+        blockNumber: Long,
+        blockHash: String,
+        transactionHash: String,
+        transactionIndex: Int,
+        instructionIndex: Int,
+        innerInstructionIndex: Int?
+    ): SolanaBlockchainLog? {
+        val programId = accountKeys[programIdIndex]
+        if (programIds.isNotEmpty() && programId !in programIds) {
+            return null
+        }
+        val instruction = SolanaInstruction(
+            programId = programId,
+            data = data,
+            accounts = accounts.map { accountKeys[it] }
+        )
+        val solanaLog = SolanaLog(
+            blockNumber = blockNumber,
+            transactionHash = transactionHash,
+            blockHash = blockHash,
+            transactionIndex = transactionIndex,
+            instructionIndex = instructionIndex,
+            innerInstructionIndex = innerInstructionIndex
+        )
+
+        return SolanaBlockchainLog(solanaLog, instruction)
+    }
 }
 
-fun Instruction.toModel(
-    accountKeys: List<String>,
-    blockNumber: Long,
-    blockHash: String,
-    transactionHash: String,
-    transactionIndex: Int,
-    innerTransactionIndex: Int?
-): SolanaBlockchainLog {
-    val instruction = SolanaInstruction(
-        programId = accountKeys[programIdIndex],
-        data = data,
-        accounts = accounts.map { accountKeys[it] }
-    )
-    val solanaLog = SolanaLog(
-        blockNumber = blockNumber,
-        transactionHash = transactionHash,
-        blockHash = blockHash,
-        instructionIndex = transactionIndex,
-        innerInstructionIndex = innerTransactionIndex
-    )
-
-    return SolanaBlockchainLog(solanaLog, instruction)
-}
+fun ApiResponse<Long>.toModel(): Long = convert { this }
 
 private inline fun <reified T, reified R> ApiResponse<T>.convert(
     block: T.() -> R
@@ -200,14 +234,14 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
     return block(result)
 }
 
-private inline fun <reified T, reified R> ApiResponse<T>.convert(
-    errorsToSkip: List<Int>,
-    block: T.() -> R
-): R? {
+fun <T> ApiResponse<T>.getSafeResult(
+    slot: Long,
+    errorsToSkip: List<Int>
+): T? {
     return if (result != null) {
-        block(result)
+        result
     } else {
-        val (message, code) = requireNotNull(error) { "Error field must be not null" }
+        val (message, code) = requireNotNull(error) { "Invalid ApiResponse for block $slot, both 'result' and 'error' fields are null" }
 
         if (code in errorsToSkip) {
             null
@@ -215,10 +249,4 @@ private inline fun <reified T, reified R> ApiResponse<T>.convert(
             error("Unknown error code: $code, message: $message")
         }
     }
-}
-
-object ErrorCodes {
-    const val BLOCK_NOT_AVAILABLE = -32004
-    const val SLOT_WAS_SKIPPED_OR_MISSING_IN_LONG_TERM_STORAGE = -32009
-    const val SLOT_WAS_SKIPPED_OR_MISSING_DUE_TO_LEDGER_JUMP_TO_RECENT_SNAPSHOT = -32007
 }

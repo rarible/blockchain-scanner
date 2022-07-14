@@ -6,14 +6,12 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
-import kotlinx.coroutines.runBlocking
 import java.time.Instant
 import kotlin.math.max
 
 class BlockMonitor(
     properties: BlockchainScannerProperties,
-    meterRegistry: MeterRegistry,
-    private val blockService: BlockService
+    meterRegistry: MeterRegistry
 ) : AbstractMonitor(
     properties,
     meterRegistry,
@@ -21,25 +19,50 @@ class BlockMonitor(
 ) {
 
     @Volatile
-    private var lastBlock: Block? = null
+    private var lastIndexedBlock: Block? = null
+
+    @Volatile
+    private var lastLoadedBlockNumber: Long? = null
 
     private var getBlockTimer: Timer? = null
 
+    private var getBlocksTimer: Timer? = null
+
+    private var processBlocksTimer: Timer? = null
+
     override fun register() {
         addGauge("delay") { getBlockDelay() }
+        addGauge("last_block_number") { lastIndexedBlock?.id }
+        addGauge("last_loaded_block_number") { lastLoadedBlockNumber }
         getBlockTimer = addTimer("get_block")
+        getBlocksTimer = addTimer("get_blocks")
+        processBlocksTimer = addTimer("process_blocks")
     }
 
-    override fun refresh() = runBlocking {
-        lastBlock = blockService.getLastBlock()
+    override fun refresh() = Unit
+
+    fun recordLastIndexedBlock(lastIndexedBlock: Block) {
+        this.lastIndexedBlock = lastIndexedBlock
+    }
+
+    fun recordLastFetchedBlockNumber(lastFetchedBlockNumber: Long) {
+        this.lastLoadedBlockNumber = lastFetchedBlockNumber
     }
 
     fun recordGetBlock(sample: Timer.Sample) {
         getBlockTimer?.let { sample.stop(it) }
     }
 
+    fun recordGetBlocks(sample: Timer.Sample) {
+        getBlocksTimer?.let { sample.stop(it) }
+    }
+
+    fun recordProcessBlocks(sample: Timer.Sample) {
+        processBlocksTimer?.let { sample.stop(it) }
+    }
+
     fun getBlockDelay(now: Instant = nowMillis()): Double? {
-        val lastSeenBlockTimestamp = lastBlock?.timestamp ?: return null
+        val lastSeenBlockTimestamp = lastIndexedBlock?.timestamp ?: return null
         val currentTimestamp = now.epochSecond
         return max(currentTimestamp - lastSeenBlockTimestamp, 0).toDouble()
     }

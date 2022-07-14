@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -33,17 +34,20 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val blocks = randomBlockchain(1)
         val block = blocks[1]
         val log = randomOriginalLog(block = block, topic = descriptor.topic, logIndex = 1)
+        // log2 should be filtered
+        val logFiltered = randomOriginalLog(block = block, topic = descriptor.topic, logIndex = 1)
 
         val testBlockchainData = TestBlockchainData(
             blocks = blocks,
-            logs = listOf(log),
+            logs = listOf(log, logFiltered),
             newBlocks = blocks
         )
 
         val subscriber = TestLogEventSubscriber(descriptor)
         val blockScanner = createBlockchainScanner(
             TestBlockchainClient(testBlockchainData),
-            subscriber
+            listOf(subscriber),
+            listOf(TestLogEventFilter(setOf(logFiltered.transactionHash)))
         )
         blockScanner.scan(once = true)
 
@@ -98,7 +102,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             )
         )
 
-        val blockchainScanner = createBlockchainScanner(testBlockchainClient, subscriber1, subscriber2)
+        val blockchainScanner = createBlockchainScanner(testBlockchainClient, listOf(subscriber1, subscriber2))
         blockchainScanner.scan(once = true)
 
         assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
@@ -128,7 +132,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
 
         val subscriber = TestLogEventSubscriber(descriptor)
-        val blockScanner = createBlockchainScanner(TestBlockchainClient(testBlockchainData), subscriber)
+        val blockScanner = createBlockchainScanner(TestBlockchainClient(testBlockchainData), listOf(subscriber))
         blockScanner.scan(once = true)
         assertThat(findBlock(blocks[1].number)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
         assertThat(findBlock(blocks[2].number)).isEqualTo(blocks[2].toBlock(BlockStatus.SUCCESS))
@@ -160,7 +164,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             logs = listOf(log11, newLog21, newLog22),
             newBlocks = listOf(newBlock2)
         )
-        val newBlockScanner = createBlockchainScanner(TestBlockchainClient(newTestBlockchainData), subscriber)
+        val newBlockScanner = createBlockchainScanner(TestBlockchainClient(newTestBlockchainData), listOf(subscriber))
         newBlockScanner.scan(once = true)
         assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
             mapOf(
@@ -204,7 +208,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val blockScanner = createBlockchainScanner(
             // Process only the blocks #0 and #1.
             TestBlockchainClient(testBlockchainData.copy(newBlocks = blocks.take(2))),
-            subscriber
+            listOf(subscriber)
         )
         blockScanner.scan(once = true)
 
@@ -228,7 +232,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val newBlockchainScanner = createBlockchainScanner(
             // Process all the blocks
             TestBlockchainClient(testBlockchainData),
-            subscriber
+            listOf(subscriber)
         )
         newBlockchainScanner.scan(once = true)
 

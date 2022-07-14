@@ -7,14 +7,14 @@ import com.rarible.blockchain.scanner.test.model.nullVersion
 
 class TestLogRecordEventPublisher : LogRecordEventPublisher {
 
-    val publishedLogRecords: MutableMap<String, MutableList<LogRecordEvent<TestLogRecord>>> = hashMapOf()
+    val publishedLogRecords: MutableMap<String, MutableList<LogRecordEvent>> = hashMapOf()
 
     override suspend fun publish(
         groupId: String,
-        logRecordEvents: List<LogRecordEvent<*>>
+        logRecordEvents: List<LogRecordEvent>
     ) {
         @Suppress("UNCHECKED_CAST")
         publishedLogRecords.getOrPut(groupId) { arrayListOf() } +=
-            (logRecordEvents as List<LogRecordEvent<TestLogRecord>>).map { it.copy(record = it.record.nullVersion()) }
+            (logRecordEvents as List<LogRecordEvent>).map { it.copy(record = (it.record as TestLogRecord).nullVersion()) }
     }
 }

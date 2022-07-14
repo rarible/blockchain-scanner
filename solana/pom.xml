@@ -34,6 +34,11 @@
             <artifactId>kotlinx-coroutines-reactor</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.github.cloudyrock.mongock</groupId>
+            <artifactId>mongock-spring-v5</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-test</artifactId>
             <scope>test</scope>

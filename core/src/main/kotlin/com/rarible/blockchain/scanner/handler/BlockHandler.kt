@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlockClient
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
@@ -13,19 +14,23 @@ import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
+import com.rarible.core.kafka.chunked
 import io.micrometer.core.instrument.Timer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.flow.takeWhile
 import org.slf4j.LoggerFactory
 
 /**
@@ -35,14 +40,14 @@ class BlockHandler<BB : BlockchainBlock>(
     private val blockClient: BlockchainBlockClient<BB>,
     private val blockService: BlockService,
     private val blockEventListeners: List<BlockEventListener<BB>>,
-    private val batchLoad: BlockBatchLoadProperties,
+    private val scanProperties: ScanProperties,
     private val monitor: BlockMonitor
 ) {
 
     private val logger = LoggerFactory.getLogger(BlockHandler::class.java)
 
     init {
-        logger.info("Creating BlockHandler with config: $batchLoad")
+        logger.info("Creating BlockHandler with config: ${scanProperties.batchLoad}")
     }
 
     /**
@@ -70,7 +75,9 @@ class BlockHandler<BB : BlockchainBlock>(
         val alreadyIndexedBlock = blockService.getBlock(newBlock.id)
         if (alreadyIndexedBlock != null) {
             if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status)) {
-                logger.info("The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock)
+                logger.info(
+                    "The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock
+                )
                 return
             }
             logger.warn(
@@ -95,24 +102,56 @@ class BlockHandler<BB : BlockchainBlock>(
         val stableUnstableBlockRanges = BlockRanges.getStableUnstableBlockRanges(
             baseBlockNumber = lastCorrectBlock.id,
             lastBlockNumber = newBlock.id,
-            batchSize = batchLoad.batchSize,
-            stableDistance = batchLoad.confirmationBlockDistance
+            batchSize = scanProperties.batchLoad.batchSize,
+            stableDistance = scanProperties.batchLoad.confirmationBlockDistance
         ).asFlow()
-        val lastSyncedBlock = syncBlocks(stableUnstableBlockRanges, lastCorrectBlock).lastOrNull()
-        if (lastSyncedBlock != null) {
-            logger.info(
-                "Syncing completed {} on block [{}:{}]: {}",
-                if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
-                lastSyncedBlock.id,
-                lastSyncedBlock.hash,
-                lastSyncedBlock
+        coroutineScope {
+            val channel = produceBlocks(
+                blockRanges = stableUnstableBlockRanges,
+                baseBlock = lastCorrectBlock,
+                capacity = scanProperties.batchLoad.batchBufferSize
             )
-        } else {
-            logger.info("Syncing completed prematurely")
+            var lastSyncedBlock: Block? = null
+
+            for (batch in channel) {
+                lastSyncedBlock = processBlocks(batch).last()
+                monitor.recordLastIndexedBlock(lastSyncedBlock)
+            }
+            if (lastSyncedBlock != null) {
+                logger.info(
+                    "Syncing completed {} on block [{}:{}]: {}",
+                    if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
+                    lastSyncedBlock.id,
+                    lastSyncedBlock.hash,
+                    lastSyncedBlock
+                )
+            } else {
+                logger.info("Syncing completed prematurely")
+            }
         }
     }
 
-    @Suppress("EXPERIMENTAL_API_USAGE")
+    fun syncBlocks(
+        blocks: List<Long>
+    ): Flow<Block> = flow {
+        for (block in blocks) {
+            val blockchainBlock = blockClient.getBlock(block) ?: error("Can't get block: $block")
+
+            emit(
+                processBlocks(
+                    BlocksBatch(
+                        blocksRange = BlocksRange(
+                            range = blockchainBlock.number..blockchainBlock.number,
+                            stable = false
+                        ),
+                        blocks = listOf(blockchainBlock)
+                    )
+                ).single()
+            )
+        }
+    }
+
+    @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     fun syncBlocks(
         blockRanges: Flow<BlocksRange>,
         baseBlock: Block
@@ -123,7 +162,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 return@runningFold null
             }
             val (blocksBatch, parentHashesAreConsistent) = fetchBlocksBatchWithHashConsistencyCheck(
-                lastProcessedBlock = lastProcessedBlock,
+                lastProcessedBlockHash = lastProcessedBlock.hash,
                 blocksRange = blocksRange
             )
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
@@ -138,8 +177,44 @@ class BlockHandler<BB : BlockchainBlock>(
                 null
             }
         }
-        .drop(1) // Drop the lastCorrectBlock
+        .drop(1) // Drop the baseBlock (the first item in the runningFold's Flow)
         .filterNotNull()
+
+    @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
+    private fun CoroutineScope.produceBlocks(
+        blockRanges: Flow<BlocksRange>,
+        baseBlock: Block,
+        capacity: Int
+    ) = produce(capacity = capacity) {
+        var lastFetchedBlockHash = baseBlock.hash
+
+        blockRanges.chunked(capacity / 2, 50 /* Any is enough */).takeWhile { batchOfRanges ->
+            val batchOfBlockBatches = coroutineScope {
+                batchOfRanges.map { range ->
+                    async {
+                        fetchBlocksByRange(range)
+                    }
+                }
+            }.awaitAll()
+            for (blocksBatch in batchOfBlockBatches) {
+                val (batch, isConsistent) = checkBlocksBatchHashConsistency(
+                    baseBlockHash = lastFetchedBlockHash,
+                    blocksBatch = blocksBatch
+                )
+                if (batch.blocks.isNotEmpty()) {
+                    val last = batch.blocks.last()
+                    lastFetchedBlockHash = last.hash
+                    monitor.recordLastFetchedBlockNumber(last.number)
+
+                    send(batch)
+                }
+                if (!isConsistent) {
+                    return@takeWhile false
+                }
+            }
+            true
+        }.collect()
+    }
 
     /**
      * Checks if chain reorg happened. Find the latest correct block having status SUCCESS
@@ -194,35 +269,68 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private data class BlocksBatch<BB>(val blocksRange: BlocksRange, val blocks: List<BB>) {
+
         override fun toString(): String = "$blocksRange (present ${blocks.size})"
     }
 
     private suspend fun fetchBlocksBatchWithHashConsistencyCheck(
-        lastProcessedBlock: Block,
+        lastProcessedBlockHash: String,
         blocksRange: BlocksRange
-    ): Pair<BlocksBatch<BB>, Boolean /* Whether all parent-child hashes match */> = coroutineScope {
+    ): Pair<BlocksBatch<BB>, Boolean> {
+        val blocksBatch = fetchBlocksByRange(blocksRange)
+        return checkBlocksBatchHashConsistency(
+            baseBlockHash = lastProcessedBlockHash,
+            blocksBatch = blocksBatch
+        )
+    }
+
+    private suspend fun fetchBlocksByRange(blocksRange: BlocksRange): BlocksBatch<BB> {
         logger.info("Fetching $blocksRange")
-        val fetchedBlocks = withTransaction(
+        val fetchBlocksSample = Timer.start()
+        return withTransaction(
             name = "fetchBlocks",
-            labels = listOf("range" to blocksRange.range.toString())
+            labels = listOf("range" to blocksRange.toString())
         ) {
-            blocksRange.range.map { id -> async { fetchBlock(id) } }.awaitAll().filterNotNull()
+            val fetchedBlocks = try {
+                withSpan(name = "fetchBlocks") {
+                    blockClient.getBlocks(blocksRange.range.toList())
+                }
+            } finally {
+                monitor.recordGetBlocks(fetchBlocksSample)
+            }
+            logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
+            BlocksBatch(blocksRange, fetchedBlocks)
         }
-        logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
+    }
+
+    /**
+     * Checks parent-child hash consistency of the [blocksBatch].
+     * The first block of the [blocksBatch] must be the child block of the [baseBlockHash].
+     * If all the blocks in the range are consistent, returns the [blocksBatch] and `true`.
+     * Otherwise, returns the prefix of consistent blocks and `false`.
+     */
+    private fun checkBlocksBatchHashConsistency(
+        baseBlockHash: String,
+        blocksBatch: BlocksBatch<BB>
+    ): Pair<BlocksBatch<BB>, Boolean> {
+        val fetchedBlocks = blocksBatch.blocks
         if (fetchedBlocks.isEmpty()) {
-            return@coroutineScope BlocksBatch(BlocksRange(LongRange.EMPTY, blocksRange.stable), emptyList<BB>()) to true
+            return BlocksBatch(
+                blocksRange = BlocksRange(range = LongRange.EMPTY, stable = blocksBatch.blocksRange.stable),
+                blocks = emptyList<BB>()
+            ) to true
         }
-        var parentBlockHash = lastProcessedBlock.hash
+        var parentBlockHash = baseBlockHash
         val blocks = arrayListOf<BB>()
-        var consistentRange = blocksRange
+        var consistentRange = blocksBatch.blocksRange
         for (block in fetchedBlocks) {
             if (parentBlockHash != block.parentHash) {
                 consistentRange = BlocksRange(
-                    range = blocksRange.range.first until block.number,
-                    stable = blocksRange.stable
+                    range = fetchedBlocks.first().number until block.number,
+                    stable = blocksBatch.blocksRange.stable
                 )
-                logger.info(
-                    "Blocks $blocksRange have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
+                logger.warn(
+                    "Blocks ${blocksBatch.blocksRange} have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
                             "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
                             "the consistent range is $consistentRange"
                 )
@@ -231,8 +339,8 @@ class BlockHandler<BB : BlockchainBlock>(
             blocks += block
             parentBlockHash = block.hash
         }
-        val parentHashesAreConsistent = consistentRange == blocksRange
-        BlocksBatch(consistentRange, blocks) to parentHashesAreConsistent
+        val parentHashesAreConsistent = consistentRange == blocksBatch.blocksRange
+        return BlocksBatch(consistentRange, blocks) to parentHashesAreConsistent
     }
 
     private suspend fun processBlocks(blocksBatch: BlocksBatch<BB>): List<Block> {
@@ -252,7 +360,8 @@ class BlockHandler<BB : BlockchainBlock>(
                 On restart, the scanner will process the same stable blocks and send the same events.
                 The clients of the blockchain scanner are ready to receive duplicated events.
                  */
-                saveBlocks(blocks, BlockStatus.PENDING)
+                val toSave = blocks.map { it.toBlock(BlockStatus.PENDING) }
+                saveUnstableBlocks(toSave)
             }
             val blockEvents = blocks.map {
                 if (blocksRange.stable) {
@@ -273,16 +382,35 @@ class BlockHandler<BB : BlockchainBlock>(
              If we did not call NewBlockEvent-s, there will be nothing to revert.
             */
             processBlockEvents(blockEvents)
-            saveBlocks(blocks, BlockStatus.SUCCESS)
+            withSpan(
+                name = "saveBlocks",
+                labels = listOf("count" to blocks.size)
+            ) {
+                val toSave = blocks.map { it.toBlock(BlockStatus.SUCCESS) }
+                if (blocksRange.stable) {
+                    saveStableBlocks(toSave, blocksRange)
+                } else {
+                    saveUnstableBlocks(toSave)
+                }
+            }
         }
     }
 
-    private suspend fun saveBlocks(blocks: List<BB>, status: BlockStatus): List<Block> =
+    private suspend fun saveStableBlocks(blocks: List<Block>, blocksRange: BlocksRange): List<Block> {
+        val result = runRethrowingBlockHandlerException(
+            actionName = "Save $blocksRange"
+        ) {
+            blockService.insertAll(blocks)
+        }
+        logger.info("Saved blocks: $blocks")
+        return result
+    }
+
+    private suspend fun saveUnstableBlocks(blocks: List<Block>): List<Block> =
         blocks.map {
-            val block = it.toBlock(status)
-            blockService.save(block)
-            logger.info("Saved block $block")
-            block
+            blockService.save(it)
+            logger.info("Saved block $it")
+            it
         }
 
     private suspend fun revertBlock(block: Block) {
@@ -305,22 +433,18 @@ class BlockHandler<BB : BlockchainBlock>(
                 "maxId" to blockEvents.last().number
             )
         ) {
+            val processingStart = Timer.start()
             blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            monitor.recordProcessBlocks(processingStart)
         }
     }
 
-    private suspend fun fetchBlock(number: Long): BB? =
-        withSpan(
-            name = "fetchBlock",
-            type = SpanType.EXT,
-            labels = listOf("blockNumber" to number)
-        ) {
-            val sample = Timer.start()
-
-            try {
-                blockClient.getBlock(number)
-            } finally {
-                monitor.recordGetBlock(sample)
-            }
+    private suspend fun fetchBlock(number: Long): BB? {
+        val sample = Timer.start()
+        return try {
+            blockClient.getBlock(number)
+        } finally {
+            monitor.recordGetBlock(sample)
         }
+    }
 }

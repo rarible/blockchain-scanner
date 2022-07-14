@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.configuration
 import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
+import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.Monitor
 import com.rarible.blockchain.scanner.monitoring.MonitoringWorker
 import com.rarible.core.task.EnableRaribleTask
@@ -25,8 +26,14 @@ class BlockchainScannerConfiguration(
 
     @Bean
     @ConditionalOnClass(MeterRegistry::class)
-    fun blockMonitor(meterRegistry: MeterRegistry, blockService: BlockService): BlockMonitor {
-        return BlockMonitor(properties, meterRegistry, blockService)
+    fun blockMonitor(meterRegistry: MeterRegistry): BlockMonitor {
+        return BlockMonitor(properties, meterRegistry)
+    }
+
+    @Bean
+    @ConditionalOnClass(MeterRegistry::class)
+    fun logMonitor(meterRegistry: MeterRegistry): LogMonitor {
+        return LogMonitor(properties, meterRegistry)
     }
 
     @Bean
