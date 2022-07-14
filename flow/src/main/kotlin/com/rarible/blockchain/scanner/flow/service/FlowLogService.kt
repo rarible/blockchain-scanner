@@ -11,6 +11,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.toList
+import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 
 @ExperimentalCoroutinesApi
@@ -19,6 +21,9 @@ import org.springframework.stereotype.Service
 class FlowLogService(
     private val logRepository: FlowLogRepository
 ) : LogService<FlowLog, FlowLogRecord<*>, FlowDescriptor> {
+
+    private val logger = LoggerFactory.getLogger(FlowLogService::class.java)
+
     override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord<*>): FlowLogRecord<*> =
         logRepository.delete(descriptor.collection, record)
 
@@ -27,7 +32,12 @@ class FlowLogService(
         return if (descriptor.optLockOnSave) {
             logRepository.saveAll(descriptor.collection, records).toList()
         } else {
-            logRepository.insert(descriptor.collection, records).toList()
+            try {
+                logRepository.insert(descriptor.collection, records).toList()
+            } catch (e: DuplicateKeyException) {
+                logger.warn("Unable to insert logs without optimistic lock. Trying to saving logs with it.")
+                logRepository.saveAll(descriptor.collection, records).toList()
+            }
         }
     }
 
