@@ -134,6 +134,7 @@ data class SolanaBlockDto(
 ) {
     companion object {
         val errorsToSkip = listOf(
+            -32015, // TRANSACTION VERSION (?) IS NOT SUPPORTED
             -32004, // BLOCK_NOT_AVAILABLE,
             -32009, // SLOT_WAS_SKIPPED_OR_MISSING_IN_LONG_TERM_STORAGE,
             -32007, // SLOT_WAS_SKIPPED_OR_MISSING_DUE_TO_LEDGER_JUMP_TO_RECENT_SNAPSHOT
