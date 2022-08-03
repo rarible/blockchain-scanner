@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
-import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
+import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
 
@@ -39,6 +39,7 @@ class GetBlockRequest(
     params = listOf(
         slot,
         mapOf(
+            "maxSupportedTransactionVersion" to 0,
             "encoding" to "json",
             "transactionDetails" to transactionDetails.name.lowercase(),
             "commitment" to "confirmed",
@@ -57,7 +58,10 @@ class GetTransactionRequest(
     method = "getTransaction",
     params = listOf(
         signature,
-        mapOf("commitment" to "confirmed")
+        mapOf(
+            "maxSupportedTransactionVersion" to 0,
+            "commitment" to "confirmed"
+        )
     )
 )
 
