@@ -17,7 +17,7 @@
         <revision>2.3.3</revision>
 
         <rarible.ethereum.version>1.6.0</rarible.ethereum.version>
-        <rarible.core.version>2.4.12</rarible.core.version>
+        <rarible.core.version>2.4.16</rarible.core.version>
     </properties>
 
     <repositories>
