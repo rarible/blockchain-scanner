@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.solana.client.test.TestSolanaScannerConfiguration
+import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -28,10 +29,18 @@ class SolanaClientTest {
     }
 
     @Test
-    @Disabled
     fun testGetBlockByNumber() = runBlocking {
-        val block = client.getBlock(114371623)
-        println(block)
+        val block = client.getBlock(145264532)
+
+        client.getBlockLogs(
+            object : SolanaDescriptor(
+                programId = SolanaProgramId.SPL_TOKEN_PROGRAM,
+                groupId = SubscriberGroup.BALANCE.id,
+                id = "balance_transfer_income",
+                entityType = SolanaBalanceRecord.TransferIncomeRecord::class.java,
+                collection = SubscriberGroup.BALANCE.collectionName
+            ) {}
+        )
     }
 
     @Test
