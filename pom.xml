@@ -31,11 +31,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <url>https://nexus-ext.rarible.int/repository/maven-snapshots/</url>
+            <url>http://nexus-ext.rarible.int/repository/maven-snapshots/</url>
         </snapshotRepository>
         <repository>
             <id>nexus-releases</id>
-            <url>https://nexus-ext.rarible.int/repository/maven-releases/</url>
+            <url>http://nexus-ext.rarible.int/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
 
