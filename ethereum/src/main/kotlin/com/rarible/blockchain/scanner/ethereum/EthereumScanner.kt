@@ -50,7 +50,7 @@ class EthereumScanner(
     @EventListener(ApplicationReadyEvent::class)
     fun start() {
         logger.info("Starting Ethereum Blockchain Scanner...")
-        mono { (scan()) }.subscribe({}, { logger.error("Solana blockchain scanner stopped.", it) })
+        mono { (scan()) }.subscribe({}, { logger.error("Ethereum blockchain scanner stopped.", it) })
     }
 
 }
