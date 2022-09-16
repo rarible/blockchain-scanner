@@ -1,5 +1,7 @@
 package com.rarible.blockchain.scanner.test.data
 
+import com.rarible.blockchain.scanner.block.Block
+import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
@@ -61,6 +63,16 @@ fun randomBlockchain(blockCount: Int): List<TestBlockchainBlock> {
         randomBlockchainBlock(number = it)
     }
     return buildBlockchain(listOf(randomBlockchainBlock(number = 0, parentHash = null)) + blocks)
+}
+
+fun randomBlock(): Block {
+    return Block(
+        id = randomLong(),
+        hash = randomBlockHash(),
+        parentHash = randomBlockHash(),
+        timestamp = randomLong(),
+        status = BlockStatus.SUCCESS
+    )
 }
 
 fun randomString() = randomString(8)

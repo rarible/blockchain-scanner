@@ -93,7 +93,7 @@ class ReindexHandler(
                 scanProperties = blockchainScannerProperties.scan,
                 monitor = blockMonitor
             )
-            blockHandler.syncBlocks(blocksRanges, baseBlock)
+            blockHandler.syncBlocks(blocksRanges, baseBlock, resyncStable = true)
         }
     }
 

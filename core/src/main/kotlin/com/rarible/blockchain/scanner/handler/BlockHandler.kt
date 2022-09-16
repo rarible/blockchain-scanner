@@ -154,7 +154,8 @@ class BlockHandler<BB : BlockchainBlock>(
     @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     fun syncBlocks(
         blockRanges: Flow<BlocksRange>,
-        baseBlock: Block
+        baseBlock: Block,
+        resyncStable: Boolean
     ): Flow<Block> = blockRanges
         .runningFold(baseBlock as Block?) { lastProcessedBlock, blocksRange ->
             if (lastProcessedBlock == null) {
@@ -166,7 +167,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 blocksRange = blocksRange
             )
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
-                processBlocks(blocksBatch).last()
+                processBlocks(blocksBatch, resyncStable).last()
             } else {
                 null
             }
@@ -343,7 +344,7 @@ class BlockHandler<BB : BlockchainBlock>(
         return BlocksBatch(consistentRange, blocks) to parentHashesAreConsistent
     }
 
-    private suspend fun processBlocks(blocksBatch: BlocksBatch<BB>): List<Block> {
+    private suspend fun processBlocks(blocksBatch: BlocksBatch<BB>, resyncStable: Boolean = false): List<Block> {
         val (blocksRange, blocks) = blocksBatch
         logger.info("Processing $blocksBatch")
         return withTransaction(
@@ -388,7 +389,7 @@ class BlockHandler<BB : BlockchainBlock>(
             ) {
                 val toSave = blocks.map { it.toBlock(BlockStatus.SUCCESS) }
                 if (blocksRange.stable) {
-                    saveStableBlocks(toSave, blocksRange)
+                    saveStableBlocks(toSave, blocksRange, resyncStable)
                 } else {
                     saveUnstableBlocks(toSave)
                 }
@@ -396,14 +397,18 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    private suspend fun saveStableBlocks(blocks: List<Block>, blocksRange: BlocksRange): List<Block> {
-        val result = runRethrowingBlockHandlerException(
-            actionName = "Save $blocksRange"
-        ) {
-            blockService.insertAll(blocks)
+    private suspend fun saveStableBlocks(blocks: List<Block>, blocksRange: BlocksRange, resyncStable: Boolean): List<Block> {
+        return if (resyncStable.not()) {
+            val result = runRethrowingBlockHandlerException(
+                actionName = "Save $blocksRange"
+            ) {
+                blockService.insertAll(blocks)
+            }
+            logger.info("Saved blocks: $blocks")
+            result
+        } else {
+            blocks
         }
-        logger.info("Saved blocks: $blocks")
-        return result
     }
 
     private suspend fun saveUnstableBlocks(blocks: List<Block>): List<Block> =

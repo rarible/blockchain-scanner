@@ -17,6 +17,8 @@ import com.rarible.blockchain.scanner.test.data.buildBlockchain
 import com.rarible.blockchain.scanner.test.data.randomBlockchain
 import com.rarible.blockchain.scanner.test.handler.TestBlockEventListener
 import io.mockk.mockk
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -200,6 +202,46 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         assertThat(blockEventListener.blockEvents).isEmpty()
 
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
+    }
+
+    @Test
+    fun `should save stable block on reindex`() = runBlocking<Unit> {
+        val syncBlocks = randomBlockchain(10).toMutableList()
+        val baseBlock = syncBlocks.first()
+        blockService.save(baseBlock.toBlock())
+
+        val range = flow { emit(BlocksRange(LongRange(1, 10), true)) }
+        val testBlockchainData = TestBlockchainData(syncBlocks - baseBlock, emptyList(), emptyList())
+        val blockEventListener = TestBlockEventListener()
+        val blockHandler = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            scanProperties = ScanProperties(),
+            monitor = mockk(relaxed = true)
+        )
+        blockHandler.syncBlocks(range, baseBlock.toBlock(), resyncStable = false).toList()
+        assertThat(blockService.getBlock(10)).isNotNull
+    }
+
+    @Test
+    fun `should not save stable block on reindex`() = runBlocking<Unit> {
+        val syncBlocks = randomBlockchain(10).toMutableList()
+        val baseBlock = syncBlocks.first()
+        blockService.save(baseBlock.toBlock())
+
+        val range = flow { emit(BlocksRange(LongRange(1, 10), true)) }
+        val testBlockchainData = TestBlockchainData(syncBlocks - baseBlock, emptyList(), emptyList())
+        val blockEventListener = TestBlockEventListener()
+        val blockHandler = BlockHandler(
+            blockClient = TestBlockchainClient(testBlockchainData),
+            blockService = blockService,
+            blockEventListeners = listOf(blockEventListener),
+            scanProperties = ScanProperties(),
+            monitor = mockk(relaxed = true)
+        )
+        blockHandler.syncBlocks(range, baseBlock.toBlock(), resyncStable = true).toList()
+        assertThat(blockService.getBlock(10)).isNull()
     }
 
     @Test
