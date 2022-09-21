@@ -14,10 +14,10 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.3.9</revision>
+        <revision>2.3.10</revision>
 
         <rarible.ethereum.version>1.6.1</rarible.ethereum.version>
-        <rarible.core.version>2.4.22</rarible.core.version>
+        <rarible.core.version>2.4.26</rarible.core.version>
     </properties>
 
     <repositories>
