@@ -225,10 +225,10 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `should not save stable block on reindex`() = runBlocking<Unit> {
+    fun `should save missing stable block on reindex`() = runBlocking<Unit> {
         val syncBlocks = randomBlockchain(10).toMutableList()
         val baseBlock = syncBlocks.first()
-        blockService.save(baseBlock.toBlock())
+        blockService.insertAll(syncBlocks.subList(0, 5).map { it.toBlock() })
 
         val range = flow { emit(BlocksRange(LongRange(1, 10), true)) }
         val testBlockchainData = TestBlockchainData(syncBlocks - baseBlock, emptyList(), emptyList())
@@ -241,7 +241,10 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             monitor = mockk(relaxed = true)
         )
         blockHandler.syncBlocks(range, baseBlock.toBlock(), resyncStable = true).toList()
-        assertThat(blockService.getBlock(10)).isNull()
+        // Missing block, should be added
+        assertThat(blockService.getBlock(10)).isNotNull
+        // Existing block, should stay the same
+        assertThat(blockService.getBlock(2)).isNotNull
     }
 
     @Test

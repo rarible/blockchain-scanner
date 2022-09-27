@@ -332,8 +332,8 @@ class BlockHandler<BB : BlockchainBlock>(
                 )
                 logger.warn(
                     "Blocks ${blocksBatch.blocksRange} have inconsistent parent-child hash chain on block ${block.number}:${block.hash}, " +
-                            "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
-                            "the consistent range is $consistentRange"
+                        "parent hash must be $parentBlockHash but was ${block.parentHash}, " +
+                        "the consistent range is $consistentRange"
                 )
                 break
             }
@@ -397,18 +397,22 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    private suspend fun saveStableBlocks(blocks: List<Block>, blocksRange: BlocksRange, resyncStable: Boolean): List<Block> {
-        return if (resyncStable.not()) {
-            val result = runRethrowingBlockHandlerException(
-                actionName = "Save $blocksRange"
-            ) {
+    private suspend fun saveStableBlocks(
+        blocks: List<Block>,
+        blocksRange: BlocksRange,
+        resyncStable: Boolean
+    ): List<Block> {
+        val result = runRethrowingBlockHandlerException(actionName = "Save $blocksRange") {
+            if (resyncStable) {
+                // In case of re-sync there can be missing blocks if we started scan from the middle
+                blockService.insertMissing(blocks)
+            } else {
+                // When we are reading forward, only new blocks should be there
                 blockService.insertAll(blocks)
             }
-            logger.info("Saved blocks: $blocks")
-            result
-        } else {
-            blocks
         }
+        logger.info("Saved blocks: $blocks")
+        return result
     }
 
     private suspend fun saveUnstableBlocks(blocks: List<Block>): List<Block> =
