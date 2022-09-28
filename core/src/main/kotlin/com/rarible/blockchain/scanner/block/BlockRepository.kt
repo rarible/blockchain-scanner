@@ -3,12 +3,15 @@ package com.rarible.blockchain.scanner.block
 import com.rarible.core.mongo.repository.AbstractMongoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findAll
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toMono
@@ -17,6 +20,11 @@ import reactor.kotlin.core.publisher.toMono
 class BlockRepository(
     mongo: ReactiveMongoOperations
 ) : AbstractMongoRepository<Block, Long>(mongo, Block::class.java) {
+
+    suspend fun getByIds(ids: Collection<Long>): List<Block> {
+        val criteria = Criteria("_id").inValues(ids)
+        return mongo.find<Block>(Query(criteria)).collectList().awaitFirst()
+    }
 
     suspend fun getLastBlock(): Block? {
         return mongo.find(Query().with(Sort.by(Sort.Direction.DESC, "_id")).limit(1), Block::class.java)
