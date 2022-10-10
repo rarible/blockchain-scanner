@@ -9,6 +9,9 @@ abstract class TestLogRecord : LogRecord {
     abstract val blockExtra: String
     abstract val log: TestLog
     abstract fun withIdAndVersion(id: Long, version: Long?): TestLogRecord
+    abstract fun withLog(log: TestLog): TestLogRecord
 }
 
 fun TestLogRecord.nullVersion() = withIdAndVersion(id = id, version = null)
+
+fun TestLogRecord.revert(): TestLogRecord = withLog(log = log.copy(reverted = true))

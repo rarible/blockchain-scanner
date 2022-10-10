@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
+import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import kotlinx.coroutines.runBlocking
@@ -166,28 +167,44 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
         val newBlockScanner = createBlockchainScanner(TestBlockchainClient(newTestBlockchainData), listOf(subscriber))
         newBlockScanner.scan(once = true)
+
+        val revertedRecord22 = subscriber.getReturnedRecords(blocks[2], log22).single().revert()
+        val revertedRecord21 = subscriber.getReturnedRecords(blocks[2], log21).single().revert()
+
+        val newRecord21 = subscriber.getReturnedRecords(newBlock2, newLog21).single()
+        val newRecord22 = subscriber.getReturnedRecords(newBlock2, newLog22).single()
+
         assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
             mapOf(
                 descriptor.groupId to confirmedLogs + listOf(
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[2], log22).single(),
+                        record = revertedRecord22,
                         reverted = true
                     ),
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[2], log21).single(),
+                        record = revertedRecord21,
                         reverted = true
                     ),
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(newBlock2, newLog21).single(),
+                        record = newRecord21,
                         reverted = false
                     ),
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(newBlock2, newLog22).single(),
+                        record = newRecord22,
                         reverted = false
                     )
                 )
             )
         )
+        val savedLog21 = findLog(descriptor.collection, newRecord21.id)
+        assertThat(savedLog21?.log?.reverted).isFalse
+        val savedLog22 = findLog(descriptor.collection, newRecord22.id)
+        assertThat(savedLog22?.log?.reverted).isFalse
+
+        val savedRevertedLog22 = findLog(descriptor.collection, revertedRecord22.id)
+        assertThat(savedRevertedLog22?.log?.reverted).isTrue
+        val savedRevertedLog21 = findLog(descriptor.collection, revertedRecord21.id)
+        assertThat(savedRevertedLog21?.log?.reverted).isTrue
     }
 
     @Test
@@ -241,11 +258,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             mapOf(
                 descriptor.groupId to confirmedLogs + listOf(
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log12).single(),
+                        record = subscriber.getReturnedRecords(blocks[1], log12).single().revert(),
                         reverted = true
                     ),
                     LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log11).single(),
+                        record = subscriber.getReturnedRecords(blocks[1], log11).single().revert(),
                         reverted = true
                     ),
                     LogRecordEvent(

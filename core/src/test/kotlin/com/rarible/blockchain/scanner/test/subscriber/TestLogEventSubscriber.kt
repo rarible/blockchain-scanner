@@ -60,7 +60,8 @@ class TestLogEventSubscriber(
             blockHash = testLog.blockHash,
             blockNumber = testLog.blockNumber,
             logIndex = testLog.logIndex,
-            index = log.index
+            index = log.index,
+            reverted = false
         )
     }
 }

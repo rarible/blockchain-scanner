@@ -5,10 +5,6 @@ import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
-import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
-import com.rarible.blockchain.scanner.test.model.TestDescriptor
-import com.rarible.blockchain.scanner.test.model.TestLog
-import com.rarible.core.test.data.randomWord
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.commons.lang3.RandomUtils
 import org.assertj.core.api.Assertions.assertThat
