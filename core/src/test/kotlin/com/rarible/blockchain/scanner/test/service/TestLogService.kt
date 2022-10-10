@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import kotlinx.coroutines.reactive.awaitFirst
 
@@ -56,7 +57,7 @@ class TestLogService(
             descriptor.collection,
             revertedBlockHash,
             descriptor.id
-        ).collectList().awaitFirst()
+        ).collectList().awaitFirst().map { it.revert() }
 
     override suspend fun prepareLogsToRevertOnNewBlock(
         descriptor: TestDescriptor,

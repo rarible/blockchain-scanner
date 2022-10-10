@@ -9,5 +9,6 @@ data class TestLog(
     val logIndex: Int?,
     val index: Int,
     val extra: String,
-    val visible: Boolean
+    val visible: Boolean,
+    val reverted: Boolean
 )

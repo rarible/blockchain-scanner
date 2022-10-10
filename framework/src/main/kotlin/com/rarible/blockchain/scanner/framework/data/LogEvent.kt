@@ -7,5 +7,5 @@ data class LogEvent<R : LogRecord, D : Descriptor>(
     val blockEvent: BlockEvent<*>,
     val descriptor: D,
     val logRecordsToInsert: List<R>,
-    val logRecordsToRemove: List<R>
+    val logRecordsToUpdate: List<R>
 )
