@@ -1,8 +1,6 @@
 package com.rarible.blockchain.scanner.solana.client
 
-import com.rarible.blockchain.scanner.solana.client.dto.AccountInfo
 import com.rarible.blockchain.scanner.solana.client.dto.ApiResponse
-import com.rarible.blockchain.scanner.solana.client.dto.GetAccountInfoRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.GetFirstAvailableBlockRequest
@@ -30,8 +28,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 interface SolanaApi {
-    suspend fun getAccountInfo(account: String): ApiResponse<AccountInfo>
-
     suspend fun getFirstAvailableBlock(): ApiResponse<Long>
 
     suspend fun getLatestSlot(): ApiResponse<Long>
@@ -56,13 +52,6 @@ class SolanaHttpRpcApi(
             maxBodySize = MAX_BODY_SIZE
         ).customize(it)
     }.build()
-
-    override suspend fun getAccountInfo(account: String) = client.post()
-        .uri(uri)
-        .body(BodyInserters.fromValue(GetAccountInfoRequest(account)))
-        .retrieve()
-        .bodyToMono<ApiResponse<AccountInfo>>()
-        .awaitSingle()
 
     override suspend fun getFirstAvailableBlock(): ApiResponse<Long> = client.post()
         .uri(uri)

@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDtoParser
-import com.rarible.blockchain.scanner.solana.client.dto.convert
 import com.rarible.blockchain.scanner.solana.client.dto.getSafeResult
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
@@ -14,16 +13,12 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.Base64
 
 class SolanaClient(
     private val api: SolanaApi,
     programIds: Set<String>
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
     private val solanaBlockDtoParser = SolanaBlockDtoParser(
-        client = this,
         programIds = programIds
     )
 
@@ -41,30 +36,6 @@ class SolanaClient(
                 }
             }
         }
-
-    suspend fun getAccountInfo(account: String): List<String> {
-        val accountInfo = api.getAccountInfo(account).convert { this.value.data }
-
-        require(accountInfo.size == 2)
-        require(accountInfo[1] == "base64")
-
-        val base64 = Base64.getDecoder().decode(accountInfo[0])
-        val buffer = ByteBuffer.wrap(base64).apply { order(ByteOrder.LITTLE_ENDIAN) }
-
-        repeat(LOOKUP_TABLE_META_SIZE) { buffer.get() }
-
-        val result = mutableListOf<String>()
-
-        while (buffer.hasRemaining())  {
-            val byteArray = ByteArray(32)
-
-            buffer.get(byteArray)
-
-            result += Base58.encode(byteArray)
-        }
-
-        return result
-    }
 
     suspend fun getLatestSlot(): Long = api.getLatestSlot().toModel()
 
