@@ -115,7 +115,7 @@
     <modules>
         <module>framework</module>
         <module>core</module>
-        <module>ethereum</module>
+<!--        <module>ethereum</module>-->
 <!--        <module>flow-model</module>-->
 <!--        <module>flow</module>-->
         <module>solana</module>
