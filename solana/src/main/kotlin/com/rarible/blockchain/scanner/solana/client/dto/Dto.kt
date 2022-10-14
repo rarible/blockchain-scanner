@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
+import com.rarible.blockchain.scanner.solana.client.SolanaClient
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
@@ -29,6 +30,16 @@ object GetSlotRequest : Request(
 
 object GetFirstAvailableBlockRequest : Request(
     method = "getFirstAvailableBlock"
+)
+
+class GetAccountInfoRequest(account: String) : Request(
+    method = "getAccountInfo",
+    params = listOf(
+        account,
+        mapOf(
+            "encoding" to "base64"
+        )
+    )
 )
 
 class GetBlockRequest(
@@ -85,8 +96,8 @@ data class SolanaTransactionDto(
     val meta: Meta?
 ) {
     @get:JsonIgnore
-    val isSuccessful: Boolean get() =
-        meta != null && meta.err == null
+    val isSuccessful: Boolean
+        get() = meta != null && meta.err == null
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Instruction(
@@ -105,7 +116,15 @@ data class SolanaTransactionDto(
     data class Message(
         val recentBlockhash: String?,
         val accountKeys: List<String>,
+        val addressTableLookups: List<AddressTableLookup>?,
         val instructions: List<Instruction?>
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AddressTableLookup(
+        val accountKey: String,
+        val readonlyIndexes: List<Int>,
+        val writableIndexes: List<Int>
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -119,6 +138,16 @@ data class SolanaTransactionDto(
         @JsonSetter(nulls = Nulls.AS_EMPTY)
         val innerInstructions: List<InnerInstruction> = emptyList(),
         val err: Any?
+    )
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class AccountInfo(
+    val value: Value
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Value(
+        val data: List<String>
     )
 }
 
@@ -143,15 +172,21 @@ data class SolanaBlockDto(
 }
 
 class SolanaBlockDtoParser(
+    private val client: SolanaClient,
     private val programIds: Set<String>
 ) {
-    fun toModel(blockDto: SolanaBlockDto, slot: Long): SolanaBlockchainBlock = with(blockDto) {
+    suspend fun toModel(blockDto: SolanaBlockDto, slot: Long): SolanaBlockchainBlock = with(blockDto) {
         val logs = transactions.flatMapIndexed { transactionIndex, transactionDto ->
             if (!transactionDto.isSuccessful) {
                 return@flatMapIndexed emptyList()
             }
             val transaction = transactionDto.transaction ?: return@flatMapIndexed emptyList()
-            val accountKeys = transaction.message.accountKeys
+            val lookups = transaction.message.addressTableLookups?.flatMap { lookup ->
+                val accounts = client.getAccountInfo(lookup.accountKey)
+
+                lookup.writableIndexes.map { accounts[it] } + lookup.readonlyIndexes.map { accounts[it] }
+            } ?: emptyList()
+            val accountKeys = transaction.message.accountKeys + lookups
             val transactionHash = transactionDto.transaction.signatures.first()
             val result = arrayListOf<SolanaBlockchainLog>().apply {
                 this += transaction.message.instructions.mapIndexedNotNull { instructionIndex, instruction ->
@@ -229,7 +264,7 @@ class SolanaBlockDtoParser(
 
 fun ApiResponse<Long>.toModel(): Long = convert { this }
 
-private inline fun <reified T, reified R> ApiResponse<T>.convert(
+inline fun <reified T, reified R> ApiResponse<T>.convert(
     block: T.() -> R
 ): R {
     require(result != null && error == null) {
