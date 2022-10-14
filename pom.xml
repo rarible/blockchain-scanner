@@ -119,7 +119,7 @@
 <!--        <module>flow-model</module>-->
 <!--        <module>flow</module>-->
         <module>solana</module>
-        <module>test-coverage</module>
+<!--        <module>test-coverage</module>-->
     </modules>
 
 </project>
