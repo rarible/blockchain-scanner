@@ -1,10 +1,7 @@
-package com.rarible.protocol.nft.core.service.policy
+package com.rarible.blockchain.scanner.ethereum.reduce.policy
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
-import com.rarible.blockchain.scanner.ethereum.policy.ConfirmEventApplyPolicy
-import com.rarible.blockchain.scanner.ethereum.policy.ItemEvent
-import com.rarible.blockchain.scanner.ethereum.policy.createRandomItemEvent
-import com.rarible.blockchain.scanner.ethereum.policy.withNewValues
+
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

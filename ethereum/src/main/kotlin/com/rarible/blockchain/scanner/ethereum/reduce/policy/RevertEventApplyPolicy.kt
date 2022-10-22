@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.ethereum.policy
+package com.rarible.blockchain.scanner.ethereum.reduce.policy
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumEntityEvent
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
