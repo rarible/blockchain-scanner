@@ -32,6 +32,10 @@
             <groupId>com.github.cloudyrock.mongock</groupId>
             <artifactId>mongock-spring-v5</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.rarible.core</groupId>
+            <artifactId>rarible-core-entity-reducer</artifactId>
+        </dependency>
 
         <!-- ================== Test ===================== -->
         <dependency>
