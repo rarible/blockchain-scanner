@@ -1,7 +1,9 @@
 package com.rarible.blockchain.scanner.ethereum.reduce.policy
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
-
+import com.rarible.blockchain.scanner.ethereum.reduce.ItemEvent
+import com.rarible.blockchain.scanner.ethereum.reduce.createRandomItemEvent
+import com.rarible.blockchain.scanner.ethereum.reduce.withNewValues
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
