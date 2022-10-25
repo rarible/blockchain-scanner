@@ -6,7 +6,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
-class CompositeEntityEventListener(
+abstract class CompositeEntityEventListener(
     override val id: String,
     override val subscriberGroup: String,
     val entityEventsSubscribers: List<EntityEventsSubscriber>
