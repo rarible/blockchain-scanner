@@ -7,7 +7,7 @@ import com.rarible.core.entity.reducer.service.Reducer
 
 abstract class EventStatusReducer<Id, Event : EthereumEntityEvent<Event>, E : Entity<Id, Event, E>>(
     private val forwardChainReducer: EntityChainReducer<Id, Event, E>,
-    private val reversedChainReducer: EntityChainReducer<Id, Event, E>
+    private val reversedChainReducer: RevertedEntityChainReducer<Id, Event, E>
 ) : Reducer<Event, E> {
 
     override suspend fun reduce(entity: E, event: Event): E {
