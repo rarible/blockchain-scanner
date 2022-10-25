@@ -8,6 +8,8 @@ abstract class EthereumEntityEvent<T> : Comparable<EthereumEntityEvent<T>> {
 
     open fun invert(): T = throw IllegalArgumentException("${this.javaClass} event can't invert")
 
+    fun isConfirmed(): Boolean = log.status == EthereumLogStatus.CONFIRMED
+
     override fun compareTo(other: EthereumEntityEvent<T>): Int {
         val o1 = this
         return when (o1.log.status) {
