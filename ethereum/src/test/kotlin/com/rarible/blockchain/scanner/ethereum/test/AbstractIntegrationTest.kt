@@ -2,6 +2,9 @@
 
 package com.rarible.blockchain.scanner.ethereum.test
 
+import com.rarible.blockchain.scanner.block.Block
+import com.rarible.blockchain.scanner.block.BlockRepository
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
@@ -9,9 +12,6 @@ import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
-import com.rarible.blockchain.scanner.block.Block
-import com.rarible.blockchain.scanner.block.BlockRepository
-import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
@@ -35,6 +35,7 @@ import scalether.domain.response.TransactionReceipt
 import scalether.transaction.MonoTransactionPoller
 import scalether.transaction.MonoTransactionSender
 import java.time.Instant
+import java.util.function.Consumer
 import kotlin.concurrent.withLock
 
 abstract class AbstractIntegrationTest {
@@ -125,7 +126,7 @@ abstract class AbstractIntegrationTest {
         testEthereumLogEventPublisher.publishedLogRecords.clear()
     }
 
-    protected fun verifyPublishedLogEvent(asserter: (LogRecordEvent) -> Unit) {
+    protected fun verifyPublishedLogEvent(asserter: Consumer<LogRecordEvent>) {
         BlockingWait.waitAssert {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).anySatisfy(asserter)
         }
