@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.4.4</revision>
+        <revision>2.4.5</revision>
 
         <rarible.ethereum.version>1.7.0</rarible.ethereum.version>
         <rarible.core.version>2.5.0</rarible.core.version>
@@ -66,18 +66,6 @@
                 <artifactId>rarible-blockchain-scanner-ethereum</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
-<!--            <dependency>-->
-<!--                <groupId>com.rarible.blockchain.scanner</groupId>-->
-<!--                <artifactId>rarible-blockchain-scanner-flow</artifactId>-->
-<!--                <version>${project.version}</version>-->
-<!--            </dependency>-->
-
-<!--            <dependency>-->
-<!--                <groupId>com.rarible.blockchain.scanner</groupId>-->
-<!--                <artifactId>rarible-blockchain-scanner-flow-model</artifactId>-->
-<!--                <version>${project.version}</version>-->
-<!--            </dependency>-->
 
             <dependency>
                 <groupId>com.rarible.blockchain.scanner</groupId>
