@@ -14,6 +14,7 @@ import scalether.domain.response.Log
 import scalether.domain.response.Transaction
 import java.time.Instant
 
+@Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractSubscriber<T : EventData>(
     group: SubscriberGroup,
     collection: String,
@@ -21,7 +22,7 @@ abstract class AbstractSubscriber<T : EventData>(
     contracts: List<Address>
 ) : EthereumLogEventSubscriber() {
 
-    private val descriptor = EthereumDescriptor(
+    protected val ethereumDescriptor = EthereumDescriptor(
         groupId = group,
         collection = collection,
         ethTopic = topic,
@@ -29,7 +30,7 @@ abstract class AbstractSubscriber<T : EventData>(
         entityType = ReversedEthereumLogRecord::class.java
     )
 
-    override fun getDescriptor(): EthereumDescriptor = descriptor
+    override fun getDescriptor(): EthereumDescriptor = ethereumDescriptor
 
     override suspend fun getEthereumEventRecords(
         block: EthereumBlockchainBlock,
