@@ -7,5 +7,6 @@ import scalether.domain.response.Transaction
 data class EthereumBlockchainLog(
     val ethLog: Log,
     val ethTransaction: Transaction,
-    val index: Int
+    val index: Int,
+    val total: Int,
 ) : BlockchainLog

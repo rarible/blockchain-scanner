@@ -65,7 +65,8 @@ class EthereumBlockchainLogIndexTest {
                 blockHash = blockHash,
                 blockNumber = blockNumber.toBigInteger()
             ),
-            index = index
+            index = index,
+            total =  1
         )
 
         val expectedLogs = listOf(

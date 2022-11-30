@@ -163,13 +163,13 @@ class EthereumClient(
      * and sorting by <logIndex> in each group.
      * The topic is implicitly fixed here, so just group by <transactionHash, address>.
      */
-    private fun attachIndex(logsInBlock: List<Log>): List<IndexedValue<Log>> {
+    private fun attachIndex(logsInBlock: List<Log>): List<Indexed<Log>> {
         return logsInBlock.groupBy {
             it.transactionHash() to it.address()
         }.values.flatMap { group ->
-            group.sortedBy { log ->
-                log.logIndex()
-            }.withIndex()
+            group
+                .sortedBy { log -> log.logIndex() }
+                .mapIndexed { index, log -> Indexed(index, group.size, log) }
         }
     }
 
@@ -181,7 +181,7 @@ class EthereumClient(
         val transactions = CollectionConverters.asJava(ethFullBlock.transactions()).associateBy { it.hash() }
         return FullBlock(
             block = EthereumBlockchainBlock(ethFullBlock),
-            logs = indexedEthLogs.map { (index, ethLog) ->
+            logs = indexedEthLogs.map { (index, total, ethLog) ->
                 val transaction = transactions[ethLog.transactionHash()]
                     ?: error(
                         "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
@@ -189,12 +189,15 @@ class EthereumClient(
                     )
                 EthereumBlockchainLog(
                     ethLog = ethLog,
+                    ethTransaction = transaction,
                     index = index,
-                    ethTransaction = transaction
+                    total = total,
                 )
             }
         )
     }
+
+    private data class Indexed<out T>(val index: Int, val total: Int, val value: T)
 }
 
 private fun BigInteger.encodeForFilter(): String {
