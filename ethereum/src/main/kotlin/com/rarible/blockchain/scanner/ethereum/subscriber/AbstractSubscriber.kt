@@ -14,7 +14,7 @@ import scalether.domain.response.Log
 import scalether.domain.response.Transaction
 import java.time.Instant
 
-sealed class AbstractSubscriber<T : EventData>(
+abstract class AbstractSubscriber<T : EventData>(
     group: SubscriberGroup,
     collection: String,
     topic: Word,
