@@ -56,12 +56,6 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             batches.flatMap { prepareBlockEventsBatch(it) }
         }
 
-        if (logRecordEventPublisher.isEnabled()) {
-            withSpan(name = "sortAndPublishEvents") {
-                sortAndPublishEvents(events, logEvents)
-            }
-        }
-
         val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
         val toUpdate = logEvents.sumOf { it.logRecordsToUpdate.size }
         withSpan(
@@ -70,6 +64,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             labels = listOf("toInsert" to toInsert, "toUpdate" to toUpdate)
         ) {
             insertOrUpdateRecords(logEvents)
+        }
+        if (logRecordEventPublisher.isEnabled()) {
+            withSpan(name = "sortAndPublishEvents") {
+                sortAndPublishEvents(events, logEvents)
+            }
         }
     }
 
