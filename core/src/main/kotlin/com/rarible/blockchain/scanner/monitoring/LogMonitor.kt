@@ -26,7 +26,7 @@ class LogMonitor(
         logCounters.getOrPut(descriptor.id) {
             addCounter(
                 metricName = "inserted_logs",
-                Tag.of("subscriber", descriptor.id)
+                Tag.of("subscriber", descriptor.alias ?: descriptor.id)
             )
         }
 
