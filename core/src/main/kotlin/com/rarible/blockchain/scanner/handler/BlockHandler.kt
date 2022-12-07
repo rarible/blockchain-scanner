@@ -189,7 +189,7 @@ class BlockHandler<BB : BlockchainBlock>(
     ) = produce(capacity = capacity) {
         var lastFetchedBlockHash = baseBlock.hash
 
-        blockRanges.chunked(capacity / 2, 50 /* Any is enough */).takeWhile { batchOfRanges ->
+        blockRanges.chunked(capacity / 2).takeWhile { batchOfRanges ->
             val batchOfBlockBatches = coroutineScope {
                 batchOfRanges.map { range ->
                     async {
