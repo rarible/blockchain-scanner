@@ -153,7 +153,9 @@ class EthereumClient(
                 blockHeader.number,
                 blockHash
             )
-            val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+            val ethFullBlock = if (allLogs.isNotEmpty())
+                ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+            else blockHeader.ethBlock
             createFullBlock(ethFullBlock, allLogs)
         }
     }
