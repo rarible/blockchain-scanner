@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.EventData
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.SubscriberGroup
+import com.rarible.blockchain.scanner.ethereum.model.SubscriberGroupAlias
 import io.daonomic.rpc.domain.Word
 import org.bson.types.ObjectId
 import scalether.domain.Address
@@ -19,11 +20,13 @@ abstract class AbstractSubscriber<T : EventData>(
     group: SubscriberGroup,
     collection: String,
     topic: Word,
-    contracts: List<Address>
+    contracts: List<Address>,
+    alias: SubscriberGroupAlias? = null
 ) : EthereumLogEventSubscriber() {
 
     protected val ethereumDescriptor = EthereumDescriptor(
         groupId = group,
+        alias = alias,
         collection = collection,
         ethTopic = topic,
         contracts = contracts,

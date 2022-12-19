@@ -10,5 +10,6 @@ data class EthereumDescriptor(
     val collection: String,
     val contracts: List<Address>,
     override val entityType: Class<*>,
-    override val id: String = ethTopic.toString()
+    override val id: String = ethTopic.toString(),
+    override val alias: String? = null
 ) : Descriptor
