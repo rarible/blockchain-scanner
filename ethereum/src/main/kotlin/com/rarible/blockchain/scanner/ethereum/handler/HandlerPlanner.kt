@@ -21,7 +21,7 @@ class HandlerPlanner(
     @Suppress("EXPERIMENTAL_API_USAGE")
     suspend fun getPlan(
         range: BlockRange,
-        from: Long?
+        from: Long? = null
     ): Plan {
         val baseBlockId = from ?: maxOf(range.from - 1, 0)
         val baseBlock = blockService.getBlock(baseBlockId)

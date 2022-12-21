@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
@@ -64,5 +65,13 @@ class EthereumLogRepository(
             .where("blockHash").isEqualTo(blockHash)
             .and("topic").isEqualTo(topic)
         return mongo.find(Query(criteria), entityType, collection).asFlow() as Flow<EthereumLogRecord>
+    }
+
+    suspend fun countByBlockNumber(
+        collection: String,
+        blockNumber: Long,
+    ): Long {
+        val criteria = Criteria.where(EthereumLog::blockNumber.name).isEqualTo(blockNumber)
+        return mongo.count(Query(criteria), collection).awaitFirst()
     }
 }
