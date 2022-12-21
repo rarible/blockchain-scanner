@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.reconciliation
 
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.handler.HandlerPlanner
 import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandler
 import com.rarible.blockchain.scanner.ethereum.model.BlockRange
@@ -35,6 +36,7 @@ class ReconciliationLogHandler(
     private val reindexHandler: ReindexHandler,
     private val handlerPlanner: HandlerPlanner,
     private val onReconciliationListeners: List<OnReconciliationListener>,
+    private val scannerProperties: EthereumScannerProperties,
     subscribers: List<EthereumLogEventSubscriber>,
 ) {
     private val subscribersByCollection = subscribers.groupBy { subscriber -> subscriber.getDescriptor().collection }
@@ -43,8 +45,9 @@ class ReconciliationLogHandler(
         blocksRange.range.map { blockNumber ->
             async {
                 handleBlock(blockNumber)
+                blockNumber
             }
-        }.awaitAll()
+        }.awaitAll().last()
     }
 
     private suspend fun handleBlock(blockNumber: Long) = coroutineScope {
@@ -64,13 +67,8 @@ class ReconciliationLogHandler(
             logger.error("Saved logs count for block {} are not consistent (saved={}, fetched={})",
                 blockNumber, savedLogCount, chainLogCount
             )
-            val blockRange = BlockRange(from = blockNumber, to = null, batchSize = null)
-            val (reindexRanges, baseBlock) = handlerPlanner.getPlan(blockRange)
-            reindexHandler.reindex(
-                baseBlock = baseBlock,
-                blocksRanges = reindexRanges,
-            ).collect {
-                logger.info("block $blockNumber was re-indexed")
+            if (scannerProperties.reconciliation.autoReindex) {
+                reindex(blockNumber)
             }
         }
     }
@@ -102,6 +100,17 @@ class ReconciliationLogHandler(
                 val inserted = result[blockNumber]?.inserted?.toLong() ?: error("Can't get stable block $blockNumber statistic")
                 acc + inserted
             }
+    }
+
+    private suspend fun reindex(blockNumber: Long) {
+        val blockRange = BlockRange(from = blockNumber, to = null, batchSize = null)
+        val (reindexRanges, baseBlock) = handlerPlanner.getPlan(blockRange)
+        reindexHandler.reindex(
+            baseBlock = baseBlock,
+            blocksRanges = reindexRanges,
+        ).collect {
+            logger.info("block $blockNumber was re-indexed")
+        }
     }
 
     private fun createLogService(): LogService<EthereumLogRecord, EthereumDescriptor> {
