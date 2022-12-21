@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.test.handler
 
+import com.rarible.blockchain.scanner.block.BlockStats
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.handler.BlockEventListener
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -9,7 +10,8 @@ class TestBlockEventListener : BlockEventListener<TestBlockchainBlock> {
 
     val blockEvents: MutableList<List<BlockEvent<TestBlockchainBlock>>> = CopyOnWriteArrayList()
 
-    override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>) {
+    override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): Map<Long, BlockStats> {
         blockEvents += events
+        return emptyMap()
     }
 }

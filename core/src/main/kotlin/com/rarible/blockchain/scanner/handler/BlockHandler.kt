@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.handler
 
 import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.blockchain.scanner.block.BlockStats
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
@@ -382,12 +383,14 @@ class BlockHandler<BB : BlockchainBlock>(
              This is OK because handling of reverted blocks simply reverts logs that we might have had chance to record.
              If we did not call NewBlockEvent-s, there will be nothing to revert.
             */
-            processBlockEvents(blockEvents)
+            val stats = processBlockEvents(blockEvents)
             withSpan(
                 name = "saveBlocks",
                 labels = listOf("count" to blocks.size)
             ) {
-                val toSave = blocks.map { it.toBlock(BlockStatus.SUCCESS) }
+                val toSave = blocks.map {
+                    it.toBlock(BlockStatus.SUCCESS, stats[it.number])
+                }
                 if (blocksRange.stable) {
                     saveStableBlocks(toSave, blocksRange, resyncStable)
                 } else {
@@ -404,6 +407,7 @@ class BlockHandler<BB : BlockchainBlock>(
     ): List<Block> {
         val result = runRethrowingBlockHandlerException(actionName = "Save $blocksRange") {
             if (resyncStable) {
+                // TODO here we can override stats
                 // In case of re-sync there can be missing blocks if we started scan from the middle
                 blockService.insertMissing(blocks)
             } else {
@@ -417,6 +421,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun saveUnstableBlocks(blocks: List<Block>): List<Block> =
         blocks.map {
+            // TODO here we can override stats
             blockService.save(it)
             logger.info("Saved block $it")
             it
@@ -433,7 +438,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>) = coroutineScope {
+    private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>): Map<Long, BlockStats> = coroutineScope {
         withSpan(
             name = "processBlocks",
             labels = listOf(
@@ -443,8 +448,15 @@ class BlockHandler<BB : BlockchainBlock>(
             )
         ) {
             val processingStart = Timer.start()
-            blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
+            val stats = blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
             monitor.recordProcessBlocks(processingStart)
+            val mergedStats = HashMap<Long, BlockStats>()
+            stats.forEach { perListener ->
+                perListener.forEach {
+                    mergedStats[it.key] = it.value.merge(mergedStats[it.key])
+                }
+            }
+            mergedStats
         }
     }
 

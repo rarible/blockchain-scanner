@@ -52,8 +52,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
         blockScanner.scan(once = true)
 
-        assertThat(findBlock(blocks[0].number)).isEqualTo(blocks[0].toBlock(BlockStatus.SUCCESS))
-        assertThat(findBlock(block.number)).isEqualTo(block.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(blocks[0].number)!!.copy(stats = null)).isEqualTo(blocks[0].toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block.number)!!.copy(stats = null)).isEqualTo(block.toBlock(BlockStatus.SUCCESS))
 
         assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
             mapOf(
@@ -135,8 +135,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val subscriber = TestLogEventSubscriber(descriptor)
         val blockScanner = createBlockchainScanner(TestBlockchainClient(testBlockchainData), listOf(subscriber))
         blockScanner.scan(once = true)
-        assertThat(findBlock(blocks[1].number)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
-        assertThat(findBlock(blocks[2].number)).isEqualTo(blocks[2].toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(blocks[1].number)!!.copy(stats = null)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(blocks[2].number)!!.copy(stats = null)).isEqualTo(blocks[2].toBlock(BlockStatus.SUCCESS))
         val confirmedLogs = listOf(
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[1], log11).single(),
@@ -229,7 +229,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
         blockScanner.scan(once = true)
 
-        assertThat(findBlock(blocks[1].number)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(blocks[1].number)!!.copy(stats = null)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
         val confirmedLogs = listOf(
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[1], log11).single(),
