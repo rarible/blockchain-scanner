@@ -1,5 +1,7 @@
 package com.rarible.blockchain.scanner.handler
 
+import com.rarible.blockchain.scanner.block.BlockStats
+import com.rarible.blockchain.scanner.block.SubscriberStats
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
@@ -22,11 +24,13 @@ import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
+import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
+import java.util.*
 
 class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val groupId: String,
@@ -41,9 +45,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
-    override suspend fun process(events: List<BlockEvent<BB>>) {
+    override suspend fun process(events: List<BlockEvent<BB>>): Map<Long, BlockStats> {
         if (events.isEmpty()) {
-            return
+            return emptyMap()
         }
         logger.info(
             "Processing ${events.size} block events ${events.first().number}..${events.last().number} for group '${
@@ -70,6 +74,35 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 sortAndPublishEvents(events, logEvents)
             }
         }
+        return gatherStats(logEvents)
+    }
+
+    private fun gatherStats(logs: List<LogEvent<R, D>>): Map<Long, BlockStats> {
+        val result = HashMap<Long, BlockStats>()
+        logs.groupBy { it.blockEvent.number }.forEach {
+            val blockNumber = it.key
+            val logEvents = it.value
+
+            var inserted = 0
+            var updated = 0
+            val subscriberStats = TreeMap<String, SubscriberStats>()
+            logEvents.forEach { event ->
+                val stats = SubscriberStats(
+                    event.logRecordsToInsert.size,
+                    event.logRecordsToUpdate.size
+                )
+                subscriberStats[event.descriptor.id] = stats
+                inserted += stats.inserted
+                updated += stats.updated
+            }
+            result[blockNumber] = BlockStats(
+                nowMillis(),
+                inserted,
+                updated,
+                subscriberStats
+            )
+        }
+        return result
     }
 
     private suspend fun sortAndPublishEvents(events: List<BlockEvent<BB>>, logEvents: List<LogEvent<R, D>>) {

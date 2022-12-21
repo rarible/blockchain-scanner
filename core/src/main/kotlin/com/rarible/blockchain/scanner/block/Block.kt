@@ -13,7 +13,8 @@ data class Block(
     val hash: String,
     val parentHash: String?,
     val timestamp: Long,
-    val status: BlockStatus
+    val status: BlockStatus,
+    val stats: BlockStats? = null
 )
 
 enum class BlockStatus {
@@ -21,5 +22,5 @@ enum class BlockStatus {
     SUCCESS,
 }
 
-fun BlockchainBlock.toBlock(status: BlockStatus = BlockStatus.PENDING): Block =
-    Block(number, hash, parentHash, timestamp, status)
+fun BlockchainBlock.toBlock(status: BlockStatus = BlockStatus.PENDING, stats: BlockStats? = null): Block =
+    Block(number, hash, parentHash, timestamp, status, stats)

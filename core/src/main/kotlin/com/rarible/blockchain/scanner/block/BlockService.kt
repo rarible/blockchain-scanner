@@ -29,7 +29,7 @@ class BlockService(
         try {
             insertAll(toInsert)
         } catch (e: DuplicateKeyException) {
-            // There potentially can be potential - in such case, fallback to one-by-one save
+            // There potentially can be existing block - in such case, fallback to one-by-one save
             toInsert.forEach { save(it) }
         }
         // Ideally we should return here mix of saved/existing entities, but not sure if it's really needed
