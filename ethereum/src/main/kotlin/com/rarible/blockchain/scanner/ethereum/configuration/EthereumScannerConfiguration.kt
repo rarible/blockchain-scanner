@@ -30,7 +30,7 @@ class EthereumScannerConfiguration(
 ) {
     @Bean
     @ConditionalOnProperty(name = ["blockchain.scanner.ethereum.reconciliation.enabled"], havingValue = "true")
-    fun updateSuspiciousItemsHandlerWorker(handler: ReconciliationLogWorkerHandler): JobDaemonWorker {
+    fun blockchainScannerReconciliationLogHandlerWorker(handler: ReconciliationLogWorkerHandler): JobDaemonWorker {
         return JobDaemonWorker(
             jobHandler = handler,
             meterRegistry = meterRegistry,
