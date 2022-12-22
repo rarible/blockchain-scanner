@@ -64,8 +64,8 @@ class ReconciliationLogHandler(
         val savedLogCount = getSavedLogCount(blockNumber, collection)
         val chainLogCount = getChainLogCount(blockNumber, subscribers)
         if (savedLogCount != chainLogCount) {
-            logger.error("Saved logs count for block {} are not consistent (saved={}, fetched={})",
-                blockNumber, savedLogCount, chainLogCount
+            logger.error("Saved logs count for block {} and collection '{}' are not consistent (saved={}, fetched={})",
+                blockNumber, collection, savedLogCount, chainLogCount
             )
             if (scannerProperties.reconciliation.autoReindex) {
                 reindex(blockNumber)
@@ -91,6 +91,7 @@ class ReconciliationLogHandler(
                     logHandlerFactory.create(
                         groupId = groupId,
                         subscribers = subscribers,
+                        logService = createLogService(),
                         logRecordEventPublisher = createLogRecordEventPublisher(),
                     ).process(events)
                 }
