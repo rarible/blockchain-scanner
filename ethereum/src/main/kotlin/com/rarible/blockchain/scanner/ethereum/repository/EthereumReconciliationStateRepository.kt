@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.model.ReconciliationLogState
 import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.stereotype.Component
 
@@ -18,7 +19,7 @@ class EthereumReconciliationStateRepository(
             ReconciliationLogState.RECONCILIATION_LOG_STATE_ID,
             ReconciliationLogState::class.java,
             COLLECTION
-        ).awaitFirst()
+        ).awaitFirstOrNull()
     }
 
     private companion object {
