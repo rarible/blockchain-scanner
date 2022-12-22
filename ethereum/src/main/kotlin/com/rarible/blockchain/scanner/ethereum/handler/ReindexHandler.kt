@@ -9,16 +9,12 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
-import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventFilter
+import com.rarible.blockchain.scanner.ethereum.service.LogHandlerFactory
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
-import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.BlocksRange
-import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
-import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.core.logging.RaribleMDCContext
 import io.daonomic.rpc.domain.Word
@@ -34,13 +30,11 @@ import scalether.domain.Address
 @Component
 class ReindexHandler(
     private val allSubscribers: List<EthereumLogEventSubscriber>,
-    private val logFilters: List<EthereumLogEventFilter>,
     private val blockService: BlockService,
     ethereumClient: EthereumBlockchainClient,
-    private val logService: EthereumLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties,
     private val blockMonitor: BlockMonitor,
-    private val logMonitor: LogMonitor
+    private val logHandlerFactory: LogHandlerFactory
 ) {
     private val retryableClient = RetryableBlockchainClient(
         original = ethereumClient,
@@ -73,16 +67,12 @@ class ReindexHandler(
                     logger.info(
                         "Reindex with subscribers of the group {}: {}",
                         groupId,
-                        subscribers.joinToString { it.getDescriptor().toString() })
-                    LogHandler(
+                        subscribers.joinToString { it.getDescriptor().toString() }
+                    )
+                    logHandlerFactory.create(
                         groupId = groupId,
-                        blockchainClient = retryableClient,
                         subscribers = subscribers,
-                        logFilters = logFilters,
-                        logService = logService,
-                        logRecordComparator = EthereumLogRecordComparator,
                         logRecordEventPublisher = reindexLogRecordEventPublisher,
-                        logMonitor = logMonitor
                     )
                 }
 
