@@ -8,7 +8,9 @@ data class ReconciliationLogState(
 ) {
     @get:Id
     @get:AccessType(AccessType.Type.PROPERTY)
-    val id: String = RECONCILIATION_LOG_STATE_ID
+    var id: String
+        get() = RECONCILIATION_LOG_STATE_ID
+        set(_) {}
 
     companion object {
         const val RECONCILIATION_LOG_STATE_ID = "reconciliation_log_state"
