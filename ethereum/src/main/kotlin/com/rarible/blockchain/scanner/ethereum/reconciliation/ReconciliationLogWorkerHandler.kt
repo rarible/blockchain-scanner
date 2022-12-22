@@ -24,12 +24,14 @@ class ReconciliationLogWorkerHandler(
         val confirmationBlockDistance = scannerProperties.scan.batchLoad.confirmationBlockDistance
         val latestBlock = blockRepository.getLastBlock() ?: return
         val state = getState(latestBlock.id)
+        logger.info("Last Reconcile checking block {}", state.lastReconciledBlock)
 
         val from = state.lastReconciledBlock + 1
         val to = latestBlock.id - confirmationBlockDistance
         if (from <= to) return
 
         val range = BlocksRange(LongRange(from, to), stable = true)
+        logger.info("Next reconcile block range {}", range)
         val result = reconciliationLogHandler.check(range)
         val newState = state.copy(lastReconciledBlock = result)
         stateRepository.saveReconciliationLogState(newState)
