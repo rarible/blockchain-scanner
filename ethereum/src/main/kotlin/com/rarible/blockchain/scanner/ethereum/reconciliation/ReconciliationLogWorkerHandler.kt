@@ -28,7 +28,7 @@ class ReconciliationLogWorkerHandler(
 
         val from = state.lastReconciledBlock + 1
         val to = latestBlock.id - confirmationBlockDistance
-        if (from <= to) return
+        if (from >= to) return
 
         val range = BlocksRange(LongRange(from, to), stable = true)
         logger.info("Next reconcile block range {}", range)
@@ -38,7 +38,12 @@ class ReconciliationLogWorkerHandler(
     }
 
     private suspend fun getState(latestBlock: Long): ReconciliationLogState {
-        return stateRepository.getReconciliationLogState() ?: ReconciliationLogState(latestBlock)
+        val state = stateRepository.getReconciliationLogState()
+        return if (state == null) {
+            val initState = ReconciliationLogState(latestBlock)
+            logger.info("No init reconciliation, save for {} block", initState.lastReconciledBlock)
+            stateRepository.saveReconciliationLogState(initState)
+        } else state
     }
 
     private companion object {
