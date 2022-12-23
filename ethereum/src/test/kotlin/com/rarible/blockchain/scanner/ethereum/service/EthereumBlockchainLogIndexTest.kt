@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.service
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
 import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
@@ -183,7 +184,8 @@ class EthereumBlockchainLogIndexTest {
 
         val ethPubSub = mockk<EthPubSub>()
         every { ethPubSub.newHeads() } returns Flux.empty()
+        val properties = EthereumScannerProperties()
 
-        return EthereumClient(monoEthereum, emptyList(), ethPubSub)
+        return EthereumClient(monoEthereum, properties, ethPubSub)
     }
 }

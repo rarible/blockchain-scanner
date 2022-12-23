@@ -22,6 +22,7 @@ data class EthereumScannerProperties(
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     val task: TaskProperties = TaskProperties(),
     val maxPendingLogDuration: Long = Duration.ofHours(2).toMillis(),
-    val reconciliation: ReconciliationProperties = ReconciliationProperties()
+    val reconciliation: ReconciliationProperties = ReconciliationProperties(),
+    val blockPoller: BlockPollerProperties = BlockPollerProperties(),
+    val maxBatches: List<String> = emptyList()
 ) : BlockchainScannerProperties
-
