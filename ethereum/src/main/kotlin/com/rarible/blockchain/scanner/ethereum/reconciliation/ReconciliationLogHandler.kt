@@ -41,13 +41,17 @@ class ReconciliationLogHandler(
 ) {
     private val subscribersByCollection = subscribers.groupBy { subscriber -> subscriber.getDescriptor().collection }
 
-    suspend fun check(blocksRange: BlocksRange) = coroutineScope {
-        blocksRange.range.map { blockNumber ->
-            async {
-                handleBlock(blockNumber)
-                blockNumber
-            }
-        }.awaitAll().last()
+    suspend fun check(blocksRange: BlocksRange, batchSize: Int) = coroutineScope {
+        blocksRange.range
+            .chunked(batchSize)
+            .map { blockNumbers ->
+                blockNumbers.map { blockNumber ->
+                    async {
+                        handleBlock(blockNumber)
+                        blockNumber
+                    }
+                }.awaitAll()
+            }.flatten().last()
     }
 
     private suspend fun handleBlock(blockNumber: Long) = coroutineScope {

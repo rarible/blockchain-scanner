@@ -32,7 +32,7 @@ class ReconciliationLogWorkerHandler(
 
         val range = BlocksRange(LongRange(from, to), stable = true)
         logger.info("Next reconcile block range {}", range)
-        val lastReconciledBlock = reconciliationLogHandler.check(range)
+        val lastReconciledBlock = reconciliationLogHandler.check(range, scannerProperties.reconciliation.batchSize)
         logger.info("Reconcile return last handle block {}", lastReconciledBlock)
         val newState = state.copy(lastReconciledBlock = lastReconciledBlock)
         stateRepository.saveReconciliationLogState(newState)

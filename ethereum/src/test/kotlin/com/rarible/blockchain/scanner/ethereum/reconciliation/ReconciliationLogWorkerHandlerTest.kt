@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.configuration.ReconciliationProperties
 import com.rarible.blockchain.scanner.ethereum.model.ReconciliationLogState
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumReconciliationStateRepository
 import com.rarible.blockchain.scanner.handler.BlocksRange
@@ -22,6 +23,9 @@ internal class ReconciliationLogWorkerHandlerTest {
     private val reconciliationLogHandler = mockk<ReconciliationLogHandler>()
     private val stateRepository = mockk<EthereumReconciliationStateRepository>()
     private val blockRepository = mockk<BlockRepository>()
+    private val reconciliationProperties = mockk<ReconciliationProperties>() {
+        every { batchSize } returns 10
+    }
     private val blockBatchLoadProperties = mockk<BlockBatchLoadProperties> {
         every { confirmationBlockDistance } returns 10
     }
@@ -30,6 +34,7 @@ internal class ReconciliationLogWorkerHandlerTest {
     }
     private val scannerProperties = mockk<EthereumScannerProperties> {
         every { scan } returns scanProperties
+        every { reconciliation } returns reconciliationProperties
     }
     private val handler = ReconciliationLogWorkerHandler(
         reconciliationLogHandler =  reconciliationLogHandler,
@@ -53,7 +58,7 @@ internal class ReconciliationLogWorkerHandlerTest {
             assertThat(it.lastReconciledBlock).isEqualTo(100)
         }) }
         coVerify(exactly = 0) {
-            reconciliationLogHandler.check(any())
+            reconciliationLogHandler.check(any(), any())
         }
     }
 
@@ -68,7 +73,7 @@ internal class ReconciliationLogWorkerHandlerTest {
         handler.handle()
 
         coVerify(exactly = 0) { stateRepository.saveReconciliationLogState(any()) }
-        coVerify(exactly = 0) { reconciliationLogHandler.check(any()) }
+        coVerify(exactly = 0) { reconciliationLogHandler.check(any(), any()) }
     }
 
     @Test
@@ -82,7 +87,7 @@ internal class ReconciliationLogWorkerHandlerTest {
 
         coEvery { blockRepository.getLastBlock() } returns latestBlock
         coEvery { stateRepository.getReconciliationLogState() } returns savedState
-        coEvery { reconciliationLogHandler.check(expectedRange) } returns 90
+        coEvery { reconciliationLogHandler.check(expectedRange, any()) } returns 90
         coEvery { stateRepository.saveReconciliationLogState(expectedNewState) } returns expectedNewState
 
         handler.handle()

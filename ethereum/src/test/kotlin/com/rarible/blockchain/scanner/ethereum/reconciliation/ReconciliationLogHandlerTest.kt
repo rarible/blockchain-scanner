@@ -115,7 +115,7 @@ internal class ReconciliationLogHandlerTest {
         val block11Handler3Stats = mockk< BlockStats> { every { inserted } returns 8 }
         coEvery { logHandler3.process(listOf(NewStableBlockEvent(block11))) } returns mapOf(11L to block11Handler3Stats)
 
-        val result = handler.check(range)
+        val result = handler.check(range, 2)
         assertThat(result).isEqualTo(11)
     }
 
@@ -142,7 +142,7 @@ internal class ReconciliationLogHandlerTest {
         coEvery { handlerPlanner.getPlan(BlockRange(100, null, null)) } returns plan
         coEvery { reindexHandler.reindex(baseBlock, planRange) } returns flow { emit(baseBlock) }
 
-        val result = handler.check(range)
+        val result = handler.check(range, 2)
         assertThat(result).isEqualTo(100)
     }
 
