@@ -98,7 +98,7 @@ class ReconciliationLogHandler(
             }
             .awaitAll()
             .fold(0L) { acc, result ->
-                val inserted = result[blockNumber]?.inserted?.toLong() ?: error("Can't get stable block $blockNumber statistic")
+                val inserted = result[blockNumber]?.inserted?.toLong() ?: 0L
                 acc + inserted
             }
     }
