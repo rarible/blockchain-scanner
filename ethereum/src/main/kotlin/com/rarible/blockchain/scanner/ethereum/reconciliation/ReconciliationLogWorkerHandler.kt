@@ -17,25 +17,24 @@ class ReconciliationLogWorkerHandler(
     private val reconciliationLogHandler: ReconciliationLogHandler,
     private val stateRepository: EthereumReconciliationStateRepository,
     private val blockRepository: BlockRepository,
-    private val scannerProperties: EthereumScannerProperties
+    private val scannerProperties: EthereumScannerProperties,
+    private val monitor: EthereumLogReconciliationMonitor,
 ) : JobHandler {
 
     override suspend fun handle() {
         val latestBlock = blockRepository.getLastBlock() ?: return
         val state = getState(latestBlock.id)
-        logger.info("Last reconcile checking block {}, last known block {}",
-            state.lastReconciledBlock, latestBlock.id
-        )
         val from = state.lastReconciledBlock + 1
         val to = latestBlock.id - scannerProperties.scan.batchLoad.confirmationBlockDistance
         if (from >= to) return
 
         val range = BlocksRange(LongRange(from, to), stable = true)
         logger.info("Next reconcile block range {}", range)
+
         val lastReconciledBlock = reconciliationLogHandler.check(range, scannerProperties.reconciliation.batchSize)
-        logger.info("Reconcile return last handle block {}", lastReconciledBlock)
         val newState = state.copy(lastReconciledBlock = lastReconciledBlock)
         stateRepository.saveReconciliationLogState(newState)
+        monitor.onReconciledRange(size = to - from)
     }
 
     private suspend fun getState(latestBlock: Long): ReconciliationLogState {

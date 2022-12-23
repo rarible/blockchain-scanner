@@ -38,11 +38,12 @@ internal class ReconciliationLogHandlerTest {
     private val handlerPlanner = mockk<HandlerPlanner>()
     private val onReconciliationListener = mockk<OnReconciliationListener>()
     private val reconciliationProperties = mockk<ReconciliationProperties>()
-
+    private val monitor = mockk<EthereumLogReconciliationMonitor> {
+        every { onInconsistency() } returns Unit
+    }
     private val scannerProperties = mockk<EthereumScannerProperties> {
         every { reconciliation } returns reconciliationProperties
     }
-
     private val descriptor1 = mockk<EthereumDescriptor> {
         every { collection } returns "collection1"
         every { groupId } returns "groupId1"
@@ -156,7 +157,8 @@ internal class ReconciliationLogHandlerTest {
             handlerPlanner = handlerPlanner,
             onReconciliationListeners = listOf(onReconciliationListener),
             scannerProperties = scannerProperties,
-            subscribers = subscribers
+            subscribers = subscribers,
+            monitor = monitor
         )
     }
 }

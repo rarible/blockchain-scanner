@@ -37,6 +37,7 @@ class ReconciliationLogHandler(
     private val handlerPlanner: HandlerPlanner,
     private val onReconciliationListeners: List<OnReconciliationListener>,
     private val scannerProperties: EthereumScannerProperties,
+    private val monitor: EthereumLogReconciliationMonitor,
     subscribers: List<EthereumLogEventSubscriber>,
 ) {
     private val subscribersByCollection = subscribers.groupBy { subscriber -> subscriber.getDescriptor().collection }
@@ -68,6 +69,7 @@ class ReconciliationLogHandler(
         val savedLogCount = getSavedLogCount(blockNumber, collection)
         val chainLogCount = getChainLogCount(blockNumber, subscribers)
         if (savedLogCount != chainLogCount) {
+            monitor.onInconsistency()
             logger.error("Saved logs count for block {} and collection '{}' are not consistent (saved={}, fetched={})",
                 blockNumber, collection, savedLogCount, chainLogCount
             )

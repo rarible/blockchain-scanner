@@ -23,6 +23,9 @@ internal class ReconciliationLogWorkerHandlerTest {
     private val reconciliationLogHandler = mockk<ReconciliationLogHandler>()
     private val stateRepository = mockk<EthereumReconciliationStateRepository>()
     private val blockRepository = mockk<BlockRepository>()
+    private val monitor = mockk<EthereumLogReconciliationMonitor> {
+        every { onReconciledRange(any()) } returns Unit
+    }
     private val reconciliationProperties = mockk<ReconciliationProperties>() {
         every { batchSize } returns 10
     }
@@ -40,7 +43,8 @@ internal class ReconciliationLogWorkerHandlerTest {
         reconciliationLogHandler =  reconciliationLogHandler,
         stateRepository = stateRepository,
         blockRepository = blockRepository,
-        scannerProperties = scannerProperties
+        scannerProperties = scannerProperties,
+        monitor = monitor
     )
 
     @Test
