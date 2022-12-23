@@ -1,10 +1,12 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
+import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -15,8 +17,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import scala.jdk.javaapi.CollectionConverters
 import scalether.core.EthPubSub
@@ -31,19 +33,18 @@ import scalether.util.Hex
 import java.math.BigInteger
 import java.time.Duration
 
+@ExperimentalCoroutinesApi
 @Component
 class EthereumClient(
     private val ethereum: MonoEthereum,
-    @Value("\${blockchain.scanner.ethereum.maxBatches:}") maxBatches: List<String>,
+    properties: EthereumScannerProperties,
     ethPubSub: EthPubSub
 ) : EthereumBlockchainClient {
 
-    private val maxBatches = maxBatches.associate {
+    private val maxBatches = properties.maxBatches.associate {
         val parts = it.split(":")
         Word.apply(parts[0]) to Integer.parseInt(parts[1])
     }
-
-    private val logger = LoggerFactory.getLogger(EthereumClient::class.java)
 
     init {
         logger.info("Creating EthereumClient with maxBatches: $maxBatches")
@@ -53,7 +54,10 @@ class EthereumClient(
         return ethereum.ethBlockNumber().awaitFirst().toLong()
     }
 
-    override val newBlocks: Flow<EthereumBlockchainBlock> = ethPubSub.newHeads()
+    private val subscriber = if (properties.blockPoller.enabled)
+        EthereumNewBlockPoller(ethereum, properties.blockPoller.period) else EthereumNewBlockPubSub(ethPubSub)
+
+    override val newBlocks: Flow<EthereumBlockchainBlock> = subscriber.newHeads()
         .flatMap { ethereum.ethGetFullBlockByHash(it.hash()) }
         .map { EthereumBlockchainBlock(it) }
         .timeout(Duration.ofMinutes(5))
@@ -198,6 +202,11 @@ class EthereumClient(
     }
 
     private data class Indexed<out T>(val index: Int, val total: Int, val value: T)
+
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
+    }
+
 }
 
 private fun BigInteger.encodeForFilter(): String {
