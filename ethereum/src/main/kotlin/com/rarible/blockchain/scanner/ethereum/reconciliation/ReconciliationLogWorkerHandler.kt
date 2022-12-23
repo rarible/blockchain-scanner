@@ -21,19 +21,20 @@ class ReconciliationLogWorkerHandler(
 ) : JobHandler {
 
     override suspend fun handle() {
-        val confirmationBlockDistance = scannerProperties.scan.batchLoad.confirmationBlockDistance
         val latestBlock = blockRepository.getLastBlock() ?: return
         val state = getState(latestBlock.id)
-        logger.info("Last Reconcile checking block {}", state.lastReconciledBlock)
-
+        logger.info("Last reconcile checking block {}, last known block {}",
+            state.lastReconciledBlock, latestBlock.id
+        )
         val from = state.lastReconciledBlock + 1
-        val to = latestBlock.id - confirmationBlockDistance
+        val to = latestBlock.id - scannerProperties.scan.batchLoad.confirmationBlockDistance
         if (from >= to) return
 
         val range = BlocksRange(LongRange(from, to), stable = true)
         logger.info("Next reconcile block range {}", range)
-        val result = reconciliationLogHandler.check(range)
-        val newState = state.copy(lastReconciledBlock = result)
+        val lastReconciledBlock = reconciliationLogHandler.check(range)
+        logger.info("Reconcile return last handle block {}", lastReconciledBlock)
+        val newState = state.copy(lastReconciledBlock = lastReconciledBlock)
         stateRepository.saveReconciliationLogState(newState)
     }
 
