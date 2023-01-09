@@ -98,7 +98,7 @@ class ReconciliationLogHandler(
                         groupId = groupId,
                         subscribers = subscribers,
                         logService = createLogService(),
-                        logRecordEventPublisher = createLogRecordEventPublisher(),
+                        logRecordEventPublisher = createEmptyLogRecordEventPublisher(),
                     ).process(events)
                 }
             }
@@ -115,6 +115,7 @@ class ReconciliationLogHandler(
         reindexHandler.reindex(
             baseBlock = baseBlock,
             blocksRanges = reindexRanges,
+            logRecordEventPublisher = createLogRecordEventPublisher()
         ).collect {
             logger.info("block $blockNumber was re-indexed")
         }
@@ -154,6 +155,12 @@ class ReconciliationLogHandler(
             override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {
                 onReconciliationListeners.forEach { listener -> listener.onLogRecordEvent(groupId, logRecordEvents) }
             }
+        }
+    }
+
+    private fun createEmptyLogRecordEventPublisher(): LogRecordEventPublisher {
+        return object : LogRecordEventPublisher {
+            override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {}
         }
     }
 

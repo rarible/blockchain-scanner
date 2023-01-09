@@ -141,7 +141,7 @@ internal class ReconciliationLogHandlerTest {
         val planRange = mockk<Flow<BlocksRange>>()
         val plan = HandlerPlanner.Plan(planRange, baseBlock)
         coEvery { handlerPlanner.getPlan(BlockRange(100, null, null)) } returns plan
-        coEvery { reindexHandler.reindex(baseBlock, planRange) } returns flow { emit(baseBlock) }
+        coEvery { reindexHandler.reindex(baseBlock, planRange, logRecordEventPublisher = any()) } returns flow { emit(baseBlock) }
 
         val result = handler.check(range, 2)
         assertThat(result).isEqualTo(100)
