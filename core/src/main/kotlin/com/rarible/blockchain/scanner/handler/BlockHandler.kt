@@ -75,7 +75,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
         val alreadyIndexedBlock = blockService.getBlock(newBlock.id)
         if (alreadyIndexedBlock != null) {
-            if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status)) {
+            if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status, stats = null)) {
                 logger.info(
                     "The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock
                 )
