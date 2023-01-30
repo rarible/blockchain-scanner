@@ -46,7 +46,6 @@ class ReindexHandler(
         blocksRanges: Flow<BlocksRange>,
         topics: List<Word> = emptyList(),
         addresses: List<Address> = emptyList(),
-        batchSize: Int? = null,
         logRecordEventPublisher: LogRecordEventPublisher? = null
     ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {

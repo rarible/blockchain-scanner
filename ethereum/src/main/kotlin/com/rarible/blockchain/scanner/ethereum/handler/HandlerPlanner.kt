@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.handler.BlocksRange
 import com.rarible.blockchain.scanner.util.BlockRanges
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.first
 import org.springframework.stereotype.Component
 
 @Component
@@ -21,7 +20,7 @@ class HandlerPlanner(
     @Suppress("EXPERIMENTAL_API_USAGE")
     suspend fun getPlan(
         range: BlockRange,
-        from: Long? = null
+        from: Long? = null,
     ): Plan {
         val baseBlockId = from ?: maxOf(range.from - 1, 0)
         val baseBlock = blockService.getBlock(baseBlockId)
@@ -33,7 +32,7 @@ class HandlerPlanner(
                 lastBlockNumber - blockchainScannerProperties.scan.batchLoad.confirmationBlockDistance,
                 range.to ?: Long.MAX_VALUE
             ),
-            step = blockchainScannerProperties.scan.batchLoad.batchSize
+            step = range.batchSize ?: blockchainScannerProperties.scan.batchLoad.batchSize
         ).map { blocksRange ->
             BlocksRange(blocksRange, true)
         }.asFlow()

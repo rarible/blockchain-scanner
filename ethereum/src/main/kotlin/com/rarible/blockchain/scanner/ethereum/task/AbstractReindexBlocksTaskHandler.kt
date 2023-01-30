@@ -41,7 +41,6 @@ abstract class AbstractReindexBlocksTaskHandler(
                 reindexRanges,
                 topics,
                 addresses,
-                taskParam.range.batchSize,
                 logRecordEventPublisher
             )
             emitAll(blocks)
