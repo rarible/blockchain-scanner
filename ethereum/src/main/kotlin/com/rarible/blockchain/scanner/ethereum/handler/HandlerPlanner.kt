@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.handler
 
 import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.model.BlockRange
@@ -23,8 +24,7 @@ class HandlerPlanner(
         from: Long? = null,
     ): Plan {
         val baseBlockId = from ?: maxOf(range.from - 1, 0)
-        val baseBlock = blockService.getBlock(baseBlockId)
-            ?: throw IllegalStateException("Block #$baseBlockId was never indexed")
+        val baseBlock = getBlock(baseBlockId)
         val lastBlockNumber = ethereumClient.getLatestBlockNumber()
         val blockRanges = BlockRanges.getRanges(
             from = baseBlock.id + 1,
@@ -38,6 +38,22 @@ class HandlerPlanner(
         }.asFlow()
 
         return Plan(blockRanges, baseBlock)
+    }
+
+    private suspend fun getBlock(id: Long): Block {
+        return blockService.getBlock(id)
+            ?: run {
+                val block = ethereumClient.getBlock(id)
+                    ?: throw IllegalStateException("Block #$id can't be fetched")
+
+                Block(
+                    id = block.number,
+                    hash = block.hash,
+                    parentHash = block.parentHash,
+                    timestamp = block.timestamp,
+                    status = BlockStatus.SUCCESS
+                )
+            }
     }
 
     data class Plan(
