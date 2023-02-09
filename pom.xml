@@ -18,6 +18,7 @@
 
         <rarible.ethereum.version>1.7.1</rarible.ethereum.version>
         <rarible.core.version>2.5.0</rarible.core.version>
+        <flow.sdk.version>0.7.3</flow.sdk.version>
     </properties>
 
     <repositories>
@@ -75,6 +76,12 @@
 
             <dependency>
                 <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-flow</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
                 <artifactId>rarible-blockchain-scanner-framework</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -104,8 +111,7 @@
         <module>framework</module>
         <module>core</module>
         <module>ethereum</module>
-<!--        <module>flow-model</module>-->
-<!--        <module>flow</module>-->
+        <module>flow</module>
         <module>solana</module>
 <!--        <module>test-coverage</module>-->
     </modules>

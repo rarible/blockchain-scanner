@@ -21,8 +21,6 @@ data class FlowBlockchainScannerProperties(
         worker = DaemonWorkerProperties(
             pollingPeriod = Duration.ofMillis(200L),
             errorDelay = Duration.ofSeconds(1L),
-            backpressureSize = 100,
-            buffer = true
         )
     ),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),

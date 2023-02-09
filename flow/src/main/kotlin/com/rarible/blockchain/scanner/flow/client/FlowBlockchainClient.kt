@@ -41,6 +41,10 @@ class FlowBlockchainClient(
         return FlowBlockchainBlock(a)
     }
 
+    override suspend fun getBlocks(numbers: List<Long>): List<FlowBlockchainBlock> {
+        TODO("Not yet implemented")
+    }
+
     override fun getBlockLogs(
         descriptor: FlowDescriptor,
         blocks: List<FlowBlockchainBlock>,
