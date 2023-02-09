@@ -50,7 +50,7 @@ class CheckHandler(
                             batchSize = blockchainScannerProperties.scan.batchLoad.batchSize
                         )
                         logger.info("Start reindex invalid blocks: range=${blockRange.from}..${blockRange.to}")
-                        val plan = handlerPlanner.getPlan(blockRange, from = null)
+                        val plan = handlerPlanner.getPlan(blockRange, state = null)
                         reindexHandler.reindex(plan.baseBlock, plan.ranges).lastOrNull()
                     }
                     emit(checkBlock)

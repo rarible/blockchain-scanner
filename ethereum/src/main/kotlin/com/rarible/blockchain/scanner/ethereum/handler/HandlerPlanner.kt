@@ -21,23 +21,25 @@ class HandlerPlanner(
     @Suppress("EXPERIMENTAL_API_USAGE")
     suspend fun getPlan(
         range: BlockRange,
-        from: Long? = null,
+        state: Long? = null,
     ): Plan {
-        val baseBlockId = from ?: maxOf(range.from - 1, 0)
+        val baseBlockId = state ?: maxOf(range.from - 1, 0)
         val baseBlock = getBlock(baseBlockId)
         val lastBlockNumber = ethereumClient.getLatestBlockNumber()
+        val from = baseBlock.id + 1
+        val to = minOf(
+            lastBlockNumber - blockchainScannerProperties.scan.batchLoad.confirmationBlockDistance,
+            range.to ?: Long.MAX_VALUE
+        )
         val blockRanges = BlockRanges.getRanges(
-            from = baseBlock.id + 1,
-            to = minOf(
-                lastBlockNumber - blockchainScannerProperties.scan.batchLoad.confirmationBlockDistance,
-                range.to ?: Long.MAX_VALUE
-            ),
+            from = from,
+            to = to,
             step = range.batchSize ?: blockchainScannerProperties.scan.batchLoad.batchSize
         ).map { blocksRange ->
             BlocksRange(blocksRange, true)
         }.asFlow()
 
-        return Plan(blockRanges, baseBlock)
+        return Plan(blockRanges, baseBlock, from = from, to = to)
     }
 
     private suspend fun getBlock(id: Long): Block {
@@ -58,6 +60,8 @@ class HandlerPlanner(
 
     data class Plan(
         val ranges: Flow<BlocksRange>,
-        val baseBlock: Block
+        val baseBlock: Block,
+        val from: Long,
+        val to: Long,
     )
 }

@@ -3,9 +3,9 @@ package com.rarible.blockchain.scanner.monitoring
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Timer
 import java.util.function.Supplier
 
@@ -36,6 +36,18 @@ abstract class AbstractMonitor(
             .tag("blockchain", blockchain)
             .tags(tags.toList())
             .register(meterRegistry)
+    }
+
+    protected fun increment(name: String, vararg tags: Tag) {
+        return meterRegistry.counter(name, tags.toList()).increment()
+    }
+
+    protected fun set(name: String, value: Double, vararg tags: Tag): Double? {
+        return meterRegistry.gauge(name, tags.toList(), value)
+    }
+
+    protected fun tag(key: String, value: String): Tag {
+        return ImmutableTag(key, value)
     }
 
     override fun toString(): String {

@@ -139,7 +139,7 @@ internal class ReconciliationLogHandlerTest {
         every { reconciliationProperties.autoReindex } returns true
         val baseBlock = mockk<Block>()
         val planRange = mockk<Flow<BlocksRange>>()
-        val plan = HandlerPlanner.Plan(planRange, baseBlock)
+        val plan = HandlerPlanner.Plan(planRange, baseBlock, 100, 100)
         coEvery { handlerPlanner.getPlan(BlockRange(100, null, null)) } returns plan
         coEvery { reindexHandler.reindex(baseBlock, planRange, logRecordEventPublisher = any()) } returns flow { emit(baseBlock) }
 

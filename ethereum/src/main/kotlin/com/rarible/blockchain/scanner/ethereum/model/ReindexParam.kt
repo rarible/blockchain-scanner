@@ -6,6 +6,7 @@ import scalether.domain.Address
 data class ReindexParam(
     val range: BlockRange,
     val topics: List<Word>,
-    val addresses: List<Address>
+    val addresses: List<Address>,
+    val name: String? = null,
 )
 
