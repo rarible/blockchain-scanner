@@ -9,10 +9,10 @@ import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -41,8 +41,8 @@ class FlowBlockchainClient(
         return FlowBlockchainBlock(a)
     }
 
-    override suspend fun getBlocks(numbers: List<Long>): List<FlowBlockchainBlock> {
-        TODO("Not yet implemented")
+    override suspend fun getBlocks(numbers: List<Long>) = coroutineScope {
+        numbers.map { async { getBlock(it) } }.awaitAll()
     }
 
     override fun getBlockLogs(
@@ -98,5 +98,4 @@ class FlowBlockchainClient(
     }
 
     override suspend fun getFirstAvailableBlock(): FlowBlockchainBlock = getBlock(0)
-
 }
