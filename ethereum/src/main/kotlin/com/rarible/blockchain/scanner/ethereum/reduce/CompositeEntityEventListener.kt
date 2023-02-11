@@ -6,6 +6,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
+@Deprecated(message = "Use from framework package", replaceWith = ReplaceWith(
+    "com.rarible.blockchain.scanner.framework.entity.AbstractEntityEventListener"
+))
 abstract class CompositeEntityEventListener(
     override val id: String,
     override val subscriberGroup: String,
