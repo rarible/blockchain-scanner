@@ -8,5 +8,6 @@ data class FlowDescriptor(
     val events: Set<String>,
     val collection: String,
     val startFrom: Long? = null,
-    override val entityType: Class<*>
+    override val entityType: Class<*>,
+    override val alias: String? = null
 ) : Descriptor
