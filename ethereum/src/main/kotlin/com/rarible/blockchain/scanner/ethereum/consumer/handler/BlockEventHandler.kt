@@ -6,6 +6,9 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.core.daemon.sequential.ConsumerBatchEventHandler
 import scalether.domain.Address
 
+@Deprecated(message = "Use from framework package", replaceWith = ReplaceWith(
+    "com.rarible.blockchain.scanner.consumer.kafka.KafkaLogRecordEventHandler"
+))
 class BlockEventHandler(
     private val entityEventListener: EntityEventListener,
     private val ignoreContracts: Set<Address>,

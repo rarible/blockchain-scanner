@@ -4,6 +4,9 @@ import com.rarible.blockchain.scanner.ethereum.consumer.factory.ConsumerWorkerFa
 import com.rarible.blockchain.scanner.ethereum.reduce.EntityEventListener
 import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
 
+@Deprecated(message = "Use from framework package", replaceWith = ReplaceWith(
+    "com.rarible.blockchain.scanner.consumer.kafka.KafkaLogRecordEventConsumer"
+))
 class KafkaEntityEventConsumer(
     private val consumerWorkerFactory: ConsumerWorkerFactory
 ) : AutoCloseable {
