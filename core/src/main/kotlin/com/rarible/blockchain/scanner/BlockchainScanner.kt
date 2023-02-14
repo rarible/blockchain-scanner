@@ -23,18 +23,17 @@ import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
-import kotlinx.coroutines.flow.collect
 import org.slf4j.LoggerFactory
 
 abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
-    subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
-    logFilters: List<LogEventFilter<R, D>>,
+    private val subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+    private val logFilters: List<LogEventFilter<R, D>>,
     private val blockService: BlockService,
     private val logService: LogService<R, D>,
-    logRecordComparator: LogRecordComparator<R>,
+    private val logRecordComparator: LogRecordComparator<R>,
     private val properties: BlockchainScannerProperties,
-    logRecordEventPublisher: LogRecordEventPublisher,
+    private val logRecordEventPublisher: LogRecordEventPublisher,
     private val blockMonitor: BlockMonitor,
     private val logMonitor: LogMonitor
 ) {
@@ -44,21 +43,6 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
         retryPolicy = properties.retryPolicy.client
     )
 
-    private val logHandlers = subscribers
-        .groupBy { it.getDescriptor().groupId }
-        .map { (groupId, subscribers) ->
-            logger.info("Injected subscribers of the group {}: {}", groupId, subscribers.joinToString { it.getDescriptor().id })
-            LogHandler(
-                groupId = groupId,
-                blockchainClient = retryableClient,
-                subscribers = subscribers,
-                logService = logService,
-                logRecordComparator = logRecordComparator,
-                logRecordEventPublisher = logRecordEventPublisher,
-                logFilters = logFilters,
-                logMonitor = logMonitor
-            )
-        }
 
     suspend fun scan(once: Boolean = false) {
         if (!properties.scan.enabled) {
@@ -70,6 +54,23 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
             logger.info("Will try to reconnect to blockchain in ${properties.retryPolicy.scan.reconnectDelay}")
             ContinueRetrying
         }
+        val logHandlers = subscribers
+            .groupBy { it.getDescriptor().groupId }
+            .map { (groupId, subscribers) ->
+                logRecordEventPublisher.prepareGroup(groupId)
+
+                logger.info("Injected subscribers of the group {}: {}", groupId, subscribers.joinToString { it.getDescriptor().id })
+                LogHandler(
+                    groupId = groupId,
+                    blockchainClient = retryableClient,
+                    subscribers = subscribers,
+                    logService = logService,
+                    logRecordComparator = logRecordComparator,
+                    logRecordEventPublisher = logRecordEventPublisher,
+                    logFilters = logFilters,
+                    logMonitor = logMonitor
+                )
+            }
         val blockHandler = BlockHandler(
             blockClient = retryableClient,
             blockService = blockService,
