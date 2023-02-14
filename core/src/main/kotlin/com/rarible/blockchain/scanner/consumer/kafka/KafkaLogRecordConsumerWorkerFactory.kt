@@ -16,7 +16,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import java.time.Duration
 
-class KafkaLogRecordConsumerWorkerFactory<T>(
+class KafkaLogRecordConsumerWorkerFactory(
     host: String,
     environment: String,
     blockchain: String,
@@ -25,12 +25,12 @@ class KafkaLogRecordConsumerWorkerFactory<T>(
     private val properties: KafkaProperties,
     private val daemonProperties: DaemonWorkerProperties,
     private val meterRegistry: MeterRegistry,
-) : LogRecordConsumerWorkerFactory<T> {
+) : LogRecordConsumerWorkerFactory {
 
     private val topicPrefix = getLogTopicPrefix(environment, service, blockchain)
     private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
 
-    override fun create(
+    override fun <T> create(
         listener: LogRecordEventListener,
         logRecordType: Class<T>,
         logRecordMapper: LogRecordMapper<T>,

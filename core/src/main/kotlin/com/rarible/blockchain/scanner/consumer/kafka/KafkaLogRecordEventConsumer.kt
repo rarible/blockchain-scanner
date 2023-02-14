@@ -6,13 +6,13 @@ import com.rarible.blockchain.scanner.consumer.LogRecordMapper
 import com.rarible.blockchain.scanner.framework.listener.LogRecordEventListener
 import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
 
-class KafkaLogRecordEventConsumer<T>(
-    private val consumerWorkerFactory: LogRecordConsumerWorkerFactory<T>
+class KafkaLogRecordEventConsumer(
+    private val consumerWorkerFactory: LogRecordConsumerWorkerFactory
 ) : AutoCloseable {
 
     private val batchedConsumerWorkers = arrayListOf<ConsumerWorkerHolder<*>>()
 
-    fun start(
+    fun <T> start(
         logRecordListeners: List<LogRecordEventListener>,
         logRecordType: Class<T>,
         logRecordMapper: LogRecordMapper<T>,
