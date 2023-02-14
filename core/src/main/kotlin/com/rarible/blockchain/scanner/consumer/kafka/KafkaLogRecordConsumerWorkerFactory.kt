@@ -22,9 +22,6 @@ class KafkaLogRecordConsumerWorkerFactory<T>(
     blockchain: String,
     private val service: String,
     private val workerCount: Int,
-    private val kafkaLogRecordType: Class<T>,
-    private val kafkaLogRecordMapper: LogRecordMapper<T>,
-    private val kafkaLogRecordFilters: List<LogRecordFilter<T>>,
     private val properties: KafkaProperties,
     private val daemonProperties: DaemonWorkerProperties,
     private val meterRegistry: MeterRegistry,
@@ -33,13 +30,18 @@ class KafkaLogRecordConsumerWorkerFactory<T>(
     private val topicPrefix = getLogTopicPrefix(environment, service, blockchain)
     private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
 
-    override fun create(listener: LogRecordEventListener): ConsumerWorkerHolder<T> {
+    override fun create(
+        listener: LogRecordEventListener,
+        logRecordType: Class<T>,
+        logRecordMapper: LogRecordMapper<T>,
+        logRecordFilters: List<LogRecordFilter<T>>,
+    ): ConsumerWorkerHolder<T> {
         val workers = (1..workerCount).map { index ->
             val consumerGroup = listener.id
             val kafkaConsumer = RaribleKafkaConsumer(
                 clientId = "$clientIdPrefix.log-event-consumer.$service.${listener.id}-$index",
                 valueDeserializerClass = JsonDeserializer::class.java,
-                valueClass = kafkaLogRecordType,
+                valueClass = logRecordType,
                 consumerGroup = consumerGroup,
                 defaultTopic = "$topicPrefix.${listener.groupId}",
                 bootstrapServers = properties.brokerReplicaSet,
@@ -51,7 +53,7 @@ class KafkaLogRecordConsumerWorkerFactory<T>(
                 properties = daemonProperties,
                 // Block consumer should NOT skip events, so there is we're using endless retry
                 retryProperties = RetryProperties(attempts = Integer.MAX_VALUE, delay = Duration.ofMillis(1000)),
-                eventHandler = KafkaLogRecordEventHandler(listener, kafkaLogRecordMapper, kafkaLogRecordFilters),
+                eventHandler = KafkaLogRecordEventHandler(listener, logRecordMapper, logRecordFilters),
                 meterRegistry = meterRegistry,
                 workerName = "log-event-consumer-${listener.id}-$index"
             )
