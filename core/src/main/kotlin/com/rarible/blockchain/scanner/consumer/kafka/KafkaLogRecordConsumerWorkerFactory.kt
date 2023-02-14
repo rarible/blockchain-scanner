@@ -11,6 +11,7 @@ import com.rarible.core.daemon.RetryProperties
 import com.rarible.core.daemon.sequential.ConsumerBatchWorker
 import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
 import com.rarible.core.kafka.RaribleKafkaConsumer
+import com.rarible.core.kafka.RaribleKafkaTopics
 import com.rarible.core.kafka.json.JsonDeserializer
 import io.micrometer.core.instrument.MeterRegistry
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -21,7 +22,6 @@ class KafkaLogRecordConsumerWorkerFactory(
     environment: String,
     blockchain: String,
     private val service: String,
-    private val workerCount: Int,
     private val properties: KafkaProperties,
     private val daemonProperties: DaemonWorkerProperties,
     private val meterRegistry: MeterRegistry,
@@ -35,6 +35,7 @@ class KafkaLogRecordConsumerWorkerFactory(
         logRecordType: Class<T>,
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
+        workerCount: Int,
     ): ConsumerWorkerHolder<T> {
         val workers = (1..workerCount).map { index ->
             val consumerGroup = listener.id
@@ -46,7 +47,7 @@ class KafkaLogRecordConsumerWorkerFactory(
                 defaultTopic = "$topicPrefix.${listener.groupId}",
                 bootstrapServers = properties.brokerReplicaSet,
                 offsetResetStrategy = OffsetResetStrategy.EARLIEST,
-                autoCreateTopic = false
+                autoCreateTopic = false,
             )
             ConsumerBatchWorker(
                 consumer = kafkaConsumer,

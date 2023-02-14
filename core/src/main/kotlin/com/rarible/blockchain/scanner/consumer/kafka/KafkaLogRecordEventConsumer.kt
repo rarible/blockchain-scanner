@@ -17,6 +17,7 @@ class KafkaLogRecordEventConsumer(
         logRecordType: Class<T>,
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
+        workerCount: Int,
     ) {
         batchedConsumerWorkers += logRecordListeners
             .map { listener ->
@@ -24,7 +25,8 @@ class KafkaLogRecordEventConsumer(
                     listener,
                     logRecordType,
                     logRecordMapper,
-                    logRecordFilters
+                    logRecordFilters,
+                    workerCount
                 )
             }
             .onEach { consumer -> consumer.start() }

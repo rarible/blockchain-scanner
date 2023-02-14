@@ -9,5 +9,6 @@ interface LogRecordConsumerWorkerFactory {
         logRecordType: Class<T>,
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
+        workerCount: Int,
     ): ConsumerWorkerHolder<T>
 }
