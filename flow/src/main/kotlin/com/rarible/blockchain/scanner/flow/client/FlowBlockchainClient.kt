@@ -70,7 +70,7 @@ class FlowBlockchainClient(
                     FlowBlockchainBlock(
                         number = it.blockHeight,
                         hash = it.blockId.base16Value,
-                        timestamp = it.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),
+                        timestamp = it.blockTimestamp.toInstant(ZoneOffset.UTC).epochSecond,
                         parentHash = null
                     )
                 }.forEach { entry ->
@@ -87,6 +87,9 @@ class FlowBlockchainClient(
                         .sortedBy { it.event.eventIndex }
                         .toList()
 
+                    logger.info(
+                        "Loaded ${logs.size} logs for events descriptor ${descriptor.id} for block ${entry.key.number}"
+                    )
                     send(
                         FullBlock(
                             block = entry.key,

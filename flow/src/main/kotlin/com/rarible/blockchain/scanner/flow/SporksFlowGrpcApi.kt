@@ -87,6 +87,7 @@ class SporksFlowGrpcApi(
                         spork.api.getEventsForHeightRange(type, spork.trim(smallRange)).await()
                     }.flatten().asFlow()
                 } else {
+                    logger.error("Can't get logs type $type for range $range", e)
                     throw e
                 }
             }
@@ -122,5 +123,9 @@ class SporksFlowGrpcApi(
             FlowChainId.TESTNET -> range.chunked(25) { it.first()..it.last() }.asFlow()
             else -> flowOf(range)
         }
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(SporksFlowGrpcApi::class.java)
     }
 }
