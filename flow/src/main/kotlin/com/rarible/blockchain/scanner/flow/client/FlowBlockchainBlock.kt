@@ -15,7 +15,7 @@ data class FlowBlockchainBlock(
         number = block.height,
         hash = block.id.base16Value,
         parentHash = block.parentId.base16Value,
-        timestamp = block.timestamp.toInstant(ZoneOffset.UTC).epochSecond
+        timestamp = block.timestamp.toInstant(ZoneOffset.UTC).toEpochMilli()
     )
 }
 
