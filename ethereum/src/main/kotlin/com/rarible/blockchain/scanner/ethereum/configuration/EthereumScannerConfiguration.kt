@@ -3,7 +3,14 @@ package com.rarible.blockchain.scanner.ethereum.configuration
 import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.ethereum.EthereumScanner
+import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
+import com.rarible.blockchain.scanner.ethereum.reconciliation.EthereumLogReconciliationMonitor
+import com.rarible.blockchain.scanner.ethereum.reconciliation.OnReconciliationListener
+import com.rarible.blockchain.scanner.ethereum.reconciliation.ReconciliationLogHandler
 import com.rarible.blockchain.scanner.ethereum.reconciliation.ReconciliationLogWorkerHandler
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
+import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.core.daemon.DaemonWorkerProperties
 import com.rarible.core.daemon.job.JobDaemonWorker
 import com.rarible.core.mongo.configuration.EnableRaribleMongo
@@ -28,12 +35,13 @@ class EthereumScannerConfiguration(
     private val properties: EthereumScannerProperties,
     private val meterRegistry: MeterRegistry
 ) {
+
     @Bean
     @ConditionalOnProperty(
         name = [
             "blockchain.scanner.ethereum.reconciliation.enabled",
             "blockchain.scanner.ethereum.scan.enabled",
-               ],
+        ],
         havingValue = "true"
     )
     fun blockchainScannerReconciliationLogHandlerWorker(handler: ReconciliationLogWorkerHandler): JobDaemonWorker {
@@ -45,5 +53,29 @@ class EthereumScannerConfiguration(
             ),
             workerName = "blockchain-scanner-reconciliation-log-handler-worker"
         ).apply { start() }
+    }
+
+    @Bean
+    fun reconciliationLogHandler(
+        manager: EthereumScannerManager,
+        logRepository: EthereumLogRepository,
+        logService: EthereumLogService,
+        onReconciliationListeners: List<OnReconciliationListener>,
+        scannerProperties: EthereumScannerProperties,
+        monitor: EthereumLogReconciliationMonitor,
+        subscribers: List<EthereumLogEventSubscriber>,
+    ): ReconciliationLogHandler {
+        return ReconciliationLogHandler(
+            logRepository = logRepository,
+            logService = logService,
+            onReconciliationListeners = onReconciliationListeners,
+            scannerProperties = scannerProperties,
+            ethereumClient = manager.retryableClient,
+            logHandlerFactory = manager.logHandlerFactory,
+            reindexer = manager.blockReindexer,
+            planner = manager.blockScanPlanner,
+            monitor = monitor,
+            subscribers = subscribers
+        )
     }
 }

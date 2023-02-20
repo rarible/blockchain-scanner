@@ -28,8 +28,8 @@ class TestEthereumBlockchainClient(
             }
         }
 
-    override suspend fun getLatestBlockNumber(): Long {
-        return delegate.getLatestBlockNumber()
+    override suspend fun getLastBlockNumber(): Long {
+        return delegate.getLastBlockNumber()
     }
 
     override suspend fun getBlocks(numbers: List<Long>): List<EthereumBlockchainBlock> =

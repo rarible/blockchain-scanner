@@ -8,7 +8,7 @@ import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProp
 import com.rarible.blockchain.scanner.ethereum.configuration.ReconciliationProperties
 import com.rarible.blockchain.scanner.ethereum.model.ReconciliationLogState
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumReconciliationStateRepository
-import com.rarible.blockchain.scanner.handler.BlocksRange
+import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -86,7 +86,7 @@ internal class ReconciliationLogWorkerHandlerTest {
             every { id } returns 100
         }
         val savedState = ReconciliationLogState(70)
-        val expectedRange = BlocksRange(LongRange(71, 90), true)
+        val expectedRange = TypedBlockRange(LongRange(71, 90), true)
         val expectedNewState = ReconciliationLogState(90)
 
         coEvery { blockRepository.getLastBlock() } returns latestBlock

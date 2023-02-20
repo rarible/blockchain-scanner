@@ -17,4 +17,6 @@ interface BlockchainBlockClient<BB : BlockchainBlock> {
     suspend fun getBlocks(numbers: List<Long>): List<BB>
 
     suspend fun getFirstAvailableBlock(): BB
+
+    suspend fun getLastBlockNumber(): Long
 }

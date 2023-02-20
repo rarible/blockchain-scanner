@@ -211,7 +211,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val baseBlock = syncBlocks.first()
         blockService.save(baseBlock.toBlock())
 
-        val range = flow { emit(BlocksRange(LongRange(1, 10), true)) }
+        val range = flow { emit(TypedBlockRange(LongRange(1, 10), true)) }
         val testBlockchainData = TestBlockchainData(syncBlocks - baseBlock, emptyList(), emptyList())
         val blockEventListener = TestBlockEventListener()
         val blockHandler = BlockHandler(
@@ -231,7 +231,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val baseBlock = syncBlocks.first()
         blockService.insertAll(syncBlocks.subList(0, 5).map { it.toBlock() })
 
-        val range = flow { emit(BlocksRange(LongRange(1, 10), true)) }
+        val range = flow { emit(TypedBlockRange(LongRange(1, 10), true)) }
         val testBlockchainData = TestBlockchainData(syncBlocks - baseBlock, emptyList(), emptyList())
         val blockEventListener = TestBlockEventListener()
         val blockHandler = BlockHandler(

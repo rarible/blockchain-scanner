@@ -141,7 +141,7 @@ class BlockHandler<BB : BlockchainBlock>(
             emit(
                 processBlocks(
                     BlocksBatch(
-                        blocksRange = BlocksRange(
+                        blocksRange = TypedBlockRange(
                             range = blockchainBlock.number..blockchainBlock.number,
                             stable = false
                         ),
@@ -154,7 +154,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
     @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     fun syncBlocks(
-        blockRanges: Flow<BlocksRange>,
+        blockRanges: Flow<TypedBlockRange>,
         baseBlock: Block,
         resyncStable: Boolean
     ): Flow<Block> = blockRanges
@@ -184,7 +184,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
     @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     private fun CoroutineScope.produceBlocks(
-        blockRanges: Flow<BlocksRange>,
+        blockRanges: Flow<TypedBlockRange>,
         baseBlock: Block,
         capacity: Int
     ) = produce(capacity = capacity) {
@@ -251,7 +251,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
         return processBlocks(
             BlocksBatch(
-                blocksRange = BlocksRange(
+                blocksRange = TypedBlockRange(
                     range = firstBlock.number..firstBlock.number,
                     stable = true
                 ),
@@ -270,14 +270,14 @@ class BlockHandler<BB : BlockchainBlock>(
         error("Can't find previous block for: $startBlock")
     }
 
-    private data class BlocksBatch<BB>(val blocksRange: BlocksRange, val blocks: List<BB>) {
+    private data class BlocksBatch<BB>(val blocksRange: TypedBlockRange, val blocks: List<BB>) {
 
         override fun toString(): String = "$blocksRange (present ${blocks.size})"
     }
 
     private suspend fun fetchBlocksBatchWithHashConsistencyCheck(
         lastProcessedBlockHash: String,
-        blocksRange: BlocksRange
+        blocksRange: TypedBlockRange
     ): Pair<BlocksBatch<BB>, Boolean> {
         val blocksBatch = fetchBlocksByRange(blocksRange)
         return checkBlocksBatchHashConsistency(
@@ -286,7 +286,7 @@ class BlockHandler<BB : BlockchainBlock>(
         )
     }
 
-    private suspend fun fetchBlocksByRange(blocksRange: BlocksRange): BlocksBatch<BB> {
+    private suspend fun fetchBlocksByRange(blocksRange: TypedBlockRange): BlocksBatch<BB> {
         logger.info("Fetching $blocksRange")
         val fetchBlocksSample = Timer.start()
         return withTransaction(
@@ -318,7 +318,7 @@ class BlockHandler<BB : BlockchainBlock>(
         val fetchedBlocks = blocksBatch.blocks
         if (fetchedBlocks.isEmpty()) {
             return BlocksBatch(
-                blocksRange = BlocksRange(range = LongRange.EMPTY, stable = blocksBatch.blocksRange.stable),
+                blocksRange = TypedBlockRange(range = LongRange.EMPTY, stable = blocksBatch.blocksRange.stable),
                 blocks = emptyList<BB>()
             ) to true
         }
@@ -327,7 +327,7 @@ class BlockHandler<BB : BlockchainBlock>(
         var consistentRange = blocksBatch.blocksRange
         for (block in fetchedBlocks) {
             if (parentBlockHash != block.parentHash) {
-                consistentRange = BlocksRange(
+                consistentRange = TypedBlockRange(
                     range = fetchedBlocks.first().number until block.number,
                     stable = blocksBatch.blocksRange.stable
                 )
@@ -402,7 +402,7 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun saveStableBlocks(
         blocks: List<Block>,
-        blocksRange: BlocksRange,
+        blocksRange: TypedBlockRange,
         resyncStable: Boolean
     ): List<Block> {
         val result = runRethrowingBlockHandlerException(actionName = "Save $blocksRange") {

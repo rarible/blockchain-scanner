@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.test.TestBlockchainScanner
+import com.rarible.blockchain.scanner.test.TestBlockchainScannerManager
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
@@ -53,7 +54,7 @@ abstract class AbstractIntegrationTest {
         subscribers: List<TestLogEventSubscriber>,
         logFilters: List<TestLogEventFilter> = emptyList()
     ): TestBlockchainScanner {
-        return TestBlockchainScanner(
+        val manager = TestBlockchainScannerManager(
             blockchainClient = testBlockchainClient,
             blockService = blockService,
             logService = testLogService,
@@ -69,7 +70,9 @@ abstract class AbstractIntegrationTest {
             logFilters = logFilters,
             blockMonitor = mockk(relaxed = true),
             logMonitor = mockk(relaxed = true),
+            reindexMonitor = mockk(relaxed = true)
         )
+        return TestBlockchainScanner(manager)
     }
 
     protected suspend fun getAllBlocks(): List<Block> = blockRepository.getAll().toList().sortedBy { it.id }

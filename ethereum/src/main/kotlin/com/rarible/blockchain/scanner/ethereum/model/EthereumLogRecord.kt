@@ -23,4 +23,6 @@ abstract class EthereumLogRecord : LogRecord {
     abstract fun withIdAndVersion(id: String, version: Long?, updatedAt: Instant = nowMillis()): EthereumLogRecord
 
     abstract fun withLog(log: EthereumLog): EthereumLogRecord
+
+    override fun getBlock() = log.blockNumber
 }

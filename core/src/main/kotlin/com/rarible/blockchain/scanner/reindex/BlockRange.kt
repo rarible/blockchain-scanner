@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.ethereum.model
+package com.rarible.blockchain.scanner.reindex
 
 data class BlockRange(
     val from: Long,

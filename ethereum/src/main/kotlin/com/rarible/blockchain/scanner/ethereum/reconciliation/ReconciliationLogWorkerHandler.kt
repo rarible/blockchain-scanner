@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.ReconciliationLogState
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumReconciliationStateRepository
-import com.rarible.blockchain.scanner.handler.BlocksRange
+import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.core.daemon.job.JobHandler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.Logger
@@ -28,7 +28,7 @@ class ReconciliationLogWorkerHandler(
         val to = latestBlock.id - scannerProperties.scan.batchLoad.confirmationBlockDistance
         if (from >= to) return
 
-        val range = BlocksRange(LongRange(from, to), stable = true)
+        val range = TypedBlockRange(LongRange(from, to), stable = true)
         logger.info("Next reconcile block range {}", range)
 
         val lastReconciledBlock = reconciliationLogHandler.check(range, scannerProperties.reconciliation.batchSize)

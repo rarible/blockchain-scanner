@@ -1,19 +1,19 @@
-package com.rarible.blockchain.scanner.ethereum.metrics
+package com.rarible.blockchain.scanner.monitoring
 
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.monitoring.AbstractMonitor
+import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.stereotype.Component
 
 @Component
-class ReindexTaskMetrics(
-    properties: EthereumScannerProperties,
+class ReindexMonitor(
+    properties: BlockchainScannerProperties,
     meterRegistry: MeterRegistry,
 ) : AbstractMonitor(
     properties = properties,
     meterRegistry = meterRegistry,
     prefix = "task"
 ) {
+
     fun onReindex(from: Long, to: Long?, state: Double, name: String?) {
         set(
             REINDEX,
