@@ -6,43 +6,28 @@ import com.github.michaelbull.retry.policy.constantDelay
 import com.github.michaelbull.retry.policy.limitAttempts
 import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
-import com.rarible.blockchain.scanner.block.BlockService
-import com.rarible.blockchain.scanner.client.RetryableBlockchainClient
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
-import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
-import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
-import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
-import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.LogHandler
-import com.rarible.blockchain.scanner.monitoring.BlockMonitor
-import com.rarible.blockchain.scanner.monitoring.LogMonitor
-import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import org.slf4j.LoggerFactory
 
 abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
-    blockchainClient: BlockchainClient<BB, BL, D>,
-    private val subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
-    private val logFilters: List<LogEventFilter<R, D>>,
-    private val blockService: BlockService,
-    private val logService: LogService<R, D>,
-    private val logRecordComparator: LogRecordComparator<R>,
-    private val properties: BlockchainScannerProperties,
-    private val logRecordEventPublisher: LogRecordEventPublisher,
-    private val blockMonitor: BlockMonitor,
-    private val logMonitor: LogMonitor
+    manager: BlockchainScannerManager<BB, BL, R, D>
 ) {
 
-    private val retryableClient = RetryableBlockchainClient(
-        original = blockchainClient,
-        retryPolicy = properties.retryPolicy.client
-    )
-
+    private val retryableClient = manager.retryableClient
+    private val subscribers = manager.subscribers
+    private val blockService = manager.blockService
+    private val blockMonitor = manager.blockMonitor
+    private val logFilters = manager.logFilters
+    private val logService = manager.logService
+    private val logRecordComparator = manager.logRecordComparator
+    private val logRecordEventPublisher = manager.logRecordEventPublisher
+    private val logMonitor = manager.logMonitor
+    private val properties = manager.properties
 
     suspend fun scan(once: Boolean = false) {
         if (!properties.scan.enabled) {

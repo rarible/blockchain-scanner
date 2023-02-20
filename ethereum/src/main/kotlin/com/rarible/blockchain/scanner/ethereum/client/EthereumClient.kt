@@ -50,7 +50,7 @@ class EthereumClient(
         logger.info("Creating EthereumClient with maxBatches: $maxBatches")
     }
 
-    override suspend fun getLatestBlockNumber(): Long {
+    override suspend fun getLastBlockNumber(): Long {
         return ethereum.ethBlockNumber().awaitFirst().toLong()
     }
 

@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.util
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
-import com.rarible.blockchain.scanner.handler.BlocksRange
+import com.rarible.blockchain.scanner.handler.TypedBlockRange
 
 object BlockRanges {
 
@@ -11,7 +11,7 @@ object BlockRanges {
         lastBlockNumber: Long,
         batchSize: Int,
         stableDistance: Int
-    ): Sequence<BlocksRange> {
+    ): Sequence<TypedBlockRange> {
         if (baseBlockNumber >= lastBlockNumber) {
             return emptySequence()
         }
@@ -22,20 +22,20 @@ object BlockRanges {
                 from = fromId,
                 to = lastBlockNumber,
                 step = batchSize
-            ).map { BlocksRange(it, false) }
+            ).map { TypedBlockRange(it, false) }
         }
         val stableId = lastBlockNumber - stableDistance
         val stableBlocks = getRanges(
             from = fromId,
             to = stableId,
             step = batchSize
-        ).map { BlocksRange(it, true) }
+        ).map { TypedBlockRange(it, true) }
 
         val unstableBlocks = getRanges(
             from = stableId + 1,
             to = lastBlockNumber,
             step = batchSize
-        ).map { BlocksRange(it, false) }
+        ).map { TypedBlockRange(it, false) }
 
         return stableBlocks + unstableBlocks
     }

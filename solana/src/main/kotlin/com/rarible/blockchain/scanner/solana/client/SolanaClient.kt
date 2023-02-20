@@ -81,7 +81,12 @@ class SolanaClient(
         }
     }
 
+    override suspend fun getLastBlockNumber(): Long {
+        return api.getLatestSlot().toModel() // TODO not really sure that is right
+    }
+
     companion object {
+
         private val logger = LoggerFactory.getLogger(SolanaClient::class.java)
         private const val LOOKUP_TABLE_META_SIZE = 56
     }

@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.util
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
-import com.rarible.blockchain.scanner.handler.BlocksRange
+import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
@@ -32,7 +32,7 @@ class BlocksRangesTest {
             ).toList()
         ).isEqualTo(
             listOf(
-                BlocksRange(2..5L, false)
+                TypedBlockRange(2..5L, false)
             )
         )
 
@@ -45,8 +45,8 @@ class BlocksRangesTest {
             ).toList()
         ).isEqualTo(
             listOf(
-                BlocksRange(2..2L, true),
-                BlocksRange(3..10L, false)
+                TypedBlockRange(2..2L, true),
+                TypedBlockRange(3..10L, false)
             )
         )
 
@@ -59,9 +59,9 @@ class BlocksRangesTest {
             ).toList()
         ).isEqualTo(
             listOf(
-                BlocksRange(2..5L, true),
-                BlocksRange(6..9L, false),
-                BlocksRange(10..10L, false)
+                TypedBlockRange(2..5L, true),
+                TypedBlockRange(6..9L, false),
+                TypedBlockRange(10..10L, false)
             )
         )
 
@@ -72,7 +72,7 @@ class BlocksRangesTest {
                 batchSize = 4,
                 stableDistance = 5
             ).toList()
-        ).isEqualTo(emptyList<BlocksRange>())
+        ).isEqualTo(emptyList<TypedBlockRange>())
 
         assertThat(
             BlockRanges.getStableUnstableBlockRanges(
@@ -81,7 +81,7 @@ class BlocksRangesTest {
                 batchSize = 4,
                 stableDistance = 5
             ).toList()
-        ).isEqualTo(emptyList<BlocksRange>())
+        ).isEqualTo(emptyList<TypedBlockRange>())
     }
 
     @Test

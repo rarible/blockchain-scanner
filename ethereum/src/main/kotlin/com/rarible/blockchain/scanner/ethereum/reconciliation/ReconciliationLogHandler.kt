@@ -1,48 +1,51 @@
 package com.rarible.blockchain.scanner.ethereum.reconciliation
 
-import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.ethereum.handler.HandlerPlanner
-import com.rarible.blockchain.scanner.ethereum.handler.ReindexHandler
-import com.rarible.blockchain.scanner.ethereum.model.BlockRange
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
-import com.rarible.blockchain.scanner.ethereum.service.LogHandlerFactory
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.handler.BlocksRange
+import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.rarible.blockchain.scanner.reindex.BlockRange
+import com.rarible.blockchain.scanner.reindex.BlockReindexer
+import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
+import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
-import java.lang.IllegalStateException
 
-@Component
-@ExperimentalCoroutinesApi
+// TODO make it generic
 class ReconciliationLogHandler(
-    private val ethereumClient: EthereumBlockchainClient,
     private val logRepository: EthereumLogRepository,
-    private val logHandlerFactory: LogHandlerFactory,
     private val logService: EthereumLogService,
-    private val reindexHandler: ReindexHandler,
-    private val handlerPlanner: HandlerPlanner,
     private val onReconciliationListeners: List<OnReconciliationListener>,
     private val scannerProperties: EthereumScannerProperties,
+    private val ethereumClient: BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor>,
+    private val logHandlerFactory: LogHandlerFactory<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>,
+    private val reindexer: BlockReindexer<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>,
+    private val planner: BlockScanPlanner<EthereumBlockchainBlock>,
     private val monitor: EthereumLogReconciliationMonitor,
     subscribers: List<EthereumLogEventSubscriber>,
 ) {
-    private val subscribersByCollection = subscribers.groupBy { subscriber -> subscriber.getDescriptor().collection }
 
-    suspend fun check(blocksRange: BlocksRange, batchSize: Int) = coroutineScope {
+    val logger: Logger = LoggerFactory.getLogger(javaClass)
+
+    private val subscribersByCollection = subscribers.groupBy {
+        it.getDescriptor().collection
+    }
+
+    suspend fun check(blocksRange: TypedBlockRange, batchSize: Int) = coroutineScope {
         blocksRange.range
             .chunked(batchSize)
             .map { blockNumbers ->
@@ -70,7 +73,8 @@ class ReconciliationLogHandler(
         val chainLogCount = getChainLogCount(blockNumber, subscribers)
         if (savedLogCount != chainLogCount) {
             monitor.onInconsistency()
-            logger.error("Saved logs count for block {} and collection '{}' are not consistent (saved={}, fetched={})",
+            logger.error(
+                "Saved logs count for block {} and collection '{}' are not consistent (saved={}, fetched={})",
                 blockNumber, collection, savedLogCount, chainLogCount
             )
             if (scannerProperties.reconciliation.autoReindex) {
@@ -111,11 +115,11 @@ class ReconciliationLogHandler(
 
     private suspend fun reindex(blockNumber: Long) {
         val blockRange = BlockRange(from = blockNumber, to = null, batchSize = null)
-        val (reindexRanges, baseBlock) = handlerPlanner.getPlan(blockRange)
-        reindexHandler.reindex(
+        val (reindexRanges, baseBlock) = planner.getPlan(blockRange)
+        reindexer.reindex(
             baseBlock = baseBlock,
             blocksRanges = reindexRanges,
-            logRecordEventPublisher = createLogRecordEventPublisher()
+            publisher = createLogRecordEventPublisher()
         ).collect {
             logger.info("block $blockNumber was re-indexed")
         }
@@ -162,9 +166,5 @@ class ReconciliationLogHandler(
         return object : LogRecordEventPublisher {
             override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {}
         }
-    }
-
-    private companion object {
-        val logger: Logger = LoggerFactory.getLogger(ReconciliationLogHandler::class.java)
     }
 }

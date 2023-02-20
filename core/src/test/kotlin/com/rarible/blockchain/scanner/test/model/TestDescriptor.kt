@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.test.model
 
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 
-class TestDescriptor(
+data class TestDescriptor(
     val topic: String,
     val collection: String,
     val contracts: List<String>,

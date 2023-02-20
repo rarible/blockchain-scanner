@@ -101,4 +101,8 @@ class FlowBlockchainClient(
     }
 
     override suspend fun getFirstAvailableBlock(): FlowBlockchainBlock = getBlock(0)
+
+    override suspend fun getLastBlockNumber(): Long {
+        return api.latestBlock().height
+    }
 }

@@ -12,4 +12,5 @@ interface BlockchainScannerProperties {
     val scan: ScanProperties
     val monitoring: MonitoringProperties
     val daemon: DaemonWorkerProperties
+    val task: TaskProperties
 }

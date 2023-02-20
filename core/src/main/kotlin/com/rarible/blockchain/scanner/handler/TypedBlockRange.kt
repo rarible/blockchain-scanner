@@ -1,6 +1,10 @@
 package com.rarible.blockchain.scanner.handler
 
-data class BlocksRange(val range: LongRange, val stable: Boolean) {
+data class TypedBlockRange(
+    val range: LongRange,
+    val stable: Boolean
+) {
+
     override fun toString(): String {
         val stableWord = if (stable) "stable" else "unstable"
         if (range.first == range.last) {

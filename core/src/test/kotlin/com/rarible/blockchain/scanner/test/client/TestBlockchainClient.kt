@@ -16,9 +16,9 @@ class TestBlockchainClient(
 
     override val newBlocks: Flow<TestBlockchainBlock> get() = data.newBlocks.asFlow()
 
-    override suspend fun getBlocks(numbers: List<Long>): List<TestBlockchainBlock> = numbers.map { getBlock(it) }
+    override suspend fun getBlocks(numbers: List<Long>): List<TestBlockchainBlock> = numbers.mapNotNull { getBlock(it) }
 
-    override suspend fun getBlock(number: Long): TestBlockchainBlock = blocksByNumber.getValue(number)
+    override suspend fun getBlock(number: Long): TestBlockchainBlock? = blocksByNumber[number]
 
     override fun getBlockLogs(
         descriptor: TestDescriptor,
@@ -40,5 +40,9 @@ class TestBlockchainClient(
             .filter { it.topic == descriptor.id }
             .mapIndexed { index, log -> TestBlockchainLog(log, index) }
 
-    override suspend fun getFirstAvailableBlock(): TestBlockchainBlock = getBlock(0)
+    override suspend fun getFirstAvailableBlock(): TestBlockchainBlock = getBlock(0)!!
+
+    override suspend fun getLastBlockNumber(): Long {
+        return data.blocks.maxOf { it.number }
+    }
 }
