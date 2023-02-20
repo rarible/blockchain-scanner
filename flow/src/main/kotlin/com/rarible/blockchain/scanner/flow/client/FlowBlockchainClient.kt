@@ -70,7 +70,7 @@ class FlowBlockchainClient(
                     FlowBlockchainBlock(
                         number = it.blockHeight,
                         hash = it.blockId.base16Value,
-                        timestamp = it.blockTimestamp.toInstant(ZoneOffset.UTC).epochSecond,
+                        timestamp = it.blockTimestamp.toInstant(ZoneOffset.UTC).toEpochMilli(),
                         parentHash = null
                     )
                 }.forEach { entry ->
