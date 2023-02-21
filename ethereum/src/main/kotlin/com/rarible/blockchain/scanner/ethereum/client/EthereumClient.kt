@@ -57,6 +57,8 @@ class EthereumClient(
     private val subscriber = if (properties.blockPoller.enabled)
         EthereumNewBlockPoller(ethereum, properties.blockPoller.period) else EthereumNewBlockPubSub(ethPubSub)
 
+    private val firstAvailableBlock = properties.scan.firstAvailableBlock
+
     override val newBlocks: Flow<EthereumBlockchainBlock> = subscriber.newHeads()
         .flatMap { ethereum.ethGetFullBlockByHash(it.hash()) }
         .map { EthereumBlockchainBlock(it) }
@@ -72,7 +74,7 @@ class EthereumClient(
         }.awaitFirst()
     }
 
-    override suspend fun getFirstAvailableBlock(): EthereumBlockchainBlock = getBlock(0)
+    override suspend fun getFirstAvailableBlock(): EthereumBlockchainBlock = getBlock(firstAvailableBlock)
 
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
