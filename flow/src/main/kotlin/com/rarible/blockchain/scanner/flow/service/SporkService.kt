@@ -38,7 +38,7 @@ class SporkService(
 
     val chainId = properties.chainId
 
-    fun sporks(): Map<FlowChainId, List<Spork>> = sporksMap
+    fun sporks(chainId: FlowChainId): List<Spork> = sporksMap[chainId] ?: emptyList()
 
     fun replace(chainId: FlowChainId, sporks: List<Spork>) {
         sporksMap[chainId] = sporks.withProxy()
