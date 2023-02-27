@@ -37,6 +37,7 @@ class FlowBlockReindexTaskHandler(
 data class FlowReindexParam(
     override val name: String? = null,
     override val range: BlockRange,
+    override val publishEvents: Boolean = true,
     val collections: Set<String> = emptySet()
 ) : ReindexParam
 
