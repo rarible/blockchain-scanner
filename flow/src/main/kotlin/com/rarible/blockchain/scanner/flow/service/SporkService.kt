@@ -13,8 +13,6 @@ class SporkService(
 ) {
     private val proxy = properties.proxy?.let { URI.create(it) }
 
-    private val chainId = properties.chainId
-
     private val sporksMap = mutableMapOf(
         FlowChainId.TESTNET to listOf(
             Spork(from = 50540412L, nodeUrl = "access.devnet.nodes.onflow.org"),
@@ -37,6 +35,8 @@ class SporkService(
             Spork(from = 19050753L, nodeUrl = "access.mainnet.nodes.onflow.org"),
         ).withProxy().reversed()
     )
+
+    val chainId = properties.chainId
 
     fun sporks(): Map<FlowChainId, List<Spork>> = sporksMap
 
