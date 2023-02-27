@@ -27,5 +27,6 @@ data class FlowBlockchainScannerProperties(
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     override val scan: ScanProperties = ScanProperties(),
     override val task: TaskProperties = TaskProperties(),
-    val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID
+    val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID,
+    val proxy: String? = null,
 ): BlockchainScannerProperties
