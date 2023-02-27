@@ -34,17 +34,20 @@ abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog,
 
     private val reindexer = manager.blockReindexer
     private val planner = manager.blockScanPlanner
+    private val publisher = manager.logRecordEventPublisher
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
         val taskParam = getParam(param)
         val filter = getFilter(taskParam)
+        val publisher = if (taskParam.publishEvents) publisher else null
 
         return flow {
             val (reindexRanges, baseBlock, planFrom, planTo) = planner.getPlan(taskParam.range, from)
             val blocks = reindexer.reindex(
                 baseBlock,
                 reindexRanges,
-                filter
+                filter,
+                publisher
             ).onEach {
                 monitor.onReindex(
                     name = taskParam.name,

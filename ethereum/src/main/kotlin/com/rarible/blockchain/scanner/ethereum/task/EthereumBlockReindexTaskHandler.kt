@@ -40,6 +40,7 @@ class EthereumBlockReindexTaskHandler(
 data class EthereumReindexParam(
     override val name: String? = null,
     override val range: BlockRange,
+    override val publishEvents: Boolean = false,
     val topics: List<Word>,
     val addresses: List<Address>,
 ) : ReindexParam
