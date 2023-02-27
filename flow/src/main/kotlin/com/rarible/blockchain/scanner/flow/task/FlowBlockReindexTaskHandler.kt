@@ -26,7 +26,7 @@ class FlowBlockReindexTaskHandler(
     override fun getFilter(
         param: FlowReindexParam
     ): SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor> {
-        return FlowSubscriberFilter(param.collections)
+        return FlowSubscriberFilter(param.addresses)
     }
 
     override fun getParam(param: String): FlowReindexParam {
@@ -38,20 +38,20 @@ data class FlowReindexParam(
     override val name: String? = null,
     override val range: BlockRange,
     override val publishEvents: Boolean = true,
-    val collections: Set<String> = emptySet()
+    val addresses: Set<String> = emptySet()
 ) : ReindexParam
 
 class FlowSubscriberFilter(
-    private val collections: Set<String>
+    private val addresses: Set<String>
 ) : SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor> {
 
     override fun filter(
         all: List<LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor>>
     ): List<LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor>> {
-        if (collections.isEmpty()) {
+        if (addresses.isEmpty()) {
             return all
         }
-        return all.filter { collections.contains(it.getDescriptor().collection) }
+        return all.filter { addresses.contains(it.getDescriptor().address) }
     }
 
 }
