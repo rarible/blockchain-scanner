@@ -99,7 +99,6 @@ class EthereumLogService(
         ) ?: return null // Should not be null
 
         return if (duplicate.log.status == EthereumLogStatus.REVERTED) {
-            logger.warn("Found duplicated legacy record: {}", record)
             duplicate
         } else {
             logger.error("Found duplicated legacy record with status != REVERTED: {}", record)
