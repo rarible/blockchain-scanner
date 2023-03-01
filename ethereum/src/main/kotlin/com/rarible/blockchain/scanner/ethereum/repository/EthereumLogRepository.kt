@@ -22,6 +22,7 @@ import scalether.domain.Address
 class EthereumLogRepository(
     private val mongo: ReactiveMongoOperations
 ) {
+
     suspend fun findLogEvent(entityType: Class<*>, collection: String, id: String): EthereumLogRecord? {
         return mongo.findById(id, entityType, collection).awaitFirstOrNull() as EthereumLogRecord?
     }
@@ -53,6 +54,25 @@ class EthereumLogRepository(
         ).awaitFirstOrNull() as EthereumLogRecord?
     }
 
+    suspend fun findLegacyRecord(
+        entityType: Class<*>,
+        collection: String,
+        transactionHash: String,
+        blockHash: Word,
+        index: Int,
+        minorLogIndex: Int
+    ): EthereumLogRecord? {
+        val criteria = Criteria.where("transactionHash").isEqualTo(transactionHash)
+            .and("blockHash").isEqualTo(blockHash)
+            .and("index").isEqualTo(index)
+            .and("minorLogIndex").isEqualTo(minorLogIndex)
+        return mongo.findOne(
+            Query.query(criteria).withHint(ChangeLog00001.UNIQUE_RECORD_INDEX_NAME),
+            entityType,
+            collection
+        ).awaitFirstOrNull() as EthereumLogRecord?
+    }
+
     suspend fun save(collection: String, event: EthereumLogRecord): EthereumLogRecord {
         return mongo.save(event, collection).awaitFirst()
     }
@@ -75,7 +95,7 @@ class EthereumLogRepository(
     ): Long {
         val criteria =
             (EthereumLog::blockNumber isEqualTo blockNumber)
-            .and(EthereumLog::status).isEqualTo(EthereumLogStatus.CONFIRMED)
+                .and(EthereumLog::status).isEqualTo(EthereumLogStatus.CONFIRMED)
 
         return mongo.count(Query(criteria), collection).awaitFirst()
     }
