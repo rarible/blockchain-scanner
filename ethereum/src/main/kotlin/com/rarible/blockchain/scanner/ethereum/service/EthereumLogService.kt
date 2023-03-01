@@ -70,7 +70,10 @@ class EthereumLogService(
             }
         }
 
-        found!! // can't be null here
+        if (found == null) {
+            // Previous "if" branches can't allow null here, but compiler doesn't think so
+            throw NullPointerException("Can't happen")
+        }
 
         val withCorrectId = record.withIdAndVersion(found.id, found.version, found.updatedAt)
         return if (withCorrectId != found) {
