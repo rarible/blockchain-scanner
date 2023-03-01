@@ -25,8 +25,8 @@ class FlowBlockchainClientTest {
             .build()
         AsyncFlowAccessApiImpl(AccessAPIGrpc.newFutureStub(channel))
     }
-    private val archiveApi = run {
-        val node = URI.create("https://access-001.mainnet15.nodes.onflow.org:9000")
+    private val testnetApi = run {
+        val node = URI.create("https://access.devnet.nodes.onflow.org:9000")
         logger.info("host=${node.host}, port=${node.port}")
 
         val channel = ManagedChannelBuilder.forAddress(node.host, node.port)
@@ -55,7 +55,7 @@ class FlowBlockchainClientTest {
     @Test
     @Disabled
     fun `get block by id`() = runBlocking<Unit> {
-        val block = archiveApi.getBlockByHeight(22156274).await()
+        val block = testnetApi.getBlockByHeight(22156274).await()
         logger.info(
             buildString {
                 append("\n")
@@ -63,6 +63,36 @@ class FlowBlockchainClientTest {
                 append("hash=${block?.id?.bytes?.bytesToHex()}\n")
             }
         )
+    }
+
+    @Test
+    @Disabled
+    fun `get event by type for card`() = runBlocking<Unit> {
+        val eventType = "A.80102bce1de42dc4.HWGaragePM.UpdateTokenEditionMetadata"
+        val range = LongRange(95812893, 95812893)
+        val blockEvents = testnetApi.getEventsForHeightRange(eventType, range).await()
+        blockEvents.forEach { result ->
+            result.events.forEach { event ->
+                val stringValue = String(event.payload.bytes)
+                println(stringValue)
+            }
+        }
+
+    }
+
+    @Test
+    @Disabled
+    fun `get event by type for pack`() = runBlocking<Unit> {
+        val eventType = "A.80102bce1de42dc4.HWGaragePM.UpdatePackEditionMetadata"
+        val range = LongRange(95823562, 95823562)
+        val blockEvents = testnetApi.getEventsForHeightRange(eventType, range).await()
+        blockEvents.forEach { result ->
+            result.events.forEach { event ->
+                val stringValue = String(event.payload.bytes)
+                println(stringValue)
+            }
+        }
+
     }
 
     private companion object {
