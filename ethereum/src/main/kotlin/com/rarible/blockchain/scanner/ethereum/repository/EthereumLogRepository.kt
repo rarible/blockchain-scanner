@@ -64,7 +64,7 @@ class EthereumLogRepository(
     ): EthereumLogRecord? {
         val criteria = Criteria.where("transactionHash").isEqualTo(transactionHash)
             .and("blockHash").isEqualTo(blockHash)
-            .and("index").isEqualTo(index)
+            .and("logIndex").isEqualTo(index)
             .and("minorLogIndex").isEqualTo(minorLogIndex)
         return mongo.findOne(
             Query.query(criteria).withHint(ChangeLog00001.UNIQUE_RECORD_INDEX_NAME),
