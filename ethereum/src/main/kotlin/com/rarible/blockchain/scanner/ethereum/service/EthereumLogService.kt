@@ -97,7 +97,7 @@ class EthereumLogService(
             collection,
             log.transactionHash,
             log.blockHash!!,
-            log.index,
+            log.logIndex!!,
             log.minorLogIndex
         ) ?: return null // Should not be null
 

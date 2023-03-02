@@ -113,7 +113,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
             blockHash = blockHash,
             address = randomAddress(),
             status = EthereumLogStatus.REVERTED
-        ).copy(index = 12, minorLogIndex = 2)
+        ).copy(logIndex = 12, minorLogIndex = 2)
         val visibleRecord = randomLogRecord(visibleLog)
 
         // Assume new log is CONFIRMED and should replace existing one
