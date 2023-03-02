@@ -61,12 +61,12 @@ class EthereumLogService(
         )
 
         if (found == null) {
-            logger.info("Saving new LogEvent: [{}]", record)
             try {
-                return ethereumLogRepository.save(collection, record)
+                val result = ethereumLogRepository.save(collection, record)
+                logger.info("Saved new LogEvent: [{}]", record)
+                return result
             } catch (e: DuplicateKeyException) {
                 found = getLegacyDuplicate(descriptor, record) ?: throw e
-                logger.warn("Found legacy duplicate: [{}], new record: [{}]", found, record)
             }
         }
 
@@ -102,9 +102,13 @@ class EthereumLogService(
         ) ?: return null // Should not be null
 
         return if (duplicate.log.status == EthereumLogStatus.REVERTED) {
+            logger.warn("Found legacy duplicate: [{}], new record: [{}]", duplicate, record)
             duplicate
         } else {
-            logger.error("Found duplicated legacy record with status != REVERTED: {}", record)
+            logger.error(
+                "Found duplicated legacy record with status != REVERTED: [{}], new record: [{}]",
+                duplicate, record
+            )
             null
         }
     }
