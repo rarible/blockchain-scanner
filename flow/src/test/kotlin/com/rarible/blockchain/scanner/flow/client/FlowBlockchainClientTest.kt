@@ -84,8 +84,9 @@ class FlowBlockchainClientTest {
     @Disabled
     fun `get event by type for pack`() = runBlocking<Unit> {
         val eventType = "A.80102bce1de42dc4.HWGaragePM.UpdatePackEditionMetadata"
+        val testEventType = "UpdatePackEditionMetadata"
         val range = LongRange(95823562, 95823562)
-        val blockEvents = testnetApi.getEventsForHeightRange(eventType, range).await()
+        val blockEvents = testnetApi.getEventsForHeightRange(testEventType, range).await()
         blockEvents.forEach { result ->
             result.events.forEach { event ->
                 val stringValue = String(event.payload.bytes)
@@ -93,6 +94,58 @@ class FlowBlockchainClientTest {
             }
         }
 
+    }
+
+    @Test
+    @Disabled
+    fun `get event by type for sftV2 ListingAvailable`() = runBlocking<Unit> {
+        val eventType = "A.4eb8a10cb9f87357.NFTStorefrontV2.ListingAvailable"
+        val range = LongRange(47570142, 47570142)
+        val blockEvents = api.getEventsForHeightRange(eventType, range).await()
+        blockEvents.forEach { result ->
+            result.events.forEach { event ->
+                println("----------> event: ${event.payload.stringValue}")
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    fun `get event by type for sftV1 ListingAvailable`() = runBlocking<Unit> {
+        val eventType = "A.4eb8a10cb9f87357.NFTStorefront.ListingAvailable"
+        val range = LongRange(47582240, 47582240)
+        val blockEvents = api.getEventsForHeightRange(eventType, range).await()
+        blockEvents.forEach { result ->
+            result.events.first().let { event ->
+                println("----------> event: ${event.payload.stringValue}")
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    fun `get event by type for sftV2 ListingCompleted`() = runBlocking<Unit> {
+        val eventType = "A.4eb8a10cb9f87357.NFTStorefrontV2.ListingCompleted"
+        val range = LongRange(47570130, 47570130)
+        val blockEvents = api.getEventsForHeightRange(eventType, range).await()
+        blockEvents.forEach { result ->
+            result.events.forEach { event ->
+                println("----------> event: ${event.payload.stringValue}")
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    fun `get event by type for sftV1 ListingCompleted`() = runBlocking<Unit> {
+        val eventType = "A.4eb8a10cb9f87357.NFTStorefront.ListingCompleted"
+        val range = LongRange(47640243, 47640243)
+        val blockEvents = api.getEventsForHeightRange(eventType, range).await()
+        blockEvents.forEach { result ->
+            result.events.forEach { event ->
+                println("----------> event: ${event.payload.stringValue}")
+            }
+        }
     }
 
     private companion object {
