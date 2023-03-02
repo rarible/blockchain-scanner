@@ -101,16 +101,8 @@ class EthereumLogService(
             log.minorLogIndex
         ) ?: return null // Should not be null
 
-        return if (duplicate.log.status == EthereumLogStatus.REVERTED) {
-            logger.warn("Found legacy duplicate: [{}], new record: [{}]", duplicate, record)
-            duplicate
-        } else {
-            logger.error(
-                "Found duplicated legacy record with status != REVERTED: [{}], new record: [{}]",
-                duplicate, record
-            )
-            null
-        }
+        logger.warn("Found legacy duplicate: [{}], new record: [{}]", duplicate, record)
+        return duplicate
     }
 
     override suspend fun prepareLogsToRevertOnNewBlock(

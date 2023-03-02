@@ -138,34 +138,6 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `save - duplicate can't be replaced`() = runBlocking<Unit> {
-        val blockHash = randomBlockHash()
-        val transactionHash = randomWord()
-
-        val visibleLog = randomLog(
-            transactionHash = transactionHash.toString(),
-            topic = randomWord(),
-            blockHash = blockHash,
-            address = randomAddress(),
-            status = EthereumLogStatus.CONFIRMED
-        ).copy(index = 12, minorLogIndex = 2)
-        val visibleRecord = randomLogRecord(visibleLog)
-
-        // Topics are different, but existing record is CONFIRMED - can't replace it
-        val visibleRecordData = visibleRecord.data as TestEthereumLogData
-        val updatedVisibleRecord = visibleRecord.copy(
-            data = visibleRecordData.copy(customData = randomString()),
-            topic = topic,
-            status = EthereumLogStatus.CONFIRMED
-        )
-
-        saveLog(descriptor.collection, visibleRecord)
-        assertThrows<DuplicateKeyException> {
-            ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
-        }
-    }
-
-    @Test
     fun `save - throw inconsistency error on saving identical log event`() = runBlocking<Unit> {
         val existingLog = randomLog(
             transactionHash = randomWord().toString(),
