@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -26,6 +27,7 @@ import java.time.ZoneOffset
  * Client for Flow blockchain
  */
 @Component
+@ExperimentalCoroutinesApi
 class FlowBlockchainClient(
     private val poller: FlowNetNewBlockPoller,
     private val api: FlowGrpcApi,
@@ -37,7 +39,7 @@ class FlowBlockchainClient(
     private val  firstAvailableBlock =  properties.scan.firstAvailableBlock
 
     override val newBlocks = flatten {
-        poller.poll(api.latestBlock().height).map { FlowBlockchainBlock(it) }
+        poller.poll().map { FlowBlockchainBlock(it) }
     }
 
     override suspend fun getBlock(number: Long): FlowBlockchainBlock {
