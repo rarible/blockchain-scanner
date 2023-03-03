@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
@@ -102,6 +103,41 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     }
 
     @Test
+    fun `save - replace legacy duplicate`() = runBlocking<Unit> {
+        val blockHash = randomBlockHash()
+        val transactionHash = randomWord()
+
+        val visibleLog = randomLog(
+            transactionHash = transactionHash.toString(),
+            topic = randomWord(),
+            blockHash = blockHash,
+            address = randomAddress(),
+            status = EthereumLogStatus.REVERTED
+        ).copy(logIndex = 12, minorLogIndex = 2)
+        val visibleRecord = randomLogRecord(visibleLog)
+
+        // Assume new log is CONFIRMED and should replace existing one
+        val visibleRecordData = visibleRecord.data as TestEthereumLogData
+        val updatedVisibleRecord = visibleRecord.copy(
+            data = visibleRecordData.copy(customData = randomString()),
+            topic = topic, // Topic is different
+            status = EthereumLogStatus.CONFIRMED
+        )
+
+        saveLog(descriptor.collection, visibleRecord)
+        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
+        assertEquals(1, mongo.count(Query(), descriptor.collection).awaitFirst())
+
+        val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
+
+        val expectedLog = updatedVisibleRecord.log.copy(updatedAt = savedVisibleRecord.log.updatedAt)
+
+        assertNotNull(savedVisibleRecord)
+        assertEquals(updatedVisibleRecord.data, savedVisibleRecord.data)
+        assertEquals(expectedLog, savedVisibleRecord.log)
+    }
+
+    @Test
     fun `save - throw inconsistency error on saving identical log event`() = runBlocking<Unit> {
         val existingLog = randomLog(
             transactionHash = randomWord().toString(),
@@ -149,7 +185,8 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         // wrongCollection
         saveLog(anotherCollection, randomLogRecord(topic, blockHash))
 
-        val revertedLogs = ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
+        val revertedLogs =
+            ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
         assertEquals(1, revertedLogs.size)
         assertEquals(reverted.id, revertedLogs[0].id)
     }

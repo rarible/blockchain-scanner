@@ -52,7 +52,7 @@ class ChangeLog00001 {
                 .on("blockHash", Sort.Direction.ASC)
                 .on("logIndex", Sort.Direction.ASC)
                 .on("minorLogIndex", Sort.Direction.ASC)
-                .named("transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1")
+                .named(UNIQUE_RECORD_INDEX_NAME)
                 .background()
                 .unique()
         )
@@ -73,7 +73,10 @@ class ChangeLog00001 {
     }
 
     companion object {
+
         const val VISIBLE_INDEX_NAME =
             "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1"
+        const val UNIQUE_RECORD_INDEX_NAME =
+            "transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1"
     }
 }
