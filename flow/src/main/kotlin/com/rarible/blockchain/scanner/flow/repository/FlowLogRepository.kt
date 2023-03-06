@@ -16,6 +16,9 @@ import org.springframework.stereotype.Component
 class FlowLogRepository(
     private val mongo: ReactiveMongoTemplate
 ) {
+    suspend fun getById(id: String, entityType: Class<*>, collection: String): FlowLogRecord? {
+        return mongo.findById(id, entityType, collection).awaitSingleOrNull() as FlowLogRecord?
+    }
 
     suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): FlowLogRecord? {
         val criteria = Criteria.where("log.eventType").isEqualTo(eventType)
