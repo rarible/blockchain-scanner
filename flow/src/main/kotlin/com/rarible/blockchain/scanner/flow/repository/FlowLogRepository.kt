@@ -25,7 +25,7 @@ class FlowLogRepository(
         return mongo.findById(id, entityType, collection).awaitSingleOrNull() as FlowLogRecord?
     }
 
-    suspend fun findAfterEventIndex(
+    fun findAfterEventIndex(
         transactionHash: String,
         afterEventIndex: Int,
         entityType: Class<*>,
@@ -36,7 +36,7 @@ class FlowLogRepository(
         return mongo.find(Query.query(criteria), entityType, collection).asFlow() as Flow<FlowLogRecord>
     }
 
-    suspend fun findBeforeEventIndex(
+    fun findBeforeEventIndex(
         transactionHash: String,
         beforeEventIndex: Int,
         entityType: Class<*>,
