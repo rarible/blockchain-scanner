@@ -30,8 +30,7 @@ class SolanaLogRepositoryIt : AbstractIntegrationTest() {
         assertThat(indexInfos.map { it.name }.toSet())
             .isEqualTo(
                 setOf(
-                    "_id_",
-                    "log.blockHash_1__id_1"
+                    "_id_"
                 )
             )
     }
@@ -77,29 +76,6 @@ class SolanaLogRepositoryIt : AbstractIntegrationTest() {
         assertThat(record).isEqualTo(savedRecord)
         solanaLogRepository.delete(testRecordsCollection, record)
         assertThat(solanaLogRepository.findAll(testRecordsCollection).toList()).isEmpty()
-    }
-
-    @Test
-    fun `find by block hash`() = runBlocking<Unit> {
-        val blockHash = randomString()
-        val record1 = TestSolanaLogRecord(
-            createRandomSolanaLog().copy(blockHash = blockHash, blockNumber = 1, transactionIndex = 1),
-            randomString()
-        )
-        val record2 = TestSolanaLogRecord(
-            createRandomSolanaLog().copy(blockHash = blockHash, blockNumber = 1, transactionIndex = 2),
-            randomString()
-        )
-        solanaLogRepository.save(testRecordsCollection, record1)
-        solanaLogRepository.save(testRecordsCollection, record2)
-        (0 until 100).map {
-            solanaLogRepository.save(
-                testRecordsCollection,
-                TestSolanaLogRecord(createRandomSolanaLog(), randomString())
-            )
-        }
-        assertThat(solanaLogRepository.findByBlockHash(testRecordsCollection, blockHash).toList())
-            .isEqualTo(listOf(record1, record2))
     }
 
     private fun createRandomSolanaLog() = SolanaLog(
