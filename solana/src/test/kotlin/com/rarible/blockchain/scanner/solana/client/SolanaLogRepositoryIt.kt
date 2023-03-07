@@ -30,8 +30,7 @@ class SolanaLogRepositoryIt : AbstractIntegrationTest() {
         assertThat(indexInfos.map { it.name }.toSet())
             .isEqualTo(
                 setOf(
-                    "_id_",
-                    "log.blockHash_1__id_1"
+                    "_id_"
                 )
             )
     }
