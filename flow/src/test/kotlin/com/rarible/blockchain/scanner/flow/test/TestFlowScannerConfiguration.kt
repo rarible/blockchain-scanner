@@ -1,20 +1,30 @@
-package com.rarible.blockchain.scanner.flow
+package com.rarible.blockchain.scanner.flow.test
 
+import com.rarible.blockchain.scanner.flow.EnableFlowBlockchainScanner
+import com.rarible.blockchain.scanner.flow.TestFlowLogRecord
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
+import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import java.time.Instant
 
 @Configuration
-@EnableAutoConfiguration
 @EnableFlowBlockchainScanner
-class TestConfig {
+@EnableAutoConfiguration
+class TestFlowScannerConfiguration {
+
+    @Bean
+    @Primary
+    @Qualifier("TestEthereumLogEventPublisher")
+    fun testEthereumLogEventPublisher(): LogRecordEventPublisher = TestFlowLogRecordEventPublisher()
 
     @Bean
     fun allEventsSubscriber(): FlowLogEventSubscriber = object : FlowLogEventSubscriber {

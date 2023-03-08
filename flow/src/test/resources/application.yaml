@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: test-flow-scanner
+
+blockchain:
+  scanner:
+    kafka:
+      broker-replica-set: ${kafka.hosts}
+
