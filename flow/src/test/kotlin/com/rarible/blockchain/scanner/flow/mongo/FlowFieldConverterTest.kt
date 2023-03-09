@@ -20,6 +20,7 @@ import com.nftco.flow.sdk.cadence.TypeField
 import com.nftco.flow.sdk.cadence.TypeValue
 import com.nftco.flow.sdk.cadence.VoidField
 import com.rarible.blockchain.scanner.flow.test.IntegrationTest
+import com.rarible.core.mongo.configuration.EnableRaribleMongo
 import com.rarible.core.test.data.randomString
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
