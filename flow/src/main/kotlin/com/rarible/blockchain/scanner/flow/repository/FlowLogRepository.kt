@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -33,7 +34,12 @@ class FlowLogRepository(
     ): Flow<FlowLogRecord> {
         val criteria = (FlowLogRecord::log / FlowLog::transactionHash isEqualTo transactionHash)
             .and(FlowLogRecord::log / FlowLog::eventIndex).gt(afterEventIndex)
-        return mongo.find(Query.query(criteria), entityType, collection).asFlow() as Flow<FlowLogRecord>
+
+        val query = Query
+            .query(criteria)
+            .with(Sort.by(Sort.Direction.ASC, "${FlowLogRecord::log.name}.${FlowLog::eventIndex.name}"))
+
+        return mongo.find(query, entityType, collection).asFlow() as Flow<FlowLogRecord>
     }
 
     fun findBeforeEventIndex(
@@ -44,7 +50,12 @@ class FlowLogRepository(
     ): Flow<FlowLogRecord> {
         val criteria = (FlowLogRecord::log / FlowLog::transactionHash isEqualTo transactionHash)
             .and(FlowLogRecord::log / FlowLog::eventIndex).lt(beforeEventIndex)
-        return mongo.find(Query.query(criteria), entityType, collection).asFlow() as Flow<FlowLogRecord>
+
+        val query = Query
+            .query(criteria)
+            .with(Sort.by(Sort.Direction.DESC, "${FlowLogRecord::log.name}.${FlowLog::eventIndex.name}"))
+
+        return mongo.find(query, entityType, collection).asFlow() as Flow<FlowLogRecord>
     }
 
     suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): FlowLogRecord? {
