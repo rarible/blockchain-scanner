@@ -78,7 +78,7 @@ class SporksFlowGrpcApi(
     override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
         return sporkService.sporks(range).flatMapConcat { spork ->
             try {
-                logger.info("Call getEventsForHeightRange: type $type")
+                logger.info("Grpc call eventsByBlockRange: type=$type, range=$range")
                 spork.api.getEventsForHeightRange(type, spork.trim(range)).await().asFlow()
             } catch (e: StatusRuntimeException) {
                 if (e.status.code in arrayOf(Status.INTERNAL.code, Status.UNKNOWN.code)) {
