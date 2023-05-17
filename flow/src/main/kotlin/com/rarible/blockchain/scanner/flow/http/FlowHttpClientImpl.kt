@@ -19,15 +19,15 @@ import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.time.delay
 import org.bouncycastle.util.encoders.Base64
 import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.util.DefaultUriBuilderFactory
 import java.io.IOException
 import java.net.URI
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZoneOffset
-import java.time.ZonedDateTime
 
+@Component
 class FlowHttpClientImpl(
     properties: FlowBlockchainScannerProperties
 ) : FlowHttpApi {

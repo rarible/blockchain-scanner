@@ -1,8 +1,10 @@
 package com.rarible.blockchain.scanner.flow.client
 
+import com.nftco.flow.sdk.FlowEventResult
 import com.rarible.blockchain.scanner.flow.FlowGrpcApi
 import com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.http.FlowHttpApi
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
@@ -31,7 +33,8 @@ import java.time.ZoneOffset
 class FlowBlockchainClient(
     private val poller: FlowNetNewBlockPoller,
     private val api: FlowGrpcApi,
-    properties: FlowBlockchainScannerProperties
+    private val httpApi: FlowHttpApi,
+    private val properties: FlowBlockchainScannerProperties
 ) : BlockchainClient<FlowBlockchainBlock, FlowBlockchainLog, FlowDescriptor> {
 
     private val logger: Logger = LoggerFactory.getLogger(FlowBlockchainClient::class.java)
@@ -68,7 +71,7 @@ class FlowBlockchainClient(
         logger.info("Get events from block range ${range.first}..${range.last}")
         api.chunk(range).collect { sl ->
             descriptor.events.map {
-                async { api.eventsByBlockRange(it, sl) }
+                async { eventsByBlockRange(it, sl) }
             }.awaitAll()
                 .flatMap { it.toList() }
                 .filter { it.events.isNotEmpty() }
@@ -104,6 +107,11 @@ class FlowBlockchainClient(
                     )
                 }
         }
+    }
+
+    private suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
+        return if (properties.enableHttpClient) httpApi.eventsByBlockRange(type, range)
+        else api.eventsByBlockRange(type, range)
     }
 
     override suspend fun getFirstAvailableBlock(): FlowBlockchainBlock = getBlock(firstAvailableBlock)

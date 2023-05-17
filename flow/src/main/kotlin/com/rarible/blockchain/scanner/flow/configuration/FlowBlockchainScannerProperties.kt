@@ -29,6 +29,7 @@ data class FlowBlockchainScannerProperties(
     override val task: TaskProperties = TaskProperties(),
     val poller: BlockPollerProperties = BlockPollerProperties(),
     val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID,
-    val httpApiClient: HttpApiClientProperties = HttpApiClientProperties()
+    val httpApiClient: HttpApiClientProperties = HttpApiClientProperties(),
+    val enableHttpClient: Boolean = false,
 ): BlockchainScannerProperties
 
