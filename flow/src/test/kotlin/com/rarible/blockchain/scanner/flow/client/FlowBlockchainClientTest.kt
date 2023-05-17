@@ -3,9 +3,13 @@ package com.rarible.blockchain.scanner.flow.client
 import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.bytesToHex
 import com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl
+import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.http.FlowHttpClientImpl
 import io.grpc.ManagedChannelBuilder
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.onflow.protobuf.access.AccessAPIGrpc
@@ -38,6 +42,25 @@ class FlowBlockchainClientTest {
         AsyncFlowAccessApiImpl(AccessAPIGrpc.newFutureStub(channel))
     }
 
+    private val httpClient = FlowHttpClientImpl(FlowBlockchainScannerProperties())
+
+    @Test
+    @Disabled
+    fun `get events - ok`() = runBlocking<Unit> {
+        val type = "A.e5bf4d436ca23932.BBxBarbiePack.Mint"
+        val range = LongRange(52153800, 52153949)
+
+        val httpEvents = httpClient
+            .eventsByBlockRange(type, range).toList()
+        val grpcEvents = api
+            .getEventsForHeightRange(type, range).await()
+            .filter { it.events.isNotEmpty() }
+
+        Assertions.assertThat(httpEvents.size).isEqualTo(4)
+        Assertions
+            .assertThat(httpEvents)
+            .isEqualTo(grpcEvents)
+    }
 
     @Test
     @Disabled

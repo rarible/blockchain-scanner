@@ -11,7 +11,7 @@ import java.net.URI
 class SporkService(
     private val properties: FlowBlockchainScannerProperties,
 ) {
-    private val proxy = properties.proxy?.let { URI.create(it) }
+    private val proxy = properties.httpApiClient.proxy?.toASCIIString()?.let { URI.create(it) }
 
     private val sporksMap = mutableMapOf(
         FlowChainId.TESTNET to listOf(
