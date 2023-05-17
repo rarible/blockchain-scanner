@@ -18,6 +18,8 @@ import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.time.delay
 import org.bouncycastle.util.encoders.Base64
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.awaitBody
@@ -44,6 +46,7 @@ class FlowHttpClientImpl(
     }
 
     override suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
+        logger.info("Http call eventsByBlockRange: type=$type, range=$range, endpoint=${clientProperties.endpoint}")
         val uri = uriBuilderFactory.builder().run {
             path("/v1/events")
             queryParam("type", type)
@@ -106,6 +109,10 @@ class FlowHttpClientImpl(
     private sealed class OperationResult<T> {
         data class Success<T>(val value: T) : OperationResult<T>()
         data class Error<T>(val message: String) : OperationResult<T>()
+    }
+
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(FlowHttpClientImpl::class.java)
     }
 }
 
