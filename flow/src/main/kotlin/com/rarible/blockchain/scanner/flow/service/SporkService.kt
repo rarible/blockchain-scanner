@@ -5,14 +5,11 @@ import com.nftco.flow.sdk.FlowId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import kotlinx.coroutines.flow.asFlow
 import org.springframework.stereotype.Service
-import java.net.URI
 
 @Service
 class SporkService(
     private val properties: FlowBlockchainScannerProperties,
 ) {
-    private val proxy = properties.httpApiClient.proxy?.toASCIIString()?.let { URI.create(it) }
-
     private val sporksMap = mutableMapOf(
         FlowChainId.TESTNET to listOf(
             Spork(from = 50540412L, nodeUrl = "access.devnet.nodes.onflow.org"),
@@ -62,7 +59,7 @@ class SporkService(
     fun currentSpork(): Spork = sporksMap[chainId]!!.first()
 
     private fun List<Spork>.withProxy(): List<Spork> {
-        return map { it.withProxy(proxy) }
+        return map { it.withProxy(null) }
     }
 }
 
