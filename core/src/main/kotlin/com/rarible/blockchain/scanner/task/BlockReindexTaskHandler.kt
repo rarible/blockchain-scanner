@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -48,13 +47,14 @@ abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog,
                 reindexRanges,
                 filter,
                 publisher
-            ).onEach {
+            ).map {
                 monitor.onReindex(
                     name = taskParam.name,
                     from = taskParam.range.from,
                     to = taskParam.range.to,
                     state = getTaskProgress(planFrom, planTo, it.id)
                 )
+                it
             }
             emitAll(blocks)
         }.map {
