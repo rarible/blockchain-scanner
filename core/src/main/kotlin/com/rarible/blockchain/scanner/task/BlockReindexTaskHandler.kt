@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -39,26 +40,25 @@ abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog,
         val taskParam = getParam(param)
         val filter = getFilter(taskParam)
         val publisher = if (taskParam.publishEvents) publisher else null
-
+        val (reindexRanges, baseBlock, planFrom, planTo) = runBlocking {
+            planner.getPlan(taskParam.range, from)
+        }
         return flow {
-            val (reindexRanges, baseBlock, planFrom, planTo) = planner.getPlan(taskParam.range, from)
             val blocks = reindexer.reindex(
                 baseBlock,
                 reindexRanges,
                 filter,
                 publisher
-            ).map {
-                monitor.onReindex(
-                    name = taskParam.name,
-                    from = taskParam.range.from,
-                    to = taskParam.range.to,
-                    state = getTaskProgress(planFrom, planTo, it.id)
-                )
-                it
-            }
+            )
             emitAll(blocks)
         }.map {
             logger.info("Re-index finished up to block $it")
+            monitor.onReindex(
+                name = taskParam.name,
+                from = taskParam.range.from,
+                to = taskParam.range.to,
+                state = getTaskProgress(planFrom, planTo, it.id)
+            )
             it.id
         }
     }
