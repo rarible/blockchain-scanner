@@ -20,14 +20,12 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
-import java.util.WeakHashMap
+import java.util.*
 
 @Component
-@Primary
 class SporksFlowGrpcApi(
     private val sporkService: SporkService
 ): FlowGrpcApi {

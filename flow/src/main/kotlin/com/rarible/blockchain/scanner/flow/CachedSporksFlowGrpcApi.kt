@@ -12,13 +12,15 @@ import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.service.SporkService
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -116,14 +118,21 @@ class CachedSporksFlowGrpcApi(
         FullBlock(block, events)
     }
 
-    private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock): List<FlowEvent> {
-        return block.collectionGuarantees.toFlux()
-            .flatMap { api.getCollectionById(it.id).toMono() }
-            .flatMap { it.transactionIds.toFlux() }
-            .flatMap { api.getTransactionResultById(it).toMono() }
-            .flatMap { it.events.toFlux() }
-            .collectList()
-            .awaitFirst()
+    private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
+        block.collectionGuarantees.map { guarantee ->
+            async {
+                val collections = api.getCollectionById(guarantee.id).await() ?: error(
+                    "Can't get collection ${guarantee.id}, for block ${block.height}"
+                )
+                collections.transactionIds.map { transactionId ->
+                    async {
+                        api.getTransactionResultById(transactionId).await()?.events ?: error(
+                            "Can't get events for tx $transactionId, for block ${block.height}"
+                        )
+                    }
+                }.awaitAll().flatten()
+            }
+        }.awaitAll().flatten()
     }
 
     private data class FullBlock(
