@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class SporkService(
-    private val properties: FlowBlockchainScannerProperties,
+    properties: FlowBlockchainScannerProperties,
 ) {
     private val sporksMap = mutableMapOf(
         FlowChainId.TESTNET to listOf(
