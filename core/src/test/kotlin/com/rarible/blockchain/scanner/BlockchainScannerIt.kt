@@ -55,16 +55,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         assertThat(findBlock(blocks[0].number)!!.copy(stats = null)).isEqualTo(blocks[0].toBlock(BlockStatus.SUCCESS))
         assertThat(findBlock(block.number)!!.copy(stats = null)).isEqualTo(block.toBlock(BlockStatus.SUCCESS))
 
-        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
-            mapOf(
-                descriptor.groupId to listOf(
-                    LogRecordEvent(
-                        record = subscriber.getReturnedRecords(block, log).single(),
-                        reverted = false
-                    )
-                )
-            )
+        assertPublishedRecords(
+            descriptor.groupId,
+            listOf(LogRecordEvent(record = subscriber.getReturnedRecords(block, log).single(), reverted = false))
         )
+
     }
 
     @Test
@@ -106,14 +101,14 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val blockchainScanner = createBlockchainScanner(testBlockchainClient, listOf(subscriber1, subscriber2))
         blockchainScanner.scan(once = true)
 
-        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
-            mapOf(
-                groupId to listOf(
-                    LogRecordEvent(record = subscriber1.getReturnedRecords(block1, log11).single(), false),
-                    LogRecordEvent(record = subscriber2.getReturnedRecords(block1, log11).single(), false),
-                    LogRecordEvent(record = subscriber1.getReturnedRecords(block2, log21).single(), false),
-                    LogRecordEvent(record = subscriber2.getReturnedRecords(block2, log21).single(), false)
-                )
+
+        assertPublishedRecords(
+            groupId,
+            listOf(
+                LogRecordEvent(record = subscriber1.getReturnedRecords(block1, log11).single(), false),
+                LogRecordEvent(record = subscriber2.getReturnedRecords(block1, log11).single(), false),
+                LogRecordEvent(record = subscriber1.getReturnedRecords(block2, log21).single(), false),
+                LogRecordEvent(record = subscriber2.getReturnedRecords(block2, log21).single(), false)
             )
         )
     }
@@ -151,9 +146,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 reverted = false
             ),
         )
-        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
-            mapOf(descriptor.groupId to confirmedLogs)
-        )
+
+        assertPublishedRecords(descriptor.groupId, confirmedLogs)
 
         // Revert the block #2
         val newBlock2 = randomBlockchainBlock(number = blocks[2].number, parentHash = blocks[1].hash)
@@ -174,28 +168,16 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val newRecord21 = subscriber.getReturnedRecords(newBlock2, newLog21).single()
         val newRecord22 = subscriber.getReturnedRecords(newBlock2, newLog22).single()
 
-        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
-            mapOf(
-                descriptor.groupId to confirmedLogs + listOf(
-                    LogRecordEvent(
-                        record = revertedRecord22,
-                        reverted = true
-                    ),
-                    LogRecordEvent(
-                        record = revertedRecord21,
-                        reverted = true
-                    ),
-                    LogRecordEvent(
-                        record = newRecord21,
-                        reverted = false
-                    ),
-                    LogRecordEvent(
-                        record = newRecord22,
-                        reverted = false
-                    )
-                )
+        assertPublishedRecords(
+            descriptor.groupId,
+            confirmedLogs + listOf(
+                LogRecordEvent(record = revertedRecord22, reverted = true),
+                LogRecordEvent(record = revertedRecord21, reverted = true),
+                LogRecordEvent(record = newRecord21, reverted = false),
+                LogRecordEvent(record = newRecord22, reverted = false)
             )
         )
+
         val savedLog21 = findLog(descriptor.collection, newRecord21.id)
         assertThat(savedLog21?.log?.reverted).isFalse
         val savedLog22 = findLog(descriptor.collection, newRecord22.id)
@@ -240,9 +222,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 reverted = false
             )
         )
-        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
-            mapOf(descriptor.groupId to confirmedLogs)
-        )
+        assertPublishedRecords(descriptor.groupId, confirmedLogs)
 
         // Imitate the block #1 is PENDING.
         blockService.save(blocks[1].toBlock(BlockStatus.PENDING))
@@ -254,31 +234,46 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         newBlockchainScanner.scan(once = true)
 
         // Block #1 was PENDING, so we, firstly, revert all possibly saved logs and then apply them again.
-        assertThat(testLogRecordEventPublisher.publishedLogRecords).isEqualTo(
-            mapOf(
-                descriptor.groupId to confirmedLogs + listOf(
-                    LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log12).single().revert(),
-                        reverted = true
-                    ),
-                    LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log11).single().revert(),
-                        reverted = true
-                    ),
-                    LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log11).single(),
-                        reverted = false
-                    ),
-                    LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[1], log12).single(),
-                        reverted = false
-                    ),
-                    LogRecordEvent(
-                        record = subscriber.getReturnedRecords(blocks[2], log21).single(),
-                        reverted = false
-                    )
+        assertPublishedRecords(
+            descriptor.groupId, confirmedLogs + listOf(
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(blocks[1], log12).single().revert(),
+                    reverted = true
+                ),
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(blocks[1], log11).single().revert(),
+                    reverted = true
+                ),
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(blocks[1], log11).single(),
+                    reverted = false
+                ),
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(blocks[1], log12).single(),
+                    reverted = false
+                ),
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(blocks[2], log21).single(),
+                    reverted = false
                 )
             )
         )
+
+    }
+
+    private fun assertPublishedRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {
+        val publishedByGroup = testLogRecordEventPublisher.publishedLogRecords[groupId]!!
+        for (i in expectedEvents.indices) {
+            val published = publishedByGroup[i]
+            val expected = expectedEvents[i]
+            assertThat(published.record).isEqualTo(expected.record)
+            assertThat(published.reverted).isEqualTo(expected.reverted)
+
+            val marks = published.eventTimeMarks!!.marks
+            assertThat(marks).hasSize(3)
+            assertThat(marks[0].name).isEqualTo("source")
+            assertThat(marks[1].name).isEqualTo("scanner-in")
+            assertThat(marks[2].name).isEqualTo("scanner-out")
+        }
     }
 }
