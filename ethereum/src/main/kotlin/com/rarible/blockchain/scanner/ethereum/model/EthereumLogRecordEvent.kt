@@ -1,9 +1,9 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
-import com.rarible.blockchain.scanner.framework.data.ScannerEventTimeMarks
+import com.rarible.core.common.EventTimeMarks
 
 data class EthereumLogRecordEvent(
     val record: ReversedEthereumLogRecord,
     val reverted: Boolean,
-    val eventTimeMarks: ScannerEventTimeMarks? = null // TODO cleanup with other deprecated classes
+    val eventTimeMarks: EventTimeMarks? = null // TODO cleanup with other deprecated classes
 )

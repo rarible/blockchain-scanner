@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.framework.data
 
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.core.common.EventTimeMarks
 
 /**
  * Log record with [reverted] flag.
@@ -8,5 +9,5 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 data class LogRecordEvent(
     val record: LogRecord,
     val reverted: Boolean,
-    val eventTimeMarks: ScannerEventTimeMarks? = null
+    val eventTimeMarks: EventTimeMarks? = null
 )
