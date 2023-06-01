@@ -19,6 +19,7 @@ import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
+import com.rarible.blockchain.scanner.framework.util.addOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
@@ -115,16 +116,16 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 .add(logEvent.logRecordsToUpdate)
         }
 
-        val blockEventsToInsert = blockLogsToInsert.mapValues { bySubscriber ->
-            bySubscriber.value.flatten()
+        val blockEventsToInsert = blockLogsToInsert.mapValues { (blockEvent, bySubscriber) ->
+            bySubscriber.flatten()
                 .sortedWith(logRecordComparator)
-                .map { LogRecordEvent(it, false) }
+                .map { LogRecordEvent(it, false, blockEvent.eventTimeMarks) }
         }
 
-        val blockEventsToUpdate = blockLogsToUpdate.mapValues { bySubscriber ->
-            bySubscriber.value.flatten()
+        val blockEventsToUpdate = blockLogsToUpdate.mapValues { (blockEvent, bySubscriber) ->
+            bySubscriber.flatten()
                 .sortedWith(logRecordComparator.reversed())
-                .map { LogRecordEvent(it, true) }
+                .map { LogRecordEvent(it, true, blockEvent.eventTimeMarks) }
         }
 
         withSpan("publishEvents") {
@@ -133,12 +134,16 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 val eventsToUpdate = blockEventsToUpdate.getValue(blockEvent)
 
                 logging(message = "publishing ${eventsToUpdate.size} reverted log records", event = blockEvent)
-                logRecordEventPublisher.publish(groupId, eventsToUpdate)
+                logRecordEventPublisher.publish(groupId, addOutMark(eventsToUpdate))
 
                 logging(message = "publishing ${eventsToInsert.size} new log records", event = blockEvent)
-                logRecordEventPublisher.publish(groupId, eventsToInsert)
+                logRecordEventPublisher.publish(groupId, addOutMark(eventsToInsert))
             }
         }
+    }
+
+    private fun addOutMark(records: List<LogRecordEvent>): List<LogRecordEvent> {
+        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks?.addOut()) }
     }
 
     private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<LogEvent<R, D>> {

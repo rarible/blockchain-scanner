@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.client
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import scalether.domain.response.Block
 import scalether.domain.response.Transaction
+import java.time.Instant
 
 data class EthereumBlockchainBlock(
     override val number: Long,
@@ -11,6 +12,7 @@ data class EthereumBlockchainBlock(
     override val timestamp: Long,
     val ethBlock: Block<Transaction>
 ) : BlockchainBlock {
+
     constructor(ethBlock: Block<Transaction>) : this(
         number = ethBlock.number().toLong(),
         hash = ethBlock.hash().toString(),
@@ -18,4 +20,6 @@ data class EthereumBlockchainBlock(
         timestamp = ethBlock.timestamp().toLong(),
         ethBlock
     )
+
+    override fun getDatetime(): Instant = Instant.ofEpochSecond(timestamp)
 }

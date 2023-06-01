@@ -20,7 +20,8 @@ class BlockEventHandler(
         entityEventListener.onEntityEvents(filteredEvents.map {
             LogRecordEvent(
                 record = it.record,
-                reverted = it.reverted
+                reverted = it.reverted,
+                eventTimeMarks = it.eventTimeMarks
             )
         })
     }
