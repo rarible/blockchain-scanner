@@ -9,5 +9,5 @@ import com.rarible.core.common.EventTimeMarks
 data class LogRecordEvent(
     val record: LogRecord,
     val reverted: Boolean,
-    val eventTimeMarks: EventTimeMarks? = null
+    val eventTimeMarks: EventTimeMarks
 )
