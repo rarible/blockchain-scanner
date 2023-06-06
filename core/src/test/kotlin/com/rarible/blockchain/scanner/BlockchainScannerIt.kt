@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import com.rarible.core.common.EventTimeMarks
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -57,7 +58,13 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
         assertPublishedRecords(
             descriptor.groupId,
-            listOf(LogRecordEvent(record = subscriber.getReturnedRecords(block, log).single(), reverted = false))
+            listOf(
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(block, log).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
+                )
+            )
         )
 
     }
@@ -105,10 +112,10 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         assertPublishedRecords(
             groupId,
             listOf(
-                LogRecordEvent(record = subscriber1.getReturnedRecords(block1, log11).single(), false),
-                LogRecordEvent(record = subscriber2.getReturnedRecords(block1, log11).single(), false),
-                LogRecordEvent(record = subscriber1.getReturnedRecords(block2, log21).single(), false),
-                LogRecordEvent(record = subscriber2.getReturnedRecords(block2, log21).single(), false)
+                LogRecordEvent(record = subscriber1.getReturnedRecords(block1, log11).single(), false, EventTimeMarks("test")),
+                LogRecordEvent(record = subscriber2.getReturnedRecords(block1, log11).single(), false, EventTimeMarks("test")),
+                LogRecordEvent(record = subscriber1.getReturnedRecords(block2, log21).single(), false, EventTimeMarks("test")),
+                LogRecordEvent(record = subscriber2.getReturnedRecords(block2, log21).single(), false, EventTimeMarks("test"))
             )
         )
     }
@@ -135,15 +142,18 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val confirmedLogs = listOf(
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[1], log11).single(),
-                reverted = false
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
             ),
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[2], log21).single(),
-                reverted = false
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
             ),
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[2], log22).single(),
-                reverted = false
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
             ),
         )
 
@@ -171,10 +181,10 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         assertPublishedRecords(
             descriptor.groupId,
             confirmedLogs + listOf(
-                LogRecordEvent(record = revertedRecord22, reverted = true),
-                LogRecordEvent(record = revertedRecord21, reverted = true),
-                LogRecordEvent(record = newRecord21, reverted = false),
-                LogRecordEvent(record = newRecord22, reverted = false)
+                LogRecordEvent(record = revertedRecord22, reverted = true, eventTimeMarks = EventTimeMarks("test")),
+                LogRecordEvent(record = revertedRecord21, reverted = true, eventTimeMarks = EventTimeMarks("test")),
+                LogRecordEvent(record = newRecord21, reverted = false, eventTimeMarks = EventTimeMarks("test")),
+                LogRecordEvent(record = newRecord22, reverted = false, eventTimeMarks = EventTimeMarks("test"))
             )
         )
 
@@ -215,11 +225,13 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val confirmedLogs = listOf(
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[1], log11).single(),
-                reverted = false
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
             ),
             LogRecordEvent(
                 record = subscriber.getReturnedRecords(blocks[1], log12).single(),
-                reverted = false
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
             )
         )
         assertPublishedRecords(descriptor.groupId, confirmedLogs)
@@ -238,23 +250,28 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             descriptor.groupId, confirmedLogs + listOf(
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[1], log12).single().revert(),
-                    reverted = true
+                    reverted = true,
+                    eventTimeMarks = EventTimeMarks("test")
                 ),
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[1], log11).single().revert(),
-                    reverted = true
+                    reverted = true,
+                    eventTimeMarks = EventTimeMarks("test")
                 ),
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[1], log11).single(),
-                    reverted = false
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
                 ),
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[1], log12).single(),
-                    reverted = false
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
                 ),
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[2], log21).single(),
-                    reverted = false
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
                 )
             )
         )
