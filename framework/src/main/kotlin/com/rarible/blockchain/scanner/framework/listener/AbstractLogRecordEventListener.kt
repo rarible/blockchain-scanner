@@ -6,7 +6,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
 abstract class AbstractLogRecordEventListener(
-    private val subscribers: List<LogRecordEventSubscriber>
+    override val id: String,
+    override val groupId: String,
+    private val subscribers: List<LogRecordEventSubscriber>,
 ) : LogRecordEventListener {
 
     override suspend fun onLogRecordEvents(events: List<LogRecordEvent>) {
