@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.framework.listener
 
 class SimpleLogRecordEventListener(
-    override val id: String,
-    override val groupId: String,
+    id: String,
+    groupId: String,
     subscribers: List<LogRecordEventSubscriber>
-) : AbstractLogRecordEventListener(subscribers)
+) : AbstractLogRecordEventListener(id = id, groupId = groupId, subscribers)
