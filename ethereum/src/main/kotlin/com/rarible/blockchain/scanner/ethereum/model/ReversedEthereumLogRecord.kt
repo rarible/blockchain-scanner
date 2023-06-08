@@ -115,6 +115,9 @@ data class ReversedEthereumLogRecord(
         return data.getKey(log)
     }
 
+    fun withUpdatedAt(): ReversedEthereumLogRecord {
+        return copy(updatedAt = Instant.now())
+    }
 }
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "@class")
