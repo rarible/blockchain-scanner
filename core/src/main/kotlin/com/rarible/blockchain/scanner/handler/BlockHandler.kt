@@ -17,7 +17,6 @@ import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import com.rarible.core.apm.withTransaction
-import com.rarible.core.kafka.chunked
 import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -105,7 +104,7 @@ class BlockHandler<BB : BlockchainBlock>(
             lastBlockNumber = newBlock.id,
             batchSize = scanProperties.batchLoad.batchSize,
             stableDistance = scanProperties.batchLoad.confirmationBlockDistance
-        ).asFlow()
+        )
         coroutineScope {
             val channel = produceBlocks(
                 blockRanges = stableUnstableBlockRanges,
@@ -184,13 +183,13 @@ class BlockHandler<BB : BlockchainBlock>(
 
     @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
     private fun CoroutineScope.produceBlocks(
-        blockRanges: Flow<TypedBlockRange>,
+        blockRanges: Sequence<TypedBlockRange>,
         baseBlock: Block,
         capacity: Int
     ) = produce(capacity = capacity) {
         var lastFetchedBlockHash = baseBlock.hash
 
-        blockRanges.chunked(capacity / 2).takeWhile { batchOfRanges ->
+        blockRanges.chunked(capacity / 2).asFlow().takeWhile { batchOfRanges ->
             val batchOfBlockBatches = coroutineScope {
                 batchOfRanges.map { range ->
                     async {
