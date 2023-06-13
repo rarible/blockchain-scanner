@@ -7,6 +7,7 @@ import com.nftco.flow.sdk.FlowEvent
 import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
+import com.rarible.blockchain.scanner.flow.monitoring.FlowMonitor
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import com.rarible.blockchain.scanner.util.flatten
 import io.grpc.Status
@@ -27,7 +28,8 @@ import java.util.*
 
 @Component
 class SporksFlowGrpcApi(
-    private val sporkService: SporkService
+    private val sporkService: SporkService,
+    private val flowMonitor: FlowMonitor,
 ): FlowGrpcApi {
 
     private val log: Logger = LoggerFactory.getLogger(SporksFlowGrpcApi::class.java)
@@ -43,6 +45,7 @@ class SporksFlowGrpcApi(
     private val eventsByHeight: WeakHashMap<Long, List<FlowEvent>> = WeakHashMap()
 
     override suspend fun isAlive(): Boolean = try {
+        flowMonitor.onBlockchainCall("ping")
         sporkService.currentSpork().api.ping()
         true
     } catch (e: Exception) {
@@ -50,12 +53,15 @@ class SporksFlowGrpcApi(
         false
     }
 
-    override suspend fun latestBlock(): FlowBlock =
-        sporkService.currentSpork().api.getLatestBlock(true).await()
+    override suspend fun latestBlock(): FlowBlock {
+        flowMonitor.onBlockchainCall("getLatestBlock")
+        return sporkService.currentSpork().api.getLatestBlock(true).await()
+    }
 
 
     override suspend fun blockByHeight(height: Long): FlowBlock? =
         blocksByHeight.getOrPut(height) {
+            flowMonitor.onBlockchainCall("getBlockByHeight")
             sporkService.spork(height).api.getBlockByHeight(height).await()
         }
 
@@ -63,12 +69,14 @@ class SporksFlowGrpcApi(
 
     override suspend fun blockById(id: FlowId): FlowBlock? =
         blocksById.getOrPut(id) {
+            flowMonitor.onBlockchainCall("getBlockById")
             sporkService.spork(id).api.getBlockById(id).await()
         }
 
     override suspend fun txById(id: String): FlowTransaction? {
         val txId = FlowId(id)
         return transactionsById.getOrPut(txId) {
+            flowMonitor.onBlockchainCall("getTransactionById")
             sporkService.sporkForTx(txId).api.getTransactionById(txId).await()
         }
     }
@@ -76,6 +84,7 @@ class SporksFlowGrpcApi(
     override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
         return sporkService.sporks(range).flatMapConcat { spork ->
             try {
+                flowMonitor.onBlockchainCall("getEventsForHeightRange")
                 logger.info("Grpc call eventsByBlockRange: type=$type, range=$range")
                 spork.api.getEventsForHeightRange(type, spork.trim(range)).await().asFlow()
             } catch (e: StatusRuntimeException) {
@@ -83,6 +92,7 @@ class SporksFlowGrpcApi(
                     range.chunked(5) {
                         it.first()..it.last()
                     }.map { smallRange ->
+                        flowMonitor.onBlockchainCall("getEventsForHeightRange")
                         spork.api.getEventsForHeightRange(type, spork.trim(smallRange)).await()
                     }.flatten().asFlow()
                 } else {
@@ -94,6 +104,7 @@ class SporksFlowGrpcApi(
     }
 
     override fun blockEvents(type: String, blockId: FlowId): Flow<FlowEventResult> = flatten {
+        flowMonitor.onBlockchainCall("getEventsForBlockIds")
         sporkService.spork(blockId).api.getEventsForBlockIds(type, setOf(blockId)).await().asFlow()
     }
 
@@ -102,9 +113,15 @@ class SporksFlowGrpcApi(
             val api = sporkService.spork(height).api
             val block = blockByHeight(height)!!
             block.collectionGuarantees.toFlux()
-                .flatMap { api.getCollectionById(it.id).toMono() }
+                .flatMap {
+                    flowMonitor.onBlockchainCall("getCollectionById")
+                    api.getCollectionById(it.id).toMono()
+                }
                 .flatMap { it.transactionIds.toFlux() }
-                .flatMap { api.getTransactionResultById(it).toMono() }
+                .flatMap {
+                    flowMonitor.onBlockchainCall("getTransactionResultById")
+                    api.getTransactionResultById(it).toMono()
+                }
                 .flatMap { it.events.toFlux() }
                 .asFlow()
                 .toList()
@@ -113,6 +130,7 @@ class SporksFlowGrpcApi(
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? =
         headerByHeight.getOrPut(height) {
+            flowMonitor.onBlockchainCall("getBlockHeaderByHeight")
             sporkService.spork(height).api.getBlockHeaderByHeight(height).await()
         }
 

@@ -11,6 +11,7 @@ import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.monitoring.FlowMonitor
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -31,6 +32,7 @@ import reactor.kotlin.core.publisher.toMono
 @Component
 class CachedSporksFlowGrpcApi(
     private val sporkService: SporkService,
+    private val flowMonitor: FlowMonitor,
     properties: FlowBlockchainScannerProperties,
 ): FlowGrpcApi {
 
@@ -45,6 +47,7 @@ class CachedSporksFlowGrpcApi(
         .buildAsync { key, _ -> getFullBlockById(key).toFuture() }
 
     override suspend fun isAlive(): Boolean = try {
+        flowMonitor.onBlockchainCall("ping")
         sporkService.currentSpork().api.ping()
         true
     } catch (e: Exception) {
@@ -53,6 +56,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun latestBlock(): FlowBlock {
+        flowMonitor.onBlockchainCall("getLatestBlock")
         return sporkService.currentSpork().api.getLatestBlock(true).await()
     }
 
@@ -70,6 +74,7 @@ class CachedSporksFlowGrpcApi(
 
     override suspend fun txById(id: String): FlowTransaction? {
         val txId = FlowId(id)
+        flowMonitor.onBlockchainCall("getTransactionById")
         return sporkService.sporkForTx(txId).api.getTransactionById(txId).await()
     }
 
@@ -93,6 +98,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
+        flowMonitor.onBlockchainCall("getBlockHeaderByHeight")
         return sporkService.spork(height).api.getBlockHeaderByHeight(height).await()
     }
 
@@ -106,6 +112,7 @@ class CachedSporksFlowGrpcApi(
 
     private fun getFullBlockByHeight(height: Long) = mono {
         val api = sporkService.spork(height).api
+        flowMonitor.onBlockchainCall("getBlockByHeight")
         val block = sporkService.spork(height).api.getBlockByHeight(height).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
@@ -113,6 +120,7 @@ class CachedSporksFlowGrpcApi(
 
     private fun getFullBlockById(id: FlowId) = mono {
         val api = sporkService.spork(id).api
+        flowMonitor.onBlockchainCall("getBlockById")
         val block = api.getBlockById(id).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
@@ -121,11 +129,13 @@ class CachedSporksFlowGrpcApi(
     private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
         block.collectionGuarantees.map { guarantee ->
             async {
+                flowMonitor.onBlockchainCall("getCollectionById")
                 val collections = api.getCollectionById(guarantee.id).await() ?: error(
                     "Can't get collection ${guarantee.id}, for block ${block.height}"
                 )
                 collections.transactionIds.map { transactionId ->
                     async {
+                        flowMonitor.onBlockchainCall("getTransactionResultById")
                         api.getTransactionResultById(transactionId).await()?.events ?: error(
                             "Can't get events for tx $transactionId, for block ${block.height}"
                         )

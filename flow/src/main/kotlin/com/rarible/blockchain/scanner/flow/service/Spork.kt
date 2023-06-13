@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.flow.service
 import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl
+import com.rarible.blockchain.scanner.flow.monitoring.FlowMonitor
 import io.grpc.HttpConnectProxiedSocketAddress
 import io.grpc.ManagedChannelBuilder
 import io.grpc.ProxyDetector
@@ -16,13 +17,15 @@ class Spork private constructor(
     private val nodeUrl: String,
     private val port: Int,
     private val proxy: URI? = null,
+    private val flowMonitor: FlowMonitor,
 ) {
     constructor(
         from: Long,
         to: Long = Long.MAX_VALUE,
         nodeUrl: String,
         port: Int = 9000,
-    ): this(from = from, to = to, nodeUrl = nodeUrl, port = port, proxy = null)
+        flowMonitor: FlowMonitor,
+    ): this(from = from, to = to, nodeUrl = nodeUrl, port = port, proxy = null, flowMonitor = flowMonitor)
 
     @Suppress("PrivatePropertyName")
     private val DEFAULT_MESSAGE_SIZE: Int = 33554432 //32 Mb
@@ -54,6 +57,7 @@ class Spork private constructor(
 
     fun containsBlock(id: FlowId): Boolean =
         try {
+            flowMonitor.onBlockchainCall("getBlockHeaderById")
             api.getBlockHeaderById(id).join() != null
         } catch (_: Exception) {
             false
@@ -61,6 +65,7 @@ class Spork private constructor(
 
     fun containsTx(id: FlowId): Boolean =
         try {
+            flowMonitor.onBlockchainCall("getTransactionById")
             api.getTransactionById(id).join() != null
         } catch (_: Exception) {
             false
@@ -80,6 +85,7 @@ class Spork private constructor(
                 nodeUrl = this.nodeUrl,
                 port = this.port,
                 proxy = proxy,
+                flowMonitor = flowMonitor,
             )
         else this
     }
