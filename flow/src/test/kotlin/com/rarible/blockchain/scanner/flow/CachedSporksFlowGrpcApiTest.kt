@@ -2,20 +2,30 @@ package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.flow.service.SporkService
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class CachedSporksFlowGrpcApiTest {
     private val properties = FlowBlockchainScannerProperties(chainId = FlowChainId.MAINNET)
-    private val sporkService = SporkService(properties)
-    private val cachedSporksFlowGrpcApi = CachedSporksFlowGrpcApi(sporkService, properties)
-    private val sporksFlowGrpcApi = SporksFlowGrpcApi(sporkService)
+    private val blockchainMonitor = mockk<BlockchainMonitor>()
+    private val sporkService = SporkService(properties, blockchainMonitor)
+    private val cachedSporksFlowGrpcApi = CachedSporksFlowGrpcApi(sporkService, blockchainMonitor, properties)
+    private val sporksFlowGrpcApi = SporksFlowGrpcApi(sporkService, blockchainMonitor, properties)
+
+    @BeforeEach
+    fun before() {
+        every { blockchainMonitor.onBlockchainCall(eq("flow"), any()) } returns Unit
+    }
 
     @Test
     fun `get events by range - ok`() = runBlocking<Unit> {
