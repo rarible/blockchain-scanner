@@ -3,33 +3,123 @@ package com.rarible.blockchain.scanner.flow.service
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.monitoring.BlockchainMonitor
 import kotlinx.coroutines.flow.asFlow
 import org.springframework.stereotype.Service
 
 @Service
 class SporkService(
     properties: FlowBlockchainScannerProperties,
+    blockchainMonitor: BlockchainMonitor,
 ) {
     private val sporksMap = mutableMapOf(
         FlowChainId.TESTNET to listOf(
-            Spork(from = 50540412L, nodeUrl = "access.devnet.nodes.onflow.org"),
+            Spork(
+                from = 50540412L,
+                nodeUrl = "access.devnet.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
         ).withProxy(),
 
         FlowChainId.MAINNET to listOf(
-            Spork(from = 7601063L, to = 8742958L, nodeUrl = "access-001.mainnet1.nodes.onflow.org"),
-            Spork(from = 8742959L, to = 9737132L, nodeUrl = "access-001.mainnet2.nodes.onflow.org"),
-            Spork(from = 9737133L, to = 9992019L, nodeUrl = "access-001.mainnet3.nodes.onflow.org"),
-            Spork(from = 9992020L, to = 12020336L, nodeUrl = "access-001.mainnet4.nodes.onflow.org"),
-            Spork(from = 12020337L, to = 12609236L, nodeUrl = "access-001.mainnet5.nodes.onflow.org"),
-            Spork(from = 12609237L, to = 13404173L, nodeUrl = "access-001.mainnet6.nodes.onflow.org"),
-            Spork(from = 13404174L, to = 13950741L, nodeUrl = "access-001.mainnet7.nodes.onflow.org"),
-            Spork(from = 13950742L, to = 14892103L, nodeUrl = "access-001.mainnet8.nodes.onflow.org"),
-            Spork(from = 14892104L, to = 15791890L, nodeUrl = "access-001.mainnet9.nodes.onflow.org"),
-            Spork(from = 15791891L, to = 16755601L, nodeUrl = "access-001.mainnet10.nodes.onflow.org"),
-            Spork(from = 16755602L, to = 17544522L, nodeUrl = "access-001.mainnet11.nodes.onflow.org"),
-            Spork(from = 17544523L, to = 18587477L, nodeUrl = "access-001.mainnet12.nodes.onflow.org"),
-            Spork(from = 18587478L, to = 19050752L, nodeUrl = "access-001.mainnet13.nodes.onflow.org"),
-            Spork(from = 19050753L, nodeUrl = "access.mainnet.nodes.onflow.org"),
+            Spork(
+                from = 7601063L,
+                to = 8742958L,
+                nodeUrl = "access-001.mainnet1.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 8742959L,
+                to = 9737132L,
+                nodeUrl = "access-001.mainnet2.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 9737133L,
+                to = 9992019L,
+                nodeUrl = "access-001.mainnet3.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 9992020L,
+                to = 12020336L,
+                nodeUrl = "access-001.mainnet4.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 12020337L,
+                to = 12609236L,
+                nodeUrl = "access-001.mainnet5.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 12609237L,
+                to = 13404173L,
+                nodeUrl = "access-001.mainnet6.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 13404174L,
+                to = 13950741L,
+                nodeUrl = "access-001.mainnet7.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 13950742L,
+                to = 14892103L,
+                nodeUrl = "access-001.mainnet8.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 14892104L,
+                to = 15791890L,
+                nodeUrl = "access-001.mainnet9.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 15791891L,
+                to = 16755601L,
+                nodeUrl = "access-001.mainnet10.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 16755602L,
+                to = 17544522L,
+                nodeUrl = "access-001.mainnet11.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 17544523L,
+                to = 18587477L,
+                nodeUrl = "access-001.mainnet12.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 18587478L,
+                to = 19050752L,
+                nodeUrl = "access-001.mainnet13.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
+            Spork(
+                from = 19050753L,
+                nodeUrl = "access.mainnet.nodes.onflow.org",
+                blockchain = properties.blockchain,
+                blockchainMonitor = blockchainMonitor
+            ),
         ).withProxy().reversed()
     )
 
