@@ -54,12 +54,14 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
 
     override fun getBlockLogs(descriptor: D, blocks: List<BB>, stable: Boolean): Flow<FullBlock<BB, BL>> {
         return original.getBlockLogs(descriptor, blocks, stable)
-            .wrapWithRetry()
+            .wrapWithRetry("getBlockLogs")
     }
 
-    private fun <T> Flow<T>.wrapWithRetry(): Flow<T> {
+    private fun <T> Flow<T>.wrapWithRetry(method: String = ""): Flow<T> {
+        logger.info("WrapWithRetry: $method") //TODO: Remove
         return this
             .retry(retries = (attempts - 1).toLong()) {
+                logger.info("WrapWithRetry retry: $method") //TODO: Remove
                 delay(delay)
                 true
             }
@@ -67,10 +69,12 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
 
     private suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
+            logger.info("WrapWithRetry: $method") //TODO: Remove
             return retry(limitAttempts(attempts) + constantDelay(delay)) {
                 clientCall.invoke()
             }
         } catch (e: CancellationException) {
+            logger.warn("WrapWithRetry CancellationException : $method") //TODO: Remove
             throw e
         } catch (e: Throwable) {
             logger.error(
