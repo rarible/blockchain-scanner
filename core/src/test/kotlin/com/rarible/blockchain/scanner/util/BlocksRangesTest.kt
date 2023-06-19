@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.util
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
@@ -111,7 +112,8 @@ class BlocksRangesTest {
     @Test
     fun `to batches - single`() {
         val b1 = NewUnstableBlockEvent(
-            randomBlockchainBlock(number = 1)
+            randomBlockchainBlock(number = 1),
+            ScanMode.REALTIME
         )
 
         val batches = BlockRanges.toBatches(listOf(b1))
@@ -123,10 +125,12 @@ class BlocksRangesTest {
     @Test
     fun `to batches - one batch`() {
         val b1 = NewUnstableBlockEvent(
-            randomBlockchainBlock(number = 1)
+            randomBlockchainBlock(number = 1),
+            ScanMode.REALTIME
         )
         val b2 = NewUnstableBlockEvent(
-            randomBlockchainBlock(number = 2)
+            randomBlockchainBlock(number = 2),
+            ScanMode.REALTIME
         )
 
         val batches = BlockRanges.toBatches(listOf(b1, b2))
@@ -139,11 +143,11 @@ class BlocksRangesTest {
 
     @Test
     fun `to batches - mixed`() {
-        val b0 = NewStableBlockEvent(randomBlockchainBlock(number = 9))
-        val b1 = NewUnstableBlockEvent(randomBlockchainBlock(number = 10))
-        val b2 = RevertedBlockEvent<TestBlockchainBlock>(number = 10, hash = randomBlockHash())
-        val b3 = NewUnstableBlockEvent(randomBlockchainBlock(number = 10))
-        val b4 = NewUnstableBlockEvent(randomBlockchainBlock(number = 11))
+        val b0 = NewStableBlockEvent(randomBlockchainBlock(number = 9), ScanMode.REALTIME)
+        val b1 = NewUnstableBlockEvent(randomBlockchainBlock(number = 10), ScanMode.REALTIME)
+        val b2 = RevertedBlockEvent<TestBlockchainBlock>(number = 10, hash = randomBlockHash(), ScanMode.REALTIME)
+        val b3 = NewUnstableBlockEvent(randomBlockchainBlock(number = 10), ScanMode.REALTIME)
+        val b4 = NewUnstableBlockEvent(randomBlockchainBlock(number = 11), ScanMode.REALTIME)
 
         val batches = BlockRanges.toBatches(listOf(b0, b1, b2, b3, b4))
         assertThat(batches).isEqualTo(

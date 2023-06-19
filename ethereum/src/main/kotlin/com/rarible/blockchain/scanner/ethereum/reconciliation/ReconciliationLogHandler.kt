@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -92,7 +93,7 @@ class ReconciliationLogHandler(
         subscribers: List<EthereumLogEventSubscriber>
     ) = coroutineScope {
         val block = ethereumClient.getBlock(blockNumber) ?: error("Can't get stable block $blockNumber")
-        val events = listOf(NewStableBlockEvent(block))
+        val events = listOf(NewStableBlockEvent(block, ScanMode.REINDEX))
 
         subscribers
             .groupBy { it.getDescriptor().groupId }

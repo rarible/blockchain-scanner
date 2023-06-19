@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
@@ -112,21 +113,75 @@ internal class ReconciliationLogHandlerTest {
 
         //Block 10 statistics
         val block10Handler1Stats = mockk<BlockStats> { every { inserted } returns 10 }
-        coEvery { logHandler1.process(listOf(NewStableBlockEvent(block10))) } returns mapOf(10L to block10Handler1Stats)
+        coEvery {
+            logHandler1.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block10,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(10L to block10Handler1Stats)
 
         val block10Handler2Stats = mockk<BlockStats> { every { inserted } returns 9 }
-        coEvery { logHandler2.process(listOf(NewStableBlockEvent(block10))) } returns mapOf(10L to block10Handler2Stats)
+        coEvery {
+            logHandler2.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block10,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(10L to block10Handler2Stats)
         val block10Handler3Stats = mockk<BlockStats> { every { inserted } returns 2 }
-        coEvery { logHandler3.process(listOf(NewStableBlockEvent(block10))) } returns mapOf(10L to block10Handler3Stats)
+        coEvery {
+            logHandler3.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block10,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(10L to block10Handler3Stats)
 
         //Block 11 statistics
         val block11Handler1Stats = mockk<BlockStats> { every { inserted } returns 12 }
-        coEvery { logHandler1.process(listOf(NewStableBlockEvent(block11))) } returns mapOf(11L to block11Handler1Stats)
+        coEvery {
+            logHandler1.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block11,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(11L to block11Handler1Stats)
 
         val block11Handler2Stats = mockk<BlockStats> { every { inserted } returns 5 }
-        coEvery { logHandler2.process(listOf(NewStableBlockEvent(block11))) } returns mapOf(11L to block11Handler2Stats)
+        coEvery {
+            logHandler2.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block11,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(11L to block11Handler2Stats)
         val block11Handler3Stats = mockk<BlockStats> { every { inserted } returns 8 }
-        coEvery { logHandler3.process(listOf(NewStableBlockEvent(block11))) } returns mapOf(11L to block11Handler3Stats)
+        coEvery {
+            logHandler3.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block11,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(11L to block11Handler3Stats)
 
         val result = handler.check(range, 2)
         assertThat(result).isEqualTo(11)
@@ -145,7 +200,16 @@ internal class ReconciliationLogHandlerTest {
 
         //Block 100 statistics
         val block100Stats = mockk<BlockStats> { every { inserted } returns 11 }
-        coEvery { logHandler1.process(listOf(NewStableBlockEvent(block100))) } returns mapOf(100L to block100Stats)
+        coEvery {
+            logHandler1.process(
+                listOf(
+                    NewStableBlockEvent(
+                        block100,
+                        ScanMode.REINDEX
+                    )
+                )
+            )
+        } returns mapOf(100L to block100Stats)
 
         every { reconciliationProperties.autoReindex } returns true
         val baseBlock = mockk<Block>()
