@@ -2,7 +2,8 @@ package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
-import com.rarible.blockchain.scanner.flow.monitoring.BlockchainMonitor
+import com.rarible.blockchain.scanner.flow.service.FlowApiFactoryImpl
+import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import io.mockk.every
 import io.mockk.mockk
@@ -18,9 +19,10 @@ import org.junit.jupiter.api.Test
 class CachedSporksFlowGrpcApiTest {
     private val properties = FlowBlockchainScannerProperties(chainId = FlowChainId.MAINNET)
     private val blockchainMonitor = mockk<BlockchainMonitor>()
-    private val sporkService = SporkService(properties, blockchainMonitor)
-    private val cachedSporksFlowGrpcApi = CachedSporksFlowGrpcApi(sporkService, blockchainMonitor, properties)
-    private val sporksFlowGrpcApi = SporksFlowGrpcApi(sporkService, blockchainMonitor, properties)
+    private val sporkService = SporkService(properties, FlowApiFactoryImpl(blockchainMonitor, properties))
+    private val cachedSporksFlowGrpcApi =
+        CachedSporksFlowGrpcApi(sporkService, properties, FlowApiFactoryImpl(blockchainMonitor, properties))
+    private val sporksFlowGrpcApi = SporksFlowGrpcApi(sporkService, FlowApiFactoryImpl(blockchainMonitor, properties))
 
     @BeforeEach
     fun before() {
