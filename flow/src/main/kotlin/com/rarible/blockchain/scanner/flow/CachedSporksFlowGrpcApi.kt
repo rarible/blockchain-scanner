@@ -11,7 +11,7 @@ import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
-import com.rarible.blockchain.scanner.flow.monitoring.BlockchainMonitor
+import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -32,8 +32,8 @@ import reactor.kotlin.core.publisher.toMono
 @Component
 class CachedSporksFlowGrpcApi(
     private val sporkService: SporkService,
-    private val blockchainMonitor: BlockchainMonitor,
-    private val properties: FlowBlockchainScannerProperties,
+    properties: FlowBlockchainScannerProperties,
+    private val flowApiFactory: FlowApiFactory,
 ) : FlowGrpcApi {
 
     private val fullBlocksByHeight: AsyncLoadingCache<Long, FullBlock> = Caffeine.newBuilder()
@@ -47,8 +47,7 @@ class CachedSporksFlowGrpcApi(
         .buildAsync { key, _ -> getFullBlockById(key).toFuture() }
 
     override suspend fun isAlive(): Boolean = try {
-        blockchainMonitor.onBlockchainCall(properties.blockchain, "ping")
-        sporkService.currentSpork().api.ping()
+        flowApiFactory.getApi(sporkService.currentSpork()).ping().await()
         true
     } catch (e: Exception) {
         logger.warn("Network is unreachable!: ${e.message}")
@@ -56,8 +55,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun latestBlock(): FlowBlock {
-        blockchainMonitor.onBlockchainCall(properties.blockchain, "getLatestBlock")
-        return sporkService.currentSpork().api.getLatestBlock(true).await()
+        return flowApiFactory.getApi(sporkService.currentSpork()).getLatestBlock(true).await()
     }
 
     override suspend fun blockByHeight(height: Long): FlowBlock? {
@@ -74,8 +72,7 @@ class CachedSporksFlowGrpcApi(
 
     override suspend fun txById(id: String): FlowTransaction? {
         val txId = FlowId(id)
-        blockchainMonitor.onBlockchainCall(properties.blockchain, "getTransactionById")
-        return sporkService.sporkForTx(txId).api.getTransactionById(txId).await()
+        return flowApiFactory.getApi(sporkService.sporkForTx(txId)).getTransactionById(txId).await()
     }
 
     override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
@@ -98,8 +95,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
-        blockchainMonitor.onBlockchainCall(properties.blockchain, "getBlockHeaderByHeight")
-        return sporkService.spork(height).api.getBlockHeaderByHeight(height).await()
+        return flowApiFactory.getApi(sporkService.spork(height)).getBlockHeaderByHeight(height).await()
     }
 
     override fun chunk(range: LongRange): Flow<LongRange> {
@@ -111,16 +107,14 @@ class CachedSporksFlowGrpcApi(
     }
 
     private fun getFullBlockByHeight(height: Long) = mono {
-        val api = sporkService.spork(height).api
-        blockchainMonitor.onBlockchainCall(properties.blockchain, "getBlockByHeight")
-        val block = sporkService.spork(height).api.getBlockByHeight(height).await() ?: return@mono null
+        val api = flowApiFactory.getApi(sporkService.spork(height))
+        val block = api.getBlockByHeight(height).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
     }
 
     private fun getFullBlockById(id: FlowId) = mono {
-        val api = sporkService.spork(id).api
-        blockchainMonitor.onBlockchainCall(properties.blockchain, "getBlockById")
+        val api = flowApiFactory.getApi(sporkService.spork(id))
         val block = api.getBlockById(id).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
@@ -129,13 +123,11 @@ class CachedSporksFlowGrpcApi(
     private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
         block.collectionGuarantees.map { guarantee ->
             async {
-                blockchainMonitor.onBlockchainCall(properties.blockchain, "getCollectionById")
                 val collections = api.getCollectionById(guarantee.id).await() ?: error(
                     "Can't get collection ${guarantee.id}, for block ${block.height}"
                 )
                 collections.transactionIds.map { transactionId ->
                     async {
-                        blockchainMonitor.onBlockchainCall(properties.blockchain, "getTransactionResultById")
                         api.getTransactionResultById(transactionId).await()?.events ?: error(
                             "Can't get events for tx $transactionId, for block ${block.height}"
                         )

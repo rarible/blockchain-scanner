@@ -1,10 +1,8 @@
-package com.rarible.blockchain.scanner.flow.monitoring
+package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.core.telemetry.metrics.Metric.Companion.tag
 import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.stereotype.Component
 
-@Component
 class BlockchainMonitor(
     private val meterRegistry: MeterRegistry
 ) {
