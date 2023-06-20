@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
@@ -289,7 +290,12 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(exceptionListener),
-            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
+            scanProperties = ScanProperties(
+                batchLoad = BlockBatchLoadProperties(
+                    confirmationBlockDistance = 10,
+                    batchSize = 10
+                )
+            ),
             monitor = mockk(relaxed = true)
         )
         assertThrows<RuntimeException> { blockHandler.onNewBlock(blockchain.last()) }
@@ -303,13 +309,18 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(testBlockEventListener),
-            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
+            scanProperties = ScanProperties(
+                batchLoad = BlockBatchLoadProperties(
+                    confirmationBlockDistance = 10,
+                    batchSize = 10
+                )
+            ),
             monitor = mockk(relaxed = true)
         )
         newBlockHandler.onNewBlock(blockchain.last())
         assertThat(testBlockEventListener.blockEvents).isEqualTo(
             blockchain.subList(51, 91).map { it.asNewStableEvent() }.chunked(10) +
-                    listOf(blockchain.drop(91).map { it.asNewUnstableEvent() })
+                listOf(blockchain.drop(91).map { it.asNewUnstableEvent() })
         )
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
     }
@@ -350,7 +361,12 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
+            scanProperties = ScanProperties(
+                batchLoad = BlockBatchLoadProperties(
+                    confirmationBlockDistance = 10,
+                    batchSize = 10
+                )
+            ),
             monitor = mockk(relaxed = true)
         )
         blockHandler.onNewBlock(blockchain.last())
@@ -359,8 +375,8 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         assertThat(blockBatchEvents)
             .isEqualTo(
                 listOf(listOf(blockchain[0].asNewStableEvent())) +
-                        blockchain.subList(1, 91).map { it.asNewStableEvent() }.chunked(10) +
-                        listOf(blockchain.subList(91, 101).map { it.asNewUnstableEvent() })
+                    blockchain.subList(1, 91).map { it.asNewStableEvent() }.chunked(10) +
+                    listOf(blockchain.subList(91, 101).map { it.asNewUnstableEvent() })
             )
     }
 
@@ -373,7 +389,12 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             blockClient = TestBlockchainClient(testBlockchainData),
             blockService = blockService,
             blockEventListeners = listOf(blockEventListener),
-            scanProperties = ScanProperties(batchLoad = BlockBatchLoadProperties(confirmationBlockDistance = 10, batchSize = 10)),
+            scanProperties = ScanProperties(
+                batchLoad = BlockBatchLoadProperties(
+                    confirmationBlockDistance = 10,
+                    batchSize = 10
+                )
+            ),
             monitor = mockk(relaxed = true)
         )
         // Process blocks #0, #1, #2, #3, #4
@@ -390,13 +411,14 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         assertThat(blockEvents).isEqualTo(
             // Repeat the new stable event for block #5.
             listOf(listOf(blockchain[5].asRevertEvent())) +
-                    blockchain.subList(5, 91).map { it.asNewStableEvent() }.chunked(10) +
-                    listOf(blockchain.subList(91, 101).map { it.asNewUnstableEvent() })
+                blockchain.subList(5, 91).map { it.asNewStableEvent() }.chunked(10) +
+                listOf(blockchain.subList(91, 101).map { it.asNewUnstableEvent() })
         )
     }
 
-    private fun TestBlockchainBlock.asNewUnstableEvent() = NewUnstableBlockEvent(this)
-    private fun TestBlockchainBlock.asNewStableEvent() = NewStableBlockEvent(this)
+    private fun TestBlockchainBlock.asNewUnstableEvent() = NewUnstableBlockEvent(this, ScanMode.REALTIME)
+    private fun TestBlockchainBlock.asNewStableEvent() = NewStableBlockEvent(this, ScanMode.REALTIME)
 
-    private fun TestBlockchainBlock.asRevertEvent() = RevertedBlockEvent<TestBlockchainBlock>(this.number, this.hash)
+    private fun TestBlockchainBlock.asRevertEvent() =
+        RevertedBlockEvent<TestBlockchainBlock>(this.number, this.hash, ScanMode.REALTIME)
 }

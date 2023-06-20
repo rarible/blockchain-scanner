@@ -19,26 +19,29 @@ sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
 }
 
 data class NewStableBlockEvent<BB : BlockchainBlock>(
-    override val block: BB
+    override val block: BB,
+    private val mode: ScanMode
 ) : NewBlockEvent<BB>() {
 
-    override val eventTimeMarks = scannerBlockchainEventMarks(block.getDatetime())
+    override val eventTimeMarks = scannerBlockchainEventMarks(mode, block.getDatetime())
     override fun toString(): String = "stableBlock:$number:$hash"
 }
 
 data class NewUnstableBlockEvent<BB : BlockchainBlock>(
-    override val block: BB
+    override val block: BB,
+    private val mode: ScanMode
 ) : NewBlockEvent<BB>() {
 
-    override val eventTimeMarks = scannerBlockchainEventMarks(block.getDatetime())
+    override val eventTimeMarks = scannerBlockchainEventMarks(mode, block.getDatetime())
     override fun toString(): String = "unstableBlock:$number:$hash"
 }
 
 data class RevertedBlockEvent<BB : BlockchainBlock>(
     override val number: Long,
-    override val hash: String
+    override val hash: String,
+    private val mode: ScanMode
 ) : BlockEvent<BB>() {
 
-    override val eventTimeMarks = scannerBlockchainEventMarks()
+    override val eventTimeMarks = scannerBlockchainEventMarks(mode)
     override fun toString(): String = "revert:$number:$hash"
 }

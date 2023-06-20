@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
@@ -114,7 +115,7 @@ class BlockHandler<BB : BlockchainBlock>(
             var lastSyncedBlock: Block? = null
 
             for (batch in channel) {
-                lastSyncedBlock = processBlocks(batch).last()
+                lastSyncedBlock = processBlocks(batch, mode = ScanMode.REALTIME).last()
                 monitor.recordLastIndexedBlock(lastSyncedBlock)
             }
             if (lastSyncedBlock != null) {
@@ -139,13 +140,14 @@ class BlockHandler<BB : BlockchainBlock>(
 
             emit(
                 processBlocks(
-                    BlocksBatch(
+                    blocksBatch = BlocksBatch(
                         blocksRange = TypedBlockRange(
                             range = blockchainBlock.number..blockchainBlock.number,
                             stable = false
                         ),
                         blocks = listOf(blockchainBlock)
-                    )
+                    ),
+                    mode = ScanMode.REINDEX
                 ).single()
             )
         }
@@ -167,7 +169,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 blocksRange = blocksRange
             )
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
-                processBlocks(blocksBatch, resyncStable).last()
+                processBlocks(blocksBatch, resyncStable, ScanMode.REINDEX).last()
             } else {
                 null
             }
@@ -249,13 +251,15 @@ class BlockHandler<BB : BlockchainBlock>(
         logger.info("Processing the first block [{}:{}]", firstBlock.number, firstBlock.hash)
 
         return processBlocks(
-            BlocksBatch(
+            blocksBatch = BlocksBatch(
                 blocksRange = TypedBlockRange(
                     range = firstBlock.number..firstBlock.number,
                     stable = true
                 ),
                 blocks = listOf(firstBlock)
-            )
+            ),
+            resyncStable = false,
+            mode = ScanMode.REALTIME
         ).single()
     }
 
@@ -344,7 +348,11 @@ class BlockHandler<BB : BlockchainBlock>(
         return BlocksBatch(consistentRange, blocks) to parentHashesAreConsistent
     }
 
-    private suspend fun processBlocks(blocksBatch: BlocksBatch<BB>, resyncStable: Boolean = false): List<Block> {
+    private suspend fun processBlocks(
+        blocksBatch: BlocksBatch<BB>,
+        resyncStable: Boolean = false,
+        mode: ScanMode
+    ): List<Block> {
         val (blocksRange, blocks) = blocksBatch
         logger.info("Processing $blocksBatch")
         return withTransaction(
@@ -366,9 +374,9 @@ class BlockHandler<BB : BlockchainBlock>(
             }
             val blockEvents = blocks.map {
                 if (blocksRange.stable) {
-                    NewStableBlockEvent(it)
+                    NewStableBlockEvent(it, mode)
                 } else {
-                    NewUnstableBlockEvent(it)
+                    NewUnstableBlockEvent(it, mode)
                 }
             }
 
@@ -432,7 +440,15 @@ class BlockHandler<BB : BlockchainBlock>(
             name = "revertBlock",
             labels = listOf("blockNumber" to block.id)
         ) {
-            processBlockEvents(listOf(RevertedBlockEvent(number = block.id, hash = block.hash)))
+            processBlockEvents(
+                listOf(
+                    RevertedBlockEvent(
+                        number = block.id,
+                        hash = block.hash,
+                        mode = ScanMode.REALTIME
+                    )
+                )
+            )
             blockService.remove(block.id)
         }
     }
