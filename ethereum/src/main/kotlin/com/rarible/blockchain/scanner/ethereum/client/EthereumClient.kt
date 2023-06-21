@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.client
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
 import io.daonomic.rpc.domain.Word
@@ -36,10 +37,15 @@ import java.time.Duration
 @ExperimentalCoroutinesApi
 @Component
 class EthereumClient(
-    private val ethereum: MonoEthereum,
+    ethereum: MonoEthereum,
     properties: EthereumScannerProperties,
-    ethPubSub: EthPubSub
+    ethPubSub: EthPubSub,
+    monitor: BlockchainMonitor,
 ) : EthereumBlockchainClient {
+
+    private val ethereum = if (properties.enableEthereumMonitor) {
+        MonitoredEthereum(ethereum, monitor, properties.blockchain)
+    } else ethereum
 
     private val maxBatches = properties.maxBatches.associate {
         val parts = it.split(":")
