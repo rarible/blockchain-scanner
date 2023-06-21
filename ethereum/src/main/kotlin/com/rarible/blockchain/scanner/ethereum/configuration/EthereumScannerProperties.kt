@@ -26,4 +26,5 @@ data class EthereumScannerProperties(
     val reconciliation: ReconciliationProperties = ReconciliationProperties(),
     val blockPoller: BlockPollerProperties = BlockPollerProperties(),
     val maxBatches: List<String> = emptyList(),
+    val enableEthereumMonitor: Boolean = true,
 ) : BlockchainScannerProperties

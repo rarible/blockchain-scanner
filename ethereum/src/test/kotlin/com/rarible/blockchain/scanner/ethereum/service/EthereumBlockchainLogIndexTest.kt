@@ -10,8 +10,10 @@ import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
 import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.core.test.data.randomAddress
 import io.daonomic.rpc.domain.Word
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
@@ -28,6 +30,8 @@ import scalether.domain.response.Block
 import scalether.domain.response.Transaction
 
 class EthereumBlockchainLogIndexTest {
+    private val monitor = BlockchainMonitor(SimpleMeterRegistry())
+
     @Test
     fun `index is calculated in group of transactionHash, topic, address`() = runBlocking {
         val blockHash0 = randomWord()
@@ -186,6 +190,6 @@ class EthereumBlockchainLogIndexTest {
         every { ethPubSub.newHeads() } returns Flux.empty()
         val properties = EthereumScannerProperties()
 
-        return EthereumClient(monoEthereum, properties, ethPubSub)
+        return EthereumClient(monoEthereum, properties, ethPubSub, monitor)
     }
 }
