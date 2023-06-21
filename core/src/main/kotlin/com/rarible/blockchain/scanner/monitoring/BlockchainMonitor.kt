@@ -10,7 +10,6 @@ class BlockchainMonitor(
     private val meterRegistry: MeterRegistry
 ) {
     private val blockchainApiCallsCounter = "blockchain_api_calls"
-    private val blockchainApiCallsExecution = "blockchain_api_calls_execution"
 
     fun onBlockchainCall(blockchain: String, method: String, status: CallStatus = CallStatus.SUCCESS) {
         meterRegistry.counter(
@@ -50,7 +49,7 @@ class BlockchainMonitor(
         val endTimeMs = System.currentTimeMillis();
         val executionTime = endTimeMs - startTimeMs;
         meterRegistry.timer(
-            blockchainApiCallsExecution,
+            blockchainApiCallsCounter,
             listOf(
                 tag("blockchain", blockchain),
                 tag("method", method),
