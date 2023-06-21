@@ -4,6 +4,7 @@ import com.rarible.core.telemetry.metrics.Metric.Companion.tag
 import io.micrometer.core.instrument.MeterRegistry
 import reactor.core.publisher.Mono
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 class BlockchainMonitor(
     private val meterRegistry: MeterRegistry
@@ -27,23 +28,17 @@ class BlockchainMonitor(
         method: String,
         monoCall: () -> Mono<T>
     ): Mono<T> {
-        return Mono.defer {
-            val startTimeMs = System.currentTimeMillis()
-
-            monoCall()
-                .doOnSuccess {
-                    onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.SUCCESS)
-                }
-                .doOnError {
-                    onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.ERROR)
-                }
-                .doOnCancel {
-                    onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.ERROR)
-                }
-                .doOnTerminate {
-                    onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.ERROR)
-                }
-        }
+        val startTimeMs = AtomicLong(0)
+        return monoCall()
+            .doOnSubscribe {
+                startTimeMs.set(System.currentTimeMillis())
+            }
+            .doOnSuccess {
+                onBlockchainCallLatency(startTimeMs.get(), blockchain, method, CallStatus.SUCCESS)
+            }
+            .doOnError {
+                onBlockchainCallLatency(startTimeMs.get(), blockchain, method, CallStatus.ERROR)
+            }
     }
 
     private fun onBlockchainCallLatency(
