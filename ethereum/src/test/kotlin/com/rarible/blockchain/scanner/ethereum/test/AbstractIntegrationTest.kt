@@ -11,8 +11,10 @@ import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
+import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
+import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
@@ -68,6 +70,9 @@ abstract class AbstractIntegrationTest {
     lateinit var testTransferSubscriber: TestTransferSubscriber
 
     @Autowired
+    lateinit var testTransactionSubscriber: TestTransactionSubscriber
+
+    @Autowired
     lateinit var monoEthereum: MonoEthereum
 
     @Autowired
@@ -77,6 +82,10 @@ abstract class AbstractIntegrationTest {
     @Autowired
     @Qualifier("testEthereumLogEventPublisher")
     lateinit var testEthereumLogEventPublisher: TestEthereumLogRecordEventPublisher
+
+    @Autowired
+    @Qualifier("testEthereumTransactionEventPublisher")
+    lateinit var testEthereumTransactionEventPublisher: TestEthereumTransactionRecordEventPublisher
 
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
@@ -129,6 +138,12 @@ abstract class AbstractIntegrationTest {
     protected fun verifyPublishedLogEvent(asserter: Consumer<LogRecordEvent>) {
         BlockingWait.waitAssert {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).anySatisfy(asserter)
+        }
+    }
+
+    protected fun verifyPublishedTransactionEvent(asserter: Consumer<TransactionRecordEvent>) {
+        BlockingWait.waitAssert {
+            assertThat(testEthereumTransactionEventPublisher.publishedTransactionRecords).anySatisfy(asserter)
         }
     }
 

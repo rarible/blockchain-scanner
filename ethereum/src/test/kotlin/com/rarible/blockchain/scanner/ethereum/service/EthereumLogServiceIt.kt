@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
@@ -112,7 +112,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
             topic = randomWord(),
             blockHash = blockHash,
             address = randomAddress(),
-            status = EthereumLogStatus.REVERTED
+            status = EthereumBlockStatus.REVERTED
         ).copy(logIndex = 12, minorLogIndex = 2)
         val visibleRecord = randomLogRecord(visibleLog)
 
@@ -121,7 +121,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val updatedVisibleRecord = visibleRecord.copy(
             data = visibleRecordData.copy(customData = randomString()),
             topic = topic, // Topic is different
-            status = EthereumLogStatus.CONFIRMED
+            status = EthereumBlockStatus.CONFIRMED
         )
 
         saveLog(descriptor.collection, visibleRecord)

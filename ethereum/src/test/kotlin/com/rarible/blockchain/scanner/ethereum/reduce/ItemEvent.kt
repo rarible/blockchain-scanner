@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.reduce
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumEntityEvent
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.core.common.nowMillis
 import com.rarible.core.test.data.randomAddress
 import com.rarible.core.test.data.randomInt
@@ -33,7 +33,7 @@ fun createRandomEthereumLog(
 ): EthereumLog =
     EthereumLog(
         transactionHash = randomWord(),
-        status = EthereumLogStatus.values().random(),
+        status = EthereumBlockStatus.values().random(),
         address = randomAddress(),
         topic = Word.apply(randomWord()),
         blockHash = Word.apply(randomWord()),
@@ -47,7 +47,7 @@ fun createRandomEthereumLog(
     )
 
 fun ItemEvent.withNewValues(
-    status: EthereumLogStatus? = null,
+    status: EthereumBlockStatus? = null,
     createdAt: Instant? = null,
     blockNumber: Long? = null,
     logIndex: Int? = null,
@@ -57,7 +57,7 @@ fun ItemEvent.withNewValues(
 ) = copy(log = log.withNewValues(status, createdAt, blockNumber, logIndex, minorLogIndex, index = index))
 
 fun EthereumLog.withNewValues(
-    status: EthereumLogStatus? = null,
+    status: EthereumBlockStatus? = null,
     createdAt: Instant? = null,
     blockNumber: Long? = null,
     logIndex: Int? = null,

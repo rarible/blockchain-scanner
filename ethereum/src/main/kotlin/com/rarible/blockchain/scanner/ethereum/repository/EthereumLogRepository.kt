@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.repository
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
@@ -95,7 +95,7 @@ class EthereumLogRepository(
     ): Long {
         val criteria =
             (EthereumLog::blockNumber isEqualTo blockNumber)
-                .and(EthereumLog::status).isEqualTo(EthereumLogStatus.CONFIRMED)
+                .and(EthereumLog::status).isEqualTo(EthereumBlockStatus.CONFIRMED)
 
         return mongo.count(Query(criteria), collection).awaitFirst()
     }

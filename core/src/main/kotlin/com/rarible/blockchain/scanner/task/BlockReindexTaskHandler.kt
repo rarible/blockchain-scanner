@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.core.task.TaskHandler
@@ -17,8 +18,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 // Implement in blockchains if needed
-abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor, P : ReindexParam>(
-    manager: BlockchainScannerManager<BB, BL, R, D>
+abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, TR : TransactionRecord, D : Descriptor, P : ReindexParam>(
+    manager: BlockchainScannerManager<BB, BL, R, TR, D>
 ) : TaskHandler<Long> {
 
     protected val logger: Logger = LoggerFactory.getLogger(javaClass)
@@ -71,5 +72,4 @@ abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog,
     abstract fun getFilter(param: P): SubscriberFilter<BB, BL, R, D>
 
     abstract fun getParam(param: String): P
-
 }

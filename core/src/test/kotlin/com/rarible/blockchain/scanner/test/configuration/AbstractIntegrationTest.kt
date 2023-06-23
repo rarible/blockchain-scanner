@@ -11,10 +11,12 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
+import com.rarible.blockchain.scanner.test.publisher.TestTransactionRecordEventPublisher
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,6 +44,8 @@ abstract class AbstractIntegrationTest {
     }
 
     protected val testLogRecordEventPublisher: TestLogRecordEventPublisher = TestLogRecordEventPublisher()
+    protected val testTransactionRecordEventPublisher: TestTransactionRecordEventPublisher =
+        TestTransactionRecordEventPublisher()
 
     protected suspend fun findBlock(number: Long): Block? = blockRepository.findById(number)
 
@@ -52,7 +56,8 @@ abstract class AbstractIntegrationTest {
     protected fun createBlockchainScanner(
         testBlockchainClient: TestBlockchainClient,
         subscribers: List<TestLogEventSubscriber>,
-        logFilters: List<TestLogEventFilter> = emptyList()
+        logFilters: List<TestLogEventFilter> = emptyList(),
+        transactionSubscribers: List<TestTransactionEventSubscriber>,
     ): TestBlockchainScanner {
         val manager = TestBlockchainScannerManager(
             blockchainClient = testBlockchainClient,
@@ -70,7 +75,9 @@ abstract class AbstractIntegrationTest {
             logFilters = logFilters,
             blockMonitor = mockk(relaxed = true),
             logMonitor = mockk(relaxed = true),
-            reindexMonitor = mockk(relaxed = true)
+            reindexMonitor = mockk(relaxed = true),
+            transactionRecordEventPublisher = testTransactionRecordEventPublisher,
+            transactionSubscribers = transactionSubscribers,
         )
         return TestBlockchainScanner(manager)
     }

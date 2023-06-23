@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.subscriber
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLog
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
@@ -33,7 +33,7 @@ class EthereumLogRecordComparatorTest {
         blockNumber: Long?,
         logIndex: Int?,
         minorLogIndex: Int,
-        status: EthereumLogStatus = EthereumLogStatus.CONFIRMED
+        status: EthereumBlockStatus = EthereumBlockStatus.CONFIRMED
     ): ReversedEthereumLogRecord {
         return randomLogRecord(
             randomLog(topic = randomWord(), blockHash = randomWord(), status = status)

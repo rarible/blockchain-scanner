@@ -8,14 +8,17 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
+import com.rarible.blockchain.scanner.framework.subscriber.TransactionEventSubscriber
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import com.rarible.blockchain.scanner.reindex.BlockChecker
 import com.rarible.blockchain.scanner.reindex.BlockHandlerFactory
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
@@ -23,10 +26,10 @@ import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 
 // TODO not really a good way to construct generic components, but don't see other way to do it
-abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
+abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, TR : TransactionRecord, D : Descriptor>(
     blockchainClient: BlockchainClient<BB, BL, D>,
     val properties: BlockchainScannerProperties,
-    val subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+    val logSubscribers: List<LogEventSubscriber<BB, BL, R, D>>,
     val blockService: BlockService,
     val logService: LogService<R, D>,
     val logRecordComparator: LogRecordComparator<R>,
@@ -34,7 +37,9 @@ abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog
     val blockMonitor: BlockMonitor,
     val logMonitor: LogMonitor,
     val logFilters: List<LogEventFilter<R, D>>,
-    val reindexMonitor: ReindexMonitor
+    val reindexMonitor: ReindexMonitor,
+    val transactionSubscribers: List<TransactionEventSubscriber<BB, TR>>,
+    val transactionRecordEventPublisher: TransactionRecordEventPublisher,
 ) {
 
     val retryableClient = RetryableBlockchainClient(
@@ -64,7 +69,7 @@ abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog
     )
 
     val blockReindexer = BlockReindexer(
-        subscribers = subscribers,
+        subscribers = logSubscribers,
         blockHandlerFactory = blockHandlerFactory,
         logHandlerFactory = logHandlerFactory
     )

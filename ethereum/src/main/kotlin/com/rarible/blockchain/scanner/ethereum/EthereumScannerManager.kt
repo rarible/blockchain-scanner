@@ -12,10 +12,13 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventFilter
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumTransactionEventSubscriber
+import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
@@ -29,10 +32,12 @@ class EthereumScannerManager(
     logRecordEventPublisher: LogRecordEventPublisher,
     blockMonitor: BlockMonitor,
     logMonitor: LogMonitor,
-    reindexMonitor: ReindexMonitor
-) : BlockchainScannerManager<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>(
+    reindexMonitor: ReindexMonitor,
+    transactionSubscribers: List<EthereumTransactionEventSubscriber>,
+    transactionRecordEventPublisher: TransactionRecordEventPublisher,
+) : BlockchainScannerManager<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor>(
     blockchainClient = ethereumClient,
-    subscribers = subscribers,
+    logSubscribers = subscribers,
     logFilters = logFilters,
     blockService = blockService,
     logService = logService,
@@ -41,5 +46,7 @@ class EthereumScannerManager(
     logRecordEventPublisher = logRecordEventPublisher,
     blockMonitor = blockMonitor,
     logMonitor = logMonitor,
-    reindexMonitor = reindexMonitor
+    reindexMonitor = reindexMonitor,
+    transactionSubscribers = transactionSubscribers,
+    transactionRecordEventPublisher = transactionRecordEventPublisher,
 )

@@ -7,7 +7,7 @@ import com.rarible.core.common.EventTimeMarks
  * Log record with [reverted] flag.
  */
 data class LogRecordEvent(
-    val record: LogRecord,
-    val reverted: Boolean,
-    val eventTimeMarks: EventTimeMarks
-)
+    override val record: LogRecord,
+    override val reverted: Boolean,
+    override val eventTimeMarks: EventTimeMarks
+): RecordEvent<LogRecord>

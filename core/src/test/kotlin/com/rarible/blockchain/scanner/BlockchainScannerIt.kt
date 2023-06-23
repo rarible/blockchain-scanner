@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
+import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.configuration.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
@@ -16,6 +17,7 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import com.rarible.core.common.EventTimeMarks
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -46,17 +48,19 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
 
         val subscriber = TestLogEventSubscriber(descriptor)
+        val transactionSubscriber = TestTransactionEventSubscriber()
         val blockScanner = createBlockchainScanner(
-            TestBlockchainClient(testBlockchainData),
-            listOf(subscriber),
-            listOf(TestLogEventFilter(setOf(logFiltered.transactionHash)))
+            testBlockchainClient = TestBlockchainClient(testBlockchainData),
+            subscribers = listOf(subscriber),
+            logFilters = listOf(TestLogEventFilter(setOf(logFiltered.transactionHash))),
+            transactionSubscribers = listOf(transactionSubscriber)
         )
         blockScanner.scan(once = true)
 
         assertThat(findBlock(blocks[0].number)!!.copy(stats = null)).isEqualTo(blocks[0].toBlock(BlockStatus.SUCCESS))
         assertThat(findBlock(block.number)!!.copy(stats = null)).isEqualTo(block.toBlock(BlockStatus.SUCCESS))
 
-        assertPublishedRecords(
+        assertPublishedLogRecords(
             descriptor.groupId,
             listOf(
                 LogRecordEvent(
@@ -67,6 +71,21 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             )
         )
 
+        assertPublishedTransactionRecords(
+            "test",
+            listOf(
+                TransactionRecordEvent(
+                    record = transactionSubscriber.getReturnedRecords(blocks[0]).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber.getReturnedRecords(block).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
+                )
+            )
+        )
     }
 
     @Test
@@ -89,6 +108,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
         val subscriber2 = TestLogEventSubscriber(descriptor2)
+        val transactionSubscriber1 = TestTransactionEventSubscriber()
+        val transactionSubscriber2 = TestTransactionEventSubscriber()
 
         val blocks = randomBlockchain(2)
         val block1 = blocks[1]
@@ -105,17 +126,72 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             )
         )
 
-        val blockchainScanner = createBlockchainScanner(testBlockchainClient, listOf(subscriber1, subscriber2))
+        val blockchainScanner = createBlockchainScanner(
+            testBlockchainClient = testBlockchainClient,
+            subscribers = listOf(subscriber1, subscriber2),
+            transactionSubscribers = listOf(transactionSubscriber1, transactionSubscriber2)
+        )
         blockchainScanner.scan(once = true)
 
-
-        assertPublishedRecords(
+        assertPublishedLogRecords(
             groupId,
             listOf(
-                LogRecordEvent(record = subscriber1.getReturnedRecords(block1, log11).single(), false, EventTimeMarks("test")),
-                LogRecordEvent(record = subscriber2.getReturnedRecords(block1, log11).single(), false, EventTimeMarks("test")),
-                LogRecordEvent(record = subscriber1.getReturnedRecords(block2, log21).single(), false, EventTimeMarks("test")),
-                LogRecordEvent(record = subscriber2.getReturnedRecords(block2, log21).single(), false, EventTimeMarks("test"))
+                LogRecordEvent(
+                    record = subscriber1.getReturnedRecords(block1, log11).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                LogRecordEvent(
+                    record = subscriber2.getReturnedRecords(block1, log11).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                LogRecordEvent(
+                    record = subscriber1.getReturnedRecords(block2, log21).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                LogRecordEvent(
+                    record = subscriber2.getReturnedRecords(block2, log21).single(),
+                    false,
+                    EventTimeMarks("test")
+                )
+            )
+        )
+
+        assertPublishedTransactionRecords(
+            "test",
+            listOf(
+                TransactionRecordEvent(
+                    record = transactionSubscriber1.getReturnedRecords(blocks[0]).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber2.getReturnedRecords(blocks[0]).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber1.getReturnedRecords(block1).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber2.getReturnedRecords(block1).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber1.getReturnedRecords(block2).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber2.getReturnedRecords(block2).single(),
+                    false,
+                    EventTimeMarks("test")
+                ),
             )
         )
     }
@@ -135,7 +211,12 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
 
         val subscriber = TestLogEventSubscriber(descriptor)
-        val blockScanner = createBlockchainScanner(TestBlockchainClient(testBlockchainData), listOf(subscriber))
+        val transactionSubscriber = TestTransactionEventSubscriber()
+        val blockScanner = createBlockchainScanner(
+            testBlockchainClient = TestBlockchainClient(testBlockchainData),
+            subscribers = listOf(subscriber),
+            transactionSubscribers = listOf(transactionSubscriber),
+        )
         blockScanner.scan(once = true)
         assertThat(findBlock(blocks[1].number)!!.copy(stats = null)).isEqualTo(blocks[1].toBlock(BlockStatus.SUCCESS))
         assertThat(findBlock(blocks[2].number)!!.copy(stats = null)).isEqualTo(blocks[2].toBlock(BlockStatus.SUCCESS))
@@ -156,8 +237,26 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 eventTimeMarks = EventTimeMarks("test")
             ),
         )
+        val confirmedTransactions = listOf(
+            TransactionRecordEvent(
+                record = transactionSubscriber.getReturnedRecords(blocks[0]).single(),
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
+            ),
+            TransactionRecordEvent(
+                record = transactionSubscriber.getReturnedRecords(blocks[1]).single(),
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
+            ),
+            TransactionRecordEvent(
+                record = transactionSubscriber.getReturnedRecords(blocks[2]).single(),
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
+            ),
+        )
 
-        assertPublishedRecords(descriptor.groupId, confirmedLogs)
+        assertPublishedLogRecords(descriptor.groupId, confirmedLogs)
+        assertPublishedTransactionRecords("test", confirmedTransactions)
 
         // Revert the block #2
         val newBlock2 = randomBlockchainBlock(number = blocks[2].number, parentHash = blocks[1].hash)
@@ -169,7 +268,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             logs = listOf(log11, newLog21, newLog22),
             newBlocks = listOf(newBlock2)
         )
-        val newBlockScanner = createBlockchainScanner(TestBlockchainClient(newTestBlockchainData), listOf(subscriber))
+        val newBlockScanner = createBlockchainScanner(
+            testBlockchainClient = TestBlockchainClient(newTestBlockchainData),
+            subscribers = listOf(subscriber),
+            transactionSubscribers = listOf(transactionSubscriber),
+        )
         newBlockScanner.scan(once = true)
 
         val revertedRecord22 = subscriber.getReturnedRecords(blocks[2], log22).single().revert()
@@ -178,13 +281,24 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val newRecord21 = subscriber.getReturnedRecords(newBlock2, newLog21).single()
         val newRecord22 = subscriber.getReturnedRecords(newBlock2, newLog22).single()
 
-        assertPublishedRecords(
+        assertPublishedLogRecords(
             descriptor.groupId,
             confirmedLogs + listOf(
                 LogRecordEvent(record = revertedRecord22, reverted = true, eventTimeMarks = EventTimeMarks("test")),
                 LogRecordEvent(record = revertedRecord21, reverted = true, eventTimeMarks = EventTimeMarks("test")),
                 LogRecordEvent(record = newRecord21, reverted = false, eventTimeMarks = EventTimeMarks("test")),
                 LogRecordEvent(record = newRecord22, reverted = false, eventTimeMarks = EventTimeMarks("test"))
+            )
+        )
+
+        assertPublishedTransactionRecords(
+            "test",
+            confirmedTransactions + listOf(
+                TransactionRecordEvent(
+                    record = transactionSubscriber.getReturnedRecords(newBlock2).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test"),
+                )
             )
         )
 
@@ -214,10 +328,12 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
 
         val subscriber = TestLogEventSubscriber(descriptor)
+        val transactionSubscriber = TestTransactionEventSubscriber()
         val blockScanner = createBlockchainScanner(
             // Process only the blocks #0 and #1.
-            TestBlockchainClient(testBlockchainData.copy(newBlocks = blocks.take(2))),
-            listOf(subscriber)
+            testBlockchainClient = TestBlockchainClient(testBlockchainData.copy(newBlocks = blocks.take(2))),
+            subscribers = listOf(subscriber),
+            transactionSubscribers = listOf(transactionSubscriber),
         )
         blockScanner.scan(once = true)
 
@@ -234,19 +350,33 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 eventTimeMarks = EventTimeMarks("test")
             )
         )
-        assertPublishedRecords(descriptor.groupId, confirmedLogs)
+        val confirmedTransactions = listOf(
+            TransactionRecordEvent(
+                record = transactionSubscriber.getReturnedRecords(blocks[0]).single(),
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
+            ),
+            TransactionRecordEvent(
+                record = transactionSubscriber.getReturnedRecords(blocks[1]).single(),
+                reverted = false,
+                eventTimeMarks = EventTimeMarks("test")
+            )
+        )
+        assertPublishedLogRecords(descriptor.groupId, confirmedLogs)
+        assertPublishedTransactionRecords("test", confirmedTransactions)
 
         // Imitate the block #1 is PENDING.
         blockService.save(blocks[1].toBlock(BlockStatus.PENDING))
         val newBlockchainScanner = createBlockchainScanner(
             // Process all the blocks
-            TestBlockchainClient(testBlockchainData),
-            listOf(subscriber)
+            testBlockchainClient = TestBlockchainClient(testBlockchainData),
+            subscribers = listOf(subscriber),
+            transactionSubscribers = listOf(transactionSubscriber),
         )
         newBlockchainScanner.scan(once = true)
 
         // Block #1 was PENDING, so we, firstly, revert all possibly saved logs and then apply them again.
-        assertPublishedRecords(
+        assertPublishedLogRecords(
             descriptor.groupId, confirmedLogs + listOf(
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[1], log12).single().revert(),
@@ -275,10 +405,24 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 )
             )
         )
+        assertPublishedTransactionRecords(
+            "test", confirmedTransactions + listOf(
+                TransactionRecordEvent(
+                    record = transactionSubscriber.getReturnedRecords(blocks[1]).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
+                ),
+                TransactionRecordEvent(
+                    record = transactionSubscriber.getReturnedRecords(blocks[2]).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
+                ),
+            )
+        )
 
     }
 
-    private fun assertPublishedRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {
+    private fun assertPublishedLogRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {
         val publishedByGroup = testLogRecordEventPublisher.publishedLogRecords[groupId]!!
         for (i in expectedEvents.indices) {
             val published = publishedByGroup[i]
@@ -287,6 +431,23 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             assertThat(published.reverted).isEqualTo(expected.reverted)
 
             val marks = published.eventTimeMarks!!.marks
+            assertThat(marks).hasSize(3)
+            assertThat(marks[0].name).isEqualTo("source")
+            assertThat(marks[1].name).isEqualTo("scanner-in")
+            assertThat(marks[2].name).isEqualTo("scanner-out")
+        }
+    }
+
+    private fun assertPublishedTransactionRecords(groupId: String, expectedEvents: List<TransactionRecordEvent>) {
+        val publishedByGroup = testTransactionRecordEventPublisher.publishedTransactionRecords[groupId]!!
+        assertThat(expectedEvents).hasSize(publishedByGroup.size)
+        for (i in expectedEvents.indices) {
+            val published = publishedByGroup[i]
+            val expected = expectedEvents[i]
+            assertThat(published.record).isEqualTo(expected.record)
+            assertThat(published.reverted).isEqualTo(expected.reverted)
+
+            val marks = published.eventTimeMarks.marks
             assertThat(marks).hasSize(3)
             assertThat(marks[0].name).isEqualTo("source")
             assertThat(marks[1].name).isEqualTo("scanner-in")

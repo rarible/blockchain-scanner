@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.core.task.TaskHandler
 import kotlinx.coroutines.flow.Flow
@@ -16,8 +17,8 @@ import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
 
 // Implement in blockchains if needed
-abstract class BlockCheckTaskHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
-    manager: BlockchainScannerManager<BB, BL, R, D>
+abstract class BlockCheckTaskHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, TR : TransactionRecord, D : Descriptor>(
+    manager: BlockchainScannerManager<BB, BL, R, TR, D>
 ) : TaskHandler<Long> {
 
     override val type = "BLOCK_SCANNER_CHECK_BLOCKS_HASH_CONSISTENCY_TASK"

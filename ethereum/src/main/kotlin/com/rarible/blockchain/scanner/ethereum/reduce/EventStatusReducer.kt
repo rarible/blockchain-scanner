@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.reduce
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumEntityEvent
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.core.entity.reducer.model.Entity
 import com.rarible.core.entity.reducer.service.Reducer
 
@@ -12,11 +12,11 @@ abstract class EventStatusReducer<Id, Event : EthereumEntityEvent<Event>, E : En
 
     override suspend fun reduce(entity: E, event: Event): E {
         return when (event.log.status) {
-            EthereumLogStatus.CONFIRMED -> forwardChainReducer.reduce(entity, event)
-            EthereumLogStatus.REVERTED -> reversedChainReducer.reduce(entity, event)
-            EthereumLogStatus.PENDING,
-            EthereumLogStatus.INACTIVE,
-            EthereumLogStatus.DROPPED -> entity
+            EthereumBlockStatus.CONFIRMED -> forwardChainReducer.reduce(entity, event)
+            EthereumBlockStatus.REVERTED -> reversedChainReducer.reduce(entity, event)
+            EthereumBlockStatus.PENDING,
+            EthereumBlockStatus.INACTIVE,
+            EthereumBlockStatus.DROPPED -> entity
         }
     }
 }

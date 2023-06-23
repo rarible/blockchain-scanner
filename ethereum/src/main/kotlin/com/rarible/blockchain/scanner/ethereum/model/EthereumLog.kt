@@ -13,9 +13,9 @@ data class EthereumLog(
     val transactionHash: String,
 
     /**
-     * Status of the log event. Usually, only [EthereumLogStatus.CONFIRMED] log events impact business calculations.
+     * Status of the log event. Usually, only [EthereumBlockStatus.CONFIRMED] log events impact business calculations.
      */
-    val status: EthereumLogStatus,
+    val status: EthereumBlockStatus,
 
     /**
      * Address of the smart contract that produced this log event.
