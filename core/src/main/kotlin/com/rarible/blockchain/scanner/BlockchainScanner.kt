@@ -49,7 +49,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                 logRecordEventPublisher.prepareGroup(groupId)
 
                 logger.info(
-                    "Injected subscribers of the group {}: {}",
+                    "Injected log subscribers of the group {}: {}",
                     groupId,
                     subscribers.joinToString { it.getDescriptor().id })
                 LogHandler(
@@ -66,10 +66,10 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
         val transactionHandlers = transactionSubscribers
             .groupBy { it.getGroup() }
             .map { (groupId, subscribers) ->
-                logRecordEventPublisher.prepareGroup(groupId)
+                transactionRecordEventPublisher.prepareGroup(groupId)
 
                 logger.info(
-                    "Injected subscribers of the group {}: {}",
+                    "Injected transaction subscribers of the group {}: {}",
                     groupId,
                     subscribers.joinToString { it::class.java.simpleName })
                 TransactionHandler(
