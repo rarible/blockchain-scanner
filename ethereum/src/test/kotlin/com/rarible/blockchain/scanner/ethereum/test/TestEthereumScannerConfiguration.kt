@@ -16,7 +16,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
-import org.web3j.utils.Numeric
+import org.web3jold.utils.Numeric
 import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
 import scalether.transaction.MonoSigningTransactionSender
