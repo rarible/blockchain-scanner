@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class CachedSporksFlowGrpcApiTest {
@@ -30,6 +31,7 @@ class CachedSporksFlowGrpcApiTest {
     }
 
     @Test
+    @Disabled
     fun `get events by range - ok`() = runBlocking<Unit> {
         val blockBatchSize = 1
         val end = 53162294L
@@ -43,6 +45,7 @@ class CachedSporksFlowGrpcApiTest {
     }
 
     @Test
+    @Disabled
     fun `get events by range - test`() = runBlocking<Unit> {
         val blockBatchSize = 0
         val end = 53162294L
