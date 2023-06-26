@@ -4,8 +4,10 @@ import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
+import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.spyk
@@ -42,6 +44,9 @@ class TestEthereumScannerConfiguration {
     fun testTransferSubscriber(): TestTransferSubscriber = TestTransferSubscriber()
 
     @Bean
+    fun testTransactionSubscriber(): TestTransactionSubscriber = TestTransactionSubscriber()
+
+    @Bean
     fun testBidSubscriber(): TestBidSubscriber = TestBidSubscriber()
 
     @Bean
@@ -65,4 +70,10 @@ class TestEthereumScannerConfiguration {
     @Primary
     @Qualifier("TestEthereumLogEventPublisher")
     fun testEthereumLogEventPublisher(): LogRecordEventPublisher = TestEthereumLogRecordEventPublisher()
+
+    @Bean
+    @Primary
+    @Qualifier("TestEthereumTransactionEventPublisher")
+    fun testEthereumTransactionEventPublisher(): TransactionRecordEventPublisher =
+        TestEthereumTransactionRecordEventPublisher()
 }

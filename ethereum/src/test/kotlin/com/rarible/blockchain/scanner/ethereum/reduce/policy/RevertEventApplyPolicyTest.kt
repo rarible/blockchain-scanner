@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.reduce.policy
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.reduce.ItemEvent
 import com.rarible.blockchain.scanner.ethereum.reduce.createRandomItemEvent
 import com.rarible.blockchain.scanner.ethereum.reduce.withNewValues
@@ -15,20 +15,20 @@ internal class RevertEventApplyPolicyTest {
     @Test
     fun `should remove confirm event`() {
         val mint = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.CONFIRMED,
+            status = EthereumBlockStatus.CONFIRMED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val revertedMint = mint.withNewValues(
-            status = EthereumLogStatus.REVERTED,
+            status = EthereumBlockStatus.REVERTED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val events = (1L..3).map {
             createRandomItemEvent().withNewValues(
-                status = EthereumLogStatus.CONFIRMED,
+                status = EthereumBlockStatus.CONFIRMED,
                 blockNumber = it,
                 logIndex = 1,
                 minorLogIndex = 1,
@@ -46,19 +46,19 @@ internal class RevertEventApplyPolicyTest {
     @Disabled
     fun `should throw exception if event not from tail`() {
         val mint = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.CONFIRMED,
+            status = EthereumBlockStatus.CONFIRMED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val burn = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.CONFIRMED,
+            status = EthereumBlockStatus.CONFIRMED,
             blockNumber = 5,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val revertedMint = mint.withNewValues(
-            status = EthereumLogStatus.REVERTED,
+            status = EthereumBlockStatus.REVERTED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
@@ -71,7 +71,7 @@ internal class RevertEventApplyPolicyTest {
     @Test
     fun `should throw exception if event list is empty`() {
         val mint = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.CONFIRMED,
+            status = EthereumBlockStatus.CONFIRMED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
@@ -84,13 +84,13 @@ internal class RevertEventApplyPolicyTest {
     @Test
     fun `should throw exception if try to revert too old event`() {
         val burn = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.CONFIRMED,
+            status = EthereumBlockStatus.CONFIRMED,
             blockNumber = 5,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val revertMint = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.REVERTED,
+            status = EthereumBlockStatus.REVERTED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
@@ -103,20 +103,20 @@ internal class RevertEventApplyPolicyTest {
     @Test
     fun `should say no if event was not applied`() {
         val mint = createRandomItemEvent().withNewValues(
-            status = EthereumLogStatus.CONFIRMED,
+            status = EthereumBlockStatus.CONFIRMED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val revertedMint = mint.withNewValues(
-            status = EthereumLogStatus.REVERTED,
+            status = EthereumBlockStatus.REVERTED,
             blockNumber = 4,
             logIndex = 1,
             minorLogIndex = 1,
         )
         val events = (1L..3).map {
             createRandomItemEvent().withNewValues(
-                status = EthereumLogStatus.CONFIRMED,
+                status = EthereumBlockStatus.CONFIRMED,
                 blockNumber = it,
                 logIndex = 1,
                 minorLogIndex = 1,

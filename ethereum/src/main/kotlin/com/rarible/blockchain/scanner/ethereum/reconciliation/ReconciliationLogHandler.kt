@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.RecordEventPublisher
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
 import com.rarible.blockchain.scanner.reindex.BlockScanPlanner

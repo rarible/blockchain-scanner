@@ -11,7 +11,6 @@ import com.rarible.core.daemon.RetryProperties
 import com.rarible.core.daemon.sequential.ConsumerBatchWorker
 import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
 import com.rarible.core.kafka.RaribleKafkaConsumer
-import com.rarible.core.kafka.RaribleKafkaTopics
 import com.rarible.core.kafka.json.JsonDeserializer
 import io.micrometer.core.instrument.MeterRegistry
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -27,7 +26,7 @@ class KafkaLogRecordConsumerWorkerFactory(
     private val meterRegistry: MeterRegistry,
 ) : LogRecordConsumerWorkerFactory {
 
-    private val topicPrefix = getLogTopicPrefix(environment, service, blockchain)
+    private val topicPrefix = getLogTopicPrefix(environment, service, blockchain, "log")
     private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
 
     override fun <T> create(

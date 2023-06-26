@@ -20,7 +20,7 @@ data class ReversedEthereumLogRecord(
     override val version: Long? = null,
 
     val transactionHash: String,
-    val status: EthereumLogStatus,
+    val status: EthereumBlockStatus,
     val topic: Word,
 
     override val minorLogIndex: Int,

@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
-enum class EthereumLogStatus {
+enum class EthereumBlockStatus {
     CONFIRMED,
     REVERTED,
     @Deprecated("Shouldn't be use, need remove after release")

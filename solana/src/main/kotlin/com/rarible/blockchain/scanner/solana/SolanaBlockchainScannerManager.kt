@@ -3,10 +3,12 @@ package com.rarible.blockchain.scanner.solana
 import com.rarible.blockchain.scanner.BlockchainScannerManager
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
+import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.client.SolanaClient
@@ -29,10 +31,11 @@ class SolanaBlockchainScannerManager(
     logEventPublisher: LogRecordEventPublisher,
     blockMonitor: BlockMonitor,
     logMonitor: LogMonitor,
-    reindexMonitor: ReindexMonitor
-) : BlockchainScannerManager<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, SolanaDescriptor>(
+    reindexMonitor: ReindexMonitor,
+    transactionRecordEventPublisher: TransactionRecordEventPublisher,
+) : BlockchainScannerManager<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, TransactionRecord, SolanaDescriptor>(
     blockchainClient = blockchainClient,
-    subscribers = subscribers,
+    logSubscribers = subscribers,
     logFilters = logFilters,
     blockService = blockService,
     logService = logService,
@@ -41,5 +44,7 @@ class SolanaBlockchainScannerManager(
     logRecordEventPublisher = logEventPublisher,
     blockMonitor = blockMonitor,
     logMonitor = logMonitor,
-    reindexMonitor = reindexMonitor
+    reindexMonitor = reindexMonitor,
+    transactionRecordEventPublisher = transactionRecordEventPublisher,
+    transactionSubscribers = emptyList(),
 )

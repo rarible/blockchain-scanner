@@ -27,11 +27,12 @@ class DefaultConsumerWorkerFactory(
     host: String,
     environment: String,
     blockchain: String,
+    type: String,
     private val service: String,
     private val workerCount: Int
 ) : ConsumerWorkerFactory {
 
-    private val topicPrefix = getLogTopicPrefix(environment, service, blockchain)
+    private val topicPrefix = getLogTopicPrefix(environment, service, blockchain, type)
     private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
 
     override fun create(listener: EntityEventListener): ConsumerWorkerHolder<EthereumLogRecordEvent> {

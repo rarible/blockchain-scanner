@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component
 @Component
 class EthereumScanner(
     manager: EthereumScannerManager
-) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>(
+) : BlockchainScanner<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor>(
     manager
 ) {
 
@@ -25,5 +26,4 @@ class EthereumScanner(
         logger.info("Starting Ethereum Blockchain Scanner...")
         mono { (scan()) }.subscribe({}, { logger.error("Ethereum blockchain scanner stopped.", it) })
     }
-
 }

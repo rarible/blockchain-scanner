@@ -8,25 +8,25 @@ abstract class EthereumEntityEvent<T> : Comparable<EthereumEntityEvent<T>> {
 
     open fun invert(): T = throw IllegalArgumentException("${this.javaClass} event can't invert")
 
-    fun isConfirmed(): Boolean = log.status == EthereumLogStatus.CONFIRMED
+    fun isConfirmed(): Boolean = log.status == EthereumBlockStatus.CONFIRMED
 
     override fun compareTo(other: EthereumEntityEvent<T>): Int {
         val o1 = this
         return when (o1.log.status) {
-            EthereumLogStatus.CONFIRMED, EthereumLogStatus.REVERTED -> {
-                require(other.log.status == EthereumLogStatus.CONFIRMED || other.log.status == EthereumLogStatus.REVERTED) {
+            EthereumBlockStatus.CONFIRMED, EthereumBlockStatus.REVERTED -> {
+                require(other.log.status == EthereumBlockStatus.CONFIRMED || other.log.status == EthereumBlockStatus.REVERTED) {
                     "Can't compare $o1 and $other"
                 }
                 confirmBlockComparator.compare(o1, other)
             }
-            EthereumLogStatus.PENDING, EthereumLogStatus.INACTIVE, EthereumLogStatus.DROPPED -> {
-                if (other.log.status == EthereumLogStatus.CONFIRMED) {
+            EthereumBlockStatus.PENDING, EthereumBlockStatus.INACTIVE, EthereumBlockStatus.DROPPED -> {
+                if (other.log.status == EthereumBlockStatus.CONFIRMED) {
                     eventKeyComparator.compare(o1, other)
                 } else {
                     require(
-                        other.log.status == EthereumLogStatus.PENDING
-                                || other.log.status == EthereumLogStatus.INACTIVE
-                                || other.log.status == EthereumLogStatus.DROPPED
+                        other.log.status == EthereumBlockStatus.PENDING
+                                || other.log.status == EthereumBlockStatus.INACTIVE
+                                || other.log.status == EthereumBlockStatus.DROPPED
                     ) {
                         "Can't compare $o1 and $other"
                     }

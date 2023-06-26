@@ -1,0 +1,14 @@
+package com.rarible.blockchain.scanner.consumer
+
+import com.rarible.blockchain.scanner.framework.listener.TransactionRecordEventListener
+import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
+
+interface TransactionRecordConsumerWorkerFactory {
+    fun <T> create(
+        listener: TransactionRecordEventListener,
+        transactionRecordType: Class<T>,
+        transactionRecordMapper: TransactionRecordMapper<T>,
+        logRecordFilters: List<TransactionRecordFilter<T>>,
+        workerCount: Int,
+    ): ConsumerWorkerHolder<T>
+}

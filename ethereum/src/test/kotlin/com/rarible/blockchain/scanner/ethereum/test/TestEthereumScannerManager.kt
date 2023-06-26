@@ -7,10 +7,12 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventFilter
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumTransactionEventSubscriber
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import io.mockk.mockk
 
 class TestEthereumScannerManager(
@@ -23,7 +25,9 @@ class TestEthereumScannerManager(
     logRecordEventPublisher: LogRecordEventPublisher = mockk(),
     blockMonitor: BlockMonitor = mockk(),
     logMonitor: LogMonitor = mockk(),
-    reindexMonitor: ReindexMonitor = mockk()
+    reindexMonitor: ReindexMonitor = mockk(),
+    transactionRecordEventPublisher: TransactionRecordEventPublisher = mockk(),
+    transactionSubscribers: List<EthereumTransactionEventSubscriber> = mockk()
 ) : EthereumScannerManager(
     ethereumClient = ethereumClient,
     subscribers = subscribers,
@@ -34,5 +38,7 @@ class TestEthereumScannerManager(
     logRecordEventPublisher = logRecordEventPublisher,
     blockMonitor = blockMonitor,
     logMonitor = logMonitor,
-    reindexMonitor = reindexMonitor
+    reindexMonitor = reindexMonitor,
+    transactionRecordEventPublisher = transactionRecordEventPublisher,
+    transactionSubscribers = transactionSubscribers,
 )

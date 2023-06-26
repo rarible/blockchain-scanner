@@ -1,13 +1,14 @@
 package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
+import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumTransactionRecord
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
 import com.rarible.core.test.wait.BlockingWait
@@ -56,7 +57,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(allLogs).hasSize(1)
 
             val testRecord = allLogs.single() as ReversedEthereumLogRecord
-            assertThat(testRecord.log.status).isEqualTo(EthereumLogStatus.CONFIRMED)
+            assertThat(testRecord.log.status).isEqualTo(EthereumBlockStatus.CONFIRMED)
             assertThat(testRecord.log.from).isEqualTo(sender.from())
             assertThat(testRecord.log.blockTimestamp).isEqualTo(receipt.getTimestamp().epochSecond)
 
@@ -80,7 +81,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                         id = record.id,
                         version = record.version,
                         transactionHash = receipt.transactionHash().toString(),
-                        status = EthereumLogStatus.CONFIRMED,
+                        status = EthereumBlockStatus.CONFIRMED,
                         topic = TransferEvent.id(),
                         minorLogIndex = 0,
                         index = 0,
@@ -98,6 +99,16 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                     )
                 )
             }
+        }
+
+        verifyPublishedTransactionEvent { transactionRecordEvent ->
+            assertThat(transactionRecordEvent.reverted).isFalse()
+            assertThat(transactionRecordEvent.record).isEqualTo(
+                TestEthereumTransactionRecord(
+                    hash = receipt.transactionHash().toString(),
+                    input = receipt.getTransaction().input().toString(),
+                )
+            )
         }
     }
 

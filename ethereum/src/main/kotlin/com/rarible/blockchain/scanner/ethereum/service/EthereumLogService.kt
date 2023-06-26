@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.service
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -120,5 +120,5 @@ class EthereumLogService(
         collection = descriptor.collection,
         blockHash = Word.apply(revertedBlockHash),
         topic = descriptor.ethTopic
-    ).toList().map { it.withLog(it.log.copy(status = EthereumLogStatus.REVERTED)) }
+    ).toList().map { it.withLog(it.log.copy(status = EthereumBlockStatus.REVERTED)) }
 }

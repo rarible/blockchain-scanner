@@ -1,13 +1,13 @@
 package com.rarible.blockchain.scanner.ethereum.reduce.policy
 
 import com.rarible.blockchain.scanner.ethereum.model.EthereumEntityEvent
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLogStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.core.entity.reducer.service.EventApplyPolicy
 
 open class RevertEventApplyPolicy<T : EthereumEntityEvent<T>> : EventApplyPolicy<T> {
     override fun reduce(events: List<T>, event: T): List<T> {
         val confirmedEvents = events.filter {
-            it.log.status == EthereumLogStatus.CONFIRMED
+            it.log.status == EthereumBlockStatus.CONFIRMED
         }
         require(confirmedEvents.isNotEmpty()) {
             "Can't revert from empty list (event=$event)"
@@ -31,7 +31,7 @@ open class RevertEventApplyPolicy<T : EthereumEntityEvent<T>> : EventApplyPolicy
 
     private fun findConfirmedEvent(events: List<T>, event: T): T? {
         return events.firstOrNull { current ->
-            current.log.status == EthereumLogStatus.CONFIRMED && current.compareTo(event) == 0
+            current.log.status == EthereumBlockStatus.CONFIRMED && current.compareTo(event) == 0
         }
     }
 }

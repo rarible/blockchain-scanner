@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
+import com.rarible.blockchain.scanner.framework.data.RecordEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -22,6 +23,7 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.util.addOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
+import com.rarible.blockchain.scanner.publisher.RecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.SpanType
 import com.rarible.core.apm.withSpan
@@ -241,7 +243,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                         }
                         logging(
                             message = "prepared ${logRecordsToInsert.size} records to insert " +
-                                    "and ${logRecordsToRevert.size} records to update",
+                                "and ${logRecordsToRevert.size} records to update",
                             event = event,
                             subscriber = subscriber
                         )
@@ -317,5 +319,4 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         val id = subscriber?.getDescriptor()?.id ?: ("group " + subscribers.first().getDescriptor().groupId)
         logger.info("Logs for $event by '$id': $message")
     }
-
 }
