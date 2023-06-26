@@ -1,10 +1,10 @@
 package com.rarible.blockchain.scanner.consumer.kafka
 
 import com.rarible.blockchain.scanner.configuration.KafkaProperties
-import com.rarible.blockchain.scanner.consumer.LogRecordConsumerWorkerFactory
-import com.rarible.blockchain.scanner.consumer.LogRecordFilter
-import com.rarible.blockchain.scanner.consumer.LogRecordMapper
-import com.rarible.blockchain.scanner.framework.listener.LogRecordEventListener
+import com.rarible.blockchain.scanner.consumer.TransactionRecordConsumerWorkerFactory
+import com.rarible.blockchain.scanner.consumer.TransactionRecordFilter
+import com.rarible.blockchain.scanner.consumer.TransactionRecordMapper
+import com.rarible.blockchain.scanner.framework.listener.TransactionRecordEventListener
 import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.daemon.DaemonWorkerProperties
 import com.rarible.core.daemon.RetryProperties
@@ -16,7 +16,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import java.time.Duration
 
-class KafkaLogRecordConsumerWorkerFactory(
+class KafkaTransactionRecordConsumerWorkerFactory(
     host: String,
     environment: String,
     blockchain: String,
@@ -24,24 +24,24 @@ class KafkaLogRecordConsumerWorkerFactory(
     private val properties: KafkaProperties,
     private val daemonProperties: DaemonWorkerProperties,
     private val meterRegistry: MeterRegistry,
-) : LogRecordConsumerWorkerFactory {
+) : TransactionRecordConsumerWorkerFactory {
 
-    private val topicPrefix = getLogTopicPrefix(environment, service, blockchain, "log")
+    private val topicPrefix = getLogTopicPrefix(environment, service, blockchain, "transaction")
     private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
 
     override fun <T> create(
-        listener: LogRecordEventListener,
-        logRecordType: Class<T>,
-        logRecordMapper: LogRecordMapper<T>,
-        logRecordFilters: List<LogRecordFilter<T>>,
+        listener: TransactionRecordEventListener,
+        transactionRecordType: Class<T>,
+        transactionRecordMapper: TransactionRecordMapper<T>,
+        logRecordFilters: List<TransactionRecordFilter<T>>,
         workerCount: Int,
     ): ConsumerWorkerHolder<T> {
         val workers = (1..workerCount).map { index ->
             val consumerGroup = listener.id
             val kafkaConsumer = RaribleKafkaConsumer(
-                clientId = "$clientIdPrefix.log-event-consumer.$service.${listener.id}-$index",
+                clientId = "$clientIdPrefix.transaction-event-consumer.$service.${listener.id}-$index",
                 valueDeserializerClass = JsonDeserializer::class.java,
-                valueClass = logRecordType,
+                valueClass = transactionRecordType,
                 consumerGroup = consumerGroup,
                 defaultTopic = "$topicPrefix.${listener.groupId}",
                 bootstrapServers = properties.brokerReplicaSet,
@@ -53,9 +53,9 @@ class KafkaLogRecordConsumerWorkerFactory(
                 properties = daemonProperties,
                 // Block consumer should NOT skip events, so there is we're using endless retry
                 retryProperties = RetryProperties(attempts = Integer.MAX_VALUE, delay = Duration.ofMillis(1000)),
-                eventHandler = KafkaLogRecordEventHandler(listener, logRecordMapper, logRecordFilters),
+                eventHandler = KafkaTransactionRecordEventHandler(listener, transactionRecordMapper, logRecordFilters),
                 meterRegistry = meterRegistry,
-                workerName = "log-event-consumer-${listener.id}-$index"
+                workerName = "transaction-event-consumer-${listener.id}-$index"
             )
         }
         return ConsumerWorkerHolder(workers)
