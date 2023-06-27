@@ -7,27 +7,26 @@ import com.rarible.blockchain.scanner.consumer.LogRecordMapper
 import com.rarible.blockchain.scanner.framework.listener.LogRecordEventListener
 import com.rarible.blockchain.scanner.util.getLogTopicPrefix
 import com.rarible.core.daemon.DaemonWorkerProperties
-import com.rarible.core.daemon.RetryProperties
-import com.rarible.core.daemon.sequential.ConsumerBatchWorker
-import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
-import com.rarible.core.kafka.RaribleKafkaConsumer
-import com.rarible.core.kafka.json.JsonDeserializer
+import com.rarible.core.kafka.RaribleKafkaBatchEventHandler
+import com.rarible.core.kafka.RaribleKafkaConsumerFactory
+import com.rarible.core.kafka.RaribleKafkaConsumerSettings
+import com.rarible.core.kafka.RaribleKafkaConsumerWorker
 import io.micrometer.core.instrument.MeterRegistry
-import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import java.time.Duration
 
 class KafkaLogRecordConsumerWorkerFactory(
     host: String,
     environment: String,
     blockchain: String,
-    private val service: String,
+    service: String,
     private val properties: KafkaProperties,
     private val daemonProperties: DaemonWorkerProperties,
-    private val meterRegistry: MeterRegistry,
 ) : LogRecordConsumerWorkerFactory {
 
     private val topicPrefix = getLogTopicPrefix(environment, service, blockchain, "log")
-    private val clientIdPrefix = "$environment.$host.${java.util.UUID.randomUUID()}.$blockchain"
+    private val consumerWorkerFactory = RaribleKafkaConsumerFactory(
+        env = environment,
+        host = host,
+    )
 
     override fun <T> create(
         listener: LogRecordEventListener,
@@ -35,29 +34,22 @@ class KafkaLogRecordConsumerWorkerFactory(
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
         workerCount: Int,
-    ): ConsumerWorkerHolder<T> {
-        val workers = (1..workerCount).map { index ->
-            val consumerGroup = listener.id
-            val kafkaConsumer = RaribleKafkaConsumer(
-                clientId = "$clientIdPrefix.log-event-consumer.$service.${listener.id}-$index",
-                valueDeserializerClass = JsonDeserializer::class.java,
+    ): RaribleKafkaConsumerWorker<T> {
+        val handler = KafkaLogRecordEventHandler(listener, logRecordMapper, logRecordFilters)
+        return consumerWorkerFactory.createWorker(
+            settings = RaribleKafkaConsumerSettings(
+                batchSize = daemonProperties.consumerBatchSize,
+                concurrency = workerCount,
+                group = listener.id,
+                hosts = properties.brokerReplicaSet,
+                topic = "$topicPrefix.${listener.groupId}",
                 valueClass = logRecordType,
-                consumerGroup = consumerGroup,
-                defaultTopic = "$topicPrefix.${listener.groupId}",
-                bootstrapServers = properties.brokerReplicaSet,
-                offsetResetStrategy = OffsetResetStrategy.EARLIEST,
-                autoCreateTopic = false,
-            )
-            ConsumerBatchWorker(
-                consumer = kafkaConsumer,
-                properties = daemonProperties,
-                // Block consumer should NOT skip events, so there is we're using endless retry
-                retryProperties = RetryProperties(attempts = Integer.MAX_VALUE, delay = Duration.ofMillis(1000)),
-                eventHandler = KafkaLogRecordEventHandler(listener, logRecordMapper, logRecordFilters),
-                meterRegistry = meterRegistry,
-                workerName = "log-event-consumer-${listener.id}-$index"
-            )
-        }
-        return ConsumerWorkerHolder(workers)
+            ),
+            handler = object : RaribleKafkaBatchEventHandler<T> {
+                override suspend fun handle(events: List<T>) {
+                    handler.handle(events)
+                }
+            },
+        )
     }
 }
