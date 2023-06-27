@@ -4,13 +4,13 @@ import com.rarible.blockchain.scanner.consumer.TransactionRecordConsumerWorkerFa
 import com.rarible.blockchain.scanner.consumer.TransactionRecordFilter
 import com.rarible.blockchain.scanner.consumer.TransactionRecordMapper
 import com.rarible.blockchain.scanner.framework.listener.TransactionRecordEventListener
-import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
+import com.rarible.core.kafka.RaribleKafkaConsumerWorker
 
 class KafkaTransactionRecordEventConsumer(
     private val consumerWorkerFactory: TransactionRecordConsumerWorkerFactory
 ) : AutoCloseable {
 
-    private val batchedConsumerWorkers = arrayListOf<ConsumerWorkerHolder<*>>()
+    private val batchedConsumerWorkers = arrayListOf<RaribleKafkaConsumerWorker<*>>()
 
     fun <T> start(
         transactionRecordListeners: List<TransactionRecordEventListener>,

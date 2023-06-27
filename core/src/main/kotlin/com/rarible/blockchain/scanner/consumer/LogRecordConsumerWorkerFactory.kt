@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.consumer
 
 import com.rarible.blockchain.scanner.framework.listener.LogRecordEventListener
-import com.rarible.core.daemon.sequential.ConsumerWorkerHolder
+import com.rarible.core.kafka.RaribleKafkaConsumerWorker
 
 interface LogRecordConsumerWorkerFactory {
     fun <T> create(
@@ -10,5 +10,5 @@ interface LogRecordConsumerWorkerFactory {
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
         workerCount: Int,
-    ): ConsumerWorkerHolder<T>
+    ): RaribleKafkaConsumerWorker<T>
 }
