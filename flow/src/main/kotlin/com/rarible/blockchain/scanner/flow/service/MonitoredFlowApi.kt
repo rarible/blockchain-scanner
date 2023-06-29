@@ -30,8 +30,9 @@ class MonitoredFlowApi(
         height: Long,
         arguments: Iterable<ByteString>
     ): CompletableFuture<FlowScriptResponse> {
-        blockchainMonitor.onBlockchainCall(blockchain, "executeScriptAtBlockHeight")
-        return delegate.executeScriptAtBlockHeight(script, height, arguments)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "executeScriptAtBlockHeight") {
+            delegate.executeScriptAtBlockHeight(script, height, arguments)
+        }
     }
 
     override fun executeScriptAtBlockId(
@@ -39,109 +40,129 @@ class MonitoredFlowApi(
         blockId: FlowId,
         arguments: Iterable<ByteString>
     ): CompletableFuture<FlowScriptResponse> {
-        blockchainMonitor.onBlockchainCall(blockchain, "executeScriptAtBlockId")
-        return delegate.executeScriptAtBlockId(script, blockId, arguments)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "executeScriptAtBlockId") {
+            delegate.executeScriptAtBlockId(script, blockId, arguments)
+        }
     }
 
     override fun executeScriptAtLatestBlock(
         script: FlowScript,
         arguments: Iterable<ByteString>
     ): CompletableFuture<FlowScriptResponse> {
-        blockchainMonitor.onBlockchainCall(blockchain, "executeScriptAtLatestBlock")
-        return delegate.executeScriptAtLatestBlock(script, arguments)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "executeScriptAtLatestBlock") {
+            delegate.executeScriptAtLatestBlock(script, arguments)
+        }
     }
 
     override fun getAccountAtLatestBlock(addresss: FlowAddress): CompletableFuture<FlowAccount?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getAccountAtLatestBlock")
-        return delegate.getAccountAtLatestBlock(addresss)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getAccountAtLatestBlock") {
+            delegate.getAccountAtLatestBlock(addresss)
+        }
     }
 
     override fun getAccountByAddress(addresss: FlowAddress): CompletableFuture<FlowAccount?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getAccountByAddress")
-        return delegate.getAccountByAddress(addresss)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getAccountByAddress") {
+            delegate.getAccountByAddress(addresss)
+        }
     }
 
     override fun getAccountByBlockHeight(addresss: FlowAddress, height: Long): CompletableFuture<FlowAccount?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getAccountByBlockHeight")
-        return delegate.getAccountByBlockHeight(addresss, height)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getAccountByBlockHeight") {
+            delegate.getAccountByBlockHeight(addresss, height)
+        }
     }
 
     override fun getBlockByHeight(height: Long): CompletableFuture<FlowBlock?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getBlockByHeight")
-        return delegate.getBlockByHeight(height)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getBlockByHeight") {
+            delegate.getBlockByHeight(height)
+        }
     }
 
     override fun getBlockById(id: FlowId): CompletableFuture<FlowBlock?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getBlockById")
-        return delegate.getBlockById(id)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getBlockById") {
+            delegate.getBlockById(id)
+        }
     }
 
     override fun getBlockHeaderByHeight(height: Long): CompletableFuture<FlowBlockHeader?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getBlockHeaderByHeight")
-        return delegate.getBlockHeaderByHeight(height)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getBlockHeaderByHeight") {
+            delegate.getBlockHeaderByHeight(height)
+        }
     }
 
     override fun getBlockHeaderById(id: FlowId): CompletableFuture<FlowBlockHeader?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getBlockHeaderById")
-        return delegate.getBlockHeaderById(id)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getBlockHeaderById") {
+            delegate.getBlockHeaderById(id)
+        }
     }
 
     override fun getCollectionById(id: FlowId): CompletableFuture<FlowCollection?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getCollectionById")
-        return delegate.getCollectionById(id)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getCollectionById") {
+            delegate.getCollectionById(id)
+        }
     }
 
     override fun getEventsForBlockIds(type: String, ids: Set<FlowId>): CompletableFuture<List<FlowEventResult>> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getEventsForBlockIds")
-        return delegate.getEventsForBlockIds(type, ids)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getEventsForBlockIds") {
+            delegate.getEventsForBlockIds(type, ids)
+        }
     }
 
     override fun getEventsForHeightRange(
         type: String,
         range: ClosedRange<Long>
     ): CompletableFuture<List<FlowEventResult>> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getEventsForHeightRange")
-        return delegate.getEventsForHeightRange(type, range)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getEventsForHeightRange") {
+            delegate.getEventsForHeightRange(type, range)
+        }
     }
 
     override fun getLatestBlock(sealed: Boolean): CompletableFuture<FlowBlock> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getLatestBlock")
-        return delegate.getLatestBlock(sealed)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getLatestBlock") {
+            delegate.getLatestBlock(sealed)
+        }
     }
 
     override fun getLatestBlockHeader(): CompletableFuture<FlowBlockHeader> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getLatestBlockHeader")
-        return delegate.getLatestBlockHeader()
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getLatestBlockHeader") {
+            delegate.getLatestBlockHeader()
+        }
     }
 
     override fun getLatestProtocolStateSnapshot(): CompletableFuture<FlowSnapshot> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getLatestProtocolStateSnapshot")
-        return delegate.getLatestProtocolStateSnapshot()
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getLatestProtocolStateSnapshot") {
+            delegate.getLatestProtocolStateSnapshot()
+        }
     }
 
     override fun getNetworkParameters(): CompletableFuture<FlowChainId> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getNetworkParameters")
-        return delegate.getNetworkParameters()
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getNetworkParameters") {
+            delegate.getNetworkParameters()
+        }
     }
 
     override fun getTransactionById(id: FlowId): CompletableFuture<FlowTransaction?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getTransactionById")
-        return delegate.getTransactionById(id)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getTransactionById") {
+            delegate.getTransactionById(id)
+        }
     }
 
     override fun getTransactionResultById(id: FlowId): CompletableFuture<FlowTransactionResult?> {
-        blockchainMonitor.onBlockchainCall(blockchain, "getTransactionResultById")
-        return delegate.getTransactionResultById(id)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getTransactionResultById") {
+            delegate.getTransactionResultById(id)
+        }
     }
 
     override fun ping(): CompletableFuture<Unit> {
-        blockchainMonitor.onBlockchainCall(blockchain, "ping")
-        return delegate.ping()
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "ping") {
+            delegate.ping()
+        }
     }
 
     override fun sendTransaction(transaction: FlowTransaction): CompletableFuture<FlowId> {
-        blockchainMonitor.onBlockchainCall(blockchain, "sendTransaction")
-        return delegate.sendTransaction(transaction)
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "sendTransaction") {
+            delegate.sendTransaction(transaction)
+        }
     }
 
     override fun close() {
