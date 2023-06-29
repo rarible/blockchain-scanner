@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.monitoring
 import com.rarible.core.telemetry.metrics.Metric.Companion.tag
 import io.micrometer.core.instrument.MeterRegistry
 import reactor.core.publisher.Mono
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -37,6 +38,19 @@ class BlockchainMonitor(
             }
             .doOnError {
                 onBlockchainCallLatency(startTimeMs.get(), blockchain, method, CallStatus.ERROR)
+            }
+    }
+
+    fun <T> onBlockchainCallWithFuture(
+        blockchain: String,
+        method: String,
+        futureCall: () -> CompletableFuture<T>
+    ): CompletableFuture<T> {
+        val startTimeMs = AtomicLong(System.currentTimeMillis())
+        return futureCall()
+            .whenComplete { _, error ->
+                val status = if (error == null) CallStatus.SUCCESS else CallStatus.ERROR
+                onBlockchainCallLatency(startTimeMs.get(), blockchain, method, status)
             }
     }
 
