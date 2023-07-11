@@ -8,5 +8,5 @@ import org.springframework.boot.context.properties.ConstructorBinding
 data class KafkaProperties(
     val brokerReplicaSet: String,
     val enabled: Boolean = true,
-    val numberOfPartitionsPerLogGroup: Int = 10
+    val numberOfPartitionsPerLogGroup: Int = 9
 )
