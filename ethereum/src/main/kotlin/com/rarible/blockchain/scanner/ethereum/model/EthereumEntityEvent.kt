@@ -1,10 +1,19 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
+import com.rarible.blockchain.scanner.ethereum.reduce.CompactEventsReducer
+import com.rarible.blockchain.scanner.ethereum.reduce.RevertCompactEventsReducer
 
 abstract class EthereumEntityEvent<T> : Comparable<EthereumEntityEvent<T>> {
     abstract val entityId: String
     abstract val log: EthereumLog
+    /**
+     * This flag indicates that event is compacted by [CompactEventsReducer]
+     * and should be reverted by [RevertCompactEventsReducer]
+     */
+    abstract val compact: Boolean
+
     val timestamp: Long get() = log.createdAt.epochSecond
+
 
     open fun invert(): T = throw IllegalArgumentException("${this.javaClass} event can't invert")
 
