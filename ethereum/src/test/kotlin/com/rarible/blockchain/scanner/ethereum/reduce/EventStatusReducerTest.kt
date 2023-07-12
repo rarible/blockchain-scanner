@@ -11,15 +11,23 @@ import org.junit.jupiter.api.Test
 class TestEventStatusReducer(
     forwardChainReducer: EntityChainReducer<String, ItemEvent, Item>,
     reversedChainReducer: RevertedEntityChainReducer<String, ItemEvent, Item>,
-) : EventStatusReducer<String, ItemEvent, Item>(forwardChainReducer, reversedChainReducer)
+    revertCompactEventsReducer: RevertCompactEventsReducer<String, ItemEvent, Item>
+) : EventStatusReducer<String, ItemEvent, Item>(forwardChainReducer, reversedChainReducer, revertCompactEventsReducer)
 
 internal class EventStatusReducerTest {
     private val forwardChainItemReducer = mockk<EntityChainReducer<String, ItemEvent, Item>>()
     private val reversedChainItemReducer = mockk<RevertedEntityChainReducer<String, ItemEvent, Item>>()
+    private val revertCompactEventsReducer = mockk<RevertCompactEventsReducer<String, ItemEvent, Item>> {
+        coEvery { reduce(any(), any(), any()) } coAnswers  {
+            val reducer = arg<RevertedEntityChainReducer<String, ItemEvent, Item>>(0)
+            reducer.reduce(arg<Item>(1), arg<ItemEvent>(2))
+        }
+    }
 
     private val eventStatusItemReducer = TestEventStatusReducer(
         forwardChainReducer = forwardChainItemReducer,
-        reversedChainReducer = reversedChainItemReducer
+        reversedChainReducer = reversedChainItemReducer,
+        revertCompactEventsReducer = revertCompactEventsReducer,
     )
 
     @Test

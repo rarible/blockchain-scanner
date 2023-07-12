@@ -15,31 +15,45 @@ import java.time.Instant
 
 data class ItemEvent(
     override val entityId: String,
-    override val log: EthereumLog
+    override val log: EthereumLog,
+    val supply: Int = 1,
+    override val compact: Boolean = false,
 ) : EthereumEntityEvent<ItemEvent>() {
 }
 
 fun createRandomItemEvent(
-    transactionSender: Address = randomAddress()
+    transactionSender: Address = randomAddress(),
+    supply: Int = randomInt(),
+    blockNumber: Long = randomLong(),
+    compact: Boolean = false
 ): ItemEvent {
     return ItemEvent(
         entityId = randomString(),
-        log = createRandomEthereumLog(transactionSender = transactionSender)
+        log = createRandomEthereumLog(
+            transactionSender = transactionSender,
+            blockNumber = blockNumber
+        ),
+        supply = supply,
+        compact = compact
     )
 }
 
 fun createRandomEthereumLog(
-    transactionSender: Address = randomAddress()
+    transactionSender: Address = randomAddress(),
+    blockNumber: Long = randomLong(),
+    logIndex: Int = randomInt(),
+    minorLogIndex: Int = randomInt(),
+    status: EthereumBlockStatus = EthereumBlockStatus.values().random(),
 ): EthereumLog =
     EthereumLog(
         transactionHash = randomWord(),
-        status = EthereumBlockStatus.values().random(),
+        status = status,
         address = randomAddress(),
         topic = Word.apply(randomWord()),
         blockHash = Word.apply(randomWord()),
-        blockNumber = randomLong(),
-        logIndex = randomInt(),
-        minorLogIndex = randomInt(),
+        blockNumber = blockNumber,
+        logIndex = logIndex,
+        minorLogIndex = minorLogIndex,
         index = randomInt(),
         from = transactionSender,
         blockTimestamp = nowMillis().epochSecond,
