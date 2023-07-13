@@ -1,5 +1,10 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
+import com.github.michaelbull.retry.policy.limitAttempts
+import com.github.michaelbull.retry.policy.plus
+import com.github.michaelbull.retry.retry
+import com.rarible.blockchain.scanner.client.AbstractRetryableClient
+import com.rarible.blockchain.scanner.client.linearDelay
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
@@ -33,6 +38,7 @@ import scalether.domain.response.Transaction
 import scalether.util.Hex
 import java.math.BigInteger
 import java.time.Duration
+import kotlin.coroutines.cancellation.CancellationException
 
 @ExperimentalCoroutinesApi
 @Component
@@ -41,7 +47,7 @@ class EthereumClient(
     properties: EthereumScannerProperties,
     ethPubSub: EthPubSub,
     monitor: BlockchainMonitor,
-) : EthereumBlockchainClient {
+) : EthereumBlockchainClient, AbstractRetryableClient(properties.retryPolicy.client) {
 
     private val ethereum = if (properties.enableEthereumMonitor) {
         MonitoredEthereum(ethereum, monitor, properties.blockchain)
@@ -66,7 +72,11 @@ class EthereumClient(
     private val firstAvailableBlock = properties.scan.firstAvailableBlock
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = subscriber.newHeads()
-        .flatMap { ethereum.ethGetFullBlockByHash(it.hash()) }
+        .flatMap {
+            ethereum
+                .ethGetFullBlockByHash(it.hash())
+                .wrapWithRetry("ethGetFullBlockByHash", it.hash())
+        }
         .map { EthereumBlockchainBlock(it) }
         .timeout(Duration.ofMinutes(5))
         .asFlow()
