@@ -75,7 +75,7 @@ class EthereumClient(
         .flatMap {
             ethereum
                 .ethGetFullBlockByHash(it.hash())
-                .wrapWithRetry("ethGetFullBlockByHash", it.hash())
+                .wrapWithRetry("ethGetFullBlockByHash", it.hash(), it.number())
         }
         .map { EthereumBlockchainBlock(it) }
         .timeout(Duration.ofMinutes(5))
