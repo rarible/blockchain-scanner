@@ -77,7 +77,7 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
 
     private suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
-            return retry(limitAttempts(attempts) + linerDelay(delay, increment)) {
+            return retry(limitAttempts(attempts) + linearDelay(delay, increment)) {
                 clientCall.invoke()
             }
         } catch (e: CancellationException) {

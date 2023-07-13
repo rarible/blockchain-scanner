@@ -6,7 +6,7 @@ import com.github.michaelbull.retry.policy.RetryPolicy
 import java.time.Duration
 import kotlin.coroutines.coroutineContext
 
-fun linerDelay(init: Duration, increment: Duration): RetryPolicy<*> {
+fun linearDelay(init: Duration, increment: Duration): RetryPolicy<*> {
     return {
         val attempt = coroutineContext.retryStatus.attempt
 
