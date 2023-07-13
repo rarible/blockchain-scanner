@@ -30,6 +30,7 @@ class RetryableBlockchainClientTest {
 
     private val retryPolicy = ClientRetryPolicyProperties(
         delay = Duration.ofMillis(10),
+        increment = Duration.ofMillis(5),
         attempts = 3
     )
     private val client: TestBlockchainClient = mockk()
@@ -66,7 +67,7 @@ class RetryableBlockchainClientTest {
         var count = 0
         coEvery { client.getBlockLogs(any(), blocks, true) } returns flow {
             count++
-            throw Exception()
+            throw Exception("Bye")
         }
 
         assertThrows(Exception::class.java) {
