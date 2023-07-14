@@ -65,7 +65,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
         val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
         val toUpdate = logEvents.sumOf { it.logRecordsToUpdate.size }
-        withSpan(
+        val saved = withSpan(
             name = "insertOrUpdateRecords",
             type = SpanType.DB,
             labels = listOf("toInsert" to toInsert, "toUpdate" to toUpdate)
@@ -74,7 +74,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
         if (logRecordEventPublisher.isEnabled()) {
             withSpan(name = "sortAndPublishEvents") {
-                sortAndPublishEvents(events, logEvents)
+                sortAndPublishEvents(events, saved)
             }
         }
         return gatherStats(logEvents)
@@ -177,7 +177,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        logEvents.mapNotNull {
+        val updated: List<LogEvent<R, D>> = logEvents.mapNotNull {
             if (it.logRecordsToUpdate.isEmpty()) {
                 return@mapNotNull null
             }
@@ -186,24 +186,27 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 runRethrowingBlockHandlerException(
                     "Update log records for ${it.blockEvent} by ${it.descriptor.groupId}"
                 ) {
-                    logService.save(it.descriptor, it.logRecordsToUpdate)
+                    val saved = logService.save(it.descriptor, it.logRecordsToUpdate)
+                    it.copy(logRecordsToUpdate = saved)
                 }
             }
         }.awaitAll()
-        logEvents.mapNotNull {
+        val inserted: List<LogEvent<R, D>> = logEvents.mapNotNull {
             if (it.logRecordsToInsert.isEmpty()) {
                 return@mapNotNull null
             }
             async {
                 logging(message = "inserting ${it.logRecordsToInsert.size} log records", event = it.blockEvent)
-                runRethrowingBlockHandlerException(
+                val saved = runRethrowingBlockHandlerException(
                     "Insert log records for ${it.blockEvent} by ${it.descriptor.groupId}"
                 ) {
                     logService.save(it.descriptor, it.logRecordsToInsert)
                 }
                 logMonitor.onLogsInserted(descriptor = it.descriptor, inserted = it.logRecordsToInsert.size)
+                it.copy(logRecordsToInsert = saved)
             }
         }.awaitAll()
+        updated + inserted
     }
 
     private suspend fun onBlock(
