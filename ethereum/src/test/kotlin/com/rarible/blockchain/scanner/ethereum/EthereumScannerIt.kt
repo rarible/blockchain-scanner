@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum
 
+import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
@@ -9,14 +10,19 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumTransactionRecord
+import com.rarible.blockchain.scanner.handler.TypedBlockRange
+import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import scala.jdk.javaapi.CollectionConverters
 import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
@@ -29,6 +35,12 @@ class EthereumScannerIt : AbstractIntegrationTest() {
     private lateinit var collection: String
     private lateinit var topic: Word
     private lateinit var contract: TestERC20
+
+    @Autowired
+    private lateinit var manager: EthereumScannerManager
+
+    @Autowired
+    private lateinit var blockService: BlockService
 
     @BeforeEach
     fun beforeEach() {
@@ -109,6 +121,54 @@ class EthereumScannerIt : AbstractIntegrationTest() {
                     input = receipt.getTransaction().input().toString(),
                 )
             )
+        }
+    }
+
+    @Test
+    fun `reindex - avoid id duplication in published logEvents`() = runBlocking<Unit> {
+
+        // Making random mint
+        val beneficiary = randomAddress()
+        val value = randomPositiveBigInt(1000000)
+        val receipt = mintAndVerify(beneficiary, value)
+
+        BlockingWait.waitAssert {
+            // Checking Block is in storage, successfully processed
+            val block = findBlock(receipt.blockNumber().toLong())!!
+            assertEquals(receipt.blockHash().toString(), block.hash)
+
+            // We expect single LogRecord from our single Subscriber
+            val allLogs = findAllLogs(collection)
+            assertThat(allLogs).hasSize(1)
+        }
+
+        BlockingWait.waitAssert {
+            assertThat(testEthereumLogEventPublisher.publishedLogRecords).hasSize(1)
+        }
+
+        // Lets reindex current block
+        val baseBlock = blockService.getBlock(receipt.blockNumber().toLong() - 1)!!
+        val blockRanges = BlockRanges.getRanges(
+            from = receipt.blockNumber().toLong(),
+            to = receipt.blockNumber().toLong(),
+            step = 1
+        ).map { TypedBlockRange(it, true) }.asFlow()
+        manager.blockReindexer.reindex(
+            baseBlock = baseBlock,
+            blocksRanges = blockRanges,
+            publisher = manager.logRecordEventPublisher
+        ).collect { }
+
+        BlockingWait.waitAssert {
+            val events = testEthereumLogEventPublisher.publishedLogRecords.map { it.record as ReversedEthereumLogRecord }
+            assertThat(events).hasSize(2)
+
+            // We still have a single LogRecord in db
+            val allLogs = findAllLogs(collection)
+            assertThat(allLogs).hasSize(1)
+
+            // We use random id in the TestTransferSubscriber, we must be sure that id from logEvents are the same
+            assertThat(events.first().id).isEqualTo(events.last().id)
         }
     }
 
