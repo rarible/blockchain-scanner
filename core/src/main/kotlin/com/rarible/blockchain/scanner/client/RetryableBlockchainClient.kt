@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.client
 
+import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
@@ -41,6 +42,7 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
 
     override fun getBlockLogs(descriptor: D, blocks: List<BB>, stable: Boolean): Flow<FullBlock<BB, BL>> {
         return original.getBlockLogs(descriptor, blocks, stable)
-            .wrapWithRetry("getBlockLogs", blocks, stable)
+            // Full blocks produces too big messages in the logs
+            .wrapWithRetry("getBlockLogs", blocks.map { it.toBlock() }, stable)
     }
 }
