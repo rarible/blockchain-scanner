@@ -11,7 +11,6 @@ import com.rarible.core.kafka.RaribleKafkaBatchEventHandler
 import com.rarible.core.kafka.RaribleKafkaConsumerFactory
 import com.rarible.core.kafka.RaribleKafkaConsumerSettings
 import com.rarible.core.kafka.RaribleKafkaConsumerWorker
-import io.micrometer.core.instrument.MeterRegistry
 
 class KafkaLogRecordConsumerWorkerFactory(
     host: String,
@@ -41,6 +40,7 @@ class KafkaLogRecordConsumerWorkerFactory(
                 batchSize = daemonProperties.consumerBatchSize,
                 concurrency = workerCount,
                 group = listener.id,
+                async = false,
                 hosts = properties.brokerReplicaSet,
                 topic = "$topicPrefix.${listener.groupId}",
                 valueClass = logRecordType,

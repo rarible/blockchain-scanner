@@ -40,6 +40,7 @@ class KafkaTransactionRecordConsumerWorkerFactory(
                 batchSize = daemonProperties.consumerBatchSize,
                 concurrency = workerCount,
                 group = listener.id,
+                async = false,
                 hosts = properties.brokerReplicaSet,
                 topic = "$topicPrefix.${listener.groupId}",
                 valueClass = transactionRecordType,
