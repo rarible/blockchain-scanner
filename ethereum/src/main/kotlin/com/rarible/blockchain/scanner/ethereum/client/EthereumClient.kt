@@ -1,10 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-import com.github.michaelbull.retry.policy.limitAttempts
-import com.github.michaelbull.retry.policy.plus
-import com.github.michaelbull.retry.retry
 import com.rarible.blockchain.scanner.client.AbstractRetryableClient
-import com.rarible.blockchain.scanner.client.linearDelay
+import com.rarible.blockchain.scanner.client.NonRetryableBlockchainClientException
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
@@ -38,7 +35,6 @@ import scalether.domain.response.Transaction
 import scalether.util.Hex
 import java.math.BigInteger
 import java.time.Duration
-import kotlin.coroutines.cancellation.CancellationException
 
 @ExperimentalCoroutinesApi
 @Component
@@ -205,9 +201,9 @@ class EthereumClient(
             block = EthereumBlockchainBlock(ethFullBlock),
             logs = indexedEthLogs.map { (index, total, ethLog) ->
                 val transaction = transactions[ethLog.transactionHash()]
-                    ?: error(
+                    ?: throw NonRetryableBlockchainClientException(
                         "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
-                                "All transactions: $transactions"
+                            "All transactions: $transactions"
                     )
                 EthereumBlockchainLog(
                     ethLog = ethLog,

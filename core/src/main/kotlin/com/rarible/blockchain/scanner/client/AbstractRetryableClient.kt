@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono
 import reactor.util.retry.Retry
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.cancellation.CancellationException
+
 abstract class AbstractRetryableClient(
     private val retryPolicy: ClientRetryPolicyProperties
 ) {
@@ -59,6 +60,8 @@ abstract class AbstractRetryableClient(
                 clientCall.invoke()
             }
         } catch (e: CancellationException) {
+            throw e
+        } catch (e: NonRetryableBlockchainClientException) {
             throw e
         } catch (e: Throwable) {
             logRetryFail(method, e, *args)
