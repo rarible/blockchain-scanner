@@ -39,7 +39,7 @@ abstract class AbstractRetryableClient(
             .retryWhen { e, currentAttempt ->
                 if (isRetryableException(e)) {
                     // currentAttempt start from 0
-                    if (currentAttempt >= attempts) {
+                    if (currentAttempt + 1 >= attempts) {
                         logRetryFail(method, e, *args)
                         false
                     } else {
@@ -57,7 +57,7 @@ abstract class AbstractRetryableClient(
     protected fun <T> Mono<T>.wrapWithRetry(method: String = "", vararg args: Any): Mono<T> {
         val currentDelay = AtomicReference(delay)
         return this
-            .retryWhen(Retry.max(attempts.toLong()).filter { e ->
+            .retryWhen(Retry.max(attempts.toLong() - 1).filter { e ->
                 isRetryableException(e)
             }.doBeforeRetryAsync {
                 val sleep = currentDelay.get()
@@ -71,7 +71,7 @@ abstract class AbstractRetryableClient(
 
     protected suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
-            return retry(retryExceptionFilter + limitAttempts(attempts + 1) + linearDelay(delay, increment)) {
+            return retry(retryExceptionFilter + limitAttempts(attempts) + linearDelay(delay, increment)) {
                 clientCall.invoke()
             }
         } catch (e: CancellationException) {

@@ -41,10 +41,10 @@ class AbstractRetryableClientTest {
     @ValueSource(strings = ["mono", "flow", "suspend"])
     fun `retry - ok`(name: String) = runBlocking<Unit> {
         val count = AtomicInteger(0)
-        val result = execute(name) { if (count.getAndIncrement() > 2) "test" else throw RuntimeException("Fail") }
+        val result = execute(name) { if (count.getAndIncrement() == 2) "test" else throw RuntimeException("Fail") }
         assertThat(result).isEqualTo("test")
-        // 3 fails, 4th is ok
-        assertThat(count.get()).isEqualTo(4)
+        // 2 fails, 3rd is ok
+        assertThat(count.get()).isEqualTo(3)
     }
 
     @ParameterizedTest
@@ -58,8 +58,8 @@ class AbstractRetryableClientTest {
                 throw IOException("Fail")
             }
         }
-        // Original attempt + 3 retries
-        assertThat(count.get()).isEqualTo(4)
+        // Original attempt + 2 retries
+        assertThat(count.get()).isEqualTo(3)
     }
 
     @ParameterizedTest
