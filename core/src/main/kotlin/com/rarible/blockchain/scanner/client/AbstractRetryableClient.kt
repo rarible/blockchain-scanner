@@ -1,5 +1,8 @@
 package com.rarible.blockchain.scanner.client
 
+import com.github.michaelbull.retry.ContinueRetrying
+import com.github.michaelbull.retry.StopRetrying
+import com.github.michaelbull.retry.policy.RetryPolicy
 import com.github.michaelbull.retry.policy.limitAttempts
 import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
@@ -22,19 +25,31 @@ abstract class AbstractRetryableClient(
     private val increment = retryPolicy.increment
     private val attempts = retryPolicy.attempts
 
+    private val retryExceptionFilter: RetryPolicy<Throwable> = {
+        if (isRetryableException(reason)) {
+            ContinueRetrying
+        } else {
+            StopRetrying
+        }
+    }
+
     protected fun <T> Flow<T>.wrapWithRetry(method: String = "", vararg args: Any): Flow<T> {
         val currentDelay = AtomicReference(delay)
         return this
             .retryWhen { e, currentAttempt ->
-                // currentAttempt start from 0
-                if (currentAttempt + 1 >= attempts) {
-                    logRetryFail(method, e, *args)
-                    false
+                if (isRetryableException(e)) {
+                    // currentAttempt start from 0
+                    if (currentAttempt >= attempts) {
+                        logRetryFail(method, e, *args)
+                        false
+                    } else {
+                        val sleep = currentDelay.get()
+                        delay(sleep)
+                        currentDelay.set(sleep + increment.multipliedBy(currentAttempt))
+                        true
+                    }
                 } else {
-                    val sleep = currentDelay.get()
-                    delay(sleep)
-                    currentDelay.set(sleep + increment.multipliedBy(currentAttempt))
-                    true
+                    false
                 }
             }
     }
@@ -43,7 +58,7 @@ abstract class AbstractRetryableClient(
         val currentDelay = AtomicReference(delay)
         return this
             .retryWhen(Retry.max(attempts.toLong()).filter { e ->
-                e !is CancellationException
+                isRetryableException(e)
             }.doBeforeRetryAsync {
                 val sleep = currentDelay.get()
                 currentDelay.set(sleep + increment)
@@ -56,17 +71,21 @@ abstract class AbstractRetryableClient(
 
     protected suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
-            return retry(limitAttempts(attempts) + linearDelay(delay, increment)) {
+            return retry(retryExceptionFilter + limitAttempts(attempts + 1) + linearDelay(delay, increment)) {
                 clientCall.invoke()
             }
         } catch (e: CancellationException) {
-            throw e
-        } catch (e: NonRetryableBlockchainClientException) {
             throw e
         } catch (e: Throwable) {
             logRetryFail(method, e, *args)
             throw e
         }
+    }
+
+    private fun isRetryableException(e: Throwable): Boolean {
+        return e !is CancellationException
+            && e !is NonRetryableBlockchainClientException
+            && e !is Error
     }
 
     private fun logRetryFail(method: String, e: Throwable, vararg args: Any) {
