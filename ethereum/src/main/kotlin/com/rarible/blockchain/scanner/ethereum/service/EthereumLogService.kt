@@ -1,14 +1,17 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.core.common.optimisticLock
 import io.daonomic.rpc.domain.Word
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -34,13 +37,15 @@ class EthereumLogService(
     override suspend fun save(
         descriptor: EthereumDescriptor,
         records: List<EthereumLogRecord>
-    ): List<EthereumLogRecord> {
+    ): List<EthereumLogRecord> = coroutineScope {
         logger.info("Saving records: {} for {}", records.size, descriptor.ethTopic)
-        return records.map { record ->
-            optimisticLock(properties.optimisticLockRetries) {
-                save(descriptor, record)
+        records.map { record ->
+            async {
+                optimisticLock(properties.optimisticLockRetries) {
+                    save(descriptor, record)
+                }
             }
-        }
+        }.awaitAll()
     }
 
     private suspend fun save(
