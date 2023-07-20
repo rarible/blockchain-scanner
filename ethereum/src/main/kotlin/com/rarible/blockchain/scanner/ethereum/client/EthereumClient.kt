@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.ethereum.client
 
 import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.client.NonRetryableBlockchainClientException
+import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
@@ -43,11 +44,12 @@ class EthereumClient(
     properties: EthereumScannerProperties,
     ethPubSub: EthPubSub,
     monitor: BlockchainMonitor,
-) : EthereumBlockchainClient, AbstractRetryableClient(properties.retryPolicy.client) {
+    // Retries delegated to MonoEthereum
+) : EthereumBlockchainClient, AbstractRetryableClient(ClientRetryPolicyProperties(attempts = 0)) {
 
-    private val ethereum = if (properties.enableEthereumMonitor) {
+    private val ethereum = (if (properties.enableEthereumMonitor) {
         MonitoredEthereum(ethereum, monitor, properties.blockchain)
-    } else ethereum
+    } else ethereum).let { EthereumRetryableMono(it, properties.retryPolicy.client) }
 
     private val maxBatches = properties.maxBatches.associate {
         val parts = it.split(":")

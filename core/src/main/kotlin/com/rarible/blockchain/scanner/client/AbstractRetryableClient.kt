@@ -71,7 +71,11 @@ abstract class AbstractRetryableClient(
 
     protected suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
         try {
-            return retry(retryExceptionFilter + limitAttempts(attempts) + linearDelay(delay, increment)) {
+            return if (attempts > 0) {
+                retry(retryExceptionFilter + limitAttempts(attempts) + linearDelay(delay, increment)) {
+                    clientCall.invoke()
+                }
+            } else {
                 clientCall.invoke()
             }
         } catch (e: CancellationException) {

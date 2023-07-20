@@ -41,7 +41,9 @@ class AbstractRetryableClientTest {
     @ValueSource(strings = ["mono", "flow", "suspend"])
     fun `retry - ok`(name: String) = runBlocking<Unit> {
         val count = AtomicInteger(0)
-        val result = execute(name) { if (count.getAndIncrement() == 2) "test" else throw RuntimeException("Fail") }
+        val result = execute(name, client) {
+            if (count.getAndIncrement() == 2) "test" else throw RuntimeException("Fail")
+        }
         assertThat(result).isEqualTo("test")
         // 2 fails, 3rd is ok
         assertThat(count.get()).isEqualTo(3)
@@ -53,7 +55,7 @@ class AbstractRetryableClientTest {
         val count = AtomicInteger(0)
 
         assertThrows<IOException> {
-            execute(name) {
+            execute(name, client) {
                 count.incrementAndGet()
                 throw IOException("Fail")
             }
@@ -68,7 +70,7 @@ class AbstractRetryableClientTest {
         val count = AtomicInteger(0)
 
         assertThrows<NonRetryableBlockchainClientException> {
-            execute(name) {
+            execute(name, client) {
                 count.incrementAndGet()
                 throw NonRetryableBlockchainClientException("Abort")
             }
@@ -77,32 +79,42 @@ class AbstractRetryableClientTest {
         assertThat(count.get()).isEqualTo(1)
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["mono", "flow", "suspend"])
+    fun `retry - 0 retries`(name: String) = runBlocking<Unit> {
+        val client = RetryableTestClient(testClient, retryPolicy.copy(attempts = 0))
+
+        val result = execute(name, client) { "test" }
+
+        assertThat(result).isEqualTo("test")
+    }
+
     private interface TestClient {
         fun monoMethod(): Mono<String>
         fun flowMethod(): Flow<String>
         suspend fun suspendMethod(): String
     }
 
-    private suspend fun execute(name: String, block: () -> String): String {
+    private suspend fun execute(name: String, client: RetryableTestClient, block: () -> String): String {
         return when (name) {
-            "flow" -> executeFlow(block)
-            "mono" -> executeMono(block)
-            "suspend" -> executeSuspend(block)
+            "flow" -> executeFlow(client, block)
+            "mono" -> executeMono(client, block)
+            "suspend" -> executeSuspend(client, block)
             else -> throw IllegalArgumentException("Ooops")
         }
     }
 
-    private suspend fun executeMono(block: () -> String): String {
+    private suspend fun executeMono(client: RetryableTestClient, block: () -> String): String {
         every { testClient.monoMethod() } returns (run { mono { block() } })
         return client.monoMethod().awaitFirst()
     }
 
-    private suspend fun executeFlow(block: () -> String): String {
+    private suspend fun executeFlow(client: RetryableTestClient, block: () -> String): String {
         every { testClient.flowMethod() } returns (flow { emit(block()) })
         return client.flowMethod().first()
     }
 
-    private suspend fun executeSuspend(block: () -> String): String {
+    private suspend fun executeSuspend(client: RetryableTestClient, block: () -> String): String {
         coEvery { testClient.suspendMethod() } answers { block() }
         return client.suspendMethod()
     }
