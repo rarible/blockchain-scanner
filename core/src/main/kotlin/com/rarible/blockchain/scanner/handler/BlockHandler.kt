@@ -16,9 +16,6 @@ import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.apm.withSpan
-import com.rarible.core.apm.withTransaction
-import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -51,6 +48,12 @@ class BlockHandler<BB : BlockchainBlock>(
         logger.info("Creating BlockHandler with config: ${scanProperties.batchLoad}")
     }
 
+    suspend fun onNewBlock(newBlockchainBlock: BB) {
+        monitor.onBlockEvent {
+            onNewBlockHandler(newBlockchainBlock)
+        }
+    }
+
     /**
      * Handle a new block event and synchronize the database state with blockchain.
      *
@@ -66,7 +69,7 @@ class BlockHandler<BB : BlockchainBlock>(
      * not necessarily up to the [newBlockchainBlock]. It may happen that the chain has been reorganized
      * while this method was syncing forward. The next call of this method will sync the remaining blocks.
      */
-    suspend fun onNewBlock(newBlockchainBlock: BB) {
+    private suspend fun onNewBlockHandler(newBlockchainBlock: BB) {
         val newBlock = newBlockchainBlock.toBlock()
         logger.info("Received new Block [{}:{}]: {}", newBlock.id, newBlock.hash, newBlock)
 
@@ -91,13 +94,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 alreadyIndexedBlock
             )
         }
-
-        val lastCorrectBlock = withTransaction(
-            name = "findLatestCorrectKnownBlockAndRevertOther",
-            labels = listOf("lastKnownBlockNumber" to lastKnownBlock.id, "newBlockNumber" to newBlock.id)
-        ) {
-            findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
-        }
+        val lastCorrectBlock = findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
 
         logger.info("Syncing missing blocks from the last correct known block {} to {}", lastCorrectBlock, newBlock)
         val stableUnstableBlockRanges = BlockRanges.getStableUnstableBlockRanges(
@@ -291,21 +288,11 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun fetchBlocksByRange(blocksRange: TypedBlockRange): BlocksBatch<BB> {
         logger.info("Fetching $blocksRange")
-        val fetchBlocksSample = Timer.start()
-        return withTransaction(
-            name = "fetchBlocks",
-            labels = listOf("range" to blocksRange.toString())
-        ) {
-            val fetchedBlocks = try {
-                withSpan(name = "fetchBlocks") {
-                    blockClient.getBlocks(blocksRange.range.toList())
-                }
-            } finally {
-                monitor.recordGetBlocks(fetchBlocksSample)
-            }
-            logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
-            BlocksBatch(blocksRange, fetchedBlocks)
+        val fetchedBlocks = monitor.onGetBlocks {
+            blockClient.getBlocks(blocksRange.range.toList())
         }
+        logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
+        return BlocksBatch(blocksRange, fetchedBlocks)
     }
 
     /**
@@ -355,55 +342,40 @@ class BlockHandler<BB : BlockchainBlock>(
     ): List<Block> {
         val (blocksRange, blocks) = blocksBatch
         logger.info("Processing $blocksBatch")
-        return withTransaction(
-            name = "processBlocks",
-            labels = listOf(
-                "size" to blocks.size,
-                "minId" to blocksRange.range.first,
-                "maxId" to blocksRange.range.last
-            )
-        ) {
-            if (!blocksRange.stable) {
-                /*
-                There is no need to save PENDING status for stable blocks.
-                On restart, the scanner will process the same stable blocks and send the same events.
-                The clients of the blockchain scanner are ready to receive duplicated events.
-                 */
-                val toSave = blocks.map { it.toBlock(BlockStatus.PENDING) }
-                saveUnstableBlocks(toSave)
-            }
-            val blockEvents = blocks.map {
-                if (blocksRange.stable) {
-                    NewStableBlockEvent(it, mode)
-                } else {
-                    NewUnstableBlockEvent(it, mode)
-                }
-            }
-
+        if (!blocksRange.stable) {
             /*
-             It may rarely happen that we produce RevertedBlockEvent-s for blocks for which we DID NOT produce NewBlockEvent-s.
-             This happens if at this exact line, before calling "processBlockEvents", the blockchain scanner gets terminated.
-             The blocks are already marked as PENDING.
-             After restart, we will produce RevertedBlockEvent-s, although we did not call
-             "processBlockEvents" with NewBlockEvent-s for those blocks.
-
-             This is OK because handling of reverted blocks simply reverts logs that we might have had chance to record.
-             If we did not call NewBlockEvent-s, there will be nothing to revert.
-            */
-            val stats = processBlockEvents(blockEvents)
-            withSpan(
-                name = "saveBlocks",
-                labels = listOf("count" to blocks.size)
-            ) {
-                val toSave = blocks.map {
-                    it.toBlock(BlockStatus.SUCCESS, stats[it.number])
-                }
-                if (blocksRange.stable) {
-                    saveStableBlocks(toSave, blocksRange, resyncStable)
-                } else {
-                    saveUnstableBlocks(toSave)
-                }
+            There is no need to save PENDING status for stable blocks.
+            On restart, the scanner will process the same stable blocks and send the same events.
+            The clients of the blockchain scanner are ready to receive duplicated events.
+             */
+            val toSave = blocks.map { it.toBlock(BlockStatus.PENDING) }
+            saveUnstableBlocks(toSave)
+        }
+        val blockEvents = blocks.map {
+            if (blocksRange.stable) {
+                NewStableBlockEvent(it, mode)
+            } else {
+                NewUnstableBlockEvent(it, mode)
             }
+        }
+        /*
+         It may rarely happen that we produce RevertedBlockEvent-s for blocks for which we DID NOT produce NewBlockEvent-s.
+         This happens if at this exact line, before calling "processBlockEvents", the blockchain scanner gets terminated.
+         The blocks are already marked as PENDING.
+         After restart, we will produce RevertedBlockEvent-s, although we did not call
+         "processBlockEvents" with NewBlockEvent-s for those blocks.
+
+         This is OK because handling of reverted blocks simply reverts logs that we might have had chance to record.
+         If we did not call NewBlockEvent-s, there will be nothing to revert.
+        */
+        val stats = processBlockEvents(blockEvents)
+        val toSave = blocks.map {
+            it.toBlock(BlockStatus.SUCCESS, stats[it.number])
+        }
+        return if (blocksRange.stable) {
+            saveStableBlocks(toSave, blocksRange, resyncStable)
+        } else {
+            saveUnstableBlocks(toSave)
         }
     }
 
@@ -436,51 +408,36 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun revertBlock(block: Block) {
         logger.info("Reverting block [{}:{}]: {}", block.id, block.hash, block)
-        withSpan(
-            name = "revertBlock",
-            labels = listOf("blockNumber" to block.id)
-        ) {
-            processBlockEvents(
-                listOf(
-                    RevertedBlockEvent(
-                        number = block.id,
-                        hash = block.hash,
-                        mode = ScanMode.REALTIME
-                    )
+        processBlockEvents(
+            listOf(
+                RevertedBlockEvent(
+                    number = block.id,
+                    hash = block.hash,
+                    mode = ScanMode.REALTIME
                 )
             )
-            blockService.remove(block.id)
-        }
+        )
+        blockService.remove(block.id)
     }
 
     private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>): Map<Long, BlockStats> = coroutineScope {
-        withSpan(
-            name = "processBlocks",
-            labels = listOf(
-                "count" to blockEvents.size,
-                "minId" to blockEvents.first().number,
-                "maxId" to blockEvents.last().number
-            )
-        ) {
-            val processingStart = Timer.start()
-            val stats = blockEventListeners.map { async { it.process(blockEvents) } }.awaitAll()
-            monitor.recordProcessBlocks(processingStart)
-            val mergedStats = HashMap<Long, BlockStats>()
-            stats.forEach { perListener ->
-                perListener.forEach {
-                    mergedStats[it.key] = it.value.merge(mergedStats[it.key])
-                }
-            }
-            mergedStats
+        val stats = monitor.onProcessBlocksEvents {
+            blockEventListeners.map {
+                async { it.process(blockEvents) }
+            }.awaitAll()
         }
+        val mergedStats = HashMap<Long, BlockStats>()
+        stats.forEach { perListener ->
+            perListener.forEach {
+                mergedStats[it.key] = it.value.merge(mergedStats[it.key])
+            }
+        }
+        mergedStats
     }
 
     private suspend fun fetchBlock(number: Long): BB? {
-        val sample = Timer.start()
-        return try {
+        return monitor.onGetBlocks {
             blockClient.getBlock(number)
-        } finally {
-            monitor.recordGetBlock(sample)
         }
     }
 }

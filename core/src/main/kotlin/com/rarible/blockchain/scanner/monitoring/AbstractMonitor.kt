@@ -50,6 +50,19 @@ abstract class AbstractMonitor(
         return ImmutableTag(key, value)
     }
 
+    protected suspend inline fun <T> recordTime(
+        timer: Timer?,
+        block: suspend () -> T
+    ): T {
+        val sample = Timer.start()
+        return try {
+            block()
+        } finally {
+            timer?.let { sample.stop(timer) }
+        }
+    }
+
+
     override fun toString(): String {
         return this.javaClass.name + "(" + properties.blockchain + ")"
     }

@@ -28,7 +28,9 @@ class BlockMonitor(
 
     private var getBlocksTimer: Timer? = null
 
-    private var processBlocksTimer: Timer? = null
+    private var processBlocksEventsTimer: Timer? = null
+
+    private var onBlockTimer: Timer? = null
 
     private val timestampUnit = properties.monitoring.timestampUnit
 
@@ -36,9 +38,11 @@ class BlockMonitor(
         addGauge("delay") { getBlockDelay() }
         addGauge("last_block_number") { lastIndexedBlock?.id }
         addGauge("last_loaded_block_number") { lastLoadedBlockNumber }
+
         getBlockTimer = addTimer("get_block")
         getBlocksTimer = addTimer("get_blocks")
-        processBlocksTimer = addTimer("process_blocks")
+        processBlocksEventsTimer = addTimer("process_blocks_events")
+        onBlockTimer = addTimer("on_block")
     }
 
     override fun refresh() = Unit
@@ -51,19 +55,19 @@ class BlockMonitor(
         this.lastLoadedBlockNumber = lastFetchedBlockNumber
     }
 
-    fun recordGetBlock(sample: Timer.Sample) {
-        getBlockTimer?.let { sample.stop(it) }
+    suspend fun <T> onGetBlocks(block: suspend () -> T): T {
+        return recordTime(getBlockTimer, block)
     }
 
-    fun recordGetBlocks(sample: Timer.Sample) {
-        getBlocksTimer?.let { sample.stop(it) }
+    suspend fun <T> onProcessBlocksEvents(handler: suspend () -> T): T {
+        return recordTime(processBlocksEventsTimer, handler)
     }
 
-    fun recordProcessBlocks(sample: Timer.Sample) {
-        processBlocksTimer?.let { sample.stop(it) }
+    suspend fun onBlockEvent(handler: suspend () -> Unit) {
+        onBlockTimer?.let { recordTime(it, handler) }
     }
 
-    fun getBlockDelay(now: Instant = nowMillis()): Double? {
+    private fun getBlockDelay(now: Instant = nowMillis()): Double? {
         val lastSeenBlockTimestamp = lastIndexedBlock?.timestamp ?: return null
 
         val currentTimestamp = when (timestampUnit) {
