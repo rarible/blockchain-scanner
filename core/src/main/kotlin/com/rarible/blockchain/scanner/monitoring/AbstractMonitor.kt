@@ -57,14 +57,14 @@ abstract class AbstractMonitor(
     }
 
     inline fun <T> recordTime(
-        timer: Timer?,
+        timer: Timer,
         block: () -> T
     ): T {
         val sample = Timer.start()
         return try {
             block()
         } finally {
-            timer?.let { sample.stop(timer) }
+            sample.stop(timer)
         }
     }
 
