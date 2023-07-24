@@ -12,7 +12,6 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
-import com.rarible.blockchain.scanner.framework.data.RecordEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -23,10 +22,7 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.util.addOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
-import com.rarible.blockchain.scanner.publisher.RecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.apm.SpanType
-import com.rarible.core.apm.withSpan
 import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -57,23 +53,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 subscribers.first().getDescriptor().groupId
             }'"
         )
-
-        val logEvents = withSpan("prepareBlockEventsBatch") {
+        val logEvents = logMonitor.onPrepareLogs {
             val batches = BlockRanges.toBatches(events)
             batches.flatMap { prepareBlockEventsBatch(it) }
         }
-
-        val toInsert = logEvents.sumOf { it.logRecordsToInsert.size }
-        val toUpdate = logEvents.sumOf { it.logRecordsToUpdate.size }
-        val saved = withSpan(
-            name = "insertOrUpdateRecords",
-            type = SpanType.DB,
-            labels = listOf("toInsert" to toInsert, "toUpdate" to toUpdate)
-        ) {
+        val saved = logMonitor.onSaveLogs {
             insertOrUpdateRecords(logEvents)
         }
         if (logRecordEventPublisher.isEnabled()) {
-            withSpan(name = "sortAndPublishEvents") {
+            logMonitor.onPublishLogs {
                 sortAndPublishEvents(events, saved)
             }
         }
@@ -129,18 +117,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 .sortedWith(logRecordComparator.reversed())
                 .map { LogRecordEvent(it, true, blockEvent.eventTimeMarks) }
         }
+        for (blockEvent in events) {
+            val eventsToInsert = blockEventsToInsert[blockEvent] ?: continue
+            val eventsToUpdate = blockEventsToUpdate.getValue(blockEvent)
 
-        withSpan("publishEvents") {
-            for (blockEvent in events) {
-                val eventsToInsert = blockEventsToInsert[blockEvent] ?: continue
-                val eventsToUpdate = blockEventsToUpdate.getValue(blockEvent)
+            logging(message = "publishing ${eventsToUpdate.size} reverted log records", event = blockEvent)
+            logRecordEventPublisher.publish(groupId, addOutMark(eventsToUpdate))
 
-                logging(message = "publishing ${eventsToUpdate.size} reverted log records", event = blockEvent)
-                logRecordEventPublisher.publish(groupId, addOutMark(eventsToUpdate))
-
-                logging(message = "publishing ${eventsToInsert.size} new log records", event = blockEvent)
-                logRecordEventPublisher.publish(groupId, addOutMark(eventsToInsert))
-            }
+            logging(message = "publishing ${eventsToInsert.size} new log records", event = blockEvent)
+            logRecordEventPublisher.publish(groupId, addOutMark(eventsToInsert))
         }
     }
 
@@ -152,25 +137,18 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         var events = coroutineScope {
             subscribers.map { subscriber ->
                 async {
-                    withSpan(
-                        name = "processSubscriber",
-                        labels = listOf("descriptor" to subscriber.getDescriptor().id)
-                    ) {
-                        @Suppress("UNCHECKED_CAST")
-                        when (batch[0]) {
-                            is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true)
-                            is NewUnstableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, false)
-                            is RevertedBlockEvent -> onRevertedBlocks(subscriber, batch as List<RevertedBlockEvent<BB>>)
-                        }
+                    @Suppress("UNCHECKED_CAST")
+                    when (batch[0]) {
+                        is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true)
+                        is NewUnstableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, false)
+                        is RevertedBlockEvent -> onRevertedBlocks(subscriber, batch as List<RevertedBlockEvent<BB>>)
                     }
                 }
             }.awaitAll().flatten()
         }
         if (logFilters.isNotEmpty()) {
-            withSpan("filterLogEvents") {
-                for (filter in logFilters) {
-                    events = filter.filter(events)
-                }
+            for (filter in logFilters) {
+                events = filter.filter(events)
             }
         }
         return events
@@ -214,51 +192,39 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         events: List<NewBlockEvent<BB>>,
         stable: Boolean
     ): List<LogEvent<R, D>> {
-        val blockLogs = withSpan(
-            name = "getBlockLogs",
-            type = SpanType.EXT,
-            labels = listOf("stable" to stable)
-        ) {
-            blockchainClient.getBlockLogs(
-                descriptor = subscriber.getDescriptor(),
-                blocks = events.map { it.block },
-                stable = stable
-            ).toList()
-        }.associateBy { it.block.number }
+        val blockLogs = blockchainClient.getBlockLogs(
+            descriptor = subscriber.getDescriptor(),
+            blocks = events.map { it.block },
+            stable = stable
+        ).toList().associateBy { it.block.number }
 
-        val total = events.sumOf { blockLogs[it.number]?.logs?.size ?: 0 }
-        return withSpan(
-            name = "extractLogEvents",
-            labels = listOf("size" to total)
-        ) {
-            coroutineScope {
-                // Preserve the order of events.
-                events.mapNotNull { event ->
-                    val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-                    async {
-                        val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock, event)
-                        val logRecordsToRevert = if (!stable) {
-                            runRethrowingBlockHandlerException(
-                                actionName = "Prepare log records to revert for $event by ${subscriber.getDescriptor().id}"
-                            ) { logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock) }
-                        } else {
-                            emptyList()
-                        }
-                        logging(
-                            message = "prepared ${logRecordsToInsert.size} records to insert " +
-                                "and ${logRecordsToRevert.size} records to update",
-                            event = event,
-                            subscriber = subscriber
-                        )
-                        LogEvent(
-                            blockEvent = event,
-                            descriptor = subscriber.getDescriptor(),
-                            logRecordsToInsert = logRecordsToInsert,
-                            logRecordsToUpdate = logRecordsToRevert
-                        )
+        return coroutineScope {
+            // Preserve the order of events.
+            events.mapNotNull { event ->
+                val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
+                async {
+                    val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock, event)
+                    val logRecordsToRevert = if (!stable) {
+                        runRethrowingBlockHandlerException(
+                            actionName = "Prepare log records to revert for $event by ${subscriber.getDescriptor().id}"
+                        ) { logService.prepareLogsToRevertOnNewBlock(subscriber.getDescriptor(), fullBlock) }
+                    } else {
+                        emptyList()
                     }
-                }.awaitAll()
-            }
+                    logging(
+                        message = "prepared ${logRecordsToInsert.size} records to insert " +
+                                "and ${logRecordsToRevert.size} records to update",
+                        event = event,
+                        subscriber = subscriber
+                    )
+                    LogEvent(
+                        blockEvent = event,
+                        descriptor = subscriber.getDescriptor(),
+                        logRecordsToInsert = logRecordsToInsert,
+                        logRecordsToUpdate = logRecordsToRevert
+                    )
+                }
+            }.awaitAll()
         }
     }
 
@@ -295,12 +261,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         subscriber: LogEventSubscriber<BB, BL, R, D>,
         events: List<RevertedBlockEvent<BB>>
     ): List<LogEvent<R, D>> = events.map { event ->
-        val toRevertLogs = withSpan(name = "prepareLogsToRevert") {
-            logService.prepareLogsToRevertOnRevertedBlock(
-                descriptor = subscriber.getDescriptor(),
-                revertedBlockHash = event.hash
-            ).toList()
-        }
+        val toRevertLogs = logService.prepareLogsToRevertOnRevertedBlock(
+            descriptor = subscriber.getDescriptor(),
+            revertedBlockHash = event.hash
+        ).toList()
+
         logging(
             message = "prepared ${toRevertLogs.size} logs to revert",
             event = event,

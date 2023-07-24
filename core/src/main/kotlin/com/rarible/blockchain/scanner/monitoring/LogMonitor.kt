@@ -15,7 +15,6 @@ class LogMonitor(
     meterRegistry,
     "log"
 ) {
-
     private val logCounters = ConcurrentHashMap<String, Counter>()
 
     override fun register() = Unit
@@ -25,12 +24,31 @@ class LogMonitor(
     private fun getInsertedLogsCounter(descriptor: Descriptor): Counter =
         logCounters.getOrPut(descriptor.id) {
             addCounter(
-                metricName = "inserted_logs",
+                metricName = INSERTED_LOGS,
                 Tag.of("subscriber", descriptor.alias ?: descriptor.id)
             )
         }
 
     fun onLogsInserted(descriptor: Descriptor, inserted: Int) {
         getInsertedLogsCounter(descriptor).increment(inserted.toDouble())
+    }
+
+    inline fun <T> onPrepareLogs(block: () -> T): T {
+        return recordTime(getTimer(PREPARE_LOGS), block)
+    }
+
+    inline fun <T> onSaveLogs(block: () -> T): T {
+        return recordTime(getTimer(SAVE_LOGS), block)
+    }
+
+    inline fun <T> onPublishLogs(block: () -> T): T {
+        return recordTime(getTimer(PUBLISH_LOGS), block)
+    }
+
+    companion object {
+        const val INSERTED_LOGS = "inserted_logs"
+        const val PREPARE_LOGS = "prepare_logs"
+        const val SAVE_LOGS = "save_logs"
+        const val PUBLISH_LOGS = "publish_logs"
     }
 }
