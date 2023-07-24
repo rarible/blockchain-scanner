@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.configuration.TimestampUnit
 import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.Timer
 import java.time.Instant
 import kotlin.math.max
 
@@ -17,32 +16,18 @@ class BlockMonitor(
     meterRegistry,
     "block"
 ) {
-
     @Volatile
     private var lastIndexedBlock: Block? = null
 
     @Volatile
     private var lastLoadedBlockNumber: Long? = null
 
-    private var getBlockTimer: Timer? = null
-
-    private var getBlocksTimer: Timer? = null
-
-    private var processBlocksEventsTimer: Timer? = null
-
-    private var onBlockTimer: Timer? = null
-
     private val timestampUnit = properties.monitoring.timestampUnit
 
     override fun register() {
-        addGauge("delay") { getBlockDelay() }
-        addGauge("last_block_number") { lastIndexedBlock?.id }
-        addGauge("last_loaded_block_number") { lastLoadedBlockNumber }
-
-        getBlockTimer = addTimer("get_block")
-        getBlocksTimer = addTimer("get_blocks")
-        processBlocksEventsTimer = addTimer("process_blocks_events")
-        onBlockTimer = addTimer("on_block")
+        addGauge(BLOCK_DELAY) { getBlockDelay() }
+        addGauge(LAST_BLOCK_NUMBER) { lastIndexedBlock?.id }
+        addGauge(LAST_LOADED_BLOCK_NUMBER) { lastLoadedBlockNumber }
     }
 
     override fun refresh() = Unit
@@ -55,16 +40,12 @@ class BlockMonitor(
         this.lastLoadedBlockNumber = lastFetchedBlockNumber
     }
 
-    suspend fun <T> onGetBlocks(block: suspend () -> T): T {
-        return recordTime(getBlockTimer, block)
+    inline fun <T> onProcessBlocksEvents(handler: () -> List<T>): List<T> {
+        return recordTime(getTimer(PROCESS_BLOCKS_EVENTS), handler)
     }
 
-    suspend fun <T> onProcessBlocksEvents(handler: suspend () -> T): T {
-        return recordTime(processBlocksEventsTimer, handler)
-    }
-
-    suspend fun onBlockEvent(handler: suspend () -> Unit) {
-        onBlockTimer?.let { recordTime(it, handler) }
+    inline fun onBlockEvent(handler: () -> Unit) {
+        recordTime(getTimer(ON_BLOCK), handler)
     }
 
     private fun getBlockDelay(now: Instant = nowMillis()): Double? {
@@ -75,5 +56,14 @@ class BlockMonitor(
             TimestampUnit.MILLISECOND -> now.toEpochMilli()
         }
         return max(currentTimestamp - lastSeenBlockTimestamp, 0).toDouble()
+    }
+
+    companion object {
+        const val BLOCK_DELAY = "delay"
+        const val LAST_BLOCK_NUMBER = "last_block_number"
+        const val LAST_LOADED_BLOCK_NUMBER = "last_loaded_block_number"
+
+        const val PROCESS_BLOCKS_EVENTS = "process_blocks_events"
+        const val ON_BLOCK = "on_block"
     }
 }

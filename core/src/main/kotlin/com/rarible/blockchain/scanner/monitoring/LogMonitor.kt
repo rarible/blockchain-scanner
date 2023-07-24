@@ -5,7 +5,6 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.Timer
 import java.util.concurrent.ConcurrentHashMap
 
 class LogMonitor(
@@ -16,26 +15,16 @@ class LogMonitor(
     meterRegistry,
     "log"
 ) {
-    private var onPrepareLogs: Timer? = null
-
-    private var onSaveLogs: Timer? = null
-
-    private var onPublishLogs: Timer? = null
-
     private val logCounters = ConcurrentHashMap<String, Counter>()
 
-    override fun register() {
-        onPrepareLogs = addTimer("on_prepare_logs")
-        onSaveLogs = addTimer("on_save_logs")
-        onPublishLogs = addTimer("on_publish_logs")
-    }
+    override fun register() = Unit
 
     override fun refresh() = Unit
 
     private fun getInsertedLogsCounter(descriptor: Descriptor): Counter =
         logCounters.getOrPut(descriptor.id) {
             addCounter(
-                metricName = "inserted_logs",
+                metricName = INSERTED_LOGS,
                 Tag.of("subscriber", descriptor.alias ?: descriptor.id)
             )
         }
@@ -44,15 +33,22 @@ class LogMonitor(
         getInsertedLogsCounter(descriptor).increment(inserted.toDouble())
     }
 
-    suspend fun <T> onPrepareLogs(block: suspend () -> T): T {
-        return recordTime(onPrepareLogs, block)
+    inline fun <T> onPrepareLogs(block: () -> T): T {
+        return recordTime(getTimer(PREPARE_LOGS), block)
     }
 
-    suspend fun <T> onSaveLogs(block: suspend () -> T): T {
-        return recordTime(onSaveLogs, block)
+    inline fun <T> onSaveLogs(block: () -> T): T {
+        return recordTime(getTimer(SAVE_LOGS), block)
     }
 
-    suspend fun <T> onPublishLogs(block: suspend () -> T): T {
-        return recordTime(onPublishLogs, block)
+    inline fun <T> onPublishLogs(block: () -> T): T {
+        return recordTime(getTimer(PUBLISH_LOGS), block)
+    }
+
+    companion object {
+        const val INSERTED_LOGS = "inserted_logs"
+        const val PREPARE_LOGS = "prepare_logs"
+        const val SAVE_LOGS = "save_logs"
+        const val PUBLISH_LOGS = "publish_logs"
     }
 }
