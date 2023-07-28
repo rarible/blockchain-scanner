@@ -61,5 +61,4 @@ class TestFlowScannerConfiguration {
             return listOf(record)
         }
     }
-
 }

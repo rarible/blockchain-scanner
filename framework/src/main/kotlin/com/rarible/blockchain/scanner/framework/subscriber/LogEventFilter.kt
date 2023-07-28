@@ -11,5 +11,4 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 interface LogEventFilter<R : LogRecord, D : Descriptor> {
 
     suspend fun filter(events: List<LogEvent<R, D>>): List<LogEvent<R, D>>
-
 }

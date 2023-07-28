@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.configuration
 
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
-import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.publisher.DefaultKafkaLogRecordEventWrapper
 import com.rarible.blockchain.scanner.publisher.DefaultKafkaTransactionRecordEventWrapper
 import com.rarible.blockchain.scanner.publisher.KafkaLogRecordEventWrapper

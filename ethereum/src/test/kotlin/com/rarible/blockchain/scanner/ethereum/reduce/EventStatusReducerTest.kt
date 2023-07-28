@@ -18,7 +18,7 @@ internal class EventStatusReducerTest {
     private val forwardChainItemReducer = mockk<EntityChainReducer<String, ItemEvent, Item>>()
     private val reversedChainItemReducer = mockk<RevertedEntityChainReducer<String, ItemEvent, Item>>()
     private val revertCompactEventsReducer = mockk<RevertCompactEventsReducer<String, ItemEvent, Item>> {
-        coEvery { reduce(any(), any(), any()) } coAnswers  {
+        coEvery { reduce(any(), any(), any()) } coAnswers {
             val reducer = arg<RevertedEntityChainReducer<String, ItemEvent, Item>>(0)
             reducer.reduce(arg<Item>(1), arg<ItemEvent>(2))
         }

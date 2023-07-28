@@ -81,7 +81,7 @@ class FlowHttpClientImpl(
                 val body = it.awaitBody<ByteArray>()
                 when (code) {
                     HttpStatus.OK -> OperationResult.Success<R>(mapper.readValue(body, type))
-                    else ->  OperationResult.Error("Flow Api exception: code=$code, body=${String(body)}, url=$uri")
+                    else -> OperationResult.Error("Flow Api exception: code=$code, body=${String(body)}, url=$uri")
                 }
             }
         }.awaitFirst()
@@ -115,4 +115,3 @@ class FlowHttpClientImpl(
         val logger: Logger = LoggerFactory.getLogger(FlowHttpClientImpl::class.java)
     }
 }
-

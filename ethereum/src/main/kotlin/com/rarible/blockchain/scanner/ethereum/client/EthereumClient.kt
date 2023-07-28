@@ -232,7 +232,6 @@ class EthereumClient(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
     }
-
 }
 
 private fun BigInteger.encodeForFilter(): String {

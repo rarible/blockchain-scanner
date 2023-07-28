@@ -36,4 +36,3 @@ class KafkaTransactionRecordEventConsumer(
         batchedConsumerWorkers.forEach { consumer -> consumer.close() }
     }
 }
-

@@ -5,7 +5,9 @@ import org.springframework.context.annotation.ComponentScan
 
 @Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@ComponentScan(basePackageClasses = [
-    BlockRepository::class
-])
+@ComponentScan(
+    basePackageClasses = [
+        BlockRepository::class
+    ]
+)
 annotation class EnableBlockchainScannerComponents

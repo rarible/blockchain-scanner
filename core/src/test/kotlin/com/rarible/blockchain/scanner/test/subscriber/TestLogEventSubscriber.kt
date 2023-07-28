@@ -48,7 +48,6 @@ class TestLogEventSubscriber(
         return records
     }
 
-
     private fun mapLog(log: TestBlockchainLog, minorLogIndex: Int): TestLog {
         val testLog = log.testOriginalLog
         return TestLog(

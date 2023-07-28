@@ -25,5 +25,4 @@ class TestBidSubscriber : EthereumLogEventSubscriber() {
         block: EthereumBlockchainBlock,
         log: EthereumBlockchainLog
     ): List<EthereumLogRecord> = emptyList()
-
 }

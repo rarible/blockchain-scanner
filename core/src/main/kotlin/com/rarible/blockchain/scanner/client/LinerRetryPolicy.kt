@@ -11,7 +11,7 @@ fun linearDelay(init: Duration, increment: Duration): RetryPolicy<*> {
         val attempt = coroutineContext.retryStatus.attempt
 
         /* sleep = init + increment * attempt */
-        val delay =  init + increment.multipliedBy(attempt.toLong())
+        val delay = init + increment.multipliedBy(attempt.toLong())
 
         RetryAfter(delay.toMillis())
     }

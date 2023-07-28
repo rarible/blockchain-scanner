@@ -10,4 +10,4 @@ data class LogRecordEvent(
     override val record: LogRecord,
     override val reverted: Boolean,
     override val eventTimeMarks: EventTimeMarks
-): RecordEvent<LogRecord>
+) : RecordEvent<LogRecord>

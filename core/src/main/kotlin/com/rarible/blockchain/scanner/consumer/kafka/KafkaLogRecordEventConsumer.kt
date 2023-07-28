@@ -36,4 +36,3 @@ class KafkaLogRecordEventConsumer(
         batchedConsumerWorkers.forEach { consumer -> consumer.close() }
     }
 }
-

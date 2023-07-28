@@ -117,5 +117,4 @@ class BlockReindexerTest {
             blockHandlerFactory,
             logHandlerFactory
         )
-
 }

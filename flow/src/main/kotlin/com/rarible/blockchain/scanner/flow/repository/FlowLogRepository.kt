@@ -72,5 +72,4 @@ class FlowLogRepository(
 
     suspend fun save(collection: String, record: FlowLogRecord): FlowLogRecord =
         mongo.save(record, collection).awaitSingle()
-
 }

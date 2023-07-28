@@ -38,5 +38,4 @@ interface LogService<R : LogRecord, D : Descriptor> {
      * Returns logs that must be reverted when a block is reverted.
      */
     suspend fun prepareLogsToRevertOnRevertedBlock(descriptor: D, revertedBlockHash: String): List<R>
-
 }

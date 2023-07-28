@@ -29,7 +29,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.TreeMap
 
 class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val groupId: String,
@@ -50,7 +50,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
         logger.info(
             "Processing ${events.size} block events ${events.first().number}..${events.last().number} for group '${
-                subscribers.first().getDescriptor().groupId
+            subscribers.first().getDescriptor().groupId
             }'"
         )
         val logEvents = logMonitor.onPrepareLogs {
@@ -213,7 +213,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                     }
                     logging(
                         message = "prepared ${logRecordsToInsert.size} records to insert " +
-                                "and ${logRecordsToRevert.size} records to update",
+                            "and ${logRecordsToRevert.size} records to update",
                         event = event,
                         subscriber = subscriber
                     )

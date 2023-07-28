@@ -40,7 +40,7 @@ internal class ReconciliationLogWorkerHandlerTest {
         every { reconciliation } returns reconciliationProperties
     }
     private val handler = ReconciliationLogWorkerHandler(
-        reconciliationLogHandler =  reconciliationLogHandler,
+        reconciliationLogHandler = reconciliationLogHandler,
         stateRepository = stateRepository,
         blockRepository = blockRepository,
         scannerProperties = scannerProperties,

@@ -2,7 +2,7 @@ package com.rarible.blockchain.scanner.block
 
 import com.rarible.core.common.nowMillis
 import java.time.Instant
-import java.util.*
+import java.util.TreeMap
 
 data class BlockStats(
     val updatedAt: Instant,
@@ -46,4 +46,3 @@ data class SubscriberStats(
         )
     }
 }
-

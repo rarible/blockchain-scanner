@@ -60,8 +60,8 @@ class BlockchainMonitor(
         method: String,
         status: CallStatus
     ) {
-        val endTimeMs = System.currentTimeMillis();
-        val executionTime = endTimeMs - startTimeMs;
+        val endTimeMs = System.currentTimeMillis()
+        val executionTime = endTimeMs - startTimeMs
         meterRegistry.timer(
             blockchainApiCallsCounter,
             listOf(

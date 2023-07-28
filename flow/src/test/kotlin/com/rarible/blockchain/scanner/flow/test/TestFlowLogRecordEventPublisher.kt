@@ -11,5 +11,4 @@ class TestFlowLogRecordEventPublisher : LogRecordEventPublisher {
     override suspend fun publish(groupId: String, logRecordEvents: List<LogRecordEvent>) {
         publishedLogRecords += logRecordEvents
     }
-
 }

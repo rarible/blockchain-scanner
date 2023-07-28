@@ -18,8 +18,7 @@ data class ItemEvent(
     override val log: EthereumLog,
     val supply: Int = 1,
     override val compact: Boolean = false,
-) : EthereumEntityEvent<ItemEvent>() {
-}
+) : EthereumEntityEvent<ItemEvent>()
 
 fun createRandomItemEvent(
     transactionSender: Address = randomAddress(),
@@ -87,5 +86,5 @@ fun EthereumLog.withNewValues(
     index = index ?: this.index,
     minorLogIndex = minorLogIndex ?: this.minorLogIndex,
     address = address ?: this.address,
-    from =  from ?: this.from
+    from = from ?: this.from
 )

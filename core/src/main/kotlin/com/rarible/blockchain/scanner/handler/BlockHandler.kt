@@ -20,7 +20,6 @@ import com.rarible.core.logging.asyncWithTraceId
 import com.rarible.core.logging.withTraceId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
@@ -233,9 +232,9 @@ class BlockHandler<BB : BlockchainBlock>(
         var blockchainBlock = fetchBlock(currentBlock.id)
 
         while (
-            blockchainBlock == null
-            || currentBlock.hash != blockchainBlock.hash
-            || currentBlock.status == BlockStatus.PENDING
+            blockchainBlock == null ||
+            currentBlock.hash != blockchainBlock.hash ||
+            currentBlock.status == BlockStatus.PENDING
         ) {
             revertBlock(currentBlock)
             currentBlock = getPreviousBlock(currentBlock)

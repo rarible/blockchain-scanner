@@ -71,7 +71,7 @@ class EthereumBlockchainLogIndexTest {
                 blockNumber = blockNumber.toBigInteger()
             ),
             index = index,
-            total =  1
+            total = 1
         )
 
         val expectedLogs = listOf(
@@ -136,7 +136,6 @@ class EthereumBlockchainLogIndexTest {
             ),
         )
 
-
         val ethereumClient = createEthereumClient(allBlocks, expectedLogs)
 
         val descriptor = mockk<EthereumDescriptor>()
@@ -162,8 +161,8 @@ class EthereumBlockchainLogIndexTest {
             val blockHash = firstArg<Word>()
             val block = allBlocks.find { it.hash() == blockHash } ?: return@answers null
             val transactions = logs.filter {
-                it.ethTransaction.blockNumber() == block.blockNumber
-                        && it.ethTransaction.blockHash() == blockHash
+                it.ethTransaction.blockNumber() == block.blockNumber &&
+                        it.ethTransaction.blockHash() == blockHash
             }.map { it.ethTransaction }
             Block(
                 block.number(),

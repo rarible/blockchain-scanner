@@ -115,7 +115,8 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         blockHandler.onNewBlock(blockchain.last())
         assertThat(getAllBlocks()).isEqualTo(blockchain.map { it.toBlock(BlockStatus.SUCCESS) })
         assertThat(blockEvents.flatten()).isEqualTo(
-            blockchain.drop(6).map { it.asNewUnstableEvent() })
+            blockchain.drop(6).map { it.asNewUnstableEvent() }
+        )
     }
 
     @Test

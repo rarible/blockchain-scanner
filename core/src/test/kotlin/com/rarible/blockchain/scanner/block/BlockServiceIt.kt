@@ -23,5 +23,4 @@ class BlockServiceIt : AbstractIntegrationTest() {
         assertThat(blockService.getBlock(block2.id)).isEqualTo(block2)
         assertThat(blockService.getBlock(block3.id)).isEqualTo(block3)
     }
-
 }

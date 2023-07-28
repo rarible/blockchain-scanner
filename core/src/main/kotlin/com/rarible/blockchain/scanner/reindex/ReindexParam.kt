@@ -6,4 +6,3 @@ interface ReindexParam {
     val name: String?
     val publishEvents: Boolean
 }
-

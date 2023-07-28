@@ -12,4 +12,3 @@ data class Event(
     val eventIndex: String,
     val payload: String
 )
-

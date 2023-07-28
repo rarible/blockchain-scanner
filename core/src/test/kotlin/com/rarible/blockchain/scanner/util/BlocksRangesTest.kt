@@ -162,5 +162,4 @@ class BlocksRangesTest {
 
     private fun range(from: Long, to: Long, step: Int): List<LongRange> =
         BlockRanges.getRanges(from, to, step).toList()
-
 }

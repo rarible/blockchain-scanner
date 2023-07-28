@@ -42,5 +42,4 @@ class LogHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord,
         logRecordEventPublisher = logRecordEventPublisher,
         logMonitor = logMonitor
     )
-
 }

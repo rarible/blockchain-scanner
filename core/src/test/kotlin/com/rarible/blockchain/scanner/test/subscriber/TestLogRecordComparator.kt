@@ -10,5 +10,4 @@ object TestLogRecordComparator : LogRecordComparator<TestLogRecord> {
             .thenBy { it.log.minorLogIndex }
             .compare(r1, r2)
     }
-
 }

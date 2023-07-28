@@ -100,7 +100,6 @@ class FlowBlockchainClientTest {
                 println(stringValue)
             }
         }
-
     }
 
     @Test
@@ -116,7 +115,6 @@ class FlowBlockchainClientTest {
                 println(stringValue)
             }
         }
-
     }
 
     @Test
@@ -174,5 +172,4 @@ class FlowBlockchainClientTest {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(FlowBlockchainClientTest::class.java)
     }
-
 }

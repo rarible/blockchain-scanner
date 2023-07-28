@@ -27,5 +27,4 @@ class BlockHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecor
             monitor = blockMonitor
         )
     }
-
 }

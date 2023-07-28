@@ -23,4 +23,3 @@ abstract class CompactEventsReducer<Id, Event : EthereumEntityEvent<Event>, E : 
 
     protected abstract fun compact(events: List<Event>): List<Event>
 }
-

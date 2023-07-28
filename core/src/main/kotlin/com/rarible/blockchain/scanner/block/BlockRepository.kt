@@ -44,5 +44,4 @@ class BlockRepository(
     }
 
     fun getAll(): Flow<Block> = mongo.findAll<Block>().asFlow()
-
 }

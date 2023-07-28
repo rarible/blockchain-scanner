@@ -119,5 +119,4 @@ class BlockScanPlannerTest {
         val scan = ScanProperties(batchLoad = batchProperties)
         return TestBlockchainScannerProperties().copy(scan = scan)
     }
-
 }

@@ -52,7 +52,8 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                 logger.info(
                     "Injected log subscribers of the group {}: {}",
                     groupId,
-                    subscribers.joinToString { it.getDescriptor().id })
+                    subscribers.joinToString { it.getDescriptor().id }
+                )
                 LogHandler(
                     groupId = groupId,
                     blockchainClient = retryableClient,
@@ -72,7 +73,8 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                 logger.info(
                     "Injected transaction subscribers of the group {}: {}",
                     groupId,
-                    subscribers.joinToString { it::class.java.simpleName })
+                    subscribers.joinToString { it::class.java.simpleName }
+                )
                 TransactionHandler(
                     groupId = groupId,
                     subscribers = subscribers,

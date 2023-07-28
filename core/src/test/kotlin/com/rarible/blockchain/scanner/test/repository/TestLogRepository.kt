@@ -59,5 +59,4 @@ class TestLogRepository(
         }
         return mongo.find(query, entityType, collection) as Flux<TestLogRecord>
     }
-
 }

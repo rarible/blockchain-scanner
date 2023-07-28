@@ -4,7 +4,6 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumEntityEvent
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.core.entity.reducer.service.EventApplyPolicy
 
-
 open class ConfirmEventApplyPolicy<T : EthereumEntityEvent<T>>(
     private val confirmationBlocks: Int
 ) : EventApplyPolicy<T> {

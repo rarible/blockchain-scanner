@@ -60,5 +60,4 @@ class BlockReindexer<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D 
             blockHandler.syncBlocks(blocksRanges, baseBlock, resyncStable = true)
         }
     }
-
 }

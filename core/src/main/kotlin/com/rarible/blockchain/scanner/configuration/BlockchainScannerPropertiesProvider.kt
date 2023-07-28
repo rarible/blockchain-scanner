@@ -17,5 +17,4 @@ class BlockchainScannerPropertiesProvider(
     fun init() {
         logger.info("Starting blockchain scanner with next configuration: {}", properties)
     }
-
 }

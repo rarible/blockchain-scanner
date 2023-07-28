@@ -7,5 +7,3 @@ import scalether.domain.response.Block
 interface EthereumNewBlockSubscriber {
     fun newHeads(): Flux<Block<Word>>
 }
-
-
