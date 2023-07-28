@@ -16,7 +16,10 @@ import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
+import com.rarible.core.logging.asyncWithTraceId
+import com.rarible.core.logging.withTraceId
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.produce
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.takeWhile
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Synchronizes database with the blockchain, see [onNewBlock].
@@ -109,13 +113,20 @@ class BlockHandler<BB : BlockchainBlock>(
                 baseBlock = lastCorrectBlock,
                 capacity = scanProperties.batchLoad.batchBufferSize
             )
-            var lastSyncedBlock: Block? = null
+            if (channel.isEmpty) {
+                logger.info("Produced empty blocks channel")
+                return@coroutineScope
+            }
+
+            val lastSyncedBlockReference = AtomicReference<Block>()
 
             for (batch in channel) {
-                lastSyncedBlock = processBlocks(batch, mode = ScanMode.REALTIME).last()
+                val lastSyncedBlock = processBlocks(batch, mode = ScanMode.REALTIME).last()
+                lastSyncedBlockReference.set(lastSyncedBlock)
                 monitor.recordLastIndexedBlock(lastSyncedBlock)
             }
-            if (lastSyncedBlock != null) {
+            if (lastSyncedBlockReference.get() != null) {
+                val lastSyncedBlock = lastSyncedBlockReference.get()
                 logger.info(
                     "Syncing completed {} on block [{}:{}]: {}",
                     if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
@@ -186,24 +197,24 @@ class BlockHandler<BB : BlockchainBlock>(
         baseBlock: Block,
         capacity: Int
     ) = produce(capacity = capacity) {
-        var lastFetchedBlockHash = baseBlock.hash
+        val lastFetchedBlockHash = AtomicReference(baseBlock.hash)
 
-        blockRanges.chunked(capacity / 2).asFlow().takeWhile { batchOfRanges ->
+        blockRanges.chunked(capacity / 2).asFlow().withTraceId().takeWhile { batchOfRanges ->
             val batchOfBlockBatches = coroutineScope {
                 batchOfRanges.map { range ->
-                    async {
+                    asyncWithTraceId {
                         fetchBlocksByRange(range)
                     }
                 }
             }.awaitAll()
             for (blocksBatch in batchOfBlockBatches) {
                 val (batch, isConsistent) = checkBlocksBatchHashConsistency(
-                    baseBlockHash = lastFetchedBlockHash,
+                    baseBlockHash = lastFetchedBlockHash.get(),
                     blocksBatch = blocksBatch
                 )
                 if (batch.blocks.isNotEmpty()) {
                     val last = batch.blocks.last()
-                    lastFetchedBlockHash = last.hash
+                    lastFetchedBlockHash.set(last.hash)
                     monitor.recordLastFetchedBlockNumber(last.number)
 
                     send(batch)
@@ -421,7 +432,7 @@ class BlockHandler<BB : BlockchainBlock>(
     private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>): Map<Long, BlockStats> = coroutineScope {
         val stats = monitor.onProcessBlocksEvents {
             blockEventListeners.map {
-                async { it.process(blockEvents) }
+                asyncWithTraceId(context = NonCancellable) { it.process(blockEvents) }
             }.awaitAll()
         }
         val mergedStats = HashMap<Long, BlockStats>()

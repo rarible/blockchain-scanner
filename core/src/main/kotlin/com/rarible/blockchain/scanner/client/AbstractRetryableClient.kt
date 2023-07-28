@@ -58,10 +58,15 @@ abstract class AbstractRetryableClient(
         val currentDelay = AtomicReference(delay)
         return this
             .retryWhen(Retry.max(attempts.toLong() - 1).filter { e ->
-                isRetryableException(e)
+                val shouldRetry = isRetryableException(e)
+                if (shouldRetry) {
+                    logger.info("Will retry $method because of ${e.message}")
+                }
+                shouldRetry
             }.doBeforeRetryAsync {
                 val sleep = currentDelay.get()
                 currentDelay.set(sleep + increment)
+                logger.info("Will sleep for $sleep")
                 Mono.delay(sleep).then()
             }.onRetryExhaustedThrow { _, signal ->
                 logRetryFail(method, signal.failure(), *args)
