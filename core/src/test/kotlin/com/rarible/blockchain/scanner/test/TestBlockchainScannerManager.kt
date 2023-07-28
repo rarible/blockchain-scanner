@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.test
 import com.rarible.blockchain.scanner.BlockchainScannerManager
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
-import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor

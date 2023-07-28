@@ -11,5 +11,4 @@ class TestEthereumTransactionRecordEventPublisher : TransactionRecordEventPublis
     override suspend fun publish(groupId: String, logRecordEvents: List<TransactionRecordEvent>) {
         publishedTransactionRecords += logRecordEvents
     }
-
 }

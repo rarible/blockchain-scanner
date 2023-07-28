@@ -13,11 +13,11 @@ internal class KafkaLogRecordEventHandler<T>(
 
     override suspend fun handle(event: List<T>) {
         logRecordEventListener.onLogRecordEvents(
-           event
-               .asSequence()
-               .filter { filters.all { filter -> filter.filter(it) } }
-               .map { mapper.map(it) }
-               .toList()
+            event
+                .asSequence()
+                .filter { filters.all { filter -> filter.filter(it) } }
+                .map { mapper.map(it) }
+                .toList()
         )
     }
 }

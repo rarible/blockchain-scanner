@@ -8,4 +8,3 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 interface BlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor> :
     BlockchainBlockClient<BB>,
     BlockchainLogClient<BB, BL, D>
-

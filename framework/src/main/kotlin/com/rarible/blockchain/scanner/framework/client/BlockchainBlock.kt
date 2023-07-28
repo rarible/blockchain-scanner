@@ -13,5 +13,4 @@ interface BlockchainBlock {
     val timestamp: Long
 
     fun getDatetime(): Instant = Instant.ofEpochMilli(timestamp)
-
 }

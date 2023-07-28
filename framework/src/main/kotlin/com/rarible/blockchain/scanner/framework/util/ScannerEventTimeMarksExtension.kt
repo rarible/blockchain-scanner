@@ -14,5 +14,3 @@ fun scannerBlockchainEventMarks(mode: ScanMode, sourceDate: Instant? = null): Ev
         .add("source", sourceDate)
         .addIn()
 }
-
-

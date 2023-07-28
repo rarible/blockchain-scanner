@@ -52,7 +52,6 @@ fun randomLogRecord(log: EthereumLog): ReversedEthereumLogRecord {
     )
 }
 
-
 fun randomLog(
     topic: Word,
     blockHash: Word,
@@ -161,8 +160,8 @@ fun ethBlock(number: Int, hash: Word, logs: List<EthereumBlockchainLog> = emptyL
     BigInteger.ZERO,
     CollectionConverters.asScala(
         logs.filter {
-            it.ethTransaction.blockNumber() == number.toBigInteger()
-                && it.ethTransaction.blockHash() == hash
+            it.ethTransaction.blockNumber() == number.toBigInteger() &&
+                it.ethTransaction.blockHash() == hash
         }.map { it.ethTransaction }
     ).toList(),
     BigInteger.ZERO,

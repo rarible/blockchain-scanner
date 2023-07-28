@@ -39,7 +39,7 @@ class FlowBlockchainClient(
 
     private val logger: Logger = LoggerFactory.getLogger(FlowBlockchainClient::class.java)
 
-    private val  firstAvailableBlock =  properties.scan.firstAvailableBlock
+    private val firstAvailableBlock = properties.scan.firstAvailableBlock
 
     override val newBlocks = flatten {
         poller.poll().map { FlowBlockchainBlock(it) }

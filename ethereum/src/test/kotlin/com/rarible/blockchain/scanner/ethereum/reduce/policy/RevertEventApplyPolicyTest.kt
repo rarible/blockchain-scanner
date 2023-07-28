@@ -42,7 +42,7 @@ internal class RevertEventApplyPolicyTest {
     }
 
     @Test
-    //TODO: back after bug in blockchain scanner wiil be fixed
+    // TODO: back after bug in blockchain scanner wiil be fixed
     @Disabled
     fun `should throw exception if event not from tail`() {
         val mint = createRandomItemEvent().withNewValues(

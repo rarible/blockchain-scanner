@@ -7,11 +7,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import reactor.core.publisher.Mono
-import scalether.domain.response.Block
 import scalether.core.MonoEthereum
+import scalether.domain.response.Block
 import java.math.BigInteger
 import java.time.Duration
 
@@ -40,6 +39,5 @@ internal class EthereumNewBlockPollerTest {
 
         val result = poller.newHeads().take(2).collectList().awaitFirst()
         assertThat(result).containsExactly(block1, block2)
-
     }
 }

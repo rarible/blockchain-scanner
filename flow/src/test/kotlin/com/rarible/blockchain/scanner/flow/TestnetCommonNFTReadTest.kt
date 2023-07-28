@@ -20,5 +20,4 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @MongoCleanup
 @MongoTest
 @Testcontainers
-class TestnetCommonNFTReadTest {
-}
+class TestnetCommonNFTReadTest

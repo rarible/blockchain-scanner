@@ -86,7 +86,6 @@ object FlowFieldConverter : Converter<Document, Field<*>> {
             }
 
             else -> throw UnsupportedOperationException("Unable to parse Flow field (unknown type): $source")
-
         } as Field<*>?
     }
 
@@ -160,5 +159,4 @@ object FlowFieldConverter : Converter<Document, Field<*>> {
             )
         )
     }
-
 }

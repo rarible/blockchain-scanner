@@ -28,12 +28,10 @@ interface Descriptor {
      */
     val groupId: String
 
-
     /**
      * Type of objects related to this descriptor. Subscriber should produce LogRecords of this type.
      * Due to mongo framework specific of dealing with interfaces, we need to specify such types
      * explicitly in order to avoid unnecessary mongo reflective field checks in queries.
      */
     val entityType: Class<*>
-
 }

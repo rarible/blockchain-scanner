@@ -18,4 +18,3 @@ abstract class TestLogRecord : LogRecord {
 fun TestLogRecord.nullVersion() = withIdAndVersion(id = id, version = null)
 
 fun TestLogRecord.revert(): TestLogRecord = withLog(log = log.copy(reverted = true))
-

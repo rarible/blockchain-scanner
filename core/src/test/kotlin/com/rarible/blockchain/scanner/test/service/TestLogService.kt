@@ -63,5 +63,4 @@ class TestLogService(
         descriptor: TestDescriptor,
         fullBlock: FullBlock<*, *>
     ): List<TestLogRecord> = emptyList()
-
 }

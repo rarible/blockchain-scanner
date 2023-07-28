@@ -103,5 +103,4 @@ class RetryableBlockchainClientTest {
         assertEquals(3, count)
         assertEquals(fullBlock, list[0])
     }
-
 }

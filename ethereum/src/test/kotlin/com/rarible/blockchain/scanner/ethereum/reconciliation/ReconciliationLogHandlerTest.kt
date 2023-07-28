@@ -111,7 +111,7 @@ internal class ReconciliationLogHandlerTest {
         every { logHandlerFactory.create("groupId2", listOf(subscriber3), any(), any()) } returns logHandler2
         every { logHandlerFactory.create("groupId3", listOf(subscriber4), any(), any()) } returns logHandler3
 
-        //Block 10 statistics
+        // Block 10 statistics
         val block10Handler1Stats = mockk<BlockStats> { every { inserted } returns 10 }
         coEvery {
             logHandler1.process(
@@ -147,7 +147,7 @@ internal class ReconciliationLogHandlerTest {
             )
         } returns mapOf(10L to block10Handler3Stats)
 
-        //Block 11 statistics
+        // Block 11 statistics
         val block11Handler1Stats = mockk<BlockStats> { every { inserted } returns 12 }
         coEvery {
             logHandler1.process(
@@ -198,7 +198,7 @@ internal class ReconciliationLogHandlerTest {
 
         every { logHandlerFactory.create("groupId1", listOf(subscriber1), any(), any()) } returns logHandler1
 
-        //Block 100 statistics
+        // Block 100 statistics
         val block100Stats = mockk<BlockStats> { every { inserted } returns 11 }
         coEvery {
             logHandler1.process(
@@ -237,4 +237,3 @@ internal class ReconciliationLogHandlerTest {
         )
     }
 }
-

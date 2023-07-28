@@ -64,7 +64,6 @@ class FlowScannerTest {
     @Autowired
     private lateinit var allFlowLogEventSubscriber: FlowLogEventSubscriber
 
-
     companion object {
         @Container
         private val flowEmulator: KGenericContainer = KGenericContainer(
@@ -84,7 +83,6 @@ class FlowScannerTest {
             }
             .withReuse(true)
             .waitingFor(Wait.forHttp("/").forPort(8080).forStatusCode(500))
-
 
         @BeforeAll
         @JvmStatic
@@ -288,12 +286,10 @@ class FlowScannerTest {
         return founded!!
     }
 
-
     private fun getAccountKey(address: FlowAddress, keyIndex: Int = 0): FlowAccountKey {
         val account = getAccount(address)
         return account.keys[keyIndex]
     }
 
     private fun getAccount(address: FlowAddress): FlowAccount = accessApi.getAccountAtLatestBlock(address)!!
-
 }

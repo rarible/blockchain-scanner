@@ -17,7 +17,7 @@ open class RevertEventApplyPolicy<T : EthereumEntityEvent<T>> : EventApplyPolicy
         }
         val confirmedEvent = findConfirmedEvent(confirmedEvents, event)
         return if (confirmedEvent != null) {
-            //TODO: back after bug in blockchain scanner wiil be fixed
+            // TODO: back after bug in blockchain scanner wiil be fixed
 //            require(events.last() == confirmedEvent) {
 //                "Event must revert from tail of list. Revert event: $event, event list=$events"
 //            }

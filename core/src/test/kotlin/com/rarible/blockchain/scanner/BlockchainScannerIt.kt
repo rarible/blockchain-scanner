@@ -377,7 +377,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
         // Block #1 was PENDING, so we, firstly, revert all possibly saved logs and then apply them again.
         assertPublishedLogRecords(
-            descriptor.groupId, confirmedLogs + listOf(
+            descriptor.groupId,
+            confirmedLogs + listOf(
                 LogRecordEvent(
                     record = subscriber.getReturnedRecords(blocks[1], log12).single().revert(),
                     reverted = true,
@@ -406,7 +407,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             )
         )
         assertPublishedTransactionRecords(
-            "test", confirmedTransactions + listOf(
+            "test",
+            confirmedTransactions + listOf(
                 TransactionRecordEvent(
                     record = transactionSubscriber.getReturnedRecords(blocks[1]).single(),
                     reverted = false,
@@ -419,7 +421,6 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 ),
             )
         )
-
     }
 
     private fun assertPublishedLogRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {

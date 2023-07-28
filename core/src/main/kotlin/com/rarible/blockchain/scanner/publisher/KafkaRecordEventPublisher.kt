@@ -48,5 +48,5 @@ class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
         kafkaProducer.send(messages, topic).collect { result -> result.ensureSuccess() }
     }
 
-    private fun getTopic(groupId: String): String = "$topicPrefix.${groupId}"
+    private fun getTopic(groupId: String): String = "$topicPrefix.$groupId"
 }

@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-
 import com.fasterxml.jackson.databind.JsonNode
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import io.daonomic.rpc.MonoRpcTransport

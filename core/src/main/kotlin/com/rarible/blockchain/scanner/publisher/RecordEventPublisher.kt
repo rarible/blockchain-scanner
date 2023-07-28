@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.publisher
 import com.rarible.blockchain.scanner.framework.data.RecordEvent
 import com.rarible.blockchain.scanner.framework.model.Record
 
-interface RecordEventPublisher<R : Record, E: RecordEvent<R>> {
+interface RecordEventPublisher<R : Record, E : RecordEvent<R>> {
 
     /**
      * Optional hook to prepare the group for publishing new records.

@@ -3,10 +3,8 @@ package com.rarible.blockchain.scanner.solana.service
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
-import com.rarible.blockchain.scanner.solana.model.SolanaLog
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
 import com.rarible.blockchain.scanner.solana.repository.SolanaLogRepository
-import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Component
 
 @Component

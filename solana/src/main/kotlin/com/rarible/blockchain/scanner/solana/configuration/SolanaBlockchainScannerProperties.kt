@@ -28,4 +28,4 @@ data class SolanaBlockchainScannerProperties(
     val rpcApiTimeout: Long = 30000,
     val programIds: Set<String> = emptySet(),
     override val scan: ScanProperties = ScanProperties()
-): BlockchainScannerProperties
+) : BlockchainScannerProperties

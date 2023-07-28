@@ -18,4 +18,3 @@ data class FlowBlockchainBlock(
         timestamp = block.timestamp.toInstant(ZoneOffset.UTC).toEpochMilli()
     )
 }
-

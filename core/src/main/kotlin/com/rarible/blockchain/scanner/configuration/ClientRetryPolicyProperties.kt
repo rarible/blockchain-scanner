@@ -7,4 +7,3 @@ data class ClientRetryPolicyProperties(
     val increment: Duration = Duration.ofMillis(125),
     val attempts: Int = 8,
 )
-

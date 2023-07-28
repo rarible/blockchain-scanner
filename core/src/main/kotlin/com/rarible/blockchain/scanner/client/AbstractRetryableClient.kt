@@ -57,16 +57,23 @@ abstract class AbstractRetryableClient(
     protected fun <T> Mono<T>.wrapWithRetry(method: String = "", vararg args: Any): Mono<T> {
         val currentDelay = AtomicReference(delay)
         return this
-            .retryWhen(Retry.max(attempts.toLong() - 1).filter { e ->
-                isRetryableException(e)
-            }.doBeforeRetryAsync {
-                val sleep = currentDelay.get()
-                currentDelay.set(sleep + increment)
-                Mono.delay(sleep).then()
-            }.onRetryExhaustedThrow { _, signal ->
-                logRetryFail(method, signal.failure(), *args)
-                signal.failure()
-            })
+            .retryWhen(
+                Retry.max(attempts.toLong() - 1).filter { e ->
+                    val shouldRetry = isRetryableException(e)
+                    if (shouldRetry) {
+                        logger.info("Will retry $method because of ${e.message}")
+                    }
+                    shouldRetry
+                }.doBeforeRetryAsync {
+                    val sleep = currentDelay.get()
+                    currentDelay.set(sleep + increment)
+                    logger.info("Will sleep for $sleep")
+                    Mono.delay(sleep).then()
+                }.onRetryExhaustedThrow { _, signal ->
+                    logRetryFail(method, signal.failure(), *args)
+                    signal.failure()
+                }
+            )
     }
 
     protected suspend fun <T> wrapWithRetry(method: String, vararg args: Any, clientCall: suspend () -> T): T {
@@ -87,9 +94,9 @@ abstract class AbstractRetryableClient(
     }
 
     private fun isRetryableException(e: Throwable): Boolean {
-        return e !is CancellationException
-            && e !is NonRetryableBlockchainClientException
-            && e !is Error
+        return e !is CancellationException &&
+            e !is NonRetryableBlockchainClientException &&
+            e !is Error
     }
 
     private fun logRetryFail(method: String, e: Throwable, vararg args: Any) {

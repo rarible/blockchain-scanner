@@ -59,5 +59,4 @@ class TestEthereumBlockchainClient(
         stable: Boolean
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> =
         delegate.getBlockLogs(descriptor, blocks, stable)
-
 }

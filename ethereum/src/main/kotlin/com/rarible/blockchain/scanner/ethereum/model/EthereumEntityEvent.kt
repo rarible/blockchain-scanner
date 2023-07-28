@@ -14,7 +14,6 @@ abstract class EthereumEntityEvent<T> : Comparable<EthereumEntityEvent<T>> {
 
     val timestamp: Long get() = log.createdAt.epochSecond
 
-
     open fun invert(): T = throw IllegalArgumentException("${this.javaClass} event can't invert")
 
     fun isConfirmed(): Boolean = log.status == EthereumBlockStatus.CONFIRMED
@@ -33,9 +32,9 @@ abstract class EthereumEntityEvent<T> : Comparable<EthereumEntityEvent<T>> {
                     eventKeyComparator.compare(o1, other)
                 } else {
                     require(
-                        other.log.status == EthereumBlockStatus.PENDING
-                                || other.log.status == EthereumBlockStatus.INACTIVE
-                                || other.log.status == EthereumBlockStatus.DROPPED
+                        other.log.status == EthereumBlockStatus.PENDING ||
+                                other.log.status == EthereumBlockStatus.INACTIVE ||
+                                other.log.status == EthereumBlockStatus.DROPPED
                     ) {
                         "Can't compare $o1 and $other"
                     }

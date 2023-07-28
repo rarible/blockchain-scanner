@@ -64,7 +64,7 @@ object BlockRanges {
     }
 
     fun getRanges(from: Long, to: Long, step: Int): Sequence<LongRange> {
-        check(from >= 0) { "$from "}
+        check(from >= 0) { "$from " }
         check(to >= 0) { "$to" }
         if (from > to) return emptySequence()
         if (from == to) return sequenceOf(LongRange(from, to))
@@ -74,7 +74,7 @@ object BlockRanges {
     }
 
     fun getRanges(from: Long, to: Long): LongRange {
-        check(from >= 0) { "$from "}
+        check(from >= 0) { "$from " }
         check(to >= 0) { "$to" }
         if (from > to) return LongRange.EMPTY
         if (from == to) return LongRange(from, to)

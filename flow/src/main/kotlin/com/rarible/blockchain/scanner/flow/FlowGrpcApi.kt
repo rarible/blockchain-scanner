@@ -1,6 +1,11 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.*
+import com.nftco.flow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlockHeader
+import com.nftco.flow.sdk.FlowEvent
+import com.nftco.flow.sdk.FlowEventResult
+import com.nftco.flow.sdk.FlowId
+import com.nftco.flow.sdk.FlowTransaction
 import kotlinx.coroutines.flow.Flow
 
 interface FlowGrpcApi {

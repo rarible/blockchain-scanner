@@ -13,10 +13,11 @@ class TestLogEventFilter(
         events: List<LogEvent<TestLogRecord, TestDescriptor>>
     ): List<LogEvent<TestLogRecord, TestDescriptor>> {
         return events.map { event ->
-            event.copy(logRecordsToInsert = event.logRecordsToInsert.filterNot {
-                transactionsToFilter.contains(it.log.transactionHash)
-            })
+            event.copy(
+                logRecordsToInsert = event.logRecordsToInsert.filterNot {
+                    transactionsToFilter.contains(it.log.transactionHash)
+                }
+            )
         }
     }
-
 }

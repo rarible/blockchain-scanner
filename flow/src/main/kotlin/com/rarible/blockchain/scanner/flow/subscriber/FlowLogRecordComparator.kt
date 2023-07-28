@@ -9,5 +9,4 @@ object FlowLogRecordComparator : LogRecordComparator<FlowLogRecord> {
         compareBy<FlowLogRecord> { it.log.blockHeight }
             .thenBy { it.log.eventIndex }
             .compare(r1, r2)
-
 }

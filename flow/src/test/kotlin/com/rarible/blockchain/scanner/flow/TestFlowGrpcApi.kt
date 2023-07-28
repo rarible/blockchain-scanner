@@ -1,14 +1,20 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.*
+import com.nftco.flow.sdk.AsyncFlowAccessApi
+import com.nftco.flow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlockHeader
+import com.nftco.flow.sdk.FlowEvent
+import com.nftco.flow.sdk.FlowEventResult
+import com.nftco.flow.sdk.FlowId
+import com.nftco.flow.sdk.FlowTransaction
 import com.rarible.blockchain.scanner.util.flatten
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.future.await
 
-
-class TestFlowGrpcApi(private val api: AsyncFlowAccessApi): FlowGrpcApi {
+class TestFlowGrpcApi(private val api: AsyncFlowAccessApi) : FlowGrpcApi {
     override suspend fun isAlive(): Boolean = true
 
     override suspend fun latestBlock(): FlowBlock = api.getLatestBlock().await()
@@ -24,7 +30,6 @@ class TestFlowGrpcApi(private val api: AsyncFlowAccessApi): FlowGrpcApi {
     override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> = flow {
         api.getEventsForHeightRange(type, range).await().asFlow()
     }
-
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
         return api.getBlockHeaderByHeight(height).await()

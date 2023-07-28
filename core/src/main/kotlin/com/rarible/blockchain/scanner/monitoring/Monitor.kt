@@ -5,5 +5,4 @@ interface Monitor {
     fun register()
 
     fun refresh()
-
 }

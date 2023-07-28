@@ -22,4 +22,3 @@ class KafkaEntityEventConsumer(
         batchedConsumerWorkers.forEach { consumer -> consumer.close() }
     }
 }
-

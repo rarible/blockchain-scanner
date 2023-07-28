@@ -22,6 +22,5 @@ class ChangeLog00001 {
     }
 
     private fun createInitialIndices(template: MongockTemplate, collection: String) {
-
     }
 }

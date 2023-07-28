@@ -71,12 +71,22 @@ class EthereumClient(
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = subscriber.newHeads()
         .flatMap {
+            logger.info("Detected new block from subscriber: ${it.blockNumber}")
             ethereum
                 .ethGetFullBlockByHash(it.hash())
                 .wrapWithRetry("ethGetFullBlockByHash", it.hash(), it.number())
         }
         .map { EthereumBlockchainBlock(it) }
         .timeout(Duration.ofMinutes(5))
+        .doOnCancel {
+            logger.info("Subscription canceled")
+        }
+        .doOnError { e ->
+            logger.warn("Subscription error: ${e.message}", e)
+        }
+        .doOnComplete {
+            logger.info("Subscription completed")
+        }
         .asFlow()
 
     override suspend fun getBlocks(numbers: List<Long>): List<EthereumBlockchainBlock> =
@@ -222,7 +232,6 @@ class EthereumClient(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
     }
-
 }
 
 private fun BigInteger.encodeForFilter(): String {
