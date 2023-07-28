@@ -113,10 +113,6 @@ class BlockHandler<BB : BlockchainBlock>(
                 baseBlock = lastCorrectBlock,
                 capacity = scanProperties.batchLoad.batchBufferSize
             )
-            if (channel.isEmpty) {
-                logger.info("Produced empty blocks channel")
-                return@coroutineScope
-            }
 
             val lastSyncedBlockReference = AtomicReference<Block>()
 
