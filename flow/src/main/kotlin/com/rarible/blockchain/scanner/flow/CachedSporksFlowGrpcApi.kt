@@ -6,10 +6,13 @@ import com.nftco.flow.sdk.AsyncFlowAccessApi
 import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowBlockHeader
 import com.nftco.flow.sdk.FlowChainId
+import com.nftco.flow.sdk.FlowCollection
 import com.nftco.flow.sdk.FlowEvent
 import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
+import com.nftco.flow.sdk.FlowTransactionResult
+import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
 import com.rarible.blockchain.scanner.flow.service.SporkService
@@ -34,7 +37,7 @@ class CachedSporksFlowGrpcApi(
     private val sporkService: SporkService,
     properties: FlowBlockchainScannerProperties,
     private val flowApiFactory: FlowApiFactory,
-) : FlowGrpcApi {
+) : FlowGrpcApi, AbstractRetryableClient(properties.retryPolicy.client) {
 
     private val fullBlocksByHeight: AsyncLoadingCache<Long, FullBlock> = Caffeine.newBuilder()
         .expireAfterWrite(properties.cacheBlockEvents.expireAfter)
@@ -123,18 +126,30 @@ class CachedSporksFlowGrpcApi(
     private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
         block.collectionGuarantees.map { guarantee ->
             async {
-                val collections = api.getCollectionById(guarantee.id).await() ?: error(
+                val collections = getCollectionById(api, guarantee.id, block) ?: error(
                     "Can't get collection ${guarantee.id}, for block ${block.height}"
                 )
                 collections.transactionIds.map { transactionId ->
                     async {
-                        api.getTransactionResultById(transactionId).await()?.events ?: error(
+                        getTransactionResultById(api, transactionId, block)?.events ?: error(
                             "Can't get events for tx $transactionId, for block ${block.height}"
                         )
                     }
                 }.awaitAll().flatten()
             }
         }.awaitAll().flatten()
+    }
+
+    private suspend fun getCollectionById(api: AsyncFlowAccessApi, id: FlowId, block: FlowBlock): FlowCollection? {
+        return wrapWithRetry("getCollectionById", id.stringValue, block.height) {
+            api.getCollectionById(id).await()
+        }
+    }
+
+    private suspend fun getTransactionResultById(api: AsyncFlowAccessApi, id: FlowId, block: FlowBlock): FlowTransactionResult? {
+        return wrapWithRetry("getTransactionResultById", id.stringValue, block.height) {
+            api.getTransactionResultById(id).await()
+        }
     }
 
     private data class FullBlock(
