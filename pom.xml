@@ -14,9 +14,9 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.7.18</revision>
+        <revision>2.7.19</revision>
 
-        <rarible.ethereum.version>1.7.12</rarible.ethereum.version>
+        <rarible.ethereum.version>1.7.14</rarible.ethereum.version>
         <rarible.core.version>2.5.33</rarible.core.version>
         <flow.sdk.version>0.7.1.5</flow.sdk.version>
     </properties>
