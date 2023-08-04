@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+import reactor.util.retry.Retry
 
 @Component
 class EthereumScanner(
@@ -24,6 +25,11 @@ class EthereumScanner(
     @EventListener(ApplicationReadyEvent::class)
     fun start() {
         logger.info("Starting Ethereum Blockchain Scanner...")
-        mono { (scan()) }.subscribe({}, { logger.error("Ethereum blockchain scanner stopped.", it) })
+        mono { (scan()) }
+            .doOnError {
+                logger.warn("Scanner stopped with error. Will restart", it)
+            }
+            .retryWhen(Retry.indefinitely())
+            .subscribe({}, { logger.error("Ethereum blockchain scanner stopped.", it) })
     }
 }
