@@ -124,16 +124,29 @@ class CachedSporksFlowGrpcApi(
     }
 
     private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
+        logger.info(
+            "Fetching events for block ${block.height}" +
+                " with seals=${block.blockSeals.map { it.id.base16Value }}" +
+                " and collections=${block.collectionGuarantees.map { it.id.base16Value }}" +
+                " and ${block.signatures.size} signatures"
+        )
         block.collectionGuarantees.map { guarantee ->
             async {
-                val collections = getCollectionById(api, guarantee.id, block) ?: error(
+                val collection = getCollectionById(api, guarantee.id, block) ?: error(
                     "Can't get collection ${guarantee.id}, for block ${block.height}"
                 )
-                collections.transactionIds.map { transactionId ->
+                collection.transactionIds.map { transactionId ->
                     async {
-                        getTransactionResultById(api, transactionId, block)?.events ?: error(
+                        val events = getTransactionResultById(api, transactionId, block)?.events ?: error(
                             "Can't get events for tx $transactionId, for block ${block.height}"
                         )
+                        // To debug received information in block - it seems like it not full sometimes
+                        val counters = events.groupBy { it.type }.mapValues { it.value.size }
+                        logger.info(
+                            "Fetched events for tx=${transactionId.base16Value} of block ${block.height}" +
+                                " (collection=${collection.id.base16Value}): $counters"
+                        )
+                        events
                     }
                 }.awaitAll().flatten()
             }

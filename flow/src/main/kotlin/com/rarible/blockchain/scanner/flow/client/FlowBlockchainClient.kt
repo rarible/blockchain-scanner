@@ -68,7 +68,7 @@ class FlowBlockchainClient(
         descriptor: FlowDescriptor,
         range: LongRange
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> = channelFlow {
-        logger.info("Get events from block range ${range.first}..${range.last}")
+        logger.info("Get events from block range ${range.first}..${range.last} for ${descriptor.id}")
         api.chunk(range).collect { sl ->
             descriptor.events.map {
                 async { eventsByBlockRange(it, sl) }
