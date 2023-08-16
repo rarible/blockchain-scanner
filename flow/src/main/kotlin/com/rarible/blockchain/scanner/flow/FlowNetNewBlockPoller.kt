@@ -28,8 +28,10 @@ class FlowNetNewBlockPoller(
                 val latest = api.latestBlock()
                 val block = api.blockByHeight(latest.height)
                 if (block != null) {
-                    log.debug("Send to flow ${block.height}")
+                    log.info("Send new block ${block.height}")
                     send(block)
+                } else {
+                    log.info("Got null block")
                 }
                 delay(properties.poller.period)
             }
