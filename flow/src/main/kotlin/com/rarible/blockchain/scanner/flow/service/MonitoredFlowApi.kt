@@ -1,7 +1,6 @@
 package com.rarible.blockchain.scanner.flow.service
 
 import com.google.protobuf.ByteString
-import com.nftco.flow.sdk.AsyncFlowAccessApi
 import com.nftco.flow.sdk.FlowAccount
 import com.nftco.flow.sdk.FlowAddress
 import com.nftco.flow.sdk.FlowBlock
@@ -150,6 +149,12 @@ class MonitoredFlowApi(
     override fun getTransactionResultById(id: FlowId): CompletableFuture<FlowTransactionResult?> {
         return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getTransactionResultById") {
             delegate.getTransactionResultById(id)
+        }
+    }
+
+    override fun getTransactionResultsByBlockId(id: FlowId): CompletableFuture<List<FlowTransactionResult>> {
+        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getTransactionResultsByBlockId") {
+            delegate.getTransactionResultsByBlockId(id)
         }
     }
 

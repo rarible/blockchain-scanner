@@ -7,6 +7,7 @@ import com.nftco.flow.sdk.FlowEvent
 import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransaction
+import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import com.rarible.blockchain.scanner.util.flatten
@@ -30,6 +31,7 @@ import java.util.WeakHashMap
 class SporksFlowGrpcApi(
     private val sporkService: SporkService,
     private val flowApiFactory: FlowApiFactory,
+    private val properties: FlowBlockchainScannerProperties,
 ) : FlowGrpcApi {
 
     private val log: Logger = LoggerFactory.getLogger(SporksFlowGrpcApi::class.java)
@@ -103,17 +105,24 @@ class SporksFlowGrpcApi(
         eventsByHeight.getOrPut(height) {
             val api = flowApiFactory.getApi(sporkService.spork(height))
             val block = blockByHeight(height)!!
-            block.collectionGuarantees.toFlux()
-                .flatMap {
-                    api.getCollectionById(it.id).toMono()
-                }
-                .flatMap { it.transactionIds.toFlux() }
-                .flatMap {
-                    api.getTransactionResultById(it).toMono()
-                }
-                .flatMap { it.events.toFlux() }
-                .asFlow()
-                .toList()
+            if (properties.enableUseUndocumentedMethods) {
+                api.getTransactionResultsByBlockId(block.id).toMono()
+                    .flatMapIterable { it }
+                    .flatMap { it.events.toFlux() }
+                    .asFlow().toList()
+            } else {
+                block.collectionGuarantees.toFlux()
+                    .flatMap {
+                        api.getCollectionById(it.id).toMono()
+                    }
+                    .flatMap { it.transactionIds.toFlux() }
+                    .flatMap {
+                        api.getTransactionResultById(it).toMono()
+                    }
+                    .flatMap { it.events.toFlux() }
+                    .asFlow()
+                    .toList()
+            }
         }.asFlow()
     }
 

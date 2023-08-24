@@ -1,8 +1,6 @@
 package com.rarible.blockchain.scanner.flow.service
 
-import com.nftco.flow.sdk.AsyncFlowAccessApi
 import com.nftco.flow.sdk.Flow
-import com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import io.grpc.HttpConnectProxiedSocketAddress

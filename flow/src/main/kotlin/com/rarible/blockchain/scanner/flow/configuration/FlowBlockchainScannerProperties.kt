@@ -33,4 +33,5 @@ data class FlowBlockchainScannerProperties(
     val cacheBlockEvents: CacheBlockEventsProperties = CacheBlockEventsProperties(),
     val enableHttpClient: Boolean = false,
     val proxy: String? = null,
+    val enableUseUndocumentedMethods: Boolean = false,
 ) : BlockchainScannerProperties
