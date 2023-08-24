@@ -8,5 +8,8 @@ data class TestDescriptor(
     val contracts: List<String>,
     override val entityType: Class<*>,
     override val groupId: String = topic,
-    override val id: String = topic
-) : Descriptor
+    override val id: String = topic,
+    val saveLogs: Boolean = true
+) : Descriptor {
+    override fun shouldSaveLogs() = saveLogs
+}

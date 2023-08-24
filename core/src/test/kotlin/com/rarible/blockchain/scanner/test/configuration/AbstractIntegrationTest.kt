@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 
@@ -57,6 +58,10 @@ abstract class AbstractIntegrationTest {
 
     protected suspend fun findLog(collection: String, id: Long): TestLogRecord? {
         return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
+    }
+
+    protected suspend fun findAllLogs(collection: String): List<TestLogRecord> {
+        return mongo.findAll(TestCustomLogRecord::class.java, collection).collectList().awaitSingle()
     }
 
     protected fun createBlockchainScanner(

@@ -20,7 +20,8 @@ import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
 import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
-import kotlinx.coroutines.async
+import com.rarible.core.common.asyncWithTraceId
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.Logger
@@ -51,7 +52,7 @@ class ReconciliationLogHandler(
             .chunked(batchSize)
             .map { blockNumbers ->
                 blockNumbers.map { blockNumber ->
-                    async {
+                    asyncWithTraceId(context = NonCancellable) {
                         handleBlock(blockNumber)
                         blockNumber
                     }
@@ -61,7 +62,7 @@ class ReconciliationLogHandler(
 
     private suspend fun handleBlock(blockNumber: Long) = coroutineScope {
         subscribersByCollection.map { entity ->
-            async { checkCollectionLogs(blockNumber, entity.key, entity.value) }
+            asyncWithTraceId(context = NonCancellable) { checkCollectionLogs(blockNumber, entity.key, entity.value) }
         }.awaitAll()
     }
 
@@ -98,7 +99,7 @@ class ReconciliationLogHandler(
         subscribers
             .groupBy { it.getDescriptor().groupId }
             .map { (groupId, subscribers) ->
-                async {
+                asyncWithTraceId(context = NonCancellable) {
                     logHandlerFactory.create(
                         groupId = groupId,
                         subscribers = subscribers,

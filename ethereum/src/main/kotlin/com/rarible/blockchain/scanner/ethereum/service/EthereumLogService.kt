@@ -7,9 +7,10 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
+import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.common.optimisticLock
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
@@ -40,7 +41,7 @@ class EthereumLogService(
     ): List<EthereumLogRecord> = coroutineScope {
         logger.info("Saving records: {} for {}", records.size, descriptor.ethTopic)
         records.map { record ->
-            async {
+            asyncWithTraceId(context = NonCancellable) {
                 optimisticLock(properties.optimisticLockRetries) {
                     save(descriptor, record)
                 }

@@ -23,8 +23,10 @@ import com.rarible.blockchain.scanner.framework.util.addOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
+import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.common.nowMillis
-import kotlinx.coroutines.async
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
@@ -49,9 +51,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             return emptyMap()
         }
         logger.info(
-            "Processing ${events.size} block events ${events.first().number}..${events.last().number} for group '${
-            subscribers.first().getDescriptor().groupId
-            }'"
+            "Processing ${events.size} block events ${events.first().number}..${events.last().number} " +
+                "for group '${subscribers.first().getDescriptor().groupId}'"
         )
         val logEvents = logMonitor.onPrepareLogs {
             val batches = BlockRanges.toBatches(events)
@@ -136,7 +137,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<LogEvent<R, D>> {
         var events = coroutineScope {
             subscribers.map { subscriber ->
-                async {
+                asyncWithTraceId(context = NonCancellable) {
                     @Suppress("UNCHECKED_CAST")
                     when (batch[0]) {
                         is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true)
@@ -154,12 +155,20 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         return events
     }
 
+    // Important! If data not saved it means ID of same events in reindex case will be different
     private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
         val updated: List<LogEvent<R, D>> = logEvents.mapNotNull {
             if (it.logRecordsToUpdate.isEmpty()) {
                 return@mapNotNull null
             }
-            async {
+            if (!it.descriptor.shouldSaveLogs()) {
+                logging(
+                    message = "skipping update for ${it.logRecordsToUpdate.size} log records (disabled)",
+                    event = it.blockEvent
+                )
+                return@mapNotNull CompletableDeferred(it)
+            }
+            asyncWithTraceId(context = NonCancellable) {
                 logging(message = "updating ${it.logRecordsToUpdate.size} log records", event = it.blockEvent)
                 runRethrowingBlockHandlerException(
                     "Update log records for ${it.blockEvent} by ${it.descriptor.groupId}"
@@ -173,7 +182,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             if (it.logRecordsToInsert.isEmpty()) {
                 return@mapNotNull null
             }
-            async {
+            if (!it.descriptor.shouldSaveLogs()) {
+                logging(
+                    message = "skipping insert for ${it.logRecordsToInsert.size} log records (disabled)",
+                    event = it.blockEvent
+                )
+                return@mapNotNull CompletableDeferred(it)
+            }
+            asyncWithTraceId(context = NonCancellable) {
                 logging(message = "inserting ${it.logRecordsToInsert.size} log records", event = it.blockEvent)
                 val saved = runRethrowingBlockHandlerException(
                     "Insert log records for ${it.blockEvent} by ${it.descriptor.groupId}"
@@ -202,7 +218,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             // Preserve the order of events.
             events.mapNotNull { event ->
                 val fullBlock = blockLogs[event.number] ?: return@mapNotNull null
-                async {
+                asyncWithTraceId(context = NonCancellable) {
                     val logRecordsToInsert = prepareLogsToInsert(subscriber, fullBlock, event)
                     val logRecordsToRevert = if (!stable) {
                         runRethrowingBlockHandlerException(

@@ -2,7 +2,8 @@ package com.rarible.blockchain.scanner.ethereum.reduce
 
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.core.apm.withTransaction
-import kotlinx.coroutines.async
+import com.rarible.core.common.asyncWithTraceId
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
@@ -19,7 +20,7 @@ abstract class CompositeEntityEventListener(
         withTransaction("onEntityEvents", labels = listOf("size" to events.size)) {
             coroutineScope {
                 entityEventsSubscribers.map {
-                    async { it.onEntityEvents(events) }
+                    asyncWithTraceId(context = NonCancellable) { it.onEntityEvents(events) }
                 }.awaitAll()
             }
         }

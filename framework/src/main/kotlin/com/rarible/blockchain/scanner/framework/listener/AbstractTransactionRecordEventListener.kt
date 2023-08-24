@@ -1,7 +1,8 @@
 package com.rarible.blockchain.scanner.framework.listener
 
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
-import kotlinx.coroutines.async
+import com.rarible.core.common.asyncWithTraceId
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
@@ -14,7 +15,7 @@ abstract class AbstractTransactionRecordEventListener(
     override suspend fun onTransactionRecordEvents(events: List<TransactionRecordEvent>) {
         coroutineScope {
             subscribers.map {
-                async { it.onTransactionRecordEvents(events) }
+                asyncWithTraceId(context = NonCancellable) { it.onTransactionRecordEvents(events) }
             }.awaitAll()
         }
     }
