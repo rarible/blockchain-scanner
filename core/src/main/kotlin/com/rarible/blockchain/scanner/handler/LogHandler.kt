@@ -155,6 +155,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         return events
     }
 
+    // Important! If data not saved it means ID of same events in reindex case will be different
     private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
         val updated: List<LogEvent<R, D>> = logEvents.mapNotNull {
             if (it.logRecordsToUpdate.isEmpty()) {
@@ -165,7 +166,6 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                     message = "skipping update for ${it.logRecordsToUpdate.size} log records (disabled)",
                     event = it.blockEvent
                 )
-                // Important! If data not saved it means ID of same events in reindex case will be different
                 return@mapNotNull CompletableDeferred(it)
             }
             asyncWithTraceId(context = NonCancellable) {
@@ -187,7 +187,6 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                     message = "skipping insert for ${it.logRecordsToInsert.size} log records (disabled)",
                     event = it.blockEvent
                 )
-                // Important! If data not saved it means ID of same events in reindex case will be different
                 return@mapNotNull CompletableDeferred(it)
             }
             asyncWithTraceId(context = NonCancellable) {
