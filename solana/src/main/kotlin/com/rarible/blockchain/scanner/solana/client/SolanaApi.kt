@@ -8,9 +8,10 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
+import com.rarible.core.common.asyncWithTraceId
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
-import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.reactor.awaitSingle
@@ -67,8 +68,13 @@ class SolanaHttpRpcApi(
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
 
-    override suspend fun getBlocks(slots: List<Long>, details: TransactionDetails): Map<Long, ApiResponse<SolanaBlockDto>> =
-        coroutineScope { slots.map { async { it to getBlock(it, details) } }.awaitAll().toMap() }
+    override suspend fun getBlocks(
+        slots: List<Long>,
+        details: TransactionDetails
+    ): Map<Long, ApiResponse<SolanaBlockDto>> =
+        coroutineScope {
+            slots.map { asyncWithTraceId(context = NonCancellable) { it to getBlock(it, details) } }.awaitAll().toMap()
+        }
 
     override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
         .uri(uri)

@@ -9,9 +9,10 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.apm.withSpan
+import com.rarible.core.common.asyncWithTraceId
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -88,7 +89,7 @@ class EthereumClient(
         .asFlow()
 
     override suspend fun getBlocks(numbers: List<Long>): List<EthereumBlockchainBlock> =
-        coroutineScope { numbers.map { async { getBlock(it) } }.awaitAll() }
+        coroutineScope { numbers.map { asyncWithTraceId(context = NonCancellable) { getBlock(it) } }.awaitAll() }
 
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
         return ethereum.ethGetFullBlockByNumber(BigInteger.valueOf(number)).map {
@@ -122,7 +123,7 @@ class EthereumClient(
             range.chunked(maxBatchSize ?: range.count())
                 .map { LongRange(it.first(), it.last()) }
                 .map {
-                    async {
+                    asyncWithTraceId(context = NonCancellable) {
                         withSpan(
                             name = "getLogs",
                             labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())

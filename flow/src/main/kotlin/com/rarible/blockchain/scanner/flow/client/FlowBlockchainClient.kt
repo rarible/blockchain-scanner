@@ -10,8 +10,9 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
+import com.rarible.core.common.asyncWithTraceId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +52,7 @@ class FlowBlockchainClient(
     }
 
     override suspend fun getBlocks(numbers: List<Long>) = coroutineScope {
-        numbers.map { async { getBlock(it) } }.awaitAll()
+        numbers.map { asyncWithTraceId(context = NonCancellable) { getBlock(it) } }.awaitAll()
     }
 
     override fun getBlockLogs(
@@ -71,7 +72,7 @@ class FlowBlockchainClient(
         logger.info("Get events from block range ${range.first}..${range.last} for ${descriptor.id}")
         api.chunk(range).collect { sl ->
             descriptor.events.map {
-                async { eventsByBlockRange(it, sl) }
+                asyncWithTraceId(context = NonCancellable) { eventsByBlockRange(it, sl) }
             }.awaitAll()
                 .flatMap { it.toList() }
                 .filter { it.events.isNotEmpty() }

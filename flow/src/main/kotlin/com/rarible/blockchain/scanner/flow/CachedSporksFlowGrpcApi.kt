@@ -16,7 +16,8 @@ import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
 import com.rarible.blockchain.scanner.flow.service.SporkService
-import kotlinx.coroutines.async
+import com.rarible.core.common.asyncWithTraceId
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -131,12 +132,12 @@ class CachedSporksFlowGrpcApi(
                 " and ${block.signatures.size} signatures"
         )
         block.collectionGuarantees.map { guarantee ->
-            async {
+            asyncWithTraceId(context = NonCancellable) {
                 val collection = getCollectionById(api, guarantee.id, block) ?: error(
                     "Can't get collection ${guarantee.id}, for block ${block.height}"
                 )
                 collection.transactionIds.map { transactionId ->
-                    async {
+                    asyncWithTraceId(context = NonCancellable) {
                         val events = getTransactionResultById(api, transactionId, block)?.events ?: error(
                             "Can't get events for tx $transactionId, for block ${block.height}"
                         )

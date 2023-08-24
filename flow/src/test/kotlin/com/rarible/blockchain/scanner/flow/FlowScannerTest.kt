@@ -41,11 +41,10 @@ import java.time.Duration
         "spring.cloud.service-registry.auto-registration.enabled = false",
         "spring.cloud.discovery.enabled = false",
         "logging.logstash.tcp-socket.enabled = false",
+        "logging.logjson.enabled = false",
         "rarible.task.initialDelay=0",
         "blockchain.scanner.flow.chainId=EMULATOR",
         "blockchain.scanner.flow.poller.delay=200",
-        /*    "spring.data.mongodb.database=test",
-            "logging.level.com.rarible.blockchain.scanner.flow.FlowNetNewBlockPoller=DEBUG"*/
     ]
 )
 @ContextConfiguration(classes = [TestFlowScannerConfiguration::class])
@@ -216,7 +215,7 @@ class FlowScannerTest {
                         self.receiverRef = acct.getCapability<&{ExampleNFT.NFTReceiver}>(/public/NFTReceiver)
                             .borrow()
                             ?? panic("Could not borrow receiver reference")
-                        
+
                         // Borrow a capability for the NFTMinter in storage
                         self.minterRef = minterAcct.borrow<&ExampleNFT.NFTMinter>(from: /storage/NFTMinter)
                             ?? panic("could not borrow minter reference")
