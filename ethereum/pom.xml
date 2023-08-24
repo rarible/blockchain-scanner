@@ -29,6 +29,10 @@
             <artifactId>rarible-ethereum-converters</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.rarible.ethereum</groupId>
+            <artifactId>rarible-ethereum-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.github.cloudyrock.mongock</groupId>
             <artifactId>mongock-spring-v5</artifactId>
         </dependency>
