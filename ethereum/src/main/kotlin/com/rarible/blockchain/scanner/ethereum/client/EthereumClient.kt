@@ -47,9 +47,7 @@ class EthereumClient(
     // Retries delegated to MonoEthereum
 ) : EthereumBlockchainClient, AbstractRetryableClient(ClientRetryPolicyProperties(attempts = 0)) {
 
-    private val ethereum = (if (properties.enableEthereumMonitor) {
-        MonitoredEthereum(ethereum, monitor, properties.blockchain)
-    } else ethereum).let { EthereumRetryableMono(it, properties.retryPolicy.client) }
+    private val ethereum = EthereumRetryableMono(ethereum, properties.retryPolicy.client)
 
     private val maxBatches = properties.maxBatches.associate {
         val parts = it.split(":")
