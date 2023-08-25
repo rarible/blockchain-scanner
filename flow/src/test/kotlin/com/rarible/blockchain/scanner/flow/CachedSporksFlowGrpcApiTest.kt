@@ -23,7 +23,7 @@ class CachedSporksFlowGrpcApiTest {
     private val sporkService = SporkService(properties, FlowApiFactoryImpl(blockchainMonitor, properties))
     private val cachedSporksFlowGrpcApi =
         CachedSporksFlowGrpcApi(sporkService, properties, FlowApiFactoryImpl(blockchainMonitor, properties))
-    private val sporksFlowGrpcApi = SporksFlowGrpcApi(sporkService, FlowApiFactoryImpl(blockchainMonitor, properties))
+    private val sporksFlowGrpcApi = SporksFlowGrpcApi(sporkService, FlowApiFactoryImpl(blockchainMonitor, properties), properties)
 
     @BeforeEach
     fun before() {

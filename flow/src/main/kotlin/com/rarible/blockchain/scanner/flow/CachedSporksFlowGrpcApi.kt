@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.flow
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.nftco.flow.sdk.AsyncFlowAccessApi
 import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowBlockHeader
 import com.nftco.flow.sdk.FlowChainId
@@ -14,6 +13,7 @@ import com.nftco.flow.sdk.FlowTransaction
 import com.nftco.flow.sdk.FlowTransactionResult
 import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.service.AsyncFlowAccessApi
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import com.rarible.core.common.asyncWithTraceId
@@ -36,7 +36,7 @@ import reactor.kotlin.core.publisher.toMono
 @Component
 class CachedSporksFlowGrpcApi(
     private val sporkService: SporkService,
-    properties: FlowBlockchainScannerProperties,
+    private val properties: FlowBlockchainScannerProperties,
     private val flowApiFactory: FlowApiFactory,
 ) : FlowGrpcApi, AbstractRetryableClient(properties.retryPolicy.client) {
 
@@ -127,31 +127,36 @@ class CachedSporksFlowGrpcApi(
     private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
         logger.info(
             "Fetching events for block ${block.height}" +
+                " with undoc=${properties.enableUseUndocumentedMethods}" +
                 " with seals=${block.blockSeals.map { it.id.base16Value }}" +
                 " and collections=${block.collectionGuarantees.map { it.id.base16Value }}" +
                 " and ${block.signatures.size} signatures"
         )
-        block.collectionGuarantees.map { guarantee ->
-            asyncWithTraceId(context = NonCancellable) {
-                val collection = getCollectionById(api, guarantee.id, block) ?: error(
-                    "Can't get collection ${guarantee.id}, for block ${block.height}"
-                )
-                collection.transactionIds.map { transactionId ->
-                    asyncWithTraceId(context = NonCancellable) {
-                        val events = getTransactionResultById(api, transactionId, block)?.events ?: error(
-                            "Can't get events for tx $transactionId, for block ${block.height}"
-                        )
-                        // To debug received information in block - it seems like it not full sometimes
-                        val counters = events.groupBy { it.type }.mapValues { it.value.size }
-                        logger.info(
-                            "Fetched events for tx=${transactionId.base16Value} of block ${block.height}" +
-                                " (collection=${collection.id.base16Value}): $counters"
-                        )
-                        events
-                    }
-                }.awaitAll().flatten()
-            }
-        }.awaitAll().flatten()
+        if (properties.enableUseUndocumentedMethods) {
+            getTransactionResultsByBlockId(api, block.id, block).flatMap { it.events }
+        } else {
+            block.collectionGuarantees.map { guarantee ->
+                asyncWithTraceId(context = NonCancellable) {
+                    val collection = getCollectionById(api, guarantee.id, block) ?: error(
+                        "Can't get collection ${guarantee.id}, for block ${block.height}"
+                    )
+                    collection.transactionIds.map { transactionId ->
+                        asyncWithTraceId(context = NonCancellable) {
+                            val events = getTransactionResultById(api, transactionId, block)?.events ?: error(
+                                "Can't get events for tx $transactionId, for block ${block.height}"
+                            )
+                            // To debug received information in block - it seems like it not full sometimes
+                            val counters = events.groupBy { it.type }.mapValues { it.value.size }
+                            logger.info(
+                                "Fetched events for tx=${transactionId.base16Value} of block ${block.height}" +
+                                    " (collection=${collection.id.base16Value}): $counters"
+                            )
+                            events
+                        }
+                    }.awaitAll().flatten()
+                }
+            }.awaitAll().flatten()
+        }
     }
 
     private suspend fun getCollectionById(api: AsyncFlowAccessApi, id: FlowId, block: FlowBlock): FlowCollection? {
@@ -163,6 +168,16 @@ class CachedSporksFlowGrpcApi(
     private suspend fun getTransactionResultById(api: AsyncFlowAccessApi, id: FlowId, block: FlowBlock): FlowTransactionResult? {
         return wrapWithRetry("getTransactionResultById", id.stringValue, block.height) {
             api.getTransactionResultById(id).await()
+        }
+    }
+
+    private suspend fun getTransactionResultsByBlockId(
+        api: AsyncFlowAccessApi,
+        id: FlowId,
+        block: FlowBlock
+    ): List<FlowTransactionResult> {
+        return wrapWithRetry("getTransactionResultsByBlockId", id.stringValue, block.height) {
+            api.getTransactionResultsByBlockId(id).await()
         }
     }
 
