@@ -90,7 +90,7 @@ class SporkService(
             ),
             Spork(
                 from = 19050753L,
-                nodeUrl = "access.mainnet.nodes.onflow.org",
+                nodeUrl = properties.nodeUrl,
             ),
         ).reversed()
     )

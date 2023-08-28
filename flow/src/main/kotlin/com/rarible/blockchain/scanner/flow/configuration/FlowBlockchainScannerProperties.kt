@@ -34,4 +34,6 @@ data class FlowBlockchainScannerProperties(
     val enableHttpClient: Boolean = false,
     val proxy: String? = null,
     val enableUseUndocumentedMethods: Boolean = false,
+    // TODO proper node configuration PT-3677
+    val nodeUrl: String = "access.mainnet.nodes.onflow.org",
 ) : BlockchainScannerProperties
