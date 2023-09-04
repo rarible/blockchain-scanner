@@ -135,7 +135,8 @@ class ReconciliationLogHandler(
 
             override suspend fun save(
                 descriptor: EthereumDescriptor,
-                records: List<EthereumLogRecord>
+                records: List<EthereumLogRecord>,
+                blockHash: String,
             ): List<EthereumLogRecord> {
                 return records
             }

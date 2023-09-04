@@ -22,7 +22,8 @@ class TestLogService(
 
     override suspend fun save(
         descriptor: TestDescriptor,
-        records: List<TestLogRecord>
+        records: List<TestLogRecord>,
+        blockHash: String,
     ): List<TestLogRecord> {
         return records.map { record ->
             val log = record.log

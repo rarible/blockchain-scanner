@@ -19,7 +19,8 @@ class SolanaLogService(
 
     override suspend fun save(
         descriptor: SolanaDescriptor,
-        records: List<SolanaLogRecord>
+        records: List<SolanaLogRecord>,
+        blockHash: String,
     ): List<SolanaLogRecord> = logRepository.saveAll(descriptor.collection, records)
 
     override suspend fun prepareLogsToRevertOnNewBlock(

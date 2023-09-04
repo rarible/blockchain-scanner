@@ -173,7 +173,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 runRethrowingBlockHandlerException(
                     "Update log records for ${it.blockEvent} by ${it.descriptor.groupId}"
                 ) {
-                    val saved = logService.save(it.descriptor, it.logRecordsToUpdate)
+                    val saved = logService.save(it.descriptor, it.logRecordsToUpdate, it.blockEvent.hash)
                     it.copy(logRecordsToUpdate = saved)
                 }
             }
@@ -194,7 +194,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 val saved = runRethrowingBlockHandlerException(
                     "Insert log records for ${it.blockEvent} by ${it.descriptor.groupId}"
                 ) {
-                    logService.save(it.descriptor, it.logRecordsToInsert)
+                    logService.save(it.descriptor, it.logRecordsToInsert, it.blockEvent.hash)
                 }
                 logMonitor.onLogsInserted(descriptor = it.descriptor, inserted = it.logRecordsToInsert.size)
                 it.copy(logRecordsToInsert = saved)
