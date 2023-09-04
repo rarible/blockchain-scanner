@@ -21,7 +21,11 @@ class FlowLogService(
         records: List<FlowLogRecord>
     ): List<FlowLogRecord> = records.map { delete(descriptor, it) }
 
-    override suspend fun save(descriptor: FlowDescriptor, records: List<FlowLogRecord>): List<FlowLogRecord> {
+    override suspend fun save(
+        descriptor: FlowDescriptor,
+        records: List<FlowLogRecord>,
+        blockHash: String,
+    ): List<FlowLogRecord> {
         return logRepository.saveAll(descriptor.collection, records).toList()
     }
 

@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.service
 
-import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
@@ -63,7 +63,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
     fun `save - new record`() = runBlocking {
         val newLog = randomLogRecord(topic, randomBlockHash())
 
-        ethereumLogService.save(descriptor, listOf(newLog))
+        ethereumLogService.save(descriptor, listOf(newLog), newLog.blockHash!!.prefixed())
 
         val savedVisibleRecord = findLog(collection, newLog.id) as ReversedEthereumLogRecord
 
@@ -90,7 +90,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val updatedVisibleRecord = visibleRecord.copy(data = visibleRecordData.copy(customData = randomString()))
 
         saveLog(descriptor.collection, visibleRecord)
-        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
+        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord), blockHash.prefixed())
         assertEquals(1, mongo.count(Query(), descriptor.collection).awaitFirst())
 
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
@@ -125,7 +125,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         )
 
         saveLog(descriptor.collection, visibleRecord)
-        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord))
+        ethereumLogService.save(descriptor, listOf(updatedVisibleRecord), blockHash.prefixed())
         assertEquals(1, mongo.count(Query(), descriptor.collection).awaitFirst())
 
         val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
@@ -163,7 +163,7 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val log = randomLogRecord(topic, randomBlockHash())
 
         val savedLog = saveLog(collection, log)
-        ethereumLogService.save(descriptor, listOf(log))
+        ethereumLogService.save(descriptor, listOf(log), log.blockHash!!.prefixed())
 
         val updatedLog = findLog(collection, log.id) as ReversedEthereumLogRecord
 

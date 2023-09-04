@@ -27,7 +27,7 @@ interface LogService<R : LogRecord, D : Descriptor> {
     /**
      * Insert or update list of LogRecords to the persistent storage.
      */
-    suspend fun save(descriptor: D, records: List<R>): List<R>
+    suspend fun save(descriptor: D, records: List<R>, blockHash: String): List<R>
 
     /**
      * Returns log records that must be reverted when a new block is processed.

@@ -1,20 +1,22 @@
 package com.rarible.blockchain.scanner.ethereum.repository
 
 import com.rarible.blockchain.scanner.ethereum.migration.ChangeLog00001
+import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import reactor.kotlin.core.publisher.toMono
 import scalether.domain.Address
 
 @Component
@@ -77,6 +79,10 @@ class EthereumLogRepository(
         return mongo.save(event, collection).awaitFirst()
     }
 
+    suspend fun saveAll(collection: String, event: Collection<EthereumLogRecord>): List<EthereumLogRecord> {
+        return mongo.insertAll(event.toMono(), collection).collectList().awaitSingle()
+    }
+
     fun find(
         entityType: Class<*>,
         collection: String,
@@ -87,6 +93,18 @@ class EthereumLogRepository(
             .where("blockHash").isEqualTo(blockHash)
             .and("topic").isEqualTo(topic)
         return mongo.find(Query(criteria), entityType, collection).asFlow() as Flow<EthereumLogRecord>
+    }
+
+    suspend fun exists(
+        entityType: Class<*>,
+        collection: String,
+        blockHash: Word,
+        topic: Word
+    ): Boolean {
+        val criteria = Criteria
+            .where("blockHash").isEqualTo(blockHash)
+            .and("topic").isEqualTo(topic)
+        return mongo.exists(Query(criteria), entityType, collection).awaitSingle()
     }
 
     suspend fun countByBlockNumber(

@@ -37,19 +37,68 @@ class EthereumLogService(
 
     override suspend fun save(
         descriptor: EthereumDescriptor,
+        records: List<EthereumLogRecord>,
+        blockHash: String,
+    ): List<EthereumLogRecord> {
+        logger.info("Saving {} records for {}", records.size, descriptor.ethTopic)
+        val start = System.currentTimeMillis()
+        val exists = ethereumLogRepository.exists(
+            entityType = descriptor.entityType,
+            collection = descriptor.collection,
+            blockHash = Word.apply(blockHash),
+            topic = descriptor.ethTopic
+        )
+        val updateStart = System.currentTimeMillis()
+        val checkSpent = updateStart - start
+
+        // If there are data related to this block and descriptor, it means we re-indexing items and then
+        // we need to update them one-by-one
+        if (exists) {
+            val result = insertOrUpdate(descriptor, records)
+            val updateSpent = System.currentTimeMillis() - updateStart
+            logger.info(
+                "Saved {} records for {} (check: {}ms, update {}ms)",
+                records.size, descriptor.ethTopic, checkSpent, updateSpent
+            )
+            return result
+        }
+
+        // During regular forward-indexing, it's expected new data will be only INSERTED, not updated
+        try {
+            val inserted = ethereumLogRepository.saveAll(descriptor.collection, records)
+            inserted.forEach { logger.info("Saved new LogEvent: {}", it) }
+            val insertSpent = System.currentTimeMillis() - updateStart
+            logger.info(
+                "Inserted {} records for {} (check: {}ms, insert {}ms)",
+                records.size, descriptor.ethTopic, checkSpent, insertSpent
+            )
+            return inserted
+        } catch (e: DuplicateKeyException) {
+            // But if there is a conflict, lets fallback to one-by-one update logic (should NOT happen)
+            val result = insertOrUpdate(descriptor, records)
+            val updateSpent = System.currentTimeMillis() - updateStart
+            logger.info(
+                "Saved as fallback {} records for {} (check: {}ms, update {}ms)",
+                records.size, descriptor.ethTopic, checkSpent, updateSpent
+            )
+            return result
+        }
+    }
+
+    private suspend fun insertOrUpdate(
+        descriptor: EthereumDescriptor,
         records: List<EthereumLogRecord>
     ): List<EthereumLogRecord> = coroutineScope {
-        logger.info("Saving records: {} for {}", records.size, descriptor.ethTopic)
         records.map { record ->
             asyncWithTraceId(context = NonCancellable) {
                 optimisticLock(properties.optimisticLockRetries) {
-                    save(descriptor, record)
+                    insertOrUpdate(descriptor, record)
                 }
             }
         }.awaitAll()
     }
 
-    private suspend fun save(
+    private suspend fun insertOrUpdate(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord
     ): EthereumLogRecord {
@@ -69,7 +118,7 @@ class EthereumLogService(
         if (found == null) {
             try {
                 val result = ethereumLogRepository.save(collection, record)
-                logger.info("Saved new LogEvent: [{}]", record)
+                logger.info("Saved new LogEvent: {}", record)
                 return result
             } catch (e: DuplicateKeyException) {
                 found = getLegacyDuplicate(descriptor, record) ?: throw e
@@ -83,10 +132,10 @@ class EthereumLogService(
 
         val withCorrectId = record.withIdAndVersion(found.id, found.version, found.updatedAt)
         return if (withCorrectId != found) {
-            logger.info("Saving changed LogEvent to collection '{}' : [{}]", collection, withCorrectId)
+            logger.info("Saving changed LogEvent to collection '{}' : {}", collection, withCorrectId)
             ethereumLogRepository.save(collection, withCorrectId)
         } else {
-            logger.info("LogEvent wasn't changed: [{}]", withCorrectId)
+            logger.info("LogEvent wasn't changed: {}", withCorrectId)
             found
         }
     }
