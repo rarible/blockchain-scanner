@@ -28,7 +28,8 @@ class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
         valueSerializerClass = JsonSerializer::class.java,
         valueClass = kafkaRecordEventWrapper.targetClass,
         defaultTopic = topicPrefix, // ends with .log, not required originally
-        bootstrapServers = brokerReplicaSet
+        bootstrapServers = brokerReplicaSet,
+        compression = properties.compression,
     )
 
     override suspend fun prepareGroup(groupId: String) {
