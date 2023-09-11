@@ -8,12 +8,10 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.apm.withSpan
 import com.rarible.core.common.asyncWithTraceId
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -125,12 +123,7 @@ class EthereumClient(
                 .map { LongRange(it.first(), it.last()) }
                 .map {
                     asyncWithTraceId(context = NonCancellable) {
-                        withSpan(
-                            name = "getLogs",
-                            labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())
-                        ) {
-                            getLogsByRange(descriptor, it)
-                        }
+                        getLogsByRange(descriptor, it)
                     }
                 }
                 .awaitAll()
@@ -146,9 +139,7 @@ class EthereumClient(
             }.entries.map { (blockHash, blockLogs) ->
                 asyncWithTraceId(context = NonCancellable) {
                     val ethFullBlock = blocksMap.getOrElse(blockHash.toString()) {
-                        withSpan(name = "getFullBlockByHash", labels = listOf("hash" to blockHash.toString())) {
-                            ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
-                        }
+                        ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
                     }
                     createFullBlock(ethFullBlock, blockLogs)
                 }
