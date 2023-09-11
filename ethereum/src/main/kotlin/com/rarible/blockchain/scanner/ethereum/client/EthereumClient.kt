@@ -119,8 +119,6 @@ class EthereumClient(
         blocks: List<EthereumBlockchainBlock>,
         range: LongRange
     ) = flow {
-        logger.info("Loading logs for topic ${descriptor.ethTopic} for blocks $range")
-
         val allLogs = coroutineScope {
             val maxBatchSize = maxBatches[descriptor.ethTopic]
             range.chunked(maxBatchSize ?: range.count())
@@ -142,7 +140,6 @@ class EthereumClient(
         logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range")
 
         val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
-
         coroutineScope {
             allLogs.groupBy { log ->
                 log.blockHash()
