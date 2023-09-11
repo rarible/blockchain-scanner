@@ -147,7 +147,7 @@ class EthereumClient(
             allLogs.groupBy { log ->
                 log.blockHash()
             }.entries.map { (blockHash, blockLogs) ->
-                async {
+                asyncWithTraceId(context = NonCancellable) {
                     val ethFullBlock = blocksMap.getOrElse(blockHash.toString()) {
                         withSpan(name = "getFullBlockByHash", labels = listOf("hash" to blockHash.toString())) {
                             ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
