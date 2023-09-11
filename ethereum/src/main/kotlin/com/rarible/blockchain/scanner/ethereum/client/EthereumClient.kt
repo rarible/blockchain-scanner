@@ -8,7 +8,6 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.apm.withSpan
 import com.rarible.core.common.asyncWithTraceId
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -124,12 +123,7 @@ class EthereumClient(
                 .map { LongRange(it.first(), it.last()) }
                 .map {
                     asyncWithTraceId(context = NonCancellable) {
-                        withSpan(
-                            name = "getLogs",
-                            labels = listOf("topic" to descriptor.ethTopic.toString(), "range" to it.toString())
-                        ) {
-                            getLogsByRange(descriptor, it)
-                        }
+                        getLogsByRange(descriptor, it)
                     }
                 }
                 .awaitAll()
@@ -139,15 +133,17 @@ class EthereumClient(
         logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range")
 
         val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
-        allLogs.groupBy { log ->
-            log.blockHash()
-        }.entries.map { (blockHash, blockLogs) ->
-            val ethFullBlock = blocksMap.getOrElse(blockHash.toString()) {
-                withSpan(name = "getFullBlockByHash", labels = listOf("hash" to blockHash.toString())) {
-                    ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+        coroutineScope {
+            allLogs.groupBy { log ->
+                log.blockHash()
+            }.entries.map { (blockHash, blockLogs) ->
+                asyncWithTraceId(context = NonCancellable) {
+                    val ethFullBlock = blocksMap.getOrElse(blockHash.toString()) {
+                        ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+                    }
+                    createFullBlock(ethFullBlock, blockLogs)
                 }
-            }
-            createFullBlock(ethFullBlock, blockLogs)
+            }.awaitAll()
         }.forEach { emit(it) }
     }
 
