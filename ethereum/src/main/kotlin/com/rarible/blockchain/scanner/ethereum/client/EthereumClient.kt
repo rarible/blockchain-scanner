@@ -13,6 +13,7 @@ import com.rarible.core.common.asyncWithTraceId
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -118,6 +119,8 @@ class EthereumClient(
         blocks: List<EthereumBlockchainBlock>,
         range: LongRange
     ) = flow {
+        logger.info("Loading logs for topic ${descriptor.ethTopic} for blocks $range")
+
         val allLogs = coroutineScope {
             val maxBatchSize = maxBatches[descriptor.ethTopic]
             range.chunked(maxBatchSize ?: range.count())
@@ -139,15 +142,20 @@ class EthereumClient(
         logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range")
 
         val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
-        allLogs.groupBy { log ->
-            log.blockHash()
-        }.entries.map { (blockHash, blockLogs) ->
-            val ethFullBlock = blocksMap.getOrElse(blockHash.toString()) {
-                withSpan(name = "getFullBlockByHash", labels = listOf("hash" to blockHash.toString())) {
-                    ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+
+        coroutineScope {
+            allLogs.groupBy { log ->
+                log.blockHash()
+            }.entries.map { (blockHash, blockLogs) ->
+                async {
+                    val ethFullBlock = blocksMap.getOrElse(blockHash.toString()) {
+                        withSpan(name = "getFullBlockByHash", labels = listOf("hash" to blockHash.toString())) {
+                            ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+                        }
+                    }
+                    createFullBlock(ethFullBlock, blockLogs)
                 }
-            }
-            createFullBlock(ethFullBlock, blockLogs)
+            }.awaitAll()
         }.forEach { emit(it) }
     }
 
