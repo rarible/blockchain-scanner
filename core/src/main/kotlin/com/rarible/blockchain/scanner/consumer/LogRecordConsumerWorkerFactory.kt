@@ -10,5 +10,6 @@ interface LogRecordConsumerWorkerFactory {
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
         workerCount: Int,
+        coroutineThreadCount: Int = 1
     ): RaribleKafkaConsumerWorker<T>
 }

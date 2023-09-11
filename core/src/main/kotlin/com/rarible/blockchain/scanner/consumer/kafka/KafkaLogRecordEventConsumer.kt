@@ -18,15 +18,17 @@ class KafkaLogRecordEventConsumer(
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
         workerCount: Int,
+        coroutineThreadCount: Int = 1
     ) {
         batchedConsumerWorkers += logRecordListeners
             .map { listener ->
                 consumerWorkerFactory.create(
-                    listener,
-                    logRecordType,
-                    logRecordMapper,
-                    logRecordFilters,
-                    workerCount
+                    listener = listener,
+                    logRecordType = logRecordType,
+                    logRecordMapper = logRecordMapper,
+                    logRecordFilters = logRecordFilters,
+                    workerCount = workerCount,
+                    coroutineThreadCount = coroutineThreadCount
                 )
             }
             .onEach { consumer -> consumer.start() }

@@ -33,12 +33,14 @@ class KafkaLogRecordConsumerWorkerFactory(
         logRecordMapper: LogRecordMapper<T>,
         logRecordFilters: List<LogRecordFilter<T>>,
         workerCount: Int,
+        coroutineThreadCount: Int,
     ): RaribleKafkaConsumerWorker<T> {
         val handler = KafkaLogRecordEventHandler(listener, logRecordMapper, logRecordFilters)
         return consumerWorkerFactory.createWorker(
             settings = RaribleKafkaConsumerSettings(
                 batchSize = daemonProperties.consumerBatchSize,
                 concurrency = workerCount,
+                coroutineThreadCount = 1,
                 group = listener.id,
                 async = false,
                 hosts = properties.brokerReplicaSet,
