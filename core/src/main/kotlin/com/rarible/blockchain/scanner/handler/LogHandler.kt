@@ -70,6 +70,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private fun gatherStats(logs: List<LogEvent<R, D>>): Map<Long, BlockStats> {
+        val start = System.currentTimeMillis()
         val result = HashMap<Long, BlockStats>()
         logs.groupBy { it.blockEvent.number }.forEach {
             val blockNumber = it.key
@@ -94,6 +95,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 subscriberStats
             )
         }
+        val stop = System.currentTimeMillis() - start
+        logger.info("Gathered stats for {} log events in {} ms", logs.size, stop)
         return result
     }
 

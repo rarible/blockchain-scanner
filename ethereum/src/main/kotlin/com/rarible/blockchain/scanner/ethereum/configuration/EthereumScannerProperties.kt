@@ -27,4 +27,5 @@ data class EthereumScannerProperties(
     val blockPoller: BlockPollerProperties = BlockPollerProperties(),
     val maxBatches: List<String> = emptyList(),
     val enableEthereumMonitor: Boolean = true,
+    val logSaveBatchSize: Int = 300,
 ) : BlockchainScannerProperties
