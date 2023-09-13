@@ -70,6 +70,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private fun gatherStats(logs: List<LogEvent<R, D>>): Map<Long, BlockStats> {
+        val start = System.currentTimeMillis()
         val result = HashMap<Long, BlockStats>()
         logs.groupBy { it.blockEvent.number }.forEach {
             val blockNumber = it.key
@@ -94,10 +95,13 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 subscriberStats
             )
         }
+        val stop = System.currentTimeMillis() - start
+        logger.info("Gathered stats for {} log events ({}ms)", logs.size, stop)
         return result
     }
 
     private suspend fun sortAndPublishEvents(events: List<BlockEvent<BB>>, logEvents: List<LogEvent<R, D>>) {
+        val start = System.currentTimeMillis()
         val blockLogsToInsert = HashMap<BlockEvent<*>, MutableList<List<R>>>(events.size)
         val blockLogsToUpdate = HashMap<BlockEvent<*>, MutableList<List<R>>>(events.size)
         for (logEvent in logEvents) {
@@ -118,15 +122,20 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 .sortedWith(logRecordComparator.reversed())
                 .map { LogRecordEvent(it, true, blockEvent.eventTimeMarks) }
         }
+        logger.info("Sorted {} log events for publish ({}ms)", logEvents.size, System.currentTimeMillis() - start)
         for (blockEvent in events) {
             val eventsToInsert = blockEventsToInsert[blockEvent] ?: continue
             val eventsToUpdate = blockEventsToUpdate.getValue(blockEvent)
 
-            logging(message = "publishing ${eventsToUpdate.size} reverted log records", event = blockEvent)
+            val statForUpdated = System.currentTimeMillis()
             logRecordEventPublisher.publish(groupId, addOutMark(eventsToUpdate))
+            val stopForUpdated = System.currentTimeMillis() - statForUpdated
+            logging(message = "published ${eventsToUpdate.size} reverted log records (${stopForUpdated}ms)", event = blockEvent)
 
-            logging(message = "publishing ${eventsToInsert.size} new log records", event = blockEvent)
+            val statForInserted = System.currentTimeMillis()
             logRecordEventPublisher.publish(groupId, addOutMark(eventsToInsert))
+            val stopForInserted = System.currentTimeMillis() - statForInserted
+            logging(message = "published ${eventsToInsert.size} new log records (${stopForInserted}ms)", event = blockEvent)
         }
     }
 

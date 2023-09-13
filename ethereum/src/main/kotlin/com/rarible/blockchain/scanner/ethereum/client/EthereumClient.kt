@@ -40,8 +40,10 @@ import java.time.Duration
 @ExperimentalCoroutinesApi
 @Component
 class EthereumClient(
+    @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethereum: MonoEthereum,
     properties: EthereumScannerProperties,
+    @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethPubSub: EthPubSub,
     monitor: BlockchainMonitor,
     // Retries delegated to MonoEthereum
@@ -117,6 +119,7 @@ class EthereumClient(
         blocks: List<EthereumBlockchainBlock>,
         range: LongRange
     ) = flow {
+        val startGetLogs = System.currentTimeMillis()
         val allLogs = coroutineScope {
             val maxBatchSize = maxBatches[descriptor.ethTopic]
             range.chunked(maxBatchSize ?: range.count())
@@ -129,11 +132,13 @@ class EthereumClient(
                 .awaitAll()
                 .flatten()
         }
-
-        logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range")
+        val stopGetLogs = System.currentTimeMillis() - startGetLogs
+        logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range (${stopGetLogs}ms)")
 
         val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
         coroutineScope {
+            val startGetFullBlocks = System.currentTimeMillis()
+
             allLogs.groupBy { log ->
                 log.blockHash()
             }.entries.map { (blockHash, blockLogs) ->
@@ -143,7 +148,10 @@ class EthereumClient(
                     }
                     createFullBlock(ethFullBlock, blockLogs)
                 }
-            }.awaitAll()
+            }.awaitAll().also {
+                val stopGetFullBlocks = System.currentTimeMillis() - startGetFullBlocks
+                logger.info("Loaded ${it.size} full blocks for topic ${descriptor.ethTopic} for blocks $range (${stopGetFullBlocks}ms)")
+            }
         }.forEach { emit(it) }
     }
 

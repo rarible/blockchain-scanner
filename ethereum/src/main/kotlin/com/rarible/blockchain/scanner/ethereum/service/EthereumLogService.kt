@@ -65,8 +65,13 @@ class EthereumLogService(
 
         // During regular forward-indexing, it's expected new data will be only INSERTED, not updated
         try {
-            val inserted = ethereumLogRepository.saveAll(descriptor.collection, records)
-            inserted.forEach { logger.info("Saved new LogEvent: {}", it) }
+            val inserted = coroutineScope {
+                records.chunked(properties.logSaveBatchSize).map { batch ->
+                    asyncWithTraceId(context = NonCancellable) {
+                        ethereumLogRepository.saveAll(descriptor.collection, batch)
+                    }
+                }.awaitAll().flatten()
+            }
             val insertSpent = System.currentTimeMillis() - updateStart
             logger.info(
                 "Inserted {} records for {} (check: {}ms, insert {}ms)",
