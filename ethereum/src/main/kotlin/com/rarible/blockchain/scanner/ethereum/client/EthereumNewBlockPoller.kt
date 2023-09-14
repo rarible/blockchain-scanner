@@ -7,6 +7,7 @@ import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.asFlux
 import kotlinx.coroutines.time.delay
+import org.slf4j.LoggerFactory
 import reactor.core.publisher.Flux
 import scalether.core.MonoEthereum
 import scalether.domain.response.Block
@@ -18,10 +19,13 @@ class EthereumNewBlockPoller(
     private val pollingDelay: Duration
 ) : EthereumNewBlockSubscriber {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     override fun newHeads(): Flux<Block<Word>> = channelFlow<Block<Word>> {
         while (isClosedForSend.not()) {
             val headBlockNumber = ethereum.ethBlockNumber().awaitFirst()
             val head = ethereum.ethGetBlockByNumber(headBlockNumber).awaitFirstOrNull()
+            logger.info("Poller get new head block: ${head?.blockNumber}")
             if (head != null) send(head)
             delay(pollingDelay)
         }
