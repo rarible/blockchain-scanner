@@ -27,9 +27,12 @@ internal class EthereumNewBlockPollerTest {
     fun polling() = runBlocking<Unit> {
         val blockNumber1 = BigInteger("1")
         val blockNumber2 = BigInteger("2")
-        val block1 = mockk<Block<Word>>()
-        val block2 = mockk<Block<Word>>()
-
+        val block1 = mockk<Block<Word>> {
+            every { number() } returns BigInteger.ONE
+        }
+        val block2 = mockk<Block<Word>> {
+            every { number() } returns BigInteger.TEN
+        }
         every { ethereum.ethBlockNumber() } returnsMany listOf(
             Mono.just(blockNumber1),
             Mono.just(blockNumber2),

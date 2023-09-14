@@ -25,7 +25,7 @@ class EthereumNewBlockPoller(
         while (isClosedForSend.not()) {
             val headBlockNumber = ethereum.ethBlockNumber().awaitFirst()
             val head = ethereum.ethGetBlockByNumber(headBlockNumber).awaitFirstOrNull()
-            logger.info("Poller get new head block: ${head?.blockNumber}")
+            logger.info("Poller get new head block: ${head?.number()}")
             if (head != null) send(head)
             delay(pollingDelay)
         }
