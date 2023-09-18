@@ -42,7 +42,7 @@ import java.time.Duration
 class EthereumClient(
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethereum: MonoEthereum,
-    properties: EthereumScannerProperties,
+    private val properties: EthereumScannerProperties,
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethPubSub: EthPubSub,
     monitor: BlockchainMonitor,
@@ -175,21 +175,45 @@ class EthereumClient(
         val filter = LogFilter
             .apply(TopicFilter.simple(descriptor.ethTopic))
             .let { if (addresses.isNotEmpty()) it.address(*addresses) else it }
-        return blocks.asFlow().map { blockHeader ->
-            val blockHash = Word.apply(blockHeader.hash)
-            val finalFilter = filter.blockHash(blockHash)
-            val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot { it.removed() }
-            logger.info(
-                "Loaded {} logs of topic {} for fresh block [{}:{}]",
-                allLogs.size,
-                descriptor.ethTopic,
-                blockHeader.number,
-                blockHash
-            )
-            val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
-            createFullBlock(ethFullBlock, allLogs)
+        return if (properties.enableUnstableBlockParallelLoad) {
+            flow {
+                coroutineScope {
+                    blocks
+                        .map { blockHeader ->
+                            asyncWithTraceId {
+                                getFullBlock(blockHeader, filter, descriptor)
+                            }
+                        }.map {
+                            emit(it.await())
+                        }
+                }
+            }
+        } else {
+            blocks.asFlow().map { blockHeader ->
+                getFullBlock(blockHeader, filter, descriptor)
+            }
         }
     }
+
+    private suspend fun getFullBlock(
+        blockHeader: EthereumBlockchainBlock,
+        filter: LogFilter,
+        descriptor: EthereumDescriptor
+    ): FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog> {
+        val blockHash = Word.apply(blockHeader.hash)
+        val finalFilter = filter.blockHash(blockHash)
+        val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot { it.removed() }
+        logger.info(
+            "Loaded {} logs of topic {} for fresh block [{}:{}]",
+            allLogs.size,
+            descriptor.ethTopic,
+            blockHeader.number,
+            blockHash
+        )
+        val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
+        return createFullBlock(ethFullBlock, allLogs)
+    }
+
 
     /**
      * Attach [EthereumBlockchainLog.index] calculated by grouping <transactionHash, topic, address>
