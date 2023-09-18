@@ -178,12 +178,15 @@ class EthereumClient(
         return if (properties.enableUnstableBlockParallelLoad) {
             flow {
                 coroutineScope {
-                    blocks.map { blockHeader ->
-                        asyncWithTraceId {
-                            getFullBlock(blockHeader, filter, descriptor)
+                    blocks
+                        .map { blockHeader ->
+                            asyncWithTraceId {
+                                getFullBlock(blockHeader, filter, descriptor)
+                            }
+                        }.map {
+                            emit(it.await())
                         }
-                    }.awaitAll()
-                }.forEach { emit(it) }
+                }
             }
         } else {
             blocks.asFlow().map { blockHeader ->
