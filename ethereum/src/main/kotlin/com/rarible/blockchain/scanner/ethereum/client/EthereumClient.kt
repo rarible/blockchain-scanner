@@ -214,7 +214,6 @@ class EthereumClient(
         return createFullBlock(ethFullBlock, allLogs)
     }
 
-
     /**
      * Attach [EthereumBlockchainLog.index] calculated by grouping <transactionHash, topic, address>
      * and sorting by <logIndex> in each group.
