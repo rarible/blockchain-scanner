@@ -11,5 +11,10 @@ data class EthereumDescriptor(
     val contracts: List<Address>,
     override val entityType: Class<*>,
     override val id: String = ethTopic.toString(),
-    override val alias: String? = null
-) : Descriptor
+    override val alias: String? = null,
+    val saveLogs: Boolean = true
+) : Descriptor {
+    override fun shouldSaveLogs(): Boolean {
+        return saveLogs
+    }
+}
