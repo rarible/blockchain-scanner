@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.handler
 
-import com.rarible.blockchain.scanner.block.BlockStats
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
@@ -255,11 +254,11 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
-            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): Map<Long, BlockStats> {
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockEventListener.Result {
                 if (events.any { it.number == 5L }) {
                     throw RuntimeException()
                 }
-                return emptyMap()
+                return BlockEventListener.Result.EMPTY
             }
         }
         val blockHandler = BlockHandler(
@@ -280,11 +279,11 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val blockchain = randomBlockchain(100)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
-            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): Map<Long, BlockStats> {
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockEventListener.Result {
                 if (events.any { it.number == 55L }) {
                     throw RuntimeException()
                 }
-                return emptyMap()
+                return BlockEventListener.Result.EMPTY
             }
         }
         val blockHandler = BlockHandler(

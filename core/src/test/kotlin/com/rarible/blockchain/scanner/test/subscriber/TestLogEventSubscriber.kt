@@ -13,7 +13,8 @@ import com.rarible.blockchain.scanner.test.model.TestLogRecord
 
 class TestLogEventSubscriber(
     private val descriptor: TestDescriptor,
-    private val eventDataCount: Int = 1
+    private val eventDataCount: Int = 1,
+    private val exception: Exception? = null
 ) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor> {
 
     private val expectedRecords: MutableMap<Pair<TestBlockchainBlock, TestOriginalLog>, List<TestLogRecord>> =
@@ -33,6 +34,9 @@ class TestLogEventSubscriber(
         block: TestBlockchainBlock,
         log: TestBlockchainLog
     ): List<TestLogRecord> {
+        if (exception != null) {
+            throw exception
+        }
         expectedRecords[block to log.testOriginalLog]?.let { return it }
         val records = (0 until eventDataCount).map { minorIndex ->
             TestCustomLogRecord(

@@ -15,7 +15,12 @@ data class Block(
     val timestamp: Long,
     val status: BlockStatus,
     val stats: BlockStats? = null
-)
+) {
+
+    override fun toString(): String {
+        return "[id=$id, hash=$hash, parent=$parentHash, ts=$timestamp, status=$status]"
+    }
+}
 
 enum class BlockStatus {
     PENDING,

@@ -32,6 +32,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 import java.util.TreeMap
+import java.util.concurrent.atomic.AtomicReference
 
 class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val groupId: String,
@@ -46,14 +47,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
-    override suspend fun process(events: List<BlockEvent<BB>>): Map<Long, BlockStats> {
+    override suspend fun process(events: List<BlockEvent<BB>>): BlockEventListener.Result {
         if (events.isEmpty()) {
-            return emptyMap()
+            return BlockEventListener.Result.EMPTY
         }
         logger.info(
             "Processing ${events.size} block events ${events.first().number}..${events.last().number} " +
-                "for group '${subscribers.first().getDescriptor().groupId}'"
+                "for group '$groupId'"
         )
+
         val logEvents = logMonitor.onPrepareLogs {
             val batches = BlockRanges.toBatches(events)
             batches.flatMap { prepareBlockEventsBatch(it) }
@@ -61,12 +63,13 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         val saved = logMonitor.onSaveLogs {
             insertOrUpdateRecords(logEvents)
         }
-        if (logRecordEventPublisher.isEnabled()) {
-            logMonitor.onPublishLogs {
-                sortAndPublishEvents(events, saved)
+        return BlockEventListener.Result(gatherStats(logEvents)) {
+            if (logRecordEventPublisher.isEnabled()) {
+                logMonitor.onPublishLogs {
+                    sortAndPublishEvents(events, saved)
+                }
             }
         }
-        return gatherStats(logEvents)
     }
 
     private fun gatherStats(logs: List<LogEvent<R, D>>): Map<Long, BlockStats> {
@@ -96,7 +99,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             )
         }
         val stop = System.currentTimeMillis() - start
-        logger.info("Gathered stats for {} log events ({}ms)", logs.size, stop)
+        logger.info("Gathered stats for {} {} log events ({}ms)", groupId, logs.size, stop)
         return result
     }
 
@@ -130,21 +133,25 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             val statForUpdated = System.currentTimeMillis()
             logRecordEventPublisher.publish(groupId, addOutMark(eventsToUpdate))
             val stopForUpdated = System.currentTimeMillis() - statForUpdated
-            logging(message = "published ${eventsToUpdate.size} reverted log records (${stopForUpdated}ms)", event = blockEvent)
 
             val statForInserted = System.currentTimeMillis()
             logRecordEventPublisher.publish(groupId, addOutMark(eventsToInsert))
             val stopForInserted = System.currentTimeMillis() - statForInserted
-            logging(message = "published ${eventsToInsert.size} new log records (${stopForInserted}ms)", event = blockEvent)
+
+            logging(
+                message = "published ${eventsToInsert.size} new and ${eventsToUpdate.size}" +
+                    " reverted log records (new=${stopForInserted}ms, reverted=${stopForUpdated}ms)",
+                event = blockEvent
+            )
         }
     }
 
     private fun addOutMark(records: List<LogRecordEvent>): List<LogRecordEvent> {
-        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks?.addOut()) }
+        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addOut()) }
     }
 
     private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<LogEvent<R, D>> {
-        var events = coroutineScope {
+        val events = coroutineScope {
             subscribers.map { subscriber ->
                 asyncWithTraceId(context = NonCancellable) {
                     @Suppress("UNCHECKED_CAST")
@@ -156,12 +163,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                 }
             }.awaitAll().flatten()
         }
-        if (logFilters.isNotEmpty()) {
-            for (filter in logFilters) {
-                events = filter.filter(events)
-            }
+        if (logFilters.isEmpty()) {
+            return events
         }
-        return events
+        val result = AtomicReference(events)
+        for (filter in logFilters) {
+            result.set(filter.filter(result.get()))
+        }
+        return result.get()
     }
 
     // Important! If data not saved it means ID of same events in reindex case will be different
@@ -309,7 +318,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         event: BlockEvent<*>,
         subscriber: LogEventSubscriber<*, *, *, *>? = null
     ) {
-        val id = subscriber?.getDescriptor()?.id ?: ("group " + subscribers.first().getDescriptor().groupId)
+        val id = subscriber?.getDescriptor()?.id ?: ("group $groupId")
         logger.info("Logs for $event by '$id': $message")
     }
 }

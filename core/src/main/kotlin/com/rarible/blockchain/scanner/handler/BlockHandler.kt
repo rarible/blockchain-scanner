@@ -16,7 +16,7 @@ import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
-import com.rarible.core.logging.asyncWithTraceId
+import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.logging.withTraceId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
@@ -74,28 +74,18 @@ class BlockHandler<BB : BlockchainBlock>(
      */
     private suspend fun onNewBlockHandler(newBlockchainBlock: BB) {
         val newBlock = newBlockchainBlock.toBlock()
-        logger.info("Received new Block [{}:{}]: {}", newBlock.id, newBlock.hash, newBlock)
+        logger.info("Received new Block: {}", newBlock)
 
         val lastKnownBlock = getLastKnownBlock()
-        logger.info("Last known Block [{}:{}]: {}", lastKnownBlock.id, lastKnownBlock.hash, lastKnownBlock)
+        logger.info("Last known Block: {}", lastKnownBlock)
 
         val alreadyIndexedBlock = blockService.getBlock(newBlock.id)
         if (alreadyIndexedBlock != null) {
             if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status, stats = null)) {
-                logger.info(
-                    "The new Block [{}:{}] is already indexed, skipping it: {}", newBlock.id, newBlock.hash, newBlock
-                )
+                logger.info("The new Block is already indexed, skipping it: {}", newBlock)
                 return
             }
-            logger.warn(
-                "The new Block [{}:{}]: {} was already indexed but differs from [{}:{}]: {}",
-                newBlock.id,
-                newBlock.hash,
-                newBlock,
-                alreadyIndexedBlock.id,
-                alreadyIndexedBlock.hash,
-                alreadyIndexedBlock
-            )
+            logger.warn("The new Block {} was already indexed but differs from {}", newBlock, alreadyIndexedBlock)
         }
         val lastCorrectBlock = findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
 
@@ -123,10 +113,8 @@ class BlockHandler<BB : BlockchainBlock>(
             if (lastSyncedBlockReference.get() != null) {
                 val lastSyncedBlock = lastSyncedBlockReference.get()
                 logger.info(
-                    "Syncing completed {} on block [{}:{}]: {}",
+                    "Syncing completed {} on block: {}",
                     if (lastSyncedBlock.id == newBlock.id) "fully" else "prematurely",
-                    lastSyncedBlock.id,
-                    lastSyncedBlock.hash,
                     lastSyncedBlock
                 )
             } else {
@@ -156,7 +144,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
-    @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
+    @Suppress("EXPERIMENTAL_API_USAGE")
     fun syncBlocks(
         blockRanges: Flow<TypedBlockRange>,
         baseBlock: Block,
@@ -251,7 +239,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
         val firstBlock = blockClient.getFirstAvailableBlock()
-        logger.info("Processing the first block [{}:{}]", firstBlock.number, firstBlock.hash)
+        logger.info("Processing the first Block {}", firstBlock)
 
         return processBlocks(
             blocksBatch = BlocksBatch(
@@ -273,7 +261,7 @@ class BlockHandler<BB : BlockchainBlock>(
             if (block != null) return block
             id--
         }
-        error("Can't find previous block for: $startBlock")
+        error("Can't find previous Block for: $startBlock")
     }
 
     private data class BlocksBatch<BB>(val blocksRange: TypedBlockRange, val blocks: List<BB>) {
@@ -411,7 +399,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
     private suspend fun revertBlock(block: Block) {
-        logger.info("Reverting block [{}:{}]: {}", block.id, block.hash, block)
+        logger.info("Reverting block: {}", block)
         processBlockEvents(
             listOf(
                 RevertedBlockEvent(
@@ -426,8 +414,15 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>): Map<Long, BlockStats> = coroutineScope {
         val stats = monitor.onProcessBlocksEvents {
+            // Here we process events first, just to store data to DB
             blockEventListeners.map {
                 asyncWithTraceId(context = NonCancellable) { it.process(blockEvents) }
+            }.awaitAll().map {
+                // And only if everything processed successfully, we're publishing logs to Kafka
+                asyncWithTraceId(context = NonCancellable) {
+                    it.publish()
+                    it.stats
+                }
             }.awaitAll()
         }
         val mergedStats = HashMap<Long, BlockStats>()
