@@ -24,6 +24,7 @@ import com.rarible.core.common.EventTimeMarks
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
@@ -80,6 +81,53 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                 transactionSubscriber.getExpected(block),
             )
         )
+    }
+
+    @Test
+    fun `new block - 2 subscribers, one failed`() = runBlocking<Unit> {
+        val descriptor1 = TestDescriptor(
+            topic = "topic",
+            collection = "collection1",
+            contracts = emptyList(),
+            entityType = TestCustomLogRecord::class.java,
+            groupId = "group1"
+        )
+        val descriptor2 = TestDescriptor(
+            topic = "topic",
+            collection = "collection2",
+            contracts = emptyList(),
+            entityType = TestCustomLogRecord::class.java,
+            groupId = "group2"
+        )
+
+        val subscriber1 = TestLogEventSubscriber(descriptor1)
+        val subscriber2 = TestLogEventSubscriber(descriptor2, exception = RuntimeException(""))
+        val transactionSubscriber = TestTransactionEventSubscriber()
+
+        val blocks = randomBlockchain(0)
+        val block0 = blocks[0]
+
+        val log = randomOriginalLog(block = block0, topic = "topic", logIndex = 1)
+
+        val testBlockchainClient = TestBlockchainClient(
+            TestBlockchainData(
+                blocks = blocks,
+                logs = listOf(log),
+                newBlocks = blocks
+            )
+        )
+
+        val blockchainScanner = createBlockchainScanner(
+            testBlockchainClient = testBlockchainClient,
+            subscribers = listOf(subscriber1, subscriber2),
+            transactionSubscribers = listOf(transactionSubscriber)
+        )
+
+        assertThrows<RuntimeException> { blockchainScanner.scan(once = true) }
+
+        assertPublishedLogRecords("group1", emptyList())
+        assertPublishedLogRecords("group2", emptyList())
+        assertPublishedTransactionRecords("test", emptyList())
     }
 
     @Test
@@ -345,7 +393,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     }
 
     private fun assertPublishedLogRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {
-        val publishedByGroup = testLogRecordEventPublisher.publishedLogRecords[groupId]!!
+        val publishedByGroup = testLogRecordEventPublisher.publishedLogRecords[groupId] ?: emptyList()
         for (i in expectedEvents.indices) {
             val published = publishedByGroup[i]
             val expected = expectedEvents[i]
@@ -361,8 +409,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     }
 
     private fun assertPublishedTransactionRecords(groupId: String, expectedEvents: List<TransactionRecordEvent>) {
-        val publishedByGroup = testTransactionRecordEventPublisher.publishedTransactionRecords[groupId]!!
-        assertThat(expectedEvents).hasSize(publishedByGroup.size)
+        val publishedByGroup = testTransactionRecordEventPublisher.publishedTransactionRecords[groupId] ?: emptyList()
+        assertThat(publishedByGroup).hasSize(expectedEvents.size)
         for (i in expectedEvents.indices) {
             val published = publishedByGroup[i]
             val expected = expectedEvents[i]
