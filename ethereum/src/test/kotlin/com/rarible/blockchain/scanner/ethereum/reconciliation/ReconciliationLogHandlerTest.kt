@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ScanMode
+import com.rarible.blockchain.scanner.handler.BlockEventListener
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
@@ -122,7 +123,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(10L to block10Handler1Stats)
+        } returns BlockEventListener.Result(mapOf(10L to block10Handler1Stats)) {}
 
         val block10Handler2Stats = mockk<BlockStats> { every { inserted } returns 9 }
         coEvery {
@@ -134,7 +135,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(10L to block10Handler2Stats)
+        } returns BlockEventListener.Result(mapOf(10L to block10Handler2Stats)) {}
         val block10Handler3Stats = mockk<BlockStats> { every { inserted } returns 2 }
         coEvery {
             logHandler3.process(
@@ -145,7 +146,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(10L to block10Handler3Stats)
+        } returns BlockEventListener.Result(mapOf(10L to block10Handler3Stats)) {}
 
         // Block 11 statistics
         val block11Handler1Stats = mockk<BlockStats> { every { inserted } returns 12 }
@@ -158,7 +159,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(11L to block11Handler1Stats)
+        } returns BlockEventListener.Result(mapOf(11L to block11Handler1Stats)) {}
 
         val block11Handler2Stats = mockk<BlockStats> { every { inserted } returns 5 }
         coEvery {
@@ -170,7 +171,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(11L to block11Handler2Stats)
+        } returns BlockEventListener.Result(mapOf(11L to block11Handler2Stats)) {}
         val block11Handler3Stats = mockk<BlockStats> { every { inserted } returns 8 }
         coEvery {
             logHandler3.process(
@@ -181,7 +182,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(11L to block11Handler3Stats)
+        } returns BlockEventListener.Result(mapOf(11L to block11Handler3Stats)) {}
 
         val result = handler.check(range, 2)
         assertThat(result).isEqualTo(11)
@@ -209,7 +210,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns mapOf(100L to block100Stats)
+        } returns BlockEventListener.Result(mapOf(100L to block100Stats)) {}
 
         every { reconciliationProperties.autoReindex } returns true
         val baseBlock = mockk<Block>()

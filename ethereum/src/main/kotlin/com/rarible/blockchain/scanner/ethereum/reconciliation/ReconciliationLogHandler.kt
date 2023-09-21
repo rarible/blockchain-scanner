@@ -109,6 +109,12 @@ class ReconciliationLogHandler(
                 }
             }
             .awaitAll()
+            .map {
+                asyncWithTraceId(context = NonCancellable) {
+                    it.publish()
+                    it.stats
+                }
+            }.awaitAll()
             .fold(0L) { acc, result ->
                 val inserted = result[blockNumber]?.inserted?.toLong() ?: 0L
                 acc + inserted
