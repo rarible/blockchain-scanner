@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.framework.subscriber
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
+import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -34,5 +35,5 @@ interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, R : LogRe
      * @param block original Blockchain Block
      * @param logs all Blockchain logs matched to descriptor
      */
-    suspend fun postProcess(block: FullBlock<BB, BL>, logs: List<R>) = logs
+    suspend fun postProcess(event: BlockEvent<BB>, block: FullBlock<BB, BL>, logs: List<R>): List<R> = logs
 }
