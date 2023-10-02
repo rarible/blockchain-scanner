@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.reindex
 
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
@@ -62,7 +63,7 @@ class BlockReindexerTest {
 
         coEvery { logHandlerFactory.create(eq("group"), eq(subscribers), any()) } returns logHandler
         coEvery { blockHandlerFactory.create(listOf(logHandler)) } returns blockHandler
-        coEvery { blockHandler.syncBlocks(ranges, startBlock, true) } returns flowOf(endBlock)
+        coEvery { blockHandler.syncBlocks(ranges, startBlock, ScanMode.REINDEX) } returns flowOf(endBlock)
 
         val result = reindexer.reindex(startBlock, ranges).toList()
         // Just to ensure flow of blocks has been returned
@@ -81,7 +82,7 @@ class BlockReindexerTest {
 
         coEvery { logHandlerFactory.create(eq("group"), eq(subscribers), publisher) } returns logHandler
         coEvery { blockHandlerFactory.create(listOf(logHandler)) } returns blockHandler
-        coEvery { blockHandler.syncBlocks(ranges, startBlock, true) } returns flowOf(endBlock)
+        coEvery { blockHandler.syncBlocks(ranges, startBlock, ScanMode.REINDEX) } returns flowOf(endBlock)
 
         val result = reindexer.reindex(
             baseBlock = startBlock,
@@ -104,7 +105,7 @@ class BlockReindexerTest {
 
         coEvery { logHandlerFactory.create(eq("group"), eq(listOf(subscriber1)), any()) } returns logHandler
         coEvery { blockHandlerFactory.create(listOf(logHandler)) } returns blockHandler
-        coEvery { blockHandler.syncBlocks(ranges, startBlock, true) } returns flowOf(endBlock)
+        coEvery { blockHandler.syncBlocks(ranges, startBlock, ScanMode.REINDEX_PARTIAL) } returns flowOf(endBlock)
 
         val result = reindexer.reindex(startBlock, ranges, filter).toList()
         // Just to ensure flow of blocks has been returned

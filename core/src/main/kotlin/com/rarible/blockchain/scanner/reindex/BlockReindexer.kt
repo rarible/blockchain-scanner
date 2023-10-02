@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
@@ -40,13 +41,20 @@ class BlockReindexer<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D 
             val wrappedSubscribers = filter?.filter(subscribers) ?: subscribers
             val selectedPublisher = publisher ?: reindexLogRecordEventPublisher
 
+            val mode = if (wrappedSubscribers == subscribers) {
+                ScanMode.REINDEX
+            } else {
+                ScanMode.REINDEX_PARTIAL
+            }
+
             val logHandlers = wrappedSubscribers
                 .groupBy { it.getDescriptor().groupId }
                 .map { (groupId, subscribers) ->
                     logger.info(
-                        "Reindex with subscribers of the group {}: {}",
+                        "Reindex with subscribers of the group {} ({}): {}",
                         groupId,
-                        subscribers.joinToString { it.getDescriptor().toString() }
+                        mode,
+                        subscribers.joinToString { it.getDescriptor().toString() },
                     )
                     logHandlerFactory.create(
                         groupId = groupId,
@@ -56,7 +64,7 @@ class BlockReindexer<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D 
                 }
 
             val blockHandler = blockHandlerFactory.create(logHandlers)
-            blockHandler.syncBlocks(blocksRanges, baseBlock, resyncStable = true)
+            blockHandler.syncBlocks(blocksRanges, baseBlock, mode)
         }
     }
 }

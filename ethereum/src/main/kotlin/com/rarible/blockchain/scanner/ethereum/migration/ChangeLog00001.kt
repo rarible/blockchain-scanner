@@ -17,7 +17,10 @@ class ChangeLog00001 {
     @ChangeSet(id = "addBlockIndex", order = "00001", author = "eugene")
     fun addBlockIndex(template: MongockTemplate) {
         template.indexOps(Block::class.java).ensureIndex(
-            Index().on("hash", Sort.Direction.ASC)
+            Index().on("hash", Sort.Direction.ASC).background()
+        )
+        template.indexOps(Block::class.java).ensureIndex(
+            Index().on("status", Sort.Direction.ASC).background()
         )
     }
 

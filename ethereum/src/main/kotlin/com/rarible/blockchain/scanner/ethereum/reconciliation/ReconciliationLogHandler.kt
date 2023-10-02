@@ -112,13 +112,11 @@ class ReconciliationLogHandler(
             .map {
                 asyncWithTraceId(context = NonCancellable) {
                     it.publish()
-                    it.stats
+                    it.blocks
                 }
-            }.awaitAll()
-            .fold(0L) { acc, result ->
-                val inserted = result[blockNumber]?.inserted?.toLong() ?: 0L
-                acc + inserted
-            }
+            }.awaitAll().flatten()
+            .sumOf { it.stats.inserted }
+            .toLong()
     }
 
     private suspend fun reindex(blockNumber: Long) {

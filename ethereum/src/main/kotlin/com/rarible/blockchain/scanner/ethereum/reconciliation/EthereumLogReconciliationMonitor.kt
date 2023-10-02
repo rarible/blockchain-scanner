@@ -24,8 +24,6 @@ class EthereumLogReconciliationMonitor(
 
     override fun register() = Unit
 
-    override fun refresh() = Unit
-
     fun onReconciledRange(size: Long) {
         reconciledRangeCounter.increment(size.toDouble())
     }

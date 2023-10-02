@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner
 
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -17,7 +18,6 @@ import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.revert
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import com.rarible.core.common.EventTimeMarks
@@ -55,7 +55,6 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val blockScanner = createBlockchainScanner(
             testBlockchainClient = TestBlockchainClient(testBlockchainData),
             subscribers = listOf(subscriber),
-            logFilters = listOf(TestLogEventFilter(setOf(logFiltered.transactionHash))),
             transactionSubscribers = listOf(transactionSubscriber)
         )
         blockScanner.scan(once = true)
@@ -84,7 +83,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `new block - 2 subscribers, one failed`() = runBlocking<Unit> {
+    fun `new block - 2 subscribers, one failed, block saved`() = runBlocking<Unit> {
         val descriptor1 = TestDescriptor(
             topic = "topic",
             collection = "collection1",
@@ -120,14 +119,98 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         val blockchainScanner = createBlockchainScanner(
             testBlockchainClient = testBlockchainClient,
             subscribers = listOf(subscriber1, subscriber2),
-            transactionSubscribers = listOf(transactionSubscriber)
+            transactionSubscribers = listOf(transactionSubscriber),
+            scanProperties = ScanProperties(maxFailedBlocksAllowed = 10)
         )
 
-        assertThrows<RuntimeException> { blockchainScanner.scan(once = true) }
+        blockchainScanner.scan(once = true)
 
-        assertPublishedLogRecords("group1", emptyList())
+        assertPublishedLogRecords(
+            "group1",
+            listOf(
+                subscriber1.getExpected(block0, log)
+            )
+        )
+
+        // Nothing should be published, this subscriber failed
         assertPublishedLogRecords("group2", emptyList())
-        assertPublishedTransactionRecords("test", emptyList())
+
+        assertPublishedTransactionRecords(
+            "test",
+            listOf(
+                transactionSubscriber.getExpected(blocks[0]),
+            )
+        )
+        assertThat(blockService.getBlock(0L)!!.status).isEqualTo(BlockStatus.ERROR)
+    }
+
+    @Test
+    fun `new block - 2 subscribers, one failed, too many failed blocks`() = runBlocking<Unit> {
+        val descriptor1 = TestDescriptor(
+            topic = "topic",
+            collection = "collection1",
+            contracts = emptyList(),
+            entityType = TestCustomLogRecord::class.java,
+            groupId = "group1"
+        )
+        val descriptor2 = TestDescriptor(
+            topic = "topic",
+            collection = "collection2",
+            contracts = emptyList(),
+            entityType = TestCustomLogRecord::class.java,
+            groupId = "group2"
+        )
+
+        val subscriber1 = TestLogEventSubscriber(descriptor1)
+        val subscriber2 = TestLogEventSubscriber(descriptor2, exception = RuntimeException(""))
+        val transactionSubscriber = TestTransactionEventSubscriber()
+
+        val blocks = randomBlockchain(2)
+        val block0 = blocks[0]
+
+        val log0 = randomOriginalLog(block = blocks[0], topic = "topic", logIndex = 1)
+        val log1 = randomOriginalLog(block = blocks[1], topic = "topic", logIndex = 1)
+        val log2 = randomOriginalLog(block = blocks[2], topic = "topic", logIndex = 1)
+
+        val testBlockchainClient = TestBlockchainClient(
+            TestBlockchainData(
+                blocks = blocks,
+                logs = listOf(log0, log1, log2),
+                newBlocks = blocks
+            )
+        )
+
+        val blockchainScanner = createBlockchainScanner(
+            testBlockchainClient = testBlockchainClient,
+            subscribers = listOf(subscriber1, subscriber2),
+            transactionSubscribers = listOf(transactionSubscriber),
+            scanProperties = ScanProperties(maxFailedBlocksAllowed = 1)
+        )
+
+        assertThrows<IllegalStateException> { blockchainScanner.scan(once = true) }
+
+        assertPublishedLogRecords(
+            "group1",
+            listOf(
+                subscriber1.getExpected(block0, log0)
+            )
+        )
+
+        // Nothing should be published, this subscriber failed
+        assertPublishedLogRecords("group2", emptyList())
+
+        assertPublishedTransactionRecords(
+            "test",
+            listOf(
+                transactionSubscriber.getExpected(blocks[0]),
+            )
+        )
+        // Saved as ERROR since 1 failed block is allowed
+        assertThat(blockService.getBlock(0L)!!.status).isEqualTo(BlockStatus.ERROR)
+        // Saved as PENDING, will be re-indexed again during next try
+        assertThat(blockService.getBlock(1L)!!.status).isEqualTo(BlockStatus.PENDING)
+        // Not event reached, scan interrupted at block 1
+        assertThat(blockService.getBlock(2L)).isNull()
     }
 
     @Test

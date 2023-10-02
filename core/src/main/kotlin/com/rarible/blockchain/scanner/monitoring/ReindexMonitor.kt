@@ -26,8 +26,6 @@ class ReindexMonitor(
 
     override fun register() = Unit
 
-    override fun refresh() = Unit
-
     private companion object {
         const val REINDEX = "reindex"
     }

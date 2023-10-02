@@ -45,7 +45,7 @@ class BlockChecker<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : 
 
         if (blockchainBlock.hash != checkBlock.hash) {
             logger.info(
-                "Find invalid block $blockNumber: " +
+                "Found invalid block $blockNumber: " +
                     "indexed block hash ${checkBlock.hash}," +
                     " expected blockchain hash ${blockchainBlock.hash}"
             )

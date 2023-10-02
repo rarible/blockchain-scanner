@@ -14,7 +14,8 @@ data class Block(
     val parentHash: String?,
     val timestamp: Long,
     val status: BlockStatus,
-    val stats: BlockStats? = null
+    val stats: BlockStats? = null,
+    val errors: List<Fail>,
 ) {
 
     override fun toString(): String {
@@ -25,7 +26,16 @@ data class Block(
 enum class BlockStatus {
     PENDING,
     SUCCESS,
+    ERROR
 }
 
-fun BlockchainBlock.toBlock(status: BlockStatus = BlockStatus.PENDING, stats: BlockStats? = null): Block =
-    Block(number, hash, parentHash, timestamp, status, stats)
+class Fail(
+    val groupId: String,
+    val message: String
+)
+
+fun BlockchainBlock.toBlock(
+    status: BlockStatus = BlockStatus.PENDING,
+    stats: BlockStats? = null,
+    errors: List<Fail> = emptyList(),
+): Block = Block(number, hash, parentHash, timestamp, status, stats, errors)
