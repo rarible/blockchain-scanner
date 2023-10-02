@@ -281,7 +281,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             val records = fullBlock.logs.flatMap {
                 subscriber.getEventRecords(fullBlock.block, it)
             }
-            subscriber.postProcess(fullBlock, records)
+            subscriber.postProcess(event = event, block = fullBlock, logs = records)
         }
         logging(
             message = "prepared ${logRecords.size} log records to insert",

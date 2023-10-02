@@ -37,7 +37,6 @@ class BlockReindexer<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D 
         publisher: LogRecordEventPublisher? = null
     ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {
-
             val wrappedSubscribers = filter?.filter(subscribers) ?: subscribers
             val selectedPublisher = publisher ?: reindexLogRecordEventPublisher
 
