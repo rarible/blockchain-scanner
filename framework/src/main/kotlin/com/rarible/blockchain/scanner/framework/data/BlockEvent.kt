@@ -9,7 +9,6 @@ sealed class BlockEvent<BB : BlockchainBlock> {
     abstract val hash: String
     abstract val mode: ScanMode
     abstract val eventTimeMarks: EventTimeMarks
-    abstract val mode: ScanMode
 }
 
 sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
