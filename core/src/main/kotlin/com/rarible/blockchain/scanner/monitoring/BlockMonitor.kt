@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.block.Block
+import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.configuration.TimestampUnit
 import com.rarible.core.common.nowMillis
@@ -9,8 +10,9 @@ import java.time.Instant
 import kotlin.math.max
 
 class BlockMonitor(
+    private val blockRepository: BlockRepository,
     properties: BlockchainScannerProperties,
-    meterRegistry: MeterRegistry
+    meterRegistry: MeterRegistry,
 ) : AbstractMonitor(
     properties,
     meterRegistry,
@@ -22,15 +24,21 @@ class BlockMonitor(
     @Volatile
     private var lastLoadedBlockNumber: Long? = null
 
+    @Volatile
+    private var blockErrors: Long = 0L
+
     private val timestampUnit = properties.monitoring.timestampUnit
 
     override fun register() {
         addGauge(BLOCK_DELAY) { getBlockDelay() }
         addGauge(LAST_BLOCK_NUMBER) { lastIndexedBlock?.id }
         addGauge(LAST_LOADED_BLOCK_NUMBER) { lastLoadedBlockNumber }
+        addGauge(BLOCK_ERRORS) { blockErrors }
     }
 
-    override fun refresh() = Unit
+    override suspend fun refresh() {
+        blockErrors = blockRepository.failedCount()
+    }
 
     fun recordLastIndexedBlock(lastIndexedBlock: Block) {
         this.lastIndexedBlock = lastIndexedBlock
@@ -40,7 +48,7 @@ class BlockMonitor(
         this.lastLoadedBlockNumber = lastFetchedBlockNumber
     }
 
-    inline fun <T> onProcessBlocksEvents(handler: () -> List<T>): List<T> {
+    inline fun <T> onProcessBlocksEvents(handler: () -> T): T {
         return recordTime(getTimer(PROCESS_BLOCKS_EVENTS), handler)
     }
 
@@ -62,6 +70,7 @@ class BlockMonitor(
         const val BLOCK_DELAY = "delay"
         const val LAST_BLOCK_NUMBER = "last_block_number"
         const val LAST_LOADED_BLOCK_NUMBER = "last_loaded_block_number"
+        const val BLOCK_ERRORS = "block_error"
 
         const val PROCESS_BLOCKS_EVENTS = "process_blocks_events"
         const val ON_BLOCK = "on_block"

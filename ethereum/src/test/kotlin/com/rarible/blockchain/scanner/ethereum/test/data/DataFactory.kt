@@ -2,8 +2,8 @@ package com.rarible.blockchain.scanner.ethereum.test.data
 
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
-import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumLog
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.core.common.nowMillis
@@ -26,7 +26,8 @@ fun randomBlock(): com.rarible.blockchain.scanner.block.Block {
         hash = randomBlockHash().toString(),
         parentHash = randomBlockHash().toString(),
         timestamp = randomPositiveLong(),
-        status = BlockStatus.PENDING
+        status = BlockStatus.PENDING,
+        errors = emptyList()
     )
 }
 

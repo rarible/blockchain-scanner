@@ -13,7 +13,6 @@ import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.solana.client.SolanaClient
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
 import com.rarible.blockchain.scanner.solana.service.SolanaLogService
-import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventFilter
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogRecordComparator
 import com.rarible.core.logging.RaribleMDCContext
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component
 @Component
 class ReindexHandler(
     private val allSubscribers: List<SolanaLogEventSubscriber>,
-    private val logFilters: List<SolanaLogEventFilter>,
     private val blockService: BlockService,
     solanaClient: SolanaClient,
     private val logService: SolanaLogService,
@@ -56,7 +54,6 @@ class ReindexHandler(
                         groupId = groupId,
                         blockchainClient = retryableClient,
                         subscribers = subscribers,
-                        logFilters = logFilters,
                         logService = logService,
                         logRecordComparator = SolanaLogRecordComparator,
                         logRecordEventPublisher = reindexLogRecordEventPublisher,

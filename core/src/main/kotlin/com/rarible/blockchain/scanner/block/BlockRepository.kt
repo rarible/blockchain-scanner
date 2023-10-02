@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.find
@@ -41,6 +42,12 @@ class BlockRepository(
 
     suspend fun insertAll(blocks: List<Block>): Flow<Block> {
         return mongo.insertAll(blocks.toMono(), Block::class.java).asFlow()
+    }
+
+    suspend fun failedCount(): Long {
+        val criteria = Criteria(Block::status.name).isEqualTo(BlockStatus.ERROR)
+        val query = Query(criteria)
+        return mongo.count(query, Block::class.java).awaitSingle()
     }
 
     fun getAll(): Flow<Block> = mongo.findAll<Block>().asFlow()

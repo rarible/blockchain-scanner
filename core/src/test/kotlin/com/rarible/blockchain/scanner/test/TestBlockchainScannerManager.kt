@@ -15,7 +15,6 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.model.TestTransactionRecord
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestLogRecordComparator
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
@@ -23,7 +22,6 @@ import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscr
 class TestBlockchainScannerManager(
     blockchainClient: TestBlockchainClient,
     subscribers: List<TestLogEventSubscriber>,
-    logFilters: List<TestLogEventFilter>,
     blockService: BlockService,
     logService: TestLogService,
     properties: BlockchainScannerProperties,
@@ -36,7 +34,6 @@ class TestBlockchainScannerManager(
 ) : BlockchainScannerManager<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestTransactionRecord, TestDescriptor>(
     blockchainClient = blockchainClient,
     logSubscribers = subscribers,
-    logFilters = logFilters,
     blockService = blockService,
     logService = logService,
     logRecordComparator = TestLogRecordComparator,

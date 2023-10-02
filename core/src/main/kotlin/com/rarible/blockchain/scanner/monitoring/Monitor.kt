@@ -4,5 +4,5 @@ interface Monitor {
 
     fun register()
 
-    fun refresh()
+    suspend fun refresh()
 }

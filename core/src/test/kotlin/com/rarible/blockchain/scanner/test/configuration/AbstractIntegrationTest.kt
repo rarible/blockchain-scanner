@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.TimestampUnit
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
@@ -18,7 +19,6 @@ import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.publisher.TestTransactionRecordEventPublisher
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
-import com.rarible.blockchain.scanner.test.subscriber.TestLogEventFilter
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -67,14 +67,15 @@ abstract class AbstractIntegrationTest {
     protected fun createBlockchainScanner(
         testBlockchainClient: TestBlockchainClient,
         subscribers: List<TestLogEventSubscriber>,
-        logFilters: List<TestLogEventFilter> = emptyList(),
         transactionSubscribers: List<TestTransactionEventSubscriber>,
+        scanProperties: ScanProperties = ScanProperties()
     ): TestBlockchainScanner {
         val manager = TestBlockchainScannerManager(
             blockchainClient = testBlockchainClient,
             blockService = blockService,
             logService = testLogService,
             properties = TestBlockchainScannerProperties(
+                scan = scanProperties,
                 retryPolicy = RetryPolicyProperties(
                     scan = ScanRetryPolicyProperties(
                         reconnectAttempts = 1
@@ -83,7 +84,6 @@ abstract class AbstractIntegrationTest {
             ),
             logRecordEventPublisher = testLogRecordEventPublisher,
             subscribers = subscribers.toList(),
-            logFilters = logFilters,
             blockMonitor = createBlockMonitor(),
             logMonitor = createLogMonitor(),
             reindexMonitor = mockk(relaxed = true),
@@ -95,6 +95,7 @@ abstract class AbstractIntegrationTest {
 
     private fun createBlockMonitor(): BlockMonitor {
         val monitor = BlockMonitor(
+            blockRepository,
             createBlockchainScannerProperties(),
             SimpleMeterRegistry()
         )
@@ -120,5 +121,6 @@ abstract class AbstractIntegrationTest {
         }
     }
 
-    protected suspend fun getAllBlocks(): List<Block> = blockRepository.getAll().toList().sortedBy { it.id }
+    protected suspend fun getAllBlocks(): List<Block> =
+        blockRepository.getAll().toList().sortedBy { it.id }.map { it.copy(stats = null) }
 }

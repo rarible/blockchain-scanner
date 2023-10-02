@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
-import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventFilter
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumTransactionEventSubscriber
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Component
 class EthereumScannerManager(
     ethereumClient: EthereumBlockchainClient,
     subscribers: List<EthereumLogEventSubscriber>,
-    logFilters: List<EthereumLogEventFilter>,
     blockService: BlockService,
     logService: EthereumLogService,
     properties: BlockchainScannerProperties,
@@ -38,7 +36,6 @@ class EthereumScannerManager(
 ) : BlockchainScannerManager<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor>(
     blockchainClient = ethereumClient,
     logSubscribers = subscribers,
-    logFilters = logFilters,
     blockService = blockService,
     logService = logService,
     logRecordComparator = EthereumLogRecordComparator,

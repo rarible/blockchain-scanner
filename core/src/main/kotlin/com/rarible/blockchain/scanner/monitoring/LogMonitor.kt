@@ -19,8 +19,6 @@ class LogMonitor(
 
     override fun register() = Unit
 
-    override fun refresh() = Unit
-
     private fun getInsertedLogsCounter(descriptor: Descriptor): Counter =
         logCounters.getOrPut(descriptor.id) {
             addCounter(

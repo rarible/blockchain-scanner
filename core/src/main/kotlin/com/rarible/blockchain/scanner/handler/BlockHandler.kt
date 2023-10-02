@@ -2,8 +2,8 @@ package com.rarible.blockchain.scanner.handler
 
 import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockService
-import com.rarible.blockchain.scanner.block.BlockStats
 import com.rarible.blockchain.scanner.block.BlockStatus
+import com.rarible.blockchain.scanner.block.Fail
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
@@ -81,13 +81,23 @@ class BlockHandler<BB : BlockchainBlock>(
 
         val alreadyIndexedBlock = blockService.getBlock(newBlock.id)
         if (alreadyIndexedBlock != null) {
-            if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status, stats = null)) {
+            if (newBlock == alreadyIndexedBlock.copy(status = newBlock.status)) {
                 logger.info("The new Block is already indexed, skipping it: {}", newBlock)
                 return
             }
             logger.warn("The new Block {} was already indexed but differs from {}", newBlock, alreadyIndexedBlock)
         }
-        val lastCorrectBlock = findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
+
+        // In case if we got block following after the last known,
+        val lastCorrectBlock = if (
+            lastKnownBlock.id + 1 == newBlockchainBlock.number &&
+            lastKnownBlock.hash == newBlockchainBlock.parentHash &&
+            lastKnownBlock.status == BlockStatus.SUCCESS
+        ) {
+            lastKnownBlock
+        } else {
+            findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock)
+        }
 
         logger.info("Syncing missing blocks from the last correct known block {} to {}", lastCorrectBlock, newBlock)
         val stableUnstableBlockRanges = BlockRanges.getStableUnstableBlockRanges(
@@ -123,6 +133,7 @@ class BlockHandler<BB : BlockchainBlock>(
         }
     }
 
+    @Deprecated("Used only by Solana, should be removed")
     fun syncBlocks(
         blocks: List<Long>
     ): Flow<Block> = flow {
@@ -148,7 +159,7 @@ class BlockHandler<BB : BlockchainBlock>(
     fun syncBlocks(
         blockRanges: Flow<TypedBlockRange>,
         baseBlock: Block,
-        resyncStable: Boolean
+        mode: ScanMode
     ): Flow<Block> = blockRanges
         .runningFold(baseBlock as Block?) { lastProcessedBlock, blocksRange ->
             if (lastProcessedBlock == null) {
@@ -160,7 +171,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 blocksRange = blocksRange
             )
             val newLastProcessedBlock = if (blocksBatch.blocks.isNotEmpty()) {
-                processBlocks(blocksBatch, resyncStable, ScanMode.REINDEX).last()
+                processBlocks(blocksBatch, mode).last()
             } else {
                 null
             }
@@ -216,20 +227,24 @@ class BlockHandler<BB : BlockchainBlock>(
      * Returns the latest correct known block with status SUCCESS.
      */
     private suspend fun findLatestCorrectKnownBlockAndRevertOther(lastKnownBlock: Block): Block {
-        var currentBlock = lastKnownBlock
-        var blockchainBlock = fetchBlock(currentBlock.id)
+        val currentBlock = AtomicReference(lastKnownBlock)
+        val blockchainBlock = AtomicReference(blockClient.getBlock(lastKnownBlock.id))
 
-        while (
-            blockchainBlock == null ||
-            currentBlock.hash != blockchainBlock.hash ||
-            currentBlock.status == BlockStatus.PENDING
-        ) {
-            revertBlock(currentBlock)
-            currentBlock = getPreviousBlock(currentBlock)
-            blockchainBlock = fetchBlock(currentBlock.id)
+        val condition: () -> Boolean = {
+            val b = blockchainBlock.get()
+            val c = currentBlock.get()
+            b == null || c.hash != b.hash || c.status == BlockStatus.PENDING
         }
 
-        return currentBlock
+        while (condition()) {
+            val current = currentBlock.get()
+            revertBlock(current)
+            val previous = getPreviousBlock(current)
+            currentBlock.set(previous)
+            blockchainBlock.set(blockClient.getBlock(previous.id))
+        }
+
+        return currentBlock.get()
     }
 
     private suspend fun getLastKnownBlock(): Block {
@@ -249,7 +264,6 @@ class BlockHandler<BB : BlockchainBlock>(
                 ),
                 blocks = listOf(firstBlock)
             ),
-            resyncStable = false,
             mode = ScanMode.REALTIME
         ).single()
     }
@@ -329,7 +343,6 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun processBlocks(
         blocksBatch: BlocksBatch<BB>,
-        resyncStable: Boolean = false,
         mode: ScanMode
     ): List<Block> {
         val (blocksRange, blocks) = blocksBatch
@@ -340,9 +353,9 @@ class BlockHandler<BB : BlockchainBlock>(
             On restart, the scanner will process the same stable blocks and send the same events.
             The clients of the blockchain scanner are ready to receive duplicated events.
              */
-            val toSave = blocks.map { it.toBlock(BlockStatus.PENDING) }
-            saveUnstableBlocks(toSave)
+            blocks.map { blockService.save(it.toBlock(BlockStatus.PENDING)) }
         }
+
         val blockEvents = blocks.map {
             if (blocksRange.stable) {
                 NewStableBlockEvent(it, mode)
@@ -360,46 +373,44 @@ class BlockHandler<BB : BlockchainBlock>(
          This is OK because handling of reverted blocks simply reverts logs that we might have had chance to record.
          If we did not call NewBlockEvent-s, there will be nothing to revert.
         */
-        val stats = processBlockEvents(blockEvents)
-        val toSave = blocks.map {
-            it.toBlock(BlockStatus.SUCCESS, stats[it.number])
+        val processed = processBlockEvents(blockEvents, mode)
+
+        val toSave = blocks.map { block ->
+            val blockResult = processed[block.number]!!
+            val stats = blockResult.map { it.stats }.reduce { a, b -> a.merge(b) }
+            val errors = blockResult.flatMap { it.errors }.map { Fail(it.groupId, it.errorMessage) }
+            val status = if (errors.isEmpty()) BlockStatus.SUCCESS else BlockStatus.ERROR
+            block.toBlock(status, stats, errors)
         }
+
         return if (blocksRange.stable) {
-            saveStableBlocks(toSave, blocksRange, resyncStable)
+            saveStableBlocks(toSave, blocksRange, mode)
         } else {
-            saveUnstableBlocks(toSave)
+            blockService.save(toSave)
         }
     }
 
     private suspend fun saveStableBlocks(
         blocks: List<Block>,
         blocksRange: TypedBlockRange,
-        resyncStable: Boolean
+        mode: ScanMode
     ): List<Block> {
-        val result = runRethrowingBlockHandlerException(actionName = "Save $blocksRange") {
-            if (resyncStable) {
-                // TODO here we can override stats
-                // In case of re-sync there can be missing blocks if we started scan from the middle
-                blockService.insertMissing(blocks)
-            } else {
+        val result = withExceptionLogging("Save $blocksRange") {
+            when (mode) {
                 // When we are reading forward, only new blocks should be there
-                blockService.insertAll(blocks)
+                ScanMode.REALTIME -> blockService.insert(blocks)
+                // For full reindex we can overwrite all blocks with status/stats
+                ScanMode.REINDEX -> blockService.save(blocks)
+                // For partial reindex we should NOT overwrite block stats (only except the case block is missing)
+                ScanMode.REINDEX_PARTIAL -> blockService.insertMissing(blocks)
             }
         }
-        logger.info("Saved blocks: $blocks")
         return result
     }
 
-    private suspend fun saveUnstableBlocks(blocks: List<Block>): List<Block> =
-        blocks.map {
-            // TODO here we can override stats
-            blockService.save(it)
-            logger.info("Saved block $it")
-            it
-        }
-
     private suspend fun revertBlock(block: Block) {
         logger.info("Reverting block: {}", block)
+        // During revert operation we don't expect any errors, if it happened - it means something is completely broken
         processBlockEvents(
             listOf(
                 RevertedBlockEvent(
@@ -407,34 +418,46 @@ class BlockHandler<BB : BlockchainBlock>(
                     hash = block.hash,
                     mode = ScanMode.REALTIME
                 )
-            )
+            ),
+            mode = ScanMode.REALTIME
         )
         blockService.remove(block.id)
     }
 
-    private suspend fun processBlockEvents(blockEvents: List<BlockEvent<BB>>): Map<Long, BlockStats> = coroutineScope {
-        val stats = monitor.onProcessBlocksEvents {
+    private suspend fun processBlockEvents(
+        blockEvents: List<BlockEvent<BB>>,
+        mode: ScanMode
+    ): Map<Long, List<BlockEventResult>> = coroutineScope {
+        monitor.onProcessBlocksEvents {
             // Here we process events first, just to store data to DB
-            blockEventListeners.map {
+            val listenersResult = blockEventListeners.map {
                 asyncWithTraceId(context = NonCancellable) { it.process(blockEvents) }
-            }.awaitAll().map {
-                // And only if everything processed successfully, we're publishing logs to Kafka
-                asyncWithTraceId(context = NonCancellable) {
-                    it.publish()
-                    it.stats
-                }
             }.awaitAll()
-        }
-        val mergedStats = HashMap<Long, BlockStats>()
-        stats.forEach { perListener ->
-            perListener.forEach {
-                mergedStats[it.key] = it.value.merge(mergedStats[it.key])
-            }
-        }
-        mergedStats
-    }
 
-    private suspend fun fetchBlock(number: Long): BB? {
-        return blockClient.getBlock(number)
+            val result = listenersResult.flatMap { it.blocks }.groupBy { it.blockNumber }
+
+            // blockNumber -> list of errors
+            val errors = result.mapValues { it.value.flatMap(BlockEventResult::errors) }
+                .filter { it.value.isNotEmpty() }
+
+            if (errors.isNotEmpty()) {
+                // For non-realtime scan there should not be errors at all, otherwise reindex doesn't make sense
+                if (mode != ScanMode.REALTIME) {
+                    throw IllegalStateException("Failed to process blocks ${errors.keys.toSortedSet()}")
+                }
+                val currentFailedBlockCount = blockService.countFailed()
+                if (currentFailedBlockCount + errors.size > scanProperties.maxFailedBlocksAllowed) {
+                    throw IllegalStateException(
+                        "Failed to process ${errors.size} blocks (${errors.map { it.key }})," +
+                            " and there are already $currentFailedBlockCount failed blocks"
+                    )
+                }
+            }
+
+            // And only if everything processed successfully, we're publishing logs to Kafka
+            listenersResult.map { asyncWithTraceId(context = NonCancellable) { it.publish() } }.awaitAll()
+
+            result
+        }
     }
 }

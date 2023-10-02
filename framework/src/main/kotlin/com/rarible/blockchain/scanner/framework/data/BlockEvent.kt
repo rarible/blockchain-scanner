@@ -8,6 +8,7 @@ sealed class BlockEvent<BB : BlockchainBlock> {
     abstract val number: Long
     abstract val hash: String
     abstract val eventTimeMarks: EventTimeMarks
+    abstract val mode: ScanMode
 }
 
 sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
@@ -20,7 +21,7 @@ sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
 
 data class NewStableBlockEvent<BB : BlockchainBlock>(
     override val block: BB,
-    private val mode: ScanMode
+    override val mode: ScanMode
 ) : NewBlockEvent<BB>() {
 
     override val eventTimeMarks = scannerBlockchainEventMarks(mode, block.getDatetime())
@@ -29,7 +30,7 @@ data class NewStableBlockEvent<BB : BlockchainBlock>(
 
 data class NewUnstableBlockEvent<BB : BlockchainBlock>(
     override val block: BB,
-    private val mode: ScanMode
+    override val mode: ScanMode
 ) : NewBlockEvent<BB>() {
 
     override val eventTimeMarks = scannerBlockchainEventMarks(mode, block.getDatetime())
@@ -39,7 +40,7 @@ data class NewUnstableBlockEvent<BB : BlockchainBlock>(
 data class RevertedBlockEvent<BB : BlockchainBlock>(
     override val number: Long,
     override val hash: String,
-    private val mode: ScanMode
+    override val mode: ScanMode
 ) : BlockEvent<BB>() {
 
     override val eventTimeMarks = scannerBlockchainEventMarks(mode)

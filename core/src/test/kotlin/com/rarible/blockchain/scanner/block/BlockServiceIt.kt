@@ -16,7 +16,7 @@ class BlockServiceIt : AbstractIntegrationTest() {
         val block2 = randomBlock()
         val block3 = randomBlock()
 
-        blockService.insertAll(listOf(block1, block2))
+        blockService.insert(listOf(block1, block2))
         blockService.insertMissing(listOf(block1, block3))
 
         assertThat(blockService.getBlock(block1.id)).isEqualTo(block1)

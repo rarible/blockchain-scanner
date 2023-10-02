@@ -25,7 +25,6 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     private val logSubscribers = manager.logSubscribers
     private val blockService = manager.blockService
     private val blockMonitor = manager.blockMonitor
-    private val logFilters = manager.logFilters
     private val logService = manager.logService
     private val logRecordComparator = manager.logRecordComparator
     private val logRecordEventPublisher = manager.logRecordEventPublisher
@@ -61,7 +60,6 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                     logService = logService,
                     logRecordComparator = logRecordComparator,
                     logRecordEventPublisher = logRecordEventPublisher,
-                    logFilters = logFilters,
                     logMonitor = logMonitor
                 )
             }

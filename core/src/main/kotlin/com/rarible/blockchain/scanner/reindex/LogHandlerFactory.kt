@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
-import com.rarible.blockchain.scanner.framework.subscriber.LogEventFilter
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.handler.LogHandler
@@ -16,7 +15,6 @@ import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 class LogHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val logService: LogService<R, D>,
-    private val logFilters: List<LogEventFilter<R, D>>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logMonitor: LogMonitor
 ) {
@@ -36,7 +34,6 @@ class LogHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord,
         groupId = groupId,
         blockchainClient = blockchainClient,
         subscribers = subscribers,
-        logFilters = logFilters,
         logService = logService,
         logRecordComparator = logRecordComparator,
         logRecordEventPublisher = logRecordEventPublisher,

@@ -1,8 +1,11 @@
 package com.rarible.blockchain.scanner.test.data
 
 import com.rarible.blockchain.scanner.block.Block
+import com.rarible.blockchain.scanner.block.BlockStats
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.handler.BlockEventResult
+import com.rarible.blockchain.scanner.handler.BlockListenerResult
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestOriginalLog
 import com.rarible.core.common.nowMillis
@@ -74,7 +77,8 @@ fun randomBlock(
         hash = hash,
         parentHash = parentHash,
         timestamp = timestamp,
-        status = status
+        status = status,
+        errors = emptyList()
     )
 }
 
@@ -90,3 +94,7 @@ fun randomPositiveLong(max: Long) = RandomUtils.nextLong(0, max)
 
 fun randomBlockHash() = "B_" + randomString()
 fun randomLogHash() = "L_" + randomString()
+
+fun stubListenerResult(blockNumbers: Collection<Long>, stats: BlockStats = BlockStats.empty()) = BlockListenerResult(
+    blockNumbers.map { BlockEventResult(it, emptyList(), stats) }
+) {}

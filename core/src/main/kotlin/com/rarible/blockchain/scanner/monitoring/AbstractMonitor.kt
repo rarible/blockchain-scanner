@@ -18,6 +18,8 @@ abstract class AbstractMonitor(
     private val blockchain = properties.blockchain
     private val fullPrefix = properties.monitoring.rootPath + "." + prefix
 
+    override suspend fun refresh() = Unit
+
     protected fun addGauge(metricName: String, supplier: Supplier<Number?>) {
         Gauge.builder("$fullPrefix.$metricName", supplier)
             .tag("blockchain", blockchain)

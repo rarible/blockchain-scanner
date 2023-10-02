@@ -29,6 +29,15 @@ data class BlockStats(
             subscribers = mergedSubscribers
         )
     }
+
+    companion object {
+        fun empty(): BlockStats = BlockStats(
+            updatedAt = nowMillis(),
+            inserted = 0,
+            updated = 0,
+            subscribers = emptyMap()
+        )
+    }
 }
 
 data class SubscriberStats(

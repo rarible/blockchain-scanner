@@ -13,14 +13,16 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
+import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.ScanMode
-import com.rarible.blockchain.scanner.handler.BlockEventListener
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
 import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
+import com.rarible.blockchain.scanner.test.data.stubListenerResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -90,8 +92,8 @@ internal class ReconciliationLogHandlerTest {
     fun `check block range - no diff`() = runBlocking<Unit> {
         val handler = create(listOf(subscriber1, subscriber2, subscriber3, subscriber4))
         val range = TypedBlockRange(LongRange(10, 11), stable = true)
-        val block10 = mockk<EthereumBlockchainBlock>()
-        val block11 = mockk<EthereumBlockchainBlock>()
+        val block10 = EthereumBlockchainBlock(ethBlock(10, randomWord()))
+        val block11 = EthereumBlockchainBlock(ethBlock(11, randomWord()))
 
         coEvery { logRepository.countByBlockNumber("collection1", 10) } returns 10
         coEvery { logRepository.countByBlockNumber("collection2", 10) } returns 11
@@ -123,7 +125,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(10L to block10Handler1Stats)) {}
+        } returns stubListenerResult(listOf(block10.number), block10Handler1Stats)
 
         val block10Handler2Stats = mockk<BlockStats> { every { inserted } returns 9 }
         coEvery {
@@ -135,7 +137,8 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(10L to block10Handler2Stats)) {}
+        } returns stubListenerResult(listOf(block10.number), block10Handler2Stats)
+
         val block10Handler3Stats = mockk<BlockStats> { every { inserted } returns 2 }
         coEvery {
             logHandler3.process(
@@ -146,7 +149,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(10L to block10Handler3Stats)) {}
+        } returns stubListenerResult(listOf(block10.number), block10Handler3Stats)
 
         // Block 11 statistics
         val block11Handler1Stats = mockk<BlockStats> { every { inserted } returns 12 }
@@ -159,7 +162,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(11L to block11Handler1Stats)) {}
+        } returns stubListenerResult(listOf(block11.number), block11Handler1Stats)
 
         val block11Handler2Stats = mockk<BlockStats> { every { inserted } returns 5 }
         coEvery {
@@ -171,7 +174,8 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(11L to block11Handler2Stats)) {}
+        } returns stubListenerResult(listOf(block11.number), block11Handler2Stats)
+
         val block11Handler3Stats = mockk<BlockStats> { every { inserted } returns 8 }
         coEvery {
             logHandler3.process(
@@ -182,7 +186,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(11L to block11Handler3Stats)) {}
+        } returns stubListenerResult(listOf(block11.number), block11Handler3Stats)
 
         val result = handler.check(range, 2)
         assertThat(result).isEqualTo(11)
@@ -192,15 +196,13 @@ internal class ReconciliationLogHandlerTest {
     fun `check block range - reindex`() = runBlocking<Unit> {
         val handler = create(listOf(subscriber1))
         val range = TypedBlockRange(LongRange(100, 100), stable = true)
-        val block100 = mockk<EthereumBlockchainBlock>()
+        val block100 = EthereumBlockchainBlock(ethBlock(100, randomWord()))
 
         coEvery { logRepository.countByBlockNumber("collection1", 100) } returns 10
         coEvery { ethereumClient.getBlock(100) } returns block100
 
         every { logHandlerFactory.create("groupId1", listOf(subscriber1), any(), any()) } returns logHandler1
 
-        // Block 100 statistics
-        val block100Stats = mockk<BlockStats> { every { inserted } returns 11 }
         coEvery {
             logHandler1.process(
                 listOf(
@@ -210,7 +212,7 @@ internal class ReconciliationLogHandlerTest {
                     )
                 )
             )
-        } returns BlockEventListener.Result(mapOf(100L to block100Stats)) {}
+        } returns stubListenerResult(listOf(block100.number))
 
         every { reconciliationProperties.autoReindex } returns true
         val baseBlock = mockk<Block>()

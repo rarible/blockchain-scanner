@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.test.configuration.IntegrationTest
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.data.buildBlockchain
 import com.rarible.blockchain.scanner.test.data.randomBlockchain
+import com.rarible.blockchain.scanner.test.data.stubListenerResult
 import com.rarible.blockchain.scanner.test.handler.TestBlockEventListener
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flow
@@ -222,7 +223,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
-        blockHandler.syncBlocks(range, baseBlock.toBlock(), resyncStable = false).toList()
+        blockHandler.syncBlocks(range, baseBlock.toBlock(), ScanMode.REINDEX).toList()
         assertThat(blockService.getBlock(10)).isNotNull
     }
 
@@ -230,7 +231,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
     fun `should save missing stable block on reindex`() = runBlocking<Unit> {
         val syncBlocks = randomBlockchain(10).toMutableList()
         val baseBlock = syncBlocks.first()
-        blockService.insertAll(syncBlocks.subList(0, 5).map { it.toBlock() })
+        blockService.insert(syncBlocks.subList(0, 5).map { it.toBlock() })
 
         val range = flow { emit(TypedBlockRange(LongRange(1, 10), true)) }
         val testBlockchainData = TestBlockchainData(syncBlocks - baseBlock, emptyList(), emptyList())
@@ -242,7 +243,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
             scanProperties = ScanProperties(),
             monitor = mockk(relaxed = true)
         )
-        blockHandler.syncBlocks(range, baseBlock.toBlock(), resyncStable = true).toList()
+        blockHandler.syncBlocks(range, baseBlock.toBlock(), ScanMode.REINDEX).toList()
         // Missing block, should be added
         assertThat(blockService.getBlock(10)).isNotNull
         // Existing block, should stay the same
@@ -254,11 +255,12 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val blockchain = randomBlockchain(10)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
-            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockEventListener.Result {
+            override val groupId = "test"
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockListenerResult {
                 if (events.any { it.number == 5L }) {
                     throw RuntimeException()
                 }
-                return BlockEventListener.Result.EMPTY
+                return stubListenerResult(events.map { it.number })
             }
         }
         val blockHandler = BlockHandler(
@@ -279,11 +281,12 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val blockchain = randomBlockchain(100)
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
-            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockEventListener.Result {
+            override val groupId = "test"
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockListenerResult {
                 if (events.any { it.number == 55L }) {
                     throw RuntimeException()
                 }
-                return BlockEventListener.Result.EMPTY
+                return stubListenerResult(events.map { it.number })
             }
         }
         val blockHandler = BlockHandler(

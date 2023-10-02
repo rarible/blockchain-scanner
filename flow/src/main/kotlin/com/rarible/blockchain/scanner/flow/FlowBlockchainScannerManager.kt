@@ -9,7 +9,6 @@ import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.blockchain.scanner.flow.service.FlowLogService
-import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventFilter
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogRecordComparator
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Component
 class FlowBlockchainScannerManager(
     flowClient: FlowBlockchainClient,
     subscribers: List<FlowLogEventSubscriber>,
-    logFilters: List<FlowLogEventFilter>,
     blockService: BlockService,
     logService: FlowLogService,
     properties: BlockchainScannerProperties,
@@ -36,7 +34,6 @@ class FlowBlockchainScannerManager(
 ) : BlockchainScannerManager<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, TransactionRecord, FlowDescriptor>(
     blockchainClient = flowClient,
     logSubscribers = subscribers,
-    logFilters = logFilters,
     blockService = blockService,
     logService = logService,
     logRecordComparator = FlowLogRecordComparator,
