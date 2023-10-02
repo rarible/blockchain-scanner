@@ -28,14 +28,18 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.convert.MongoConverter
 
 abstract class AbstractIntegrationTest {
 
     @Autowired
     protected lateinit var mongo: ReactiveMongoOperations
 
+    @Autowired
+    protected lateinit var mongoConverter: MongoConverter
+
     private val blockRepository: BlockRepository by lazy {
-        BlockRepository(mongo)
+        BlockRepository(mongo, mongoConverter)
     }
 
     protected val blockService: BlockService by lazy {

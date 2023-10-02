@@ -5,5 +5,5 @@ data class ScanProperties(
     val skipUntil: Long? = null,
     val batchLoad: BlockBatchLoadProperties = BlockBatchLoadProperties(),
     val firstAvailableBlock: Long = 0,
-    val maxFailedBlocksAllowed: Long = 0
+    val maxFailedBlocksAllowed: Long = 5
 )

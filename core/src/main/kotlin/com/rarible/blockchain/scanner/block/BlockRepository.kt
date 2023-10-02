@@ -1,13 +1,16 @@
 package com.rarible.blockchain.scanner.block
 
+import com.mongodb.client.model.InsertManyOptions
 import com.rarible.core.mongo.repository.AbstractMongoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
-import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingle
+import org.bson.Document
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findAll
 import org.springframework.data.mongodb.core.query.Criteria
@@ -19,7 +22,8 @@ import reactor.kotlin.core.publisher.toMono
 
 @Component
 class BlockRepository(
-    mongo: ReactiveMongoOperations
+    mongo: ReactiveMongoOperations,
+    private val mongoConverter: MongoConverter
 ) : AbstractMongoRepository<Block, Long>(mongo, Block::class.java) {
 
     suspend fun getByIds(ids: Collection<Long>): List<Block> {
@@ -40,8 +44,20 @@ class BlockRepository(
         ).awaitFirstOrNull()
     }
 
-    suspend fun insertAll(blocks: List<Block>): Flow<Block> {
-        return mongo.insertAll(blocks.toMono(), Block::class.java).asFlow()
+    suspend fun insert(blocks: List<Block>): List<Block> {
+        return mongo.insertAll(blocks.toMono(), Block::class.java).collectList().awaitSingle()
+    }
+
+    suspend fun insertMissing(blocks: List<Block>): List<Block> {
+        mongo.execute(Block::class.java) { collection ->
+            val documents = blocks.map { block ->
+                val document = Document()
+                mongoConverter.write(block, document)
+                document
+            }
+            collection.insertMany(documents, InsertManyOptions().ordered(false))
+        }.onErrorComplete().awaitFirstOrNull()
+        return blocks
     }
 
     suspend fun failedCount(): Long {

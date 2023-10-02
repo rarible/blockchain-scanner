@@ -1,12 +1,9 @@
 package com.rarible.blockchain.scanner.block
 
-import com.rarible.core.common.optimisticLock
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.util.TreeMap
 
 @Component
 class BlockService(
@@ -30,15 +27,10 @@ class BlockService(
     suspend fun save(blocks: List<Block>): List<Block> = blocks.map { save(it) }
 
     suspend fun insert(blocks: List<Block>): List<Block> =
-        blockRepository.insertAll(blocks).toList()
+        blockRepository.insert(blocks)
 
-    suspend fun insertMissing(blocks: List<Block>) = optimisticLock {
-        val exist = blockRepository.getByIds(blocks.map { it.id }).associateByTo(TreeMap()) { it.id }
-        val toInsert = blocks.filter { !exist.contains(it.id) }
-        val inserted = insert(toInsert)
-        inserted.forEach { exist[it.id] = it }
-        exist.values.toList()
-    }
+    suspend fun insertMissing(blocks: List<Block>) =
+        blockRepository.insertMissing(blocks)
 
     suspend fun countFailed() = blockRepository.failedCount()
 
