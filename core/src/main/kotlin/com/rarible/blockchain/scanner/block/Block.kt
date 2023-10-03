@@ -15,7 +15,7 @@ data class Block(
     val timestamp: Long,
     val status: BlockStatus,
     val stats: BlockStats? = null,
-    val errors: List<Fail>,
+    val errors: List<Fail> = emptyList(),
 ) {
 
     override fun toString(): String {
