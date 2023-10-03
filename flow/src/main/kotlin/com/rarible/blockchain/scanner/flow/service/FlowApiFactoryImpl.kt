@@ -38,6 +38,7 @@ class FlowApiFactoryImpl(
                     .build()
             }
         }
+        val timeout = flowBlockchainScannerProperties.timeout.toMillis()
         val channel = ManagedChannelBuilder.forAddress(spork.nodeUrl, spork.port)
             .maxInboundMessageSize(DEFAULT_MESSAGE_SIZE)
             .run { if (detector != null) proxyDetector(detector) else this }
@@ -49,13 +50,7 @@ class FlowApiFactoryImpl(
                     options: CallOptions,
                     channel: Channel
                 ): ClientCall<ReqT, RespT> {
-                    return channel.newCall(
-                        descriptor,
-                        options.withDeadlineAfter(
-                            flowBlockchainScannerProperties.timeout.toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
-                    )
+                    return channel.newCall(descriptor, options.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS))
                 }
             })
             .build()
