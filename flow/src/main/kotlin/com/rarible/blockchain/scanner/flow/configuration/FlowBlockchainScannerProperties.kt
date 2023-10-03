@@ -34,4 +34,5 @@ data class FlowBlockchainScannerProperties(
     val enableHttpClient: Boolean = false,
     val proxy: String? = null,
     val enableUseUndocumentedMethods: Boolean = false,
+    val timeout: Duration = Duration.ofSeconds(30),
 ) : BlockchainScannerProperties
