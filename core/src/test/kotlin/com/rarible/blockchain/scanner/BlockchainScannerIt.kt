@@ -25,6 +25,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
@@ -38,11 +39,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `new block - single`() = runBlocking<Unit> {
-        val blocks = randomBlockchain(1)
-        val block = blocks[1]
-        val log = randomOriginalLog(block = block, topic = descriptor.topic, logIndex = 1)
+        val blocks = randomBlockchain(1).map {
+            it.withReceivedTime(Instant.now().plusSeconds(1))
+        }
+        val block0 = blocks[0]
+        val block1 = blocks[1]
+
+        val log = randomOriginalLog(block = block1, topic = descriptor.topic, logIndex = 1)
         // log2 should be filtered
-        val logFiltered = randomOriginalLog(block = block, topic = descriptor.topic, logIndex = 1)
+        val logFiltered = randomOriginalLog(block = block1, topic = descriptor.topic, logIndex = 1)
 
         val testBlockchainData = TestBlockchainData(
             blocks = blocks,
@@ -59,26 +64,26 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
         blockScanner.scan(once = true)
 
-        assertThat(findBlock(blocks[0].number)!!.copy(stats = null)).isEqualTo(blocks[0].toBlock(BlockStatus.SUCCESS))
-        assertThat(findBlock(block.number)!!.copy(stats = null)).isEqualTo(block.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block0.number)!!.copy(stats = null)).isEqualTo(block0.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block1.number)!!.copy(stats = null)).isEqualTo(block1.toBlock(BlockStatus.SUCCESS))
 
         assertPublishedLogRecords(
             descriptor.groupId,
             listOf(
                 LogRecordEvent(
-                    record = subscriber.getReturnedRecords(block, log).single(),
+                    record = subscriber.getReturnedRecords(block1, log).single(),
                     reverted = false,
                     eventTimeMarks = EventTimeMarks("test")
                 )
             ),
-            block
+            block0
         )
 
         assertPublishedTransactionRecords(
             "test",
             listOf(
-                transactionSubscriber.getExpected(blocks[0]),
-                transactionSubscriber.getExpected(block),
+                transactionSubscriber.getExpected(block0),
+                transactionSubscriber.getExpected(block1),
             )
         )
     }
