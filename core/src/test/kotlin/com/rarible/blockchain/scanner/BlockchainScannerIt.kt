@@ -21,11 +21,11 @@ import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import com.rarible.core.common.EventTimeMarks
+import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.Instant
 
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
@@ -40,7 +40,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     @Test
     fun `new block - single`() = runBlocking<Unit> {
         val blocks = randomBlockchain(1).map {
-            it.withReceivedTime(Instant.now().plusSeconds(1))
+            it.withReceivedTime(nowMillis().plusSeconds(1))
         }
         val block0 = blocks[0]
         val block1 = blocks[1]
