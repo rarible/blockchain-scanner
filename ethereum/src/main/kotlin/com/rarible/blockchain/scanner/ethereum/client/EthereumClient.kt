@@ -4,9 +4,9 @@ import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.client.NonRetryableBlockchainClientException
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.ethereum.model.ReceivedEthereumBlock
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.common.asyncWithTraceId
@@ -76,7 +76,7 @@ class EthereumClient(
             ethereum
                 .ethGetFullBlockByHash(block.block.hash())
                 .wrapWithRetry("ethGetFullBlockByHash", block.block.hash(), block.block.number())
-                .map { ReceivedEthereumBlock(it, block.receivedTime) }
+                .map { ReceivedBlock(it, block.receivedTime) }
         }
         .map { EthereumBlockchainBlock(it) }
         .timeout(Duration.ofMinutes(5))
@@ -96,7 +96,7 @@ class EthereumClient(
 
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
         return ethereum.ethGetFullBlockByNumber(BigInteger.valueOf(number)).map {
-            EthereumBlockchainBlock(ReceivedEthereumBlock(it))
+            EthereumBlockchainBlock(ReceivedBlock(it))
         }.awaitFirst()
     }
 

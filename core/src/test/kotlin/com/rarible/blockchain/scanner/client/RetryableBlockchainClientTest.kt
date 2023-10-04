@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.test.data.randomString
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
+import com.rarible.core.common.nowMillis
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import java.time.Instant
 
 class RetryableBlockchainClientTest {
 
@@ -82,7 +82,7 @@ class RetryableBlockchainClientTest {
 
     @Test
     fun `get block logs - last attempt succeed`() = runBlocking {
-        val blocks = listOf(TestBlockchainBlock(1, "hash", "", 0, Instant.now(), ""))
+        val blocks = listOf(TestBlockchainBlock(1, "hash", "", 0, nowMillis(), ""))
         var count = 0
         val block = randomBlockchainBlock()
         val log = TestBlockchainLog(randomOriginalLog(block, randomString(), randomPositiveInt()), index = randomPositiveInt())

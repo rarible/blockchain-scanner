@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.core.common.nowMillis
 import java.time.Instant
 
 data class SolanaBlockchainBlock(
@@ -10,7 +11,7 @@ data class SolanaBlockchainBlock(
     override val hash: String,
     override val parentHash: String?,
     override val timestamp: Long,
-    override val receivedTime: Instant = Instant.now()
+    override val receivedTime: Instant = nowMillis()
 ) : BlockchainBlock {
 
     override val number: Long = slot

@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-import com.rarible.blockchain.scanner.ethereum.model.ReceivedEthereumBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import scalether.domain.response.Block
 import scalether.domain.response.Transaction
 import java.time.Instant
@@ -15,9 +15,9 @@ data class EthereumBlockchainBlock(
     val ethBlock: Block<Transaction>
 ) : BlockchainBlock {
 
-    constructor(ethBlock: Block<Transaction>) : this(ReceivedEthereumBlock(ethBlock))
+    constructor(ethBlock: Block<Transaction>) : this(ReceivedBlock(ethBlock))
 
-    constructor(ethBlock: ReceivedEthereumBlock<Transaction>) : this(
+    constructor(ethBlock: ReceivedBlock<Block<Transaction>>) : this(
         number = ethBlock.block.number().toLong(),
         hash = ethBlock.block.hash().toString(),
         parentHash = ethBlock.block.parentHash()?.toString(),
