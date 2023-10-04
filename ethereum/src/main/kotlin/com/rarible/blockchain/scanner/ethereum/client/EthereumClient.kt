@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.common.asyncWithTraceId
@@ -70,11 +71,12 @@ class EthereumClient(
     private val firstAvailableBlock = properties.scan.firstAvailableBlock
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = subscriber.newHeads()
-        .flatMap {
-            logger.info("Detected new block from subscriber: ${it.blockNumber}")
+        .flatMap { block ->
+            logger.info("Detected new block from subscriber: ${block.block.blockNumber}")
             ethereum
-                .ethGetFullBlockByHash(it.hash())
-                .wrapWithRetry("ethGetFullBlockByHash", it.hash(), it.number())
+                .ethGetFullBlockByHash(block.block.hash())
+                .wrapWithRetry("ethGetFullBlockByHash", block.block.hash(), block.block.number())
+                .map { ReceivedBlock(it, block.receivedTime) }
         }
         .map { EthereumBlockchainBlock(it) }
         .timeout(Duration.ofMinutes(5))
@@ -94,7 +96,7 @@ class EthereumClient(
 
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
         return ethereum.ethGetFullBlockByNumber(BigInteger.valueOf(number)).map {
-            EthereumBlockchainBlock(it)
+            EthereumBlockchainBlock(ReceivedBlock(it))
         }.awaitFirst()
     }
 

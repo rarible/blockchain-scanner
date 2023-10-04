@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
+import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.channelFlow
@@ -21,12 +22,12 @@ class EthereumNewBlockPoller(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    override fun newHeads(): Flux<Block<Word>> = channelFlow<Block<Word>> {
+    override fun newHeads(): Flux<ReceivedBlock<Block<Word>>> = channelFlow<ReceivedBlock<Block<Word>>> {
         while (isClosedForSend.not()) {
             val headBlockNumber = ethereum.ethBlockNumber().awaitFirst()
             val head = ethereum.ethGetBlockByNumber(headBlockNumber).awaitFirstOrNull()
             logger.info("Poller get new head block: ${head?.number()}")
-            if (head != null) send(head)
+            if (head != null) send(ReceivedBlock(head))
             delay(pollingDelay)
         }
     }.asFlux()

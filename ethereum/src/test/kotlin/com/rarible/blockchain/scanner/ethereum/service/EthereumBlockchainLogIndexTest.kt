@@ -31,6 +31,7 @@ import scalether.domain.Address
 import scalether.domain.request.LogFilter
 import scalether.domain.response.Block
 import scalether.domain.response.Transaction
+import java.time.Instant
 
 class EthereumBlockchainLogIndexTest {
     private val monitor = BlockchainMonitor(SimpleMeterRegistry())
@@ -123,7 +124,7 @@ class EthereumBlockchainLogIndexTest {
         val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(allBlocks[0])), true).toList()
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
         for ((block, logs) in fullBlocks) {
-            val expectedFullBlock = expectedFullBlocks.find { it.block == block }!!
+            val expectedFullBlock = expectedFullBlocks.find { it.block.withReceivedTime(Instant.EPOCH) == block.withReceivedTime(Instant.EPOCH) }!!
             assertThat(logs.map { it.index }).isEqualTo(expectedFullBlock.logs.map { it.index })
         }
     }

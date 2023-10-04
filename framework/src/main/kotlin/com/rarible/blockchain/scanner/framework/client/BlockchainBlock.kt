@@ -11,6 +11,12 @@ interface BlockchainBlock {
     val hash: String
     val parentHash: String?
     val timestamp: Long
+    /**
+     * Time when block was received by scanner
+     */
+    val receivedTime: Instant
 
     fun getDatetime(): Instant = Instant.ofEpochMilli(timestamp)
+
+    fun withReceivedTime(value: Instant): BlockchainBlock
 }

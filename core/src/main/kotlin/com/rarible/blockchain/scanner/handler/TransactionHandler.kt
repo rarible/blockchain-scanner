@@ -9,7 +9,7 @@ import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.TransactionEventSubscriber
-import com.rarible.blockchain.scanner.framework.util.addOut
+import com.rarible.blockchain.scanner.framework.util.addScannerOut
 import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import org.slf4j.LoggerFactory
 
@@ -67,6 +67,6 @@ class TransactionHandler<BB : BlockchainBlock, R : TransactionRecord>(
     }
 
     private fun addOutMark(records: List<TransactionRecordEvent>): List<TransactionRecordEvent> {
-        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addOut()) }
+        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addScannerOut()) }
     }
 }

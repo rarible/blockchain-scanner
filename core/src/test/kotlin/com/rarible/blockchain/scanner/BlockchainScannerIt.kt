@@ -21,6 +21,7 @@ import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import com.rarible.core.common.EventTimeMarks
+import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -38,11 +39,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `new block - single`() = runBlocking<Unit> {
-        val blocks = randomBlockchain(1)
-        val block = blocks[1]
-        val log = randomOriginalLog(block = block, topic = descriptor.topic, logIndex = 1)
+        val blocks = randomBlockchain(1).map {
+            it.withReceivedTime(nowMillis().plusSeconds(1))
+        }
+        val block0 = blocks[0]
+        val block1 = blocks[1]
+
+        val log = randomOriginalLog(block = block1, topic = descriptor.topic, logIndex = 1)
         // log2 should be filtered
-        val logFiltered = randomOriginalLog(block = block, topic = descriptor.topic, logIndex = 1)
+        val logFiltered = randomOriginalLog(block = block1, topic = descriptor.topic, logIndex = 1)
 
         val testBlockchainData = TestBlockchainData(
             blocks = blocks,
@@ -59,25 +64,26 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
         blockScanner.scan(once = true)
 
-        assertThat(findBlock(blocks[0].number)!!.copy(stats = null)).isEqualTo(blocks[0].toBlock(BlockStatus.SUCCESS))
-        assertThat(findBlock(block.number)!!.copy(stats = null)).isEqualTo(block.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block0.number)!!.copy(stats = null)).isEqualTo(block0.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block1.number)!!.copy(stats = null)).isEqualTo(block1.toBlock(BlockStatus.SUCCESS))
 
         assertPublishedLogRecords(
             descriptor.groupId,
             listOf(
                 LogRecordEvent(
-                    record = subscriber.getReturnedRecords(block, log).single(),
+                    record = subscriber.getReturnedRecords(block1, log).single(),
                     reverted = false,
                     eventTimeMarks = EventTimeMarks("test")
                 )
-            )
+            ),
+            block0
         )
 
         assertPublishedTransactionRecords(
             "test",
             listOf(
-                transactionSubscriber.getExpected(blocks[0]),
-                transactionSubscriber.getExpected(block),
+                transactionSubscriber.getExpected(block0),
+                transactionSubscriber.getExpected(block1),
             )
         )
     }
@@ -475,7 +481,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
     }
 
-    private fun assertPublishedLogRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {
+    private fun assertPublishedLogRecords(
+        groupId: String,
+        expectedEvents: List<LogRecordEvent>,
+        trigger: TestBlockchainBlock? = null
+    ) {
         val publishedByGroup = testLogRecordEventPublisher.publishedLogRecords[groupId] ?: emptyList()
         for (i in expectedEvents.indices) {
             val published = publishedByGroup[i]
@@ -484,10 +494,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             assertThat(published.reverted).isEqualTo(expected.reverted)
 
             val marks = published.eventTimeMarks.marks
-            assertThat(marks).hasSize(3)
+            assertThat(marks).hasSize(4)
             assertThat(marks[0].name).isEqualTo("source")
-            assertThat(marks[1].name).isEqualTo("scanner-in")
-            assertThat(marks[2].name).isEqualTo("scanner-out")
+            assertThat(marks[1].name).isEqualTo("source-out")
+            assertThat(marks[2].name).isEqualTo("scanner-in")
+            assertThat(marks[3].name).isEqualTo("scanner-out")
+
+            if (trigger != null) {
+                assertThat(marks[1].date).isEqualTo(trigger.receivedTime)
+            }
         }
     }
 
@@ -501,10 +516,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             assertThat(published.reverted).isEqualTo(expected.reverted)
 
             val marks = published.eventTimeMarks.marks
-            assertThat(marks).hasSize(3)
+            assertThat(marks).hasSize(4)
             assertThat(marks[0].name).isEqualTo("source")
-            assertThat(marks[1].name).isEqualTo("scanner-in")
-            assertThat(marks[2].name).isEqualTo("scanner-out")
+            assertThat(marks[1].name).isEqualTo("source-out")
+            assertThat(marks[2].name).isEqualTo("scanner-in")
+            assertThat(marks[3].name).isEqualTo("scanner-out")
         }
     }
 

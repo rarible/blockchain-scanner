@@ -21,10 +21,15 @@ sealed class NewBlockEvent<BB : BlockchainBlock> : BlockEvent<BB>() {
 
 data class NewStableBlockEvent<BB : BlockchainBlock>(
     override val block: BB,
-    override val mode: ScanMode
+    override val mode: ScanMode,
 ) : NewBlockEvent<BB>() {
 
-    override val eventTimeMarks = scannerBlockchainEventMarks(mode, block.getDatetime())
+    override val eventTimeMarks = scannerBlockchainEventMarks(
+        mode = mode,
+        sourceDate = block.getDatetime(),
+        sourceOutDate = block.receivedTime
+    )
+
     override fun toString(): String = "stableBlock:$number:$hash"
 }
 
@@ -33,7 +38,12 @@ data class NewUnstableBlockEvent<BB : BlockchainBlock>(
     override val mode: ScanMode
 ) : NewBlockEvent<BB>() {
 
-    override val eventTimeMarks = scannerBlockchainEventMarks(mode, block.getDatetime())
+    override val eventTimeMarks = scannerBlockchainEventMarks(
+        mode = mode,
+        sourceDate = block.getDatetime(),
+        sourceOutDate = block.receivedTime
+    )
+
     override fun toString(): String = "unstableBlock:$number:$hash"
 }
 
