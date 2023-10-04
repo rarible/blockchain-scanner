@@ -4,13 +4,21 @@ import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.core.common.EventTimeMarks
 import java.time.Instant
 
-private const val stage = "scanner"
+private const val scannerStage = "scanner"
 
-fun EventTimeMarks.addIn(date: Instant? = null) = this.addIn(stage, null, date)
-fun EventTimeMarks.addOut(date: Instant? = null) = this.addOut(stage, null, date)
+private const val sourceStage = "source"
 
-fun scannerBlockchainEventMarks(mode: ScanMode, sourceDate: Instant? = null): EventTimeMarks {
+fun EventTimeMarks.addScannerIn(date: Instant? = null) = this.addIn(scannerStage, null, date)
+
+fun EventTimeMarks.addScannerOut(date: Instant? = null) = this.addOut(scannerStage, null, date)
+
+fun scannerBlockchainEventMarks(
+    mode: ScanMode,
+    sourceDate: Instant? = null,
+    sourceOutDate: Instant? = null
+): EventTimeMarks {
     return EventTimeMarks(mode.eventSource)
-        .add("source", sourceDate)
-        .addIn()
+        .add(sourceStage, sourceDate)
+        .addOut(sourceStage, null, sourceOutDate)
+        .addScannerIn()
 }

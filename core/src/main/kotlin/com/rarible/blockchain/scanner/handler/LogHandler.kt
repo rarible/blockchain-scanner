@@ -18,7 +18,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
-import com.rarible.blockchain.scanner.framework.util.addOut
+import com.rarible.blockchain.scanner.framework.util.addScannerOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
@@ -156,7 +156,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private fun addOutMark(records: List<LogRecordEvent>): List<LogRecordEvent> {
-        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addOut()) }
+        return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addScannerOut()) }
     }
 
     private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<SubscriberResult<LogEvent<R, D>>> {

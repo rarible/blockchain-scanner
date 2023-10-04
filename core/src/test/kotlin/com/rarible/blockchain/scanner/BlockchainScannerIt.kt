@@ -70,7 +70,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
                     reverted = false,
                     eventTimeMarks = EventTimeMarks("test")
                 )
-            )
+            ),
+            block
         )
 
         assertPublishedTransactionRecords(
@@ -475,7 +476,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
     }
 
-    private fun assertPublishedLogRecords(groupId: String, expectedEvents: List<LogRecordEvent>) {
+    private fun assertPublishedLogRecords(
+        groupId: String,
+        expectedEvents: List<LogRecordEvent>,
+        trigger: TestBlockchainBlock? = null
+    ) {
         val publishedByGroup = testLogRecordEventPublisher.publishedLogRecords[groupId] ?: emptyList()
         for (i in expectedEvents.indices) {
             val published = publishedByGroup[i]
@@ -484,10 +489,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             assertThat(published.reverted).isEqualTo(expected.reverted)
 
             val marks = published.eventTimeMarks.marks
-            assertThat(marks).hasSize(3)
+            assertThat(marks).hasSize(4)
             assertThat(marks[0].name).isEqualTo("source")
-            assertThat(marks[1].name).isEqualTo("scanner-in")
-            assertThat(marks[2].name).isEqualTo("scanner-out")
+            assertThat(marks[1].name).isEqualTo("source-out")
+            assertThat(marks[2].name).isEqualTo("scanner-in")
+            assertThat(marks[3].name).isEqualTo("scanner-out")
+
+            if (trigger != null) {
+                assertThat(marks[1].date).isEqualTo(trigger.receivedTime)
+            }
         }
     }
 
@@ -501,10 +511,11 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             assertThat(published.reverted).isEqualTo(expected.reverted)
 
             val marks = published.eventTimeMarks.marks
-            assertThat(marks).hasSize(3)
+            assertThat(marks).hasSize(4)
             assertThat(marks[0].name).isEqualTo("source")
-            assertThat(marks[1].name).isEqualTo("scanner-in")
-            assertThat(marks[2].name).isEqualTo("scanner-out")
+            assertThat(marks[1].name).isEqualTo("source-out")
+            assertThat(marks[2].name).isEqualTo("scanner-in")
+            assertThat(marks[3].name).isEqualTo("scanner-out")
         }
     }
 

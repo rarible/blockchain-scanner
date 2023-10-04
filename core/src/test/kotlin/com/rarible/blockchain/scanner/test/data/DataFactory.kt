@@ -23,6 +23,7 @@ fun randomBlockchainBlock(
     hash = hash,
     parentHash = parentHash,
     timestamp = randomPositiveLong(),
+    receivedTime = nowMillis(),
     testExtra = randomString()
 )
 

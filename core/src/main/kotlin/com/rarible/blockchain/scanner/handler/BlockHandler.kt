@@ -116,7 +116,11 @@ class BlockHandler<BB : BlockchainBlock>(
             val lastSyncedBlockReference = AtomicReference<Block>()
 
             for (batch in channel) {
-                val lastSyncedBlock = processBlocks(batch, mode = ScanMode.REALTIME).last()
+                val lastSyncedBlock = processBlocks(
+                    blocksBatch = batch,
+                    mode = ScanMode.REALTIME,
+                    trigger = newBlockchainBlock,
+                ).last()
                 lastSyncedBlockReference.set(lastSyncedBlock)
                 monitor.recordLastIndexedBlock(lastSyncedBlock)
             }
@@ -278,8 +282,10 @@ class BlockHandler<BB : BlockchainBlock>(
         error("Can't find previous Block for: $startBlock")
     }
 
-    private data class BlocksBatch<BB>(val blocksRange: TypedBlockRange, val blocks: List<BB>) {
-
+    private data class BlocksBatch<BB>(
+        val blocksRange: TypedBlockRange,
+        val blocks: List<BB>
+    ) {
         override fun toString(): String = "$blocksRange (present ${blocks.size})"
     }
 
@@ -343,7 +349,8 @@ class BlockHandler<BB : BlockchainBlock>(
 
     private suspend fun processBlocks(
         blocksBatch: BlocksBatch<BB>,
-        mode: ScanMode
+        mode: ScanMode,
+        trigger: BB? = null
     ): List<Block> {
         val (blocksRange, blocks) = blocksBatch
         logger.info("Processing $blocksBatch")
@@ -357,10 +364,11 @@ class BlockHandler<BB : BlockchainBlock>(
         }
 
         val blockEvents = blocks.map {
+            val block = it.withReceivedTime(trigger)
             if (blocksRange.stable) {
-                NewStableBlockEvent(it, mode)
+                NewStableBlockEvent(block, mode)
             } else {
-                NewUnstableBlockEvent(it, mode)
+                NewUnstableBlockEvent(block, mode)
             }
         }
         /*
@@ -459,5 +467,10 @@ class BlockHandler<BB : BlockchainBlock>(
 
             result
         }
+    }
+
+    private fun BB.withReceivedTime(trigger: BB?): BB {
+        @Suppress("UNCHECKED_CAST")
+        return if (trigger?.number == this.number) this.withReceivedTime(trigger.receivedTime) as BB else this
     }
 }

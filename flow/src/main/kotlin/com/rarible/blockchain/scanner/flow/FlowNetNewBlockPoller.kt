@@ -1,7 +1,7 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.FlowBlock
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.model.ReceivedFlowBlock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -22,14 +22,14 @@ class FlowNetNewBlockPoller(
      * Run polling from determined block height
      */
     @ExperimentalCoroutinesApi
-    suspend fun poll(): Flow<FlowBlock> {
+    suspend fun poll(): Flow<ReceivedFlowBlock> {
         return channelFlow {
             while (isClosedForSend.not()) {
                 val latest = api.latestBlock()
                 val block = api.blockByHeight(latest.height)
                 if (block != null) {
                     log.info("Send new block ${block.height}")
-                    send(block)
+                    send(ReceivedFlowBlock(block))
                 } else {
                     log.info("Got null block")
                 }

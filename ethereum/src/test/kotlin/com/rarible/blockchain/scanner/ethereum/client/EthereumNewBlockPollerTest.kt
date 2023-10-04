@@ -41,6 +41,6 @@ internal class EthereumNewBlockPollerTest {
         every { ethereum.ethGetBlockByNumber(blockNumber2) } returns Mono.just(block2)
 
         val result = poller.newHeads().take(2).collectList().awaitFirst()
-        assertThat(result).containsExactly(block1, block2)
+        assertThat(result.map { it.block }).containsExactly(block1, block2)
     }
 }
