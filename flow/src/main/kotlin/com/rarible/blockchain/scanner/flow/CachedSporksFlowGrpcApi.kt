@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.service.AsyncFlowAccessApi
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
+import com.rarible.blockchain.scanner.flow.service.Spork
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import com.rarible.core.common.asyncWithTraceId
 import kotlinx.coroutines.NonCancellable
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
+import kotlin.coroutines.coroutineContext
 
 @Component
 class CachedSporksFlowGrpcApi(
@@ -51,7 +53,7 @@ class CachedSporksFlowGrpcApi(
         .buildAsync { key, _ -> getFullBlockById(key).toFuture() }
 
     override suspend fun isAlive(): Boolean = try {
-        flowApiFactory.getApi(sporkService.currentSpork()).ping().await()
+        apiLatest().ping().await()
         true
     } catch (e: Exception) {
         logger.warn("Network is unreachable!: ${e.message}")
@@ -59,7 +61,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun latestBlock(): FlowBlock {
-        return flowApiFactory.getApi(sporkService.currentSpork()).getLatestBlock(true).await()
+        return apiLatest().getLatestBlock(true).await()
     }
 
     override suspend fun blockByHeight(height: Long): FlowBlock? {
@@ -76,7 +78,7 @@ class CachedSporksFlowGrpcApi(
 
     override suspend fun txById(id: String): FlowTransaction? {
         val txId = FlowId(id)
-        return flowApiFactory.getApi(sporkService.sporkForTx(txId)).getTransactionById(txId).await()
+        return apiForId(txId).getTransactionById(txId).await()
     }
 
     override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
@@ -99,7 +101,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
-        return flowApiFactory.getApi(sporkService.spork(height)).getBlockHeaderByHeight(height).await()
+        return apiForHeight(height).getBlockHeaderByHeight(height).await()
     }
 
     override fun chunk(range: LongRange): Flow<LongRange> {
@@ -111,14 +113,14 @@ class CachedSporksFlowGrpcApi(
     }
 
     private fun getFullBlockByHeight(height: Long) = mono {
-        val api = flowApiFactory.getApi(sporkService.spork(height))
+        val api = apiForHeight(height)
         val block = api.getBlockByHeight(height).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
     }
 
     private fun getFullBlockById(id: FlowId) = mono {
-        val api = flowApiFactory.getApi(sporkService.spork(id))
+        val api = apiForId(id)
         val block = api.getBlockById(id).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
@@ -165,7 +167,11 @@ class CachedSporksFlowGrpcApi(
         }
     }
 
-    private suspend fun getTransactionResultById(api: AsyncFlowAccessApi, id: FlowId, block: FlowBlock): FlowTransactionResult? {
+    private suspend fun getTransactionResultById(
+        api: AsyncFlowAccessApi,
+        id: FlowId,
+        block: FlowBlock
+    ): FlowTransactionResult? {
         return wrapWithRetry("getTransactionResultById", id.stringValue, block.height) {
             api.getTransactionResultById(id).await()
         }
@@ -179,6 +185,20 @@ class CachedSporksFlowGrpcApi(
         return wrapWithRetry("getTransactionResultsByBlockId", id.stringValue, block.height) {
             api.getTransactionResultsByBlockId(id).await()
         }
+    }
+
+    private suspend fun apiForId(id: FlowId) = api(sporkService.spork(id))
+
+    private suspend fun apiForHeight(height: Long) = api(sporkService.spork(height))
+
+    private suspend fun apiLatest() = api(sporkService.currentSpork())
+
+    private suspend fun api(spork: Spork) = flowApiFactory.getApi(spork).let {
+        val sessionHash = coroutineContext[SessionHashContextElement]?.sessionHash
+        if (!sessionHash.isNullOrBlank()) {
+            return@let it.withSessionHash(sessionHash)
+        }
+        return@let it
     }
 
     private data class FullBlock(

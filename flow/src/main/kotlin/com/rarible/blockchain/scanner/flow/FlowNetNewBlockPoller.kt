@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.time.delay
+import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -25,15 +26,17 @@ class FlowNetNewBlockPoller(
     suspend fun poll(): Flow<ReceivedFlowBlock> {
         return channelFlow {
             while (isClosedForSend.not()) {
-                val latest = api.latestBlock()
-                val block = api.blockByHeight(latest.height)
-                if (block != null) {
-                    log.info("Send new block ${block.height}")
-                    send(ReceivedFlowBlock(block))
-                } else {
-                    log.info("Got null block")
+                withContext(SessionHashContextElement()) {
+                    val latest = api.latestBlock()
+                    val block = api.blockByHeight(latest.height)
+                    if (block != null) {
+                        log.info("Send new block ${block.height}")
+                        send(ReceivedFlowBlock(block))
+                    } else {
+                        log.info("Got null block")
+                    }
+                    delay(properties.poller.period)
                 }
-                delay(properties.poller.period)
             }
         }.retry {
             log.error("Error in poll function: ${it.message}", it)

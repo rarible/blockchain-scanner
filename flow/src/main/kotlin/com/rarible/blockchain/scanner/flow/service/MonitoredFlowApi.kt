@@ -158,6 +158,8 @@ class MonitoredFlowApi(
         }
     }
 
+    override fun withSessionHash(sessionHash: String): AsyncFlowAccessApi = delegate.withSessionHash(sessionHash)
+
     override fun ping(): CompletableFuture<Unit> {
         return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "ping") {
             delegate.ping()

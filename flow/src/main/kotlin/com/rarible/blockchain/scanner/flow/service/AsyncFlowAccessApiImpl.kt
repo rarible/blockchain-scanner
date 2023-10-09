@@ -5,6 +5,8 @@ import com.nftco.flow.sdk.FlowTransactionResult
 import com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl
 import com.nftco.flow.sdk.impl.completableFuture
 import io.grpc.ManagedChannel
+import io.grpc.Metadata
+import io.grpc.stub.MetadataUtils
 import org.onflow.protobuf.access.Access
 import org.onflow.protobuf.access.AccessAPIGrpc
 import java.io.Closeable
@@ -23,6 +25,18 @@ class AsyncFlowAccessApiImpl(
         ).thenApply {
             it.transactionResultsList.map { tr -> FlowTransactionResult.of(tr) }
         }
+    }
+
+    override fun withSessionHash(sessionHash: String): AsyncFlowAccessApi {
+        val metadata = Metadata()
+        metadata.put(SESSION_HASH_HEADER, sessionHash)
+        return com.rarible.blockchain.scanner.flow.service.AsyncFlowAccessApiImpl(
+            api.withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    metadata
+                )
+            )
+        )
     }
 
     override fun close() {
