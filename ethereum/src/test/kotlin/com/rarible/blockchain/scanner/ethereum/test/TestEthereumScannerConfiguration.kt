@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
+import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
@@ -29,6 +30,7 @@ import java.math.BigInteger
 @Configuration
 @EnableEthereumScanner
 @EnableAutoConfiguration
+@EnableMongock
 class TestEthereumScannerConfiguration {
 
     @Value("\${ethereumPrivateKey}")
