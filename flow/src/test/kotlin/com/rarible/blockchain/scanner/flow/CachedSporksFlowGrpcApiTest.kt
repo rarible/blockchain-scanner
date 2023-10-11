@@ -17,9 +17,9 @@ import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.stub.StreamObserver
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -81,23 +81,16 @@ class CachedSporksFlowGrpcApiTest {
 
     @Test
     fun `latest block call with session id`() = runBlocking<Unit> {
-        val metadatas = mutableListOf<Metadata>()
-        val sessionHashContextElement = SessionHashContextElement()
-        withContext(sessionHashContextElement) {
-            val latestBlock = cachedSporksFlowGrpcApi.latestBlock()
-            assertThat(latestBlock).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
-        }
-        // no session header afterwards
-        val latestBlock = cachedSporksFlowGrpcApi.latestBlock()
-        assertThat(latestBlock).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
+        val metadata = slot<Metadata>()
+        val block = cachedSporksFlowGrpcApi.latestBlock()
+        assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
         verify {
             serverInterceptor.interceptCall(
                 any(),
-                capture(metadatas),
+                capture(metadata),
                 any<ServerCallHandler<Access.GetLatestBlockRequest, BlockResponse>>()
             )
         }
-        assertThat(metadatas[0].get(SESSION_HASH_HEADER)).isEqualTo(sessionHashContextElement.sessionHash)
-        assertThat(metadatas[1].get(SESSION_HASH_HEADER)).isNull()
+        assertThat(metadata.captured.get(SESSION_HASH_HEADER)).isNotBlank()
     }
 }

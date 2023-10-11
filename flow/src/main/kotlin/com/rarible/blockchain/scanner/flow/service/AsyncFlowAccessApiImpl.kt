@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.flow.service
 
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.FlowTransactionResult
-import com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl
 import com.nftco.flow.sdk.impl.completableFuture
 import io.grpc.ManagedChannel
 import io.grpc.Metadata
@@ -30,7 +29,7 @@ class AsyncFlowAccessApiImpl(
     override fun withSessionHash(sessionHash: String): AsyncFlowAccessApi {
         val metadata = Metadata()
         metadata.put(SESSION_HASH_HEADER, sessionHash)
-        return com.rarible.blockchain.scanner.flow.service.AsyncFlowAccessApiImpl(
+        return AsyncFlowAccessApiImpl(
             api.withInterceptors(
                 MetadataUtils.newAttachHeadersInterceptor(
                     metadata

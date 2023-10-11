@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
-import kotlin.coroutines.coroutineContext
+import java.util.UUID
 
 @Component
 class CachedSporksFlowGrpcApi(
@@ -193,13 +193,7 @@ class CachedSporksFlowGrpcApi(
 
     private suspend fun apiLatest() = api(sporkService.currentSpork())
 
-    private suspend fun api(spork: Spork) = flowApiFactory.getApi(spork).let {
-        val sessionHash = coroutineContext[SessionHashContextElement]?.sessionHash
-        if (!sessionHash.isNullOrBlank()) {
-            return@let it.withSessionHash(sessionHash)
-        }
-        return@let it
-    }
+    private suspend fun api(spork: Spork) = flowApiFactory.getApi(spork).withSessionHash(UUID.randomUUID().toString())
 
     private data class FullBlock(
         val block: FlowBlock,
