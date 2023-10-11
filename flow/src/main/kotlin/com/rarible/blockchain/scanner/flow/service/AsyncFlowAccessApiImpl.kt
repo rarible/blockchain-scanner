@@ -13,7 +13,8 @@ import java.util.concurrent.CompletableFuture
 
 class AsyncFlowAccessApiImpl(
     private val api: AccessAPIGrpc.AccessAPIFutureStub,
-) : AsyncFlowAccessApi, com.nftco.flow.sdk.AsyncFlowAccessApi by AsyncFlowAccessApiImpl(api), Closeable {
+) : AsyncFlowAccessApi, com.nftco.flow.sdk.AsyncFlowAccessApi by com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl(api),
+    Closeable {
     override fun getTransactionResultsByBlockId(id: FlowId): CompletableFuture<List<FlowTransactionResult>> {
         return completableFuture(
             api.getTransactionResultsByBlockID(
