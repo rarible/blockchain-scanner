@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.configuration
 
-import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
 import com.rarible.blockchain.scanner.ethereum.EthereumScanner
 import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
@@ -27,7 +26,6 @@ import org.springframework.context.annotation.Configuration
 @EnableBlockchainScanner
 @Configuration
 @EnableRaribleMongo
-@EnableMongock
 @EnableScaletherMongoConversions
 @EnableConfigurationProperties(EthereumScannerProperties::class)
 @ComponentScan(basePackageClasses = [EthereumScanner::class])
