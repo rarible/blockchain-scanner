@@ -11,7 +11,7 @@ abstract class AbstractMetricReducer<Event, E>(
     prefix: String,
 ) : Reducer<Event, E> {
 
-    private val blockchain = metricProperties.blockchain.value
+    private val blockchain = metricProperties.blockchain
     private val fullPrefix = "${metricProperties.metricRootPath}.reduce.$prefix"
     private val counters = ConcurrentHashMap<Class<out Event>, Counter>()
 
