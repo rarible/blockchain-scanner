@@ -25,14 +25,9 @@ class FlowNetNewBlockPoller(
     suspend fun poll(): Flow<ReceivedFlowBlock> {
         return channelFlow {
             while (isClosedForSend.not()) {
-                val latest = api.latestBlock()
-                val block = api.blockByHeight(latest.height)
-                if (block != null) {
-                    log.info("Send new block ${block.height}")
-                    send(ReceivedFlowBlock(block))
-                } else {
-                    log.info("Got null block")
-                }
+                val block = api.latestBlock()
+                log.info("Send new block ${block.height}")
+                send(ReceivedFlowBlock(block))
                 delay(properties.poller.period)
             }
         }.retry {
