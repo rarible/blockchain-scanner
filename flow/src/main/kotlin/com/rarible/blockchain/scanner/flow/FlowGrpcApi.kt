@@ -16,6 +16,8 @@ interface FlowGrpcApi {
 
     suspend fun blockByHeight(height: Long): FlowBlock?
 
+    suspend fun blocksByHeights(heights: List<Long>): List<FlowBlock>
+
     suspend fun blockById(id: String): FlowBlock?
 
     suspend fun blockById(id: FlowId): FlowBlock?

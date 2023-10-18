@@ -9,15 +9,16 @@ import com.rarible.blockchain.scanner.flow.service.SporkService
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import io.grpc.Metadata
 import io.grpc.Server
+import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.ServerInterceptors
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import io.grpc.stub.StreamObserver
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -27,38 +28,49 @@ import org.junit.jupiter.api.Test
 import org.onflow.protobuf.access.Access
 import org.onflow.protobuf.access.Access.BlockResponse
 import org.onflow.protobuf.access.AccessAPIGrpc.AccessAPIImplBase
+import org.onflow.protobuf.entities.BlockOuterClass
 import java.util.concurrent.TimeUnit
 
 class CachedSporksFlowGrpcApiTest {
     private val properties = FlowBlockchainScannerProperties(chainId = FlowChainId.MAINNET)
     private val blockchainMonitor = mockk<BlockchainMonitor>()
     private val sporkService = SporkService(properties, FlowApiFactoryImpl(blockchainMonitor, properties))
-    private val serverInterceptor = mockk<ServerInterceptor>()
-
+    private val serverInterceptor = spyk(object : ServerInterceptor {
+        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+            call: ServerCall<ReqT, RespT>,
+            headers: Metadata,
+            next: ServerCallHandler<ReqT, RespT>
+        ): ServerCall.Listener<ReqT> {
+            return next.startCall(call, headers)
+        }
+    })
     private lateinit var cachedSporksFlowGrpcApi: CachedSporksFlowGrpcApi
     private lateinit var server: Server
 
     @BeforeEach
     fun before() {
-        every {
-            serverInterceptor.interceptCall(
-                any(),
-                any(),
-                any<ServerCallHandler<Access.GetLatestBlockRequest, BlockResponse>>()
-            )
-        } answers {
-            (this.thirdArg() as ServerCallHandler<Access.GetLatestBlockRequest, BlockResponse>).startCall(
-                this.firstArg(),
-                this.secondArg()
-            )
-        }
         val name = InProcessServerBuilder.generateName()
         val service = object : AccessAPIImplBase() {
             override fun getLatestBlock(
                 request: Access.GetLatestBlockRequest,
                 responseObserver: StreamObserver<BlockResponse>
             ) {
-                responseObserver.onNext(BlockResponse.getDefaultInstance())
+                responseObserver.onNext(
+                    BlockResponse.newBuilder()
+                        .setBlock(BlockOuterClass.Block.getDefaultInstance())
+                        .build())
+                responseObserver.onCompleted()
+            }
+
+            override fun getBlockByHeight(
+                request: Access.GetBlockByHeightRequest,
+                responseObserver: StreamObserver<BlockResponse>
+            ) {
+                responseObserver.onNext(
+                    BlockResponse.newBuilder()
+                        .setBlock(BlockOuterClass.Block.getDefaultInstance())
+                        .build()
+                )
                 responseObserver.onCompleted()
             }
         }
@@ -80,7 +92,7 @@ class CachedSporksFlowGrpcApiTest {
     }
 
     @Test
-    fun `latest block call with session id`() = runBlocking<Unit> {
+    fun `latest block call without session id`() = runBlocking<Unit> {
         val metadata = slot<Metadata>()
         val block = cachedSporksFlowGrpcApi.latestBlock()
         assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
@@ -89,6 +101,21 @@ class CachedSporksFlowGrpcApiTest {
                 any(),
                 capture(metadata),
                 any<ServerCallHandler<Access.GetLatestBlockRequest, BlockResponse>>()
+            )
+        }
+        assertThat(metadata.captured.get(SESSION_HASH_HEADER)).isBlank()
+    }
+
+    @Test
+    fun `full block call with session id`() = runBlocking<Unit> {
+        val metadata = slot<Metadata>()
+        val block = cachedSporksFlowGrpcApi.blockByHeight(20000000L)
+        assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
+        verify {
+            serverInterceptor.interceptCall(
+                any(),
+                capture(metadata),
+                any<ServerCallHandler<Access.GetBlockByHeightRequest, BlockResponse>>()
             )
         }
         assertThat(metadata.captured.get(SESSION_HASH_HEADER)).isNotBlank()

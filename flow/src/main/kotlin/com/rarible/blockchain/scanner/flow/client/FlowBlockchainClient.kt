@@ -51,8 +51,8 @@ class FlowBlockchainClient(
         return FlowBlockchainBlock(a)
     }
 
-    override suspend fun getBlocks(numbers: List<Long>) = coroutineScope {
-        numbers.map { asyncWithTraceId(context = NonCancellable) { getBlock(it) } }.awaitAll()
+    override suspend fun getBlocks(numbers: List<Long>): List<FlowBlockchainBlock> = coroutineScope {
+        api.blocksByHeights(numbers).map { FlowBlockchainBlock(it) }
     }
 
     override fun getBlockLogs(

@@ -27,10 +27,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
 import java.util.UUID
@@ -53,7 +55,7 @@ class CachedSporksFlowGrpcApi(
         .buildAsync { key, _ -> getFullBlockById(key).toFuture() }
 
     override suspend fun isAlive(): Boolean = try {
-        apiLatest().ping().await()
+        api(sporkService.currentSpork()).ping().await()
         true
     } catch (e: Exception) {
         logger.warn("Network is unreachable!: ${e.message}")
@@ -61,11 +63,28 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun latestBlock(): FlowBlock {
-        return apiLatest().getLatestBlock(true).await()
+        return api(sporkService.currentSpork()).getLatestBlock(true).await()
     }
 
     override suspend fun blockByHeight(height: Long): FlowBlock? {
         return fullBlocksByHeight[height].await()?.block
+    }
+
+    override suspend fun blocksByHeights(heights: List<Long>): List<FlowBlock> {
+        val cachedBlocks = heights.mapNotNull { fullBlocksByHeight.getIfPresent(it)?.await() }
+        val cachedBlockHeights = cachedBlocks.map { it.block.height }.toSet()
+        val missedBlockHeights = heights.filterNot { cachedBlockHeights.contains(it) }
+        val sporkToHeights: Map<Spork, List<Long>> = missedBlockHeights.groupBy { sporkService.spork(it) }
+        val sessionHash = UUID.randomUUID().toString()
+        val missedBlocks = sporkToHeights.map { (spork, missedHeights) ->
+            val api = api(spork).withSessionHash(sessionHash)
+            missedHeights.map {
+                val blockF = getFullBlockByHeight(api, it).toFuture()
+                fullBlocksByHeight.put(it, blockF)
+                blockF.await()
+            }
+        }
+        return listOf(cachedBlocks, *(missedBlocks.toTypedArray())).flatten().map { it.block }
     }
 
     override suspend fun blockById(id: FlowId): FlowBlock? {
@@ -78,7 +97,7 @@ class CachedSporksFlowGrpcApi(
 
     override suspend fun txById(id: String): FlowTransaction? {
         val txId = FlowId(id)
-        return apiForId(txId).getTransactionById(txId).await()
+        return api(sporkService.sporkForTx(txId)).getTransactionById(txId).await()
     }
 
     override fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
@@ -101,7 +120,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
-        return apiForHeight(height).getBlockHeaderByHeight(height).await()
+        return api(sporkService.spork(height)).getBlockHeaderByHeight(height).await()
     }
 
     override fun chunk(range: LongRange): Flow<LongRange> {
@@ -112,15 +131,19 @@ class CachedSporksFlowGrpcApi(
         }
     }
 
-    private fun getFullBlockByHeight(height: Long) = mono {
-        val api = apiForHeight(height)
+    private fun getFullBlockByHeight(height: Long): Mono<FullBlock> = mono {
+        val api = api(sporkService.spork(height)).withSessionHash(UUID.randomUUID().toString())
+        getFullBlockByHeight(api, height).awaitSingle()
+    }
+
+    private fun getFullBlockByHeight(api: AsyncFlowAccessApi, height: Long) = mono {
         val block = api.getBlockByHeight(height).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
     }
 
     private fun getFullBlockById(id: FlowId) = mono {
-        val api = apiForId(id)
+        val api = api(sporkService.spork(id)).withSessionHash(UUID.randomUUID().toString())
         val block = api.getBlockById(id).await() ?: return@mono null
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
@@ -135,7 +158,9 @@ class CachedSporksFlowGrpcApi(
                 " and ${block.signatures.size} signatures"
         )
         if (properties.enableUseUndocumentedMethods) {
-            getTransactionResultsByBlockId(api, block.id, block).flatMap { it.events }
+            val events = getTransactionResultsByBlockId(api, block.id, block).flatMap { it.events }
+            logger.info("Fetched events of block ${block.height}")
+            events
         } else {
             block.collectionGuarantees.map { guarantee ->
                 asyncWithTraceId(context = NonCancellable) {
@@ -187,13 +212,7 @@ class CachedSporksFlowGrpcApi(
         }
     }
 
-    private suspend fun apiForId(id: FlowId) = api(sporkService.spork(id))
-
-    private suspend fun apiForHeight(height: Long) = api(sporkService.spork(height))
-
-    private suspend fun apiLatest() = api(sporkService.currentSpork())
-
-    private suspend fun api(spork: Spork) = flowApiFactory.getApi(spork).withSessionHash(UUID.randomUUID().toString())
+    private suspend fun api(spork: Spork) = flowApiFactory.getApi(spork)
 
     private data class FullBlock(
         val block: FlowBlock,

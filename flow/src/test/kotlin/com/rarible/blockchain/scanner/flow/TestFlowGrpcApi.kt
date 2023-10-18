@@ -21,6 +21,10 @@ class TestFlowGrpcApi(private val api: AsyncFlowAccessApi) : FlowGrpcApi {
 
     override suspend fun blockByHeight(height: Long): FlowBlock? = api.getBlockByHeight(height).await()
 
+    override suspend fun blocksByHeights(heights: List<Long>): List<FlowBlock> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun blockById(id: String): FlowBlock? = blockById(FlowId(id))
 
     override suspend fun blockById(id: FlowId): FlowBlock? = api.getBlockById(id).await()
