@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.configuration.TimestampUnit
 import com.rarible.core.common.nowMillis
 import io.micrometer.core.instrument.MeterRegistry
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 
 class BlockMonitor(
@@ -18,8 +19,7 @@ class BlockMonitor(
     meterRegistry,
     "block"
 ) {
-    @Volatile
-    private var lastIndexedBlock: Block? = null
+    private var lastIndexedBlock = AtomicReference<Block?>(null)
 
     @Volatile
     private var lastLoadedBlockNumber: Long? = null
@@ -31,17 +31,18 @@ class BlockMonitor(
 
     override fun register() {
         addGauge(BLOCK_DELAY) { getBlockDelay() }
-        addGauge(LAST_BLOCK_NUMBER) { lastIndexedBlock?.id }
+        addGauge(LAST_BLOCK_NUMBER) { lastIndexedBlock.get()?.id }
         addGauge(LAST_LOADED_BLOCK_NUMBER) { lastLoadedBlockNumber }
         addGauge(BLOCK_ERRORS) { blockErrors }
     }
 
     override suspend fun refresh() {
         blockErrors = blockRepository.failedCount()
+        setLastIndexedBlock()
     }
 
     fun recordLastIndexedBlock(lastIndexedBlock: Block) {
-        this.lastIndexedBlock = lastIndexedBlock
+        this.lastIndexedBlock.set(lastIndexedBlock)
     }
 
     fun recordLastFetchedBlockNumber(lastFetchedBlockNumber: Long) {
@@ -57,13 +58,26 @@ class BlockMonitor(
     }
 
     private fun getBlockDelay(now: Instant = nowMillis()): Double? {
-        val lastSeenBlockTimestamp = lastIndexedBlock?.timestamp ?: return null
+        val lastSeenBlockTimestamp = lastIndexedBlock.get()?.timestamp ?: return null
 
         val currentTimestamp = when (timestampUnit) {
             TimestampUnit.SECOND -> now.epochSecond
             TimestampUnit.MILLISECOND -> now.toEpochMilli()
         }
         return max(currentTimestamp - lastSeenBlockTimestamp, 0).toDouble()
+    }
+
+    private suspend fun setLastIndexedBlock() {
+        val currentLastIndexedBlock = lastIndexedBlock.get()
+        if (currentLastIndexedBlock == null) {
+            // We assume that the last block in the database is the current state of the scanner, regardless of the block's condition.
+            val last = blockRepository.getLastBlock()
+            lastIndexedBlock.compareAndSet(null, last)
+        }
+    }
+
+    internal fun getLastIndexedBlock(): Block? {
+        return lastIndexedBlock.get()
     }
 
     companion object {
