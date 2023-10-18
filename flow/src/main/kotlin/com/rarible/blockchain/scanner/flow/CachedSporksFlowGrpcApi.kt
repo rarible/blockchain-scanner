@@ -70,23 +70,6 @@ class CachedSporksFlowGrpcApi(
         return fullBlocksByHeight[height].await()?.block
     }
 
-    override suspend fun blocksByHeights(heights: List<Long>): List<FlowBlock> {
-        val cachedBlocks = heights.mapNotNull { fullBlocksByHeight.getIfPresent(it)?.await() }
-        val cachedBlockHeights = cachedBlocks.map { it.block.height }.toSet()
-        val missedBlockHeights = heights.filterNot { cachedBlockHeights.contains(it) }
-        val sporkToHeights: Map<Spork, List<Long>> = missedBlockHeights.groupBy { sporkService.spork(it) }
-        val sessionHash = UUID.randomUUID().toString()
-        val missedBlocks = sporkToHeights.map { (spork, missedHeights) ->
-            val api = api(spork).withSessionHash(sessionHash)
-            missedHeights.map {
-                val blockF = getFullBlockByHeight(api, it).toFuture()
-                fullBlocksByHeight.put(it, blockF)
-                blockF.await()
-            }
-        }
-        return listOf(cachedBlocks, *(missedBlocks.toTypedArray())).flatten().map { it.block }
-    }
-
     override suspend fun blockById(id: FlowId): FlowBlock? {
         return fullBlocksById[id].await()?.block
     }
