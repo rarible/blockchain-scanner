@@ -45,7 +45,8 @@ class TestFlowGrpcApi(private val api: AsyncFlowAccessApi) : FlowGrpcApi {
         val block = api.getBlockByHeight(height).await()!!
         if (block.collectionGuarantees.isNotEmpty()) {
             block.collectionGuarantees.forEach {
-                val c = api.getCollectionById(it.id).await() ?: throw IllegalStateException("Not found collection guarantee [${it.id}]")
+                val c = api.getCollectionById(it.id).await()
+                    ?: throw IllegalStateException("Not found collection guarantee [${it.id}]")
                 c.transactionIds.mapNotNull { txId ->
                     api.getTransactionResultById(txId).await()
                 }.flatMap { it.events }.forEach {

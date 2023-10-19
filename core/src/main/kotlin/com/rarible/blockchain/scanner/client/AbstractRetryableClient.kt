@@ -102,7 +102,7 @@ abstract class AbstractRetryableClient(
     private fun logRetryFail(method: String, e: Throwable, vararg args: Any) {
         logger.error(
             "Unable to perform BlockchainClient operation '{}' with params [{}] after {} attempts: {}",
-            method, args.contentToString(), retryPolicy.attempts, e.message
+            method, args.contentToString(), retryPolicy.attempts, e.message, e
         )
     }
 }
