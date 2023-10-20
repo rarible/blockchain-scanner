@@ -7,26 +7,32 @@ import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import io.micrometer.core.instrument.MeterRegistry
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.impl.annotations.InjectMockKs
+import io.mockk.impl.annotations.MockK
+import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(MockKExtension::class)
 class BlockMonitorTest {
     private val blockRepository = mockk<BlockRepository> {
         coEvery { failedCount() } returns 0
     }
+
     private val properties = mockk<BlockchainScannerProperties> {
         every { blockchain } returns "ethereum"
         every { monitoring } returns MonitoringProperties()
     }
-    private val meterRegistry = mockk<MeterRegistry>()
 
-    private val blockMonitor = BlockMonitor(
-        blockRepository,
-        properties,
-        meterRegistry
-    )
+    @MockK
+    private lateinit var meterRegistry: MeterRegistry
+
+
+    @InjectMockKs
+    private lateinit var blockMonitor: BlockMonitor
 
     @Test
     fun `set init lastIndexedBlock - ok`() = runBlocking<Unit> {
