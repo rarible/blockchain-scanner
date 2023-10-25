@@ -223,7 +223,7 @@ class EthereumClient(
     }
 
     private fun ignoreLog(log: Log): Boolean {
-        return log.removed() || (properties.ignoreNullableLogs && log.isNullable())
+        return log.removed() || (properties.ignoreNullableLogs && log.transactionHash().isNullable())
     }
 
     /**
@@ -246,7 +246,9 @@ class EthereumClient(
         logsInBlock: List<Log>
     ): FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog> {
         val indexedEthLogs = attachIndex(logsInBlock)
-        val transactions = CollectionConverters.asJava(ethFullBlock.transactions()).associateBy { it.hash() }
+        val transactions = CollectionConverters.asJava(ethFullBlock.transactions())
+            .filterNot { properties.ignoreNullableLogs && it.hash().isNullable() }
+            .associateBy { it.hash() }
         return FullBlock(
             block = EthereumBlockchainBlock(ethFullBlock),
             logs = indexedEthLogs.map { (index, total, ethLog) ->
@@ -268,8 +270,8 @@ class EthereumClient(
     private data class Indexed<out T>(val index: Int, val total: Int, val value: T)
 
     // In zksync blockchain a tx with the hash == 0x0..0 means that the current block is empty
-    private fun Log.isNullable(): Boolean {
-        return this.transactionHash() == NULLABLE_WORD
+    private fun Word.isNullable(): Boolean {
+        return this == NULLABLE_WORD
     }
 
     private companion object {
