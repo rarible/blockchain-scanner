@@ -186,6 +186,96 @@ class EthereumBlockchainLogIndexTest {
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
     }
 
+    @Test
+    fun `do not ignore nullable logs - ok`() = runBlocking<Unit> {
+        val blockHash0 = randomWord()
+        val blockHash1 = randomWord()
+
+        val topic1 = randomWord()
+        val address1 = randomAddress()
+
+        val allLogs = listOf(
+            createEthereumBL(0, randomWord(), topic1, address1, 0, blockHash0, 0),
+            createEthereumBL(0, Word.apply("0x0000000000000000000000000000000000000000000000000000000000000000"), topic1, address1, 1, blockHash1, 1)
+        )
+        val allBlocks = listOf(
+            ethBlock(0, blockHash0, allLogs),
+            ethBlock(1, blockHash1, allLogs)
+        )
+        val descriptor = mockk<EthereumDescriptor>()
+        every { descriptor.contracts } returns listOf(address1)
+        every { descriptor.ethTopic } returns topic1
+
+        val ethereumClient = createEthereumClient(
+            allBlocks,
+            allLogs,
+            stable = false,
+            ignoreNullableLogs = false
+        )
+        val fullBlocks = ethereumClient.getBlockLogs(
+            descriptor,
+            listOf(
+                EthereumBlockchainBlock(allBlocks[0]),
+                EthereumBlockchainBlock(allBlocks[1])
+            ),
+            stable = false
+        ).toList()
+
+        val expectedFullBlocks = (0..1).map { FullBlock(
+            block = EthereumBlockchainBlock(allBlocks[it]),
+            logs = listOf(allLogs[it])
+        ) }
+        assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
+    }
+
+    @Test
+    fun `ignore nullable logs - ok`() = runBlocking<Unit> {
+        val blockHash0 = randomWord()
+        val blockHash1 = randomWord()
+
+        val topic1 = randomWord()
+        val address1 = randomAddress()
+
+        val allLogs = listOf(
+            createEthereumBL(0, randomWord(), topic1, address1, 0, blockHash0, 0),
+            createEthereumBL(0, Word.apply("0x0000000000000000000000000000000000000000000000000000000000000001"), topic1, address1, 1, blockHash1, 1)
+        )
+        val allBlocks = listOf(
+            ethBlock(0, blockHash0, allLogs),
+            ethBlock(1, blockHash1, allLogs)
+        )
+        val descriptor = mockk<EthereumDescriptor>()
+        every { descriptor.contracts } returns listOf(address1)
+        every { descriptor.ethTopic } returns topic1
+
+        val ethereumClient = createEthereumClient(
+            allBlocks,
+            allLogs,
+            stable = false,
+            ignoreNullableLogs = true
+        )
+        val fullBlocks = ethereumClient.getBlockLogs(
+            descriptor,
+            listOf(
+                EthereumBlockchainBlock(allBlocks[0]),
+                EthereumBlockchainBlock(allBlocks[1])
+            ),
+            stable = false
+        ).toList()
+
+        val expectedFullBlocks = listOf(
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[0]),
+                logs = listOf(allLogs[0])
+            ),
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[1]),
+                logs = emptyList()
+            )
+        )
+        assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
+    }
+
     private fun createEthereumBL(
         index: Int,
         transactionHash: Word,
@@ -217,6 +307,7 @@ class EthereumBlockchainLogIndexTest {
         logs: List<EthereumBlockchainLog>,
         stable: Boolean = true,
         enableUnstableBlockParallelLoad: Boolean = false,
+        ignoreNullableLogs: Boolean = false
     ): EthereumClient {
         val monoEthereum = mockk<MonoEthereum>()
         if (stable) {
@@ -260,7 +351,8 @@ class EthereumBlockchainLogIndexTest {
         val ethPubSub = mockk<EthPubSub>()
         every { ethPubSub.newHeads() } returns Flux.empty()
         val properties = EthereumScannerProperties(
-            enableUnstableBlockParallelLoad = enableUnstableBlockParallelLoad
+            enableUnstableBlockParallelLoad = enableUnstableBlockParallelLoad,
+            ignoreNullableLogs = ignoreNullableLogs
         )
 
         return EthereumClient(monoEthereum, properties, ethPubSub, monitor)
