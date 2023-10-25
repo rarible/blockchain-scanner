@@ -30,7 +30,6 @@ class BlockMonitorTest {
     @MockK
     private lateinit var meterRegistry: MeterRegistry
 
-
     @InjectMockKs
     private lateinit var blockMonitor: BlockMonitor
 
