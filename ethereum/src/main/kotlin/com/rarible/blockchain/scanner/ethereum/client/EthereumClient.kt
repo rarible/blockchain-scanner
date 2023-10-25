@@ -210,7 +210,7 @@ class EthereumClient(
     ): FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog> {
         val blockHash = Word.apply(blockHeader.hash)
         val finalFilter = filter.blockHash(blockHash)
-        val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot { it.removed() }
+        val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot(::ignoreLog)
         logger.info(
             "Loaded {} logs of topic {} for fresh block [{}:{}]",
             allLogs.size,
@@ -220,6 +220,10 @@ class EthereumClient(
         )
         val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
         return createFullBlock(ethFullBlock, allLogs)
+    }
+
+    private fun ignoreLog(log: Log): Boolean {
+        return log.removed() || (properties.ignoreNullableLogs && log.transactionHash() == NULLABLE_WORD)
     }
 
     /**
@@ -265,6 +269,7 @@ class EthereumClient(
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
+        val NULLABLE_WORD = Word.apply(ByteArray(32))
     }
 }
 
