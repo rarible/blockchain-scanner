@@ -223,7 +223,7 @@ class EthereumClient(
     }
 
     private fun ignoreLog(log: Log): Boolean {
-        return log.removed() || (properties.ignoreNullableLogs && log.transactionHash() == NULLABLE_WORD)
+        return log.removed() || (properties.ignoreNullableLogs && log.isNullable())
     }
 
     /**
@@ -266,6 +266,11 @@ class EthereumClient(
     }
 
     private data class Indexed<out T>(val index: Int, val total: Int, val value: T)
+
+    // In zksync blockchain a tx with the hash == 0x0..0 means that the current block is empty
+    private fun Log.isNullable(): Boolean {
+        return this.transactionHash() == NULLABLE_WORD
+    }
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(EthereumClient::class.java)
