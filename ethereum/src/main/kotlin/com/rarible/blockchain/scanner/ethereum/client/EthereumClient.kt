@@ -172,7 +172,7 @@ class EthereumClient(
                 BigInteger.valueOf(range.first).encodeForFilter(),
                 BigInteger.valueOf(range.last).encodeForFilter()
             )
-        return ethereum.ethGetLogsJava(filter).awaitFirst().filterNot { it.removed() }
+        return ethereum.ethGetLogsJava(filter).awaitFirst().filterNot(::ignoreLog)
     }
 
     private fun getUnstableBlockLogs(
