@@ -143,7 +143,11 @@ fun ethTransaction(
     Binary.empty()
 )
 
-fun ethBlock(number: Int, hash: Word, logs: List<EthereumBlockchainLog> = emptyList()): Block<Transaction> = Block(
+fun ethBlock(
+    number: Int = randomInt(),
+    hash: Word = randomWord(),
+    logs: List<EthereumBlockchainLog> = emptyList()
+): Block<Transaction> = Block(
     number.toBigInteger(),
     hash,
     randomWord(),
