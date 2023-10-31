@@ -10,6 +10,7 @@ blockchain:
       optimisticLockRetries: 3
       retryPolicy:
         scan:
+          enabled: true
           reconnectDelay: 2s
           reconnectAttempts: 1
         client:

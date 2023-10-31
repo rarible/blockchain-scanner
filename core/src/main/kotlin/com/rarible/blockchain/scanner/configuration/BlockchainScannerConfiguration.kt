@@ -10,7 +10,7 @@ import com.rarible.blockchain.scanner.monitoring.MonitoringWorker
 import com.rarible.core.task.EnableRaribleTask
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -28,7 +28,7 @@ class BlockchainScannerConfiguration(
 
     @Bean
     @ConditionalOnClass(MeterRegistry::class)
-    @ConditionalOnProperty("blockchain.scanner.ethereum.scan.enabled", havingValue = "true")
+    @ConditionalOnExpression("\${properties.scan.enabled:true}")
     fun blockMonitor(
         meterRegistry: MeterRegistry,
         blockRepository: BlockRepository
@@ -38,14 +38,14 @@ class BlockchainScannerConfiguration(
 
     @Bean
     @ConditionalOnClass(MeterRegistry::class)
-    @ConditionalOnProperty("blockchain.scanner.ethereum.scan.enabled", havingValue = "true")
+    @ConditionalOnExpression("\${properties.scan.enabled:true}")
     fun logMonitor(meterRegistry: MeterRegistry): LogMonitor {
         return LogMonitor(properties, meterRegistry)
     }
 
     @Bean
     @ConditionalOnClass(MeterRegistry::class)
-    @ConditionalOnProperty("blockchain.scanner.ethereum.scan.enabled", havingValue = "true")
+    @ConditionalOnExpression("\${properties.scan.enabled:true}")
     fun monitoringWorker(meterRegistry: MeterRegistry, monitors: List<Monitor>): MonitoringWorker {
         return MonitoringWorker(properties, meterRegistry, monitors)
     }
