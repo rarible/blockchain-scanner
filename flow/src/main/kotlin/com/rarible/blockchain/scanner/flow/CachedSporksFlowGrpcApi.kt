@@ -120,7 +120,9 @@ class CachedSporksFlowGrpcApi(
     }
 
     private fun getFullBlockByHeight(api: AsyncFlowAccessApi, height: Long) = mono {
+        logger.info("Fetching block $height")
         val block = api.getBlockByHeight(height).await() ?: return@mono null
+        logger.info("Fetched block $height")
         val events = getBlockEvents(api, block)
         FullBlock(block, events)
     }
