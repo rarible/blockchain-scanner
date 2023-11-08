@@ -3,7 +3,6 @@ package com.rarible.blockchain.scanner.flow
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.nftco.flow.sdk.FlowBlock
-import com.nftco.flow.sdk.FlowBlockHeader
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowCollection
 import com.nftco.flow.sdk.FlowEvent
@@ -13,6 +12,7 @@ import com.nftco.flow.sdk.FlowTransaction
 import com.nftco.flow.sdk.FlowTransactionResult
 import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.model.FlowBlockHeader
 import com.rarible.blockchain.scanner.flow.service.AsyncFlowAccessApi
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactory
 import com.rarible.blockchain.scanner.flow.service.Spork
@@ -62,19 +62,21 @@ class CachedSporksFlowGrpcApi(
         false
     }
 
-    override suspend fun latestBlock(): FlowBlock {
-        return api(sporkService.currentSpork()).getLatestBlock(true).await()
+    override suspend fun latestBlock(): FlowBlockHeader {
+        return api(sporkService.currentSpork())
+            .getLatestBlock(true).await()
+            .let { FlowBlockHeader.of(it) }
     }
 
-    override suspend fun blockByHeight(height: Long): FlowBlock? {
+    override suspend fun blockByHeight(height: Long): FlowBlockHeader? {
         return fullBlocksByHeight[height].await()?.block
     }
 
-    override suspend fun blockById(id: FlowId): FlowBlock? {
+    override suspend fun blockById(id: FlowId): FlowBlockHeader? {
         return fullBlocksById[id].await()?.block
     }
 
-    override suspend fun blockById(id: String): FlowBlock? {
+    override suspend fun blockById(id: String): FlowBlockHeader? {
         return blockById(FlowId(id))
     }
 
@@ -103,7 +105,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
-        return api(sporkService.spork(height)).getBlockHeaderByHeight(height).await()
+        return api(sporkService.spork(height)).getExBlockHeaderByHeight(height).await()
     }
 
     override fun chunk(range: LongRange): Flow<LongRange> {
@@ -120,33 +122,35 @@ class CachedSporksFlowGrpcApi(
     }
 
     private fun getFullBlockByHeight(api: AsyncFlowAccessApi, height: Long) = mono {
-        logger.info("Fetching block $height")
-        val block = api.getBlockByHeight(height).await() ?: return@mono null
-        logger.info("Fetched block $height")
-        val events = getBlockEvents(api, block)
-        FullBlock(block, events)
+        val header = api.getExBlockHeaderByHeight(height).await() ?: return@mono null
+        val events = getBlockEvents(api, header)
+        FullBlock(header, events)
     }
 
     private fun getFullBlockById(id: FlowId) = mono {
         val api = api(sporkService.spork(id)).withSessionHash(UUID.randomUUID().toString())
-        val block = api.getBlockById(id).await() ?: return@mono null
-        val events = getBlockEvents(api, block)
-        FullBlock(block, events)
+        val header = api.getExBlockHeaderById(id).await() ?: return@mono null
+        val events = getBlockEvents(api, header)
+        FullBlock(header, events)
     }
 
-    private suspend fun getBlockEvents(api: AsyncFlowAccessApi, block: FlowBlock) = coroutineScope<List<FlowEvent>> {
-        logger.info(
-            "Fetching events for block ${block.height}" +
-                " with undoc=${properties.enableUseUndocumentedMethods}" +
-                " with seals=${block.blockSeals.map { it.id.base16Value }}" +
-                " and collections=${block.collectionGuarantees.map { it.id.base16Value }}" +
-                " and ${block.signatures.size} signatures"
-        )
+    private suspend fun getBlockEvents(api: AsyncFlowAccessApi, header: FlowBlockHeader) = coroutineScope<List<FlowEvent>> {
         if (properties.enableUseUndocumentedMethods) {
-            val events = getTransactionResultsByBlockId(api, block.id, block).flatMap { it.events }
-            logger.info("Fetched events of block ${block.height}")
+            val events = getTransactionResultsByBlockId(api, header.id, header).flatMap { it.events }
+            logger.info("Fetched events of block ${header.height}")
             events
         } else {
+            val block = api
+                .getBlockById(header.id).await()
+                ?: return@coroutineScope emptyList()
+
+            logger.info(
+                "Fetching events for block ${block.height}" +
+                        " with undoc=${properties.enableUseUndocumentedMethods}" +
+                        " with seals=${block.blockSeals.map { it.id.base16Value }}" +
+                        " and collections=${block.collectionGuarantees.map { it.id.base16Value }}" +
+                        " and ${block.signatures.size} signatures"
+            )
             block.collectionGuarantees.map { guarantee ->
                 asyncWithTraceId(context = NonCancellable) {
                     val collection = getCollectionById(api, guarantee.id, block) ?: error(
@@ -190,7 +194,7 @@ class CachedSporksFlowGrpcApi(
     private suspend fun getTransactionResultsByBlockId(
         api: AsyncFlowAccessApi,
         id: FlowId,
-        block: FlowBlock
+        block: FlowBlockHeader
     ): List<FlowTransactionResult> {
         return wrapWithRetry("getTransactionResultsByBlockId", id.stringValue, block.height) {
             api.getTransactionResultsByBlockId(id).await()
@@ -200,7 +204,7 @@ class CachedSporksFlowGrpcApi(
     private suspend fun api(spork: Spork) = flowApiFactory.getApi(spork)
 
     private data class FullBlock(
-        val block: FlowBlock,
+        val block: FlowBlockHeader,
         val events: List<FlowEvent>
     ) {
         fun getFlowEventResultForType(type: String): FlowEventResult {
