@@ -15,7 +15,6 @@ import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSu
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
-import com.rarible.core.task.TaskService
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -89,9 +88,6 @@ abstract class AbstractIntegrationTest {
 
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
-
-    @Autowired
-    lateinit var taskService: TaskService
 
     @Autowired
     lateinit var properties: EthereumScannerProperties
