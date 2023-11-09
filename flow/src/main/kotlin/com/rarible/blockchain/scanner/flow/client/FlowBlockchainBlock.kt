@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.flow.client
 
-import com.nftco.flow.sdk.FlowBlock
+import com.rarible.blockchain.scanner.flow.model.FlowBlockHeader
 import com.rarible.blockchain.scanner.flow.model.ReceivedFlowBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import java.time.Instant
@@ -14,7 +14,7 @@ data class FlowBlockchainBlock(
     override val receivedTime: Instant = Instant.now(),
 ) : BlockchainBlock {
 
-    constructor(block: FlowBlock) : this(ReceivedFlowBlock(block))
+    constructor(block: FlowBlockHeader) : this(ReceivedFlowBlock(block))
 
     constructor(block: ReceivedFlowBlock) : this(
         number = block.block.height,

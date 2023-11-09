@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.flow
 import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
+import com.rarible.blockchain.scanner.flow.model.FlowBlockHeader
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactoryImpl
 import com.rarible.blockchain.scanner.flow.service.SESSION_HASH_HEADER
 import com.rarible.blockchain.scanner.flow.service.SporkService
@@ -25,9 +26,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.onflow.protobuf.access.Access
 import org.onflow.protobuf.access.Access.BlockResponse
+import org.onflow.protobuf.access.Access
+import org.onflow.protobuf.access.Access.BlockHeaderResponse
 import org.onflow.protobuf.access.AccessAPIGrpc.AccessAPIImplBase
+import org.onflow.protobuf.entities.BlockHeaderOuterClass
 import org.onflow.protobuf.entities.BlockOuterClass
 import java.util.concurrent.TimeUnit
 
@@ -51,6 +54,17 @@ class CachedSporksFlowGrpcApiTest {
     fun before() {
         val name = InProcessServerBuilder.generateName()
         val service = object : AccessAPIImplBase() {
+            override fun getBlockHeaderByHeight(
+                request: Access.GetBlockHeaderByHeightRequest?,
+                responseObserver: StreamObserver<Access.BlockHeaderResponse>
+            ) {
+                responseObserver.onNext(
+                    BlockHeaderResponse.newBuilder()
+                        .setBlock(BlockHeaderOuterClass.BlockHeader.getDefaultInstance())
+                        .build())
+                responseObserver.onCompleted()
+            }
+
             override fun getLatestBlock(
                 request: Access.GetLatestBlockRequest,
                 responseObserver: StreamObserver<BlockResponse>
@@ -59,6 +73,18 @@ class CachedSporksFlowGrpcApiTest {
                     BlockResponse.newBuilder()
                         .setBlock(BlockOuterClass.Block.getDefaultInstance())
                         .build())
+                responseObserver.onCompleted()
+            }
+
+            override fun getBlockByID(
+                request: Access.GetBlockByIDRequest?,
+                responseObserver: StreamObserver<BlockResponse>
+            ) {
+                responseObserver.onNext(
+                    BlockResponse.newBuilder()
+                        .setBlock(BlockOuterClass.Block.getDefaultInstance())
+                        .build()
+                )
                 responseObserver.onCompleted()
             }
 
@@ -73,6 +99,7 @@ class CachedSporksFlowGrpcApiTest {
                 )
                 responseObserver.onCompleted()
             }
+
         }
         server = InProcessServerBuilder.forName(name)
             .directExecutor()
@@ -95,7 +122,7 @@ class CachedSporksFlowGrpcApiTest {
     fun `latest block call without session id`() = runBlocking<Unit> {
         val metadata = slot<Metadata>()
         val block = cachedSporksFlowGrpcApi.latestBlock()
-        assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
+        assertThat(block).isEqualTo(FlowBlockHeader.of(BlockResponse.getDefaultInstance().block))
         verify {
             serverInterceptor.interceptCall(
                 any(),
@@ -108,16 +135,24 @@ class CachedSporksFlowGrpcApiTest {
 
     @Test
     fun `full block call with session id`() = runBlocking<Unit> {
-        val metadata = slot<Metadata>()
+        val metadata = mutableListOf<Metadata>()
         val block = cachedSporksFlowGrpcApi.blockByHeight(20000000L)
-        assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
+        assertThat(block).isEqualTo(FlowBlockHeader.of(BlockResponse.getDefaultInstance().block))
+
         verify {
             serverInterceptor.interceptCall(
                 any(),
                 capture(metadata),
                 any<ServerCallHandler<Access.GetBlockByHeightRequest, BlockResponse>>()
             )
+            serverInterceptor.interceptCall(
+                any(),
+                capture(metadata),
+                any<ServerCallHandler<Access.GetBlockHeaderByHeightRequest, BlockResponse>>()
+            )
         }
-        assertThat(metadata.captured.get(SESSION_HASH_HEADER)).isNotBlank()
+
+        assertThat(metadata[0].get(SESSION_HASH_HEADER)).isNotBlank()
+        assertThat(metadata[1].get(SESSION_HASH_HEADER)).isNotBlank()
     }
 }
