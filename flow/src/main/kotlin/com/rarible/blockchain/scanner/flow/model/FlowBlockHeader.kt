@@ -4,6 +4,7 @@ import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowId
 import com.nftco.flow.sdk.asLocalDateTime
 import org.onflow.protobuf.entities.BlockHeaderOuterClass
+import org.onflow.protobuf.entities.BlockOuterClass
 import java.time.LocalDateTime
 
 data class FlowBlockHeader(
@@ -28,5 +29,14 @@ data class FlowBlockHeader(
             height = value.height,
             timestamp = value.timestamp.asLocalDateTime()
         )
+
+        fun of(value: BlockOuterClass.Block): FlowBlockHeader {
+            return FlowBlockHeader(
+                id = FlowId.of(value.id.toByteArray()),
+                parentId = FlowId.of(value.parentId.toByteArray()),
+                height = value.height,
+                timestamp = value.timestamp.asLocalDateTime()
+            )
+        }
     }
 }
