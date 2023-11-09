@@ -1,6 +1,5 @@
 package com.rarible.blockchain.scanner.flow
 
-import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.model.FlowBlockHeader
@@ -99,8 +98,8 @@ class CachedSporksFlowGrpcApiTest {
                 )
                 responseObserver.onCompleted()
             }
-
         }
+
         server = InProcessServerBuilder.forName(name)
             .directExecutor()
             .addService(ServerInterceptors.intercept(service, serverInterceptor))
