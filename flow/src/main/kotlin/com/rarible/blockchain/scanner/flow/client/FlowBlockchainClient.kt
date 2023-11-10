@@ -114,7 +114,7 @@ class FlowBlockchainClient(
     }
 
     private suspend fun eventsByBlockRange(type: String, range: LongRange, mode: ScanMode): Flow<FlowEventResult> {
-        return if (properties.enableHttpClient || mode == ScanMode.REINDEX) httpApi.eventsByBlockRange(type, range)
+        return if (properties.enableHttpClient || mode == ScanMode.REINDEX || mode == ScanMode.REINDEX_PARTIAL) httpApi.eventsByBlockRange(type, range)
         else api.eventsByBlockRange(type, range)
     }
 
