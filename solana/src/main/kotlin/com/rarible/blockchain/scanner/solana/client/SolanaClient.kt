@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDtoParser
@@ -55,7 +56,8 @@ class SolanaClient(
     override fun getBlockLogs(
         descriptor: SolanaDescriptor,
         blocks: List<SolanaBlockchainBlock>,
-        stable: Boolean
+        stable: Boolean,
+        mode: ScanMode
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> {
         return blocks.asFlow()
             .map { block ->

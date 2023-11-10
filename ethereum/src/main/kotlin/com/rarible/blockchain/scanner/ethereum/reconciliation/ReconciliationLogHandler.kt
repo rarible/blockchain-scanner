@@ -105,7 +105,7 @@ class ReconciliationLogHandler(
                         subscribers = subscribers,
                         logService = createLogService(),
                         logRecordEventPublisher = createEmptyLogRecordEventPublisher(),
-                    ).process(events)
+                    ).process(events, ScanMode.REINDEX)
                 }
             }
             .awaitAll()

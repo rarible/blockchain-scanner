@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.flow.http.FlowHttpApi
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.blockchain.scanner.util.flatten
 import com.rarible.core.common.asyncWithTraceId
@@ -58,21 +59,23 @@ class FlowBlockchainClient(
     override fun getBlockLogs(
         descriptor: FlowDescriptor,
         blocks: List<FlowBlockchainBlock>,
-        stable: Boolean
+        stable: Boolean,
+        mode: ScanMode,
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> {
         // Normally, we have only one consequent range here.
         val ranges = BlockRanges.toRanges(blocks.map { it.number }).asFlow()
-        return ranges.map { getBlockLogs(descriptor, it) }.flattenConcat()
+        return ranges.map { getBlockLogs(descriptor, it, mode) }.flattenConcat()
     }
 
     private fun getBlockLogs(
         descriptor: FlowDescriptor,
-        range: LongRange
+        range: LongRange,
+        mode: ScanMode,
     ): Flow<FullBlock<FlowBlockchainBlock, FlowBlockchainLog>> = channelFlow {
         logger.info("Get events from block range ${range.first}..${range.last} for ${descriptor.id}")
         api.chunk(range).collect { sl ->
             descriptor.events.map {
-                asyncWithTraceId(context = NonCancellable) { eventsByBlockRange(it, sl) }
+                asyncWithTraceId(context = NonCancellable) { eventsByBlockRange(it, sl, mode) }
             }.awaitAll()
                 .flatMap { it.toList() }
                 .filter { it.events.isNotEmpty() }
@@ -110,8 +113,8 @@ class FlowBlockchainClient(
         }
     }
 
-    private suspend fun eventsByBlockRange(type: String, range: LongRange): Flow<FlowEventResult> {
-        return if (properties.enableHttpClient) httpApi.eventsByBlockRange(type, range)
+    private suspend fun eventsByBlockRange(type: String, range: LongRange, mode: ScanMode): Flow<FlowEventResult> {
+        return if (properties.enableHttpClient || mode == ScanMode.REINDEX) httpApi.eventsByBlockRange(type, range)
         else api.eventsByBlockRange(type, range)
     }
 

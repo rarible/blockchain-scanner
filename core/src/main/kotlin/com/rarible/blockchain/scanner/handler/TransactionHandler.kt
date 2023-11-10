@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.TransactionEventSubscriber
@@ -21,7 +22,7 @@ class TransactionHandler<BB : BlockchainBlock, R : TransactionRecord>(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    override suspend fun process(events: List<BlockEvent<BB>>): BlockListenerResult {
+    override suspend fun process(events: List<BlockEvent<BB>>, mode: ScanMode): BlockListenerResult {
         val transactionEvents = events.flatMap { blockEvent ->
             subscribers.map { subscriber ->
                 val group = subscriber.getGroup()

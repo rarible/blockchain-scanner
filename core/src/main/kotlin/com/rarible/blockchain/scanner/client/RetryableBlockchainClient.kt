@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.flow.Flow
 
@@ -40,8 +41,8 @@ class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : De
         }
     }
 
-    override fun getBlockLogs(descriptor: D, blocks: List<BB>, stable: Boolean): Flow<FullBlock<BB, BL>> {
-        return original.getBlockLogs(descriptor, blocks, stable)
+    override fun getBlockLogs(descriptor: D, blocks: List<BB>, stable: Boolean, mode: ScanMode): Flow<FullBlock<BB, BL>> {
+        return original.getBlockLogs(descriptor, blocks, stable, mode)
             // Full blocks produces too big messages in the logs
             .wrapWithRetry("getBlockLogs", blocks.map { it.toBlock() }, stable)
     }

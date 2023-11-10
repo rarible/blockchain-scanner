@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
 import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.core.test.data.randomAddress
 import io.daonomic.rpc.domain.Word
@@ -121,7 +122,7 @@ class EthereumBlockchainLogIndexTest {
         every { descriptor.contracts } returns emptyList()
         every { descriptor.ethTopic } returns randomWord()
 
-        val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(allBlocks[0])), true).toList()
+        val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(allBlocks[0])), true, ScanMode.REALTIME).toList()
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
         for ((block, logs) in fullBlocks) {
             val expectedFullBlock = expectedFullBlocks.find { it.block.withReceivedTime(Instant.EPOCH) == block.withReceivedTime(Instant.EPOCH) }!!
@@ -180,7 +181,8 @@ class EthereumBlockchainLogIndexTest {
                 EthereumBlockchainBlock(allBlocks[1]),
                 EthereumBlockchainBlock(allBlocks[2]),
             ),
-            stable = false
+            stable = false,
+            ScanMode.REALTIME
         ).toList()
 
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
@@ -218,7 +220,8 @@ class EthereumBlockchainLogIndexTest {
                 EthereumBlockchainBlock(allBlocks[0]),
                 EthereumBlockchainBlock(allBlocks[1])
             ),
-            stable = false
+            stable = false,
+            ScanMode.REALTIME
         ).toList()
 
         val expectedFullBlocks = (0..1).map { FullBlock(
@@ -260,7 +263,8 @@ class EthereumBlockchainLogIndexTest {
                 EthereumBlockchainBlock(allBlocks[0]),
                 EthereumBlockchainBlock(allBlocks[1])
             ),
-            stable = false
+            stable = false,
+            ScanMode.REALTIME
         ).toList()
 
         val expectedFullBlocks = listOf(

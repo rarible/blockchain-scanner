@@ -439,7 +439,7 @@ class BlockHandler<BB : BlockchainBlock>(
         monitor.onProcessBlocksEvents {
             // Here we process events first, just to store data to DB
             val listenersResult = blockEventListeners.map {
-                asyncWithTraceId(context = NonCancellable) { it.process(blockEvents) }
+                asyncWithTraceId(context = NonCancellable) { it.process(blockEvents, mode) }
             }.awaitAll()
 
             val result = listenersResult.flatMap { it.blocks }.groupBy { it.blockNumber }

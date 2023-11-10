@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 import java.util.concurrent.locks.ReentrantLock
@@ -56,7 +57,8 @@ class TestEthereumBlockchainClient(
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         blocks: List<EthereumBlockchainBlock>,
-        stable: Boolean
+        stable: Boolean,
+        mode: ScanMode,
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> =
-        delegate.getBlockLogs(descriptor, blocks, stable)
+        delegate.getBlockLogs(descriptor, blocks, stable, mode)
 }

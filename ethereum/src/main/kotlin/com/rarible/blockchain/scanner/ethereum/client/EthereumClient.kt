@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
@@ -111,7 +112,8 @@ class EthereumClient(
     override fun getBlockLogs(
         descriptor: EthereumDescriptor,
         blocks: List<EthereumBlockchainBlock>,
-        stable: Boolean
+        stable: Boolean,
+        mode: ScanMode
     ): Flow<FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog>> {
         return if (stable) {
             // Normally, we have only one consequent range here.

@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.framework.data.NewBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewStableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
@@ -44,14 +45,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
 
-    override suspend fun process(events: List<BlockEvent<BB>>): BlockListenerResult {
+    override suspend fun process(events: List<BlockEvent<BB>>, mode: ScanMode): BlockListenerResult {
         events.ifEmpty { return BlockListenerResult.EMPTY }
 
         val range = LongRange(events.first().number, events.last().number)
         logger.info("Processing ${events.size} block events $range for group '$groupId'")
 
         val logEvents = logMonitor.onPrepareLogs {
-            BlockRanges.toBatches(events).flatMap { prepareBlockEventsBatch(it) }
+            BlockRanges.toBatches(events).flatMap { prepareBlockEventsBatch(it, mode) }
         }
 
         val failed = logEvents.filterIsInstance<SubscriberResultFail<LogEvent<R, D>>>()
@@ -159,14 +160,17 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addScannerOut()) }
     }
 
-    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<SubscriberResult<LogEvent<R, D>>> {
+    private suspend fun prepareBlockEventsBatch(
+        batch: List<BlockEvent<BB>>,
+        mode: ScanMode
+    ): List<SubscriberResult<LogEvent<R, D>>> {
         return coroutineScope {
             subscribers.map { subscriber ->
                 asyncWithTraceId(context = NonCancellable) {
                     @Suppress("UNCHECKED_CAST")
                     when (batch[0]) {
-                        is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true)
-                        is NewUnstableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, false)
+                        is NewStableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, true, mode)
+                        is NewUnstableBlockEvent -> onBlock(subscriber, batch as List<NewBlockEvent<BB>>, false, mode)
                         is RevertedBlockEvent -> onRevertedBlocks(subscriber, batch as List<RevertedBlockEvent<BB>>)
                     }
                 }
@@ -216,13 +220,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private suspend fun onBlock(
         subscriber: LogEventSubscriber<BB, BL, R, D>,
         events: List<NewBlockEvent<BB>>,
-        stable: Boolean
+        stable: Boolean,
+        mode: ScanMode,
     ): List<SubscriberResult<LogEvent<R, D>>> {
         val descriptor = subscriber.getDescriptor()
         val blockLogs = blockchainClient.getBlockLogs(
             descriptor = descriptor,
             blocks = events.map { it.block },
-            stable = stable
+            stable = stable,
+            mode = mode
         ).toList().associateBy { it.block.number }
 
         return coroutineScope {

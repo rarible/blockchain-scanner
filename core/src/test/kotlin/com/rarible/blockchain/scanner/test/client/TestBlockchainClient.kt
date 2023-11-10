@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.test.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
+import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.test.data.TestBlockchainData
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +24,8 @@ class TestBlockchainClient(
     override fun getBlockLogs(
         descriptor: TestDescriptor,
         blocks: List<TestBlockchainBlock>,
-        stable: Boolean
+        stable: Boolean,
+        mode: ScanMode
     ): Flow<FullBlock<TestBlockchainBlock, TestBlockchainLog>> {
         val numbers = blocks.map { it.number }.toSet()
         return blocksByNumber.values.filter { it.number in numbers }

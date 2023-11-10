@@ -256,7 +256,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
             override val groupId = "test"
-            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockListenerResult {
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>, mode: ScanMode): BlockListenerResult {
                 if (events.any { it.number == 5L }) {
                     throw RuntimeException()
                 }
@@ -282,7 +282,7 @@ class BlockHandlerIt : AbstractIntegrationTest() {
         val testBlockchainData = TestBlockchainData(blockchain, emptyList(), emptyList())
         val exceptionListener = object : BlockEventListener<TestBlockchainBlock> {
             override val groupId = "test"
-            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>): BlockListenerResult {
+            override suspend fun process(events: List<BlockEvent<TestBlockchainBlock>>, mode: ScanMode): BlockListenerResult {
                 if (events.any { it.number == 55L }) {
                     throw RuntimeException()
                 }

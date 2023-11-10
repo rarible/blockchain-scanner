@@ -123,7 +123,8 @@ internal class ReconciliationLogHandlerTest {
                         block10,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block10.number), block10Handler1Stats)
 
@@ -135,7 +136,8 @@ internal class ReconciliationLogHandlerTest {
                         block10,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block10.number), block10Handler2Stats)
 
@@ -147,7 +149,8 @@ internal class ReconciliationLogHandlerTest {
                         block10,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block10.number), block10Handler3Stats)
 
@@ -160,7 +163,8 @@ internal class ReconciliationLogHandlerTest {
                         block11,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block11.number), block11Handler1Stats)
 
@@ -172,7 +176,8 @@ internal class ReconciliationLogHandlerTest {
                         block11,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block11.number), block11Handler2Stats)
 
@@ -184,7 +189,8 @@ internal class ReconciliationLogHandlerTest {
                         block11,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block11.number), block11Handler3Stats)
 
@@ -210,7 +216,8 @@ internal class ReconciliationLogHandlerTest {
                         block100,
                         ScanMode.REINDEX
                     )
-                )
+                ),
+                ScanMode.REINDEX
             )
         } returns stubListenerResult(listOf(block100.number))
 
