@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.monitoring.Monitor
 import com.rarible.blockchain.scanner.monitoring.MonitoringWorker
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
 import com.rarible.core.daemon.sequential.SequentialDaemonWorker
+import com.rarible.core.task.EnableRaribleTask
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.context.annotation.Bean
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
 @Configuration
+@EnableRaribleTask
 @ComponentScan(basePackageClasses = [BlockchainScanner::class])
 @Import(KafkaConfiguration::class)
 class BlockchainScannerConfiguration(

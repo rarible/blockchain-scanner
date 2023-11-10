@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProp
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
-import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.core.common.asyncWithTraceId
 import io.daonomic.rpc.domain.Word
@@ -46,7 +45,6 @@ class EthereumClient(
     private val properties: EthereumScannerProperties,
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethPubSub: EthPubSub,
-    monitor: BlockchainMonitor,
     // Retries delegated to MonoEthereum
 ) : EthereumBlockchainClient, AbstractRetryableClient(ClientRetryPolicyProperties(attempts = 0)) {
 
