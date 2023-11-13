@@ -1,6 +1,8 @@
 package com.rarible.blockchain.scanner.flow
 
 import com.nftco.flow.sdk.AsyncFlowAccessApi
+import com.nftco.flow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlockHeader
 import com.nftco.flow.sdk.FlowEvent
 import com.nftco.flow.sdk.FlowEventResult
 import com.nftco.flow.sdk.FlowId
@@ -15,16 +17,13 @@ import kotlinx.coroutines.future.await
 class TestFlowGrpcApi(private val api: AsyncFlowAccessApi) : FlowGrpcApi {
     override suspend fun isAlive(): Boolean = true
 
-    override suspend fun latestBlock(): com.rarible.blockchain.scanner.flow.model.FlowBlockHeader = api
-        .getLatestBlock().await().let { com.rarible.blockchain.scanner.flow.model.FlowBlockHeader.of(it) }
+    override suspend fun latestBlock(): FlowBlock = api.getLatestBlock().await()
 
-    override suspend fun blockByHeight(height: Long): com.rarible.blockchain.scanner.flow.model.FlowBlockHeader? = api
-        .getBlockByHeight(height).await()?.let { com.rarible.blockchain.scanner.flow.model.FlowBlockHeader.of(it) }
+    override suspend fun blockByHeight(height: Long): FlowBlock? = api.getBlockByHeight(height).await()
 
-    override suspend fun blockById(id: String): com.rarible.blockchain.scanner.flow.model.FlowBlockHeader? = blockById(FlowId(id))
+    override suspend fun blockById(id: String): FlowBlock? = blockById(FlowId(id))
 
-    override suspend fun blockById(id: FlowId): com.rarible.blockchain.scanner.flow.model.FlowBlockHeader? = api
-        .getBlockById(id).await()?.let { com.rarible.blockchain.scanner.flow.model.FlowBlockHeader.of(it) }
+    override suspend fun blockById(id: FlowId): FlowBlock? = api.getBlockById(id).await()
 
     override suspend fun txById(id: String): FlowTransaction? = api.getTransactionById(FlowId(id)).await()
 
@@ -32,8 +31,8 @@ class TestFlowGrpcApi(private val api: AsyncFlowAccessApi) : FlowGrpcApi {
         api.getEventsForHeightRange(type, range).await().asFlow()
     }
 
-    override suspend fun blockHeaderByHeight(height: Long): com.rarible.blockchain.scanner.flow.model.FlowBlockHeader? {
-        return api.getBlockByHeight(height).await()?.let { com.rarible.blockchain.scanner.flow.model.FlowBlockHeader.of(it) }
+    override suspend fun blockHeaderByHeight(height: Long): FlowBlockHeader? {
+        return api.getBlockHeaderByHeight(height).await()
     }
 
     override fun chunk(range: LongRange): Flow<LongRange> = flowOf(range)

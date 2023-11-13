@@ -1,8 +1,8 @@
 package com.rarible.blockchain.scanner.flow
 
+import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
-import com.rarible.blockchain.scanner.flow.model.FlowBlockHeader
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactoryImpl
 import com.rarible.blockchain.scanner.flow.service.SESSION_HASH_HEADER
 import com.rarible.blockchain.scanner.flow.service.SporkService
@@ -121,7 +121,7 @@ class CachedSporksFlowGrpcApiTest {
     fun `latest block call without session id`() = runBlocking<Unit> {
         val metadata = slot<Metadata>()
         val block = cachedSporksFlowGrpcApi.latestBlock()
-        assertThat(block).isEqualTo(FlowBlockHeader.of(BlockResponse.getDefaultInstance().block))
+        assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
         verify {
             serverInterceptor.interceptCall(
                 any(),
@@ -136,7 +136,7 @@ class CachedSporksFlowGrpcApiTest {
     fun `full block call with session id`() = runBlocking<Unit> {
         val metadata = mutableListOf<Metadata>()
         val block = cachedSporksFlowGrpcApi.blockByHeight(20000000L)
-        assertThat(block).isEqualTo(FlowBlockHeader.of(BlockResponse.getDefaultInstance().block))
+        assertThat(block).isEqualTo(FlowBlock.of(BlockResponse.getDefaultInstance().block))
 
         verify {
             serverInterceptor.interceptCall(

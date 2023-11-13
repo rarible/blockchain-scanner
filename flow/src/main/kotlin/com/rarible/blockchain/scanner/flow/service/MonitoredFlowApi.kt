@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString
 import com.nftco.flow.sdk.FlowAccount
 import com.nftco.flow.sdk.FlowAddress
 import com.nftco.flow.sdk.FlowBlock
+import com.nftco.flow.sdk.FlowBlockHeader
 import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowCollection
 import com.nftco.flow.sdk.FlowEventResult
@@ -13,7 +14,6 @@ import com.nftco.flow.sdk.FlowScriptResponse
 import com.nftco.flow.sdk.FlowSnapshot
 import com.nftco.flow.sdk.FlowTransaction
 import com.nftco.flow.sdk.FlowTransactionResult
-import com.rarible.blockchain.scanner.flow.model.FlowBlockHeader
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import java.io.Closeable
 import java.util.concurrent.CompletableFuture
@@ -83,13 +83,13 @@ class MonitoredFlowApi(
         }
     }
 
-    override fun getBlockHeaderByHeight(height: Long): CompletableFuture<com.nftco.flow.sdk.FlowBlockHeader?> {
+    override fun getBlockHeaderByHeight(height: Long): CompletableFuture<FlowBlockHeader?> {
         return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getBlockHeaderByHeight") {
             delegate.getBlockHeaderByHeight(height)
         }
     }
 
-    override fun getBlockHeaderById(id: FlowId): CompletableFuture<com.nftco.flow.sdk.FlowBlockHeader?> {
+    override fun getBlockHeaderById(id: FlowId): CompletableFuture<FlowBlockHeader?> {
         return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getBlockHeaderById") {
             delegate.getBlockHeaderById(id)
         }
@@ -122,7 +122,7 @@ class MonitoredFlowApi(
         }
     }
 
-    override fun getLatestBlockHeader(): CompletableFuture<com.nftco.flow.sdk.FlowBlockHeader> {
+    override fun getLatestBlockHeader(): CompletableFuture<FlowBlockHeader> {
         return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getLatestBlockHeader") {
             delegate.getLatestBlockHeader()
         }
@@ -159,18 +159,6 @@ class MonitoredFlowApi(
     }
 
     override fun withSessionHash(sessionHash: String): AsyncFlowAccessApi = delegate.withSessionHash(sessionHash)
-
-    override fun getExBlockHeaderById(id: FlowId): CompletableFuture<FlowBlockHeader?> {
-        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getExBlockHeaderById") {
-            delegate.getExBlockHeaderById(id)
-        }
-    }
-
-    override fun getExBlockHeaderByHeight(height: Long): CompletableFuture<FlowBlockHeader?> {
-        return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "getExBlockHeaderByHeight") {
-            delegate.getExBlockHeaderByHeight(height)
-        }
-    }
 
     override fun ping(): CompletableFuture<Unit> {
         return blockchainMonitor.onBlockchainCallWithFuture(blockchain, "ping") {
