@@ -14,11 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-<<<<<<< HEAD
         <revision>2.7.60</revision>
-=======
-        <revision>2.7.57</revision>
->>>>>>> df8b0f89 (review fixes)
 
         <rarible.ethereum.version>1.7.27</rarible.ethereum.version>
         <rarible.core.version>2.6.7</rarible.core.version>
