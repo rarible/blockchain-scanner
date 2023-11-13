@@ -10,10 +10,8 @@ import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
 import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import com.rarible.core.test.data.randomAddress
 import io.daonomic.rpc.domain.Word
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
@@ -34,8 +32,6 @@ import scalether.domain.response.Transaction
 import java.time.Instant
 
 class EthereumBlockchainLogIndexTest {
-    private val monitor = BlockchainMonitor(SimpleMeterRegistry())
-
     @Test
     fun `index is calculated in group of transactionHash, topic, address`() = runBlocking {
         val blockHash0 = randomWord()
@@ -121,10 +117,12 @@ class EthereumBlockchainLogIndexTest {
         every { descriptor.contracts } returns emptyList()
         every { descriptor.ethTopic } returns randomWord()
 
-        val fullBlocks = ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(allBlocks[0])), true).toList()
+        val fullBlocks =
+            ethereumClient.getBlockLogs(descriptor, listOf(EthereumBlockchainBlock(allBlocks[0])), true).toList()
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
         for ((block, logs) in fullBlocks) {
-            val expectedFullBlock = expectedFullBlocks.find { it.block.withReceivedTime(Instant.EPOCH) == block.withReceivedTime(Instant.EPOCH) }!!
+            val expectedFullBlock =
+                expectedFullBlocks.find { it.block.withReceivedTime(Instant.EPOCH) == block.withReceivedTime(Instant.EPOCH) }!!
             assertThat(logs.map { it.index }).isEqualTo(expectedFullBlock.logs.map { it.index })
         }
     }
@@ -196,7 +194,15 @@ class EthereumBlockchainLogIndexTest {
 
         val allLogs = listOf(
             createEthereumBL(0, randomWord(), topic1, address1, 0, blockHash0, 0),
-            createEthereumBL(0, Word.apply("0x0000000000000000000000000000000000000000000000000000000000000000"), topic1, address1, 1, blockHash1, 1)
+            createEthereumBL(
+                0,
+                Word.apply("0x0000000000000000000000000000000000000000000000000000000000000000"),
+                topic1,
+                address1,
+                1,
+                blockHash1,
+                1
+            )
         )
         val allBlocks = listOf(
             ethBlock(0, blockHash0, allLogs),
@@ -221,10 +227,12 @@ class EthereumBlockchainLogIndexTest {
             stable = false
         ).toList()
 
-        val expectedFullBlocks = (0..1).map { FullBlock(
-            block = EthereumBlockchainBlock(allBlocks[it]),
-            logs = listOf(allLogs[it])
-        ) }
+        val expectedFullBlocks = (0..1).map {
+            FullBlock(
+                block = EthereumBlockchainBlock(allBlocks[it]),
+                logs = listOf(allLogs[it])
+            )
+        }
         assertThat(fullBlocks).hasSameSizeAs(expectedFullBlocks)
     }
 
@@ -238,7 +246,15 @@ class EthereumBlockchainLogIndexTest {
 
         val allLogs = listOf(
             createEthereumBL(0, randomWord(), topic1, address1, 0, blockHash0, 0),
-            createEthereumBL(0, Word.apply("0x0000000000000000000000000000000000000000000000000000000000000001"), topic1, address1, 1, blockHash1, 1)
+            createEthereumBL(
+                0,
+                Word.apply("0x0000000000000000000000000000000000000000000000000000000000000001"),
+                topic1,
+                address1,
+                1,
+                blockHash1,
+                1
+            )
         )
         val allBlocks = listOf(
             ethBlock(0, blockHash0, allLogs),
@@ -325,7 +341,7 @@ class EthereumBlockchainLogIndexTest {
             val block = allBlocks.find { it.hash() == blockHash } ?: return@answers null
             val transactions = logs.filter {
                 it.ethTransaction.blockNumber() == block.blockNumber &&
-                        it.ethTransaction.blockHash() == blockHash
+                    it.ethTransaction.blockHash() == blockHash
             }.map { it.ethTransaction }
             Block(
                 block.number(),
@@ -355,6 +371,6 @@ class EthereumBlockchainLogIndexTest {
             ignoreNullableLogs = ignoreNullableLogs
         )
 
-        return EthereumClient(monoEthereum, properties, ethPubSub, monitor)
+        return EthereumClient(monoEthereum, properties, ethPubSub)
     }
 }

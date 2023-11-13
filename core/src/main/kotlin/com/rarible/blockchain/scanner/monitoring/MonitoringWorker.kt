@@ -15,21 +15,25 @@ class MonitoringWorker(
 
     @EventListener(ApplicationReadyEvent::class)
     fun onApplicationStarted() {
-        if (properties.monitoring.enabled) {
-            logger.info(
-                "Starting monitoring BlockchainScanner for '{}' with {} monitors: {}",
-                properties.blockchain,
-                monitors.size,
-                monitors
-            )
-            monitors.forEach { it.register() }
-            start()
-        } else {
+        if (!properties.scan.enabled) {
+            logger.info("Blockchain scanning for '{}' is disabled", properties.blockchain)
+            return
+        }
+        if (!properties.monitoring.enabled) {
             logger.info(
                 "Monitoring of BlockchainScanner for '{}' disabled, no metrics will be available",
                 properties.blockchain
             )
+            return
         }
+        logger.info(
+            "Starting monitoring BlockchainScanner for '{}' with {} monitors: {}",
+            properties.blockchain,
+            monitors.size,
+            monitors
+        )
+        monitors.forEach { it.register() }
+        start()
     }
 
     override suspend fun handle() {

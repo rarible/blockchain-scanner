@@ -2,9 +2,7 @@ package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.stereotype.Component
 
-@Component
 class ReindexMonitor(
     properties: BlockchainScannerProperties,
     meterRegistry: MeterRegistry,
