@@ -30,6 +30,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.util.TreeMap
 
 class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
@@ -251,6 +252,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                             logRecordsToUpdate = toRevert
                         )
                         SubscriberResultOk(fullBlock.block.number, descriptor.id, logEvent)
+                    } catch (e: IOException) {
+                        logger.error(
+                            "Failed to handle block {} by descriptor {} (IOException): ",
+                            event.number,
+                            descriptor.id,
+                            e
+                        )
+                        throw e
                     } catch (e: Exception) {
                         logger.error("Failed to handle block {} by descriptor {}: ", event.number, descriptor.id, e)
                         SubscriberResultFail(event.number, descriptor.id, e.message ?: "Unknown error")

@@ -26,6 +26,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.IOException
 
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
@@ -217,6 +218,48 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         assertThat(blockService.getBlock(1L)!!.status).isEqualTo(BlockStatus.PENDING)
         // Not event reached, scan interrupted at block 1
         assertThat(blockService.getBlock(2L)).isNull()
+    }
+
+    @Test
+    fun `new block - subscriber failed with IOException`() = runBlocking<Unit> {
+        val descriptor = TestDescriptor(
+            topic = "topic",
+            collection = "collection2",
+            contracts = emptyList(),
+            entityType = TestCustomLogRecord::class.java,
+            groupId = "group"
+        )
+
+        val subscriber = TestLogEventSubscriber(
+            descriptor = descriptor,
+            exception = IOException("")
+        )
+
+        val blocks = randomBlockchain(2)
+        val log0 = randomOriginalLog(block = blocks[0], topic = "topic", logIndex = 1)
+        val testBlockchainClient = TestBlockchainClient(
+            TestBlockchainData(
+                blocks = blocks,
+                logs = listOf(log0),
+                newBlocks = blocks
+            )
+        )
+
+        val blockchainScanner = createBlockchainScanner(
+            testBlockchainClient = testBlockchainClient,
+            subscribers = listOf(subscriber),
+            transactionSubscribers = listOf(),
+            scanProperties = ScanProperties(maxFailedBlocksAllowed = 5)
+        )
+
+        assertThrows<IOException> { blockchainScanner.scan(once = true) }
+
+        // Nothing should be published, this subscriber failed
+        assertPublishedLogRecords("group", emptyList())
+
+        // Not saved due to error
+        assertThat(blockService.getBlock(0L)).isNull()
+        assertThat(blockService.getBlock(1L)).isNull()
     }
 
     @Test
