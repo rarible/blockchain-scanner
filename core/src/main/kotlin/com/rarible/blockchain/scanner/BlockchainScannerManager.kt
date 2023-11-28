@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.subscriber.TransactionEventSubscriber
 import com.rarible.blockchain.scanner.monitoring.BlockMonitor
@@ -38,6 +39,7 @@ abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog
     val reindexMonitor: ReindexMonitor,
     val transactionSubscribers: List<TransactionEventSubscriber<BB, TR>>,
     val transactionRecordEventPublisher: TransactionRecordEventPublisher,
+    val logEventSubscriberExceptionResolver: LogEventSubscriberExceptionResolver
 ) {
 
     val retryableClient = RetryableBlockchainClient(
@@ -49,7 +51,8 @@ abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog
         blockchainClient = retryableClient,
         logService = logService,
         logRecordComparator = logRecordComparator,
-        logMonitor = logMonitor
+        logMonitor = logMonitor,
+        logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver
     )
 
     val blockHandlerFactory = BlockHandlerFactory<BB, BL, R, D>(

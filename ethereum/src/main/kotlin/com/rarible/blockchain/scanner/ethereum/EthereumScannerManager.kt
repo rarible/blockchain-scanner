@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogRecordComparator
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumTransactionEventSubscriber
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
@@ -33,6 +34,7 @@ class EthereumScannerManager(
     reindexMonitor: ReindexMonitor,
     transactionSubscribers: List<EthereumTransactionEventSubscriber>,
     transactionRecordEventPublisher: TransactionRecordEventPublisher,
+    logEventSubscriberExceptionResolver: EthereumLogEventSubscriberExceptionResolver,
 ) : BlockchainScannerManager<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor>(
     blockchainClient = ethereumClient,
     logSubscribers = subscribers,
@@ -46,4 +48,5 @@ class EthereumScannerManager(
     reindexMonitor = reindexMonitor,
     transactionSubscribers = transactionSubscribers,
     transactionRecordEventPublisher = transactionRecordEventPublisher,
+    logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver,
 )

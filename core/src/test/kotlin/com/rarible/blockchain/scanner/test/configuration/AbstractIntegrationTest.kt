@@ -20,6 +20,7 @@ import com.rarible.blockchain.scanner.test.publisher.TestTransactionRecordEventP
 import com.rarible.blockchain.scanner.test.repository.TestLogRepository
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
+import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
@@ -93,6 +94,7 @@ abstract class AbstractIntegrationTest {
             reindexMonitor = mockk(relaxed = true),
             transactionRecordEventPublisher = testTransactionRecordEventPublisher,
             transactionSubscribers = transactionSubscribers,
+            logEventSubscriberExceptionResolver = TestLogEventSubscriberExceptionResolver()
         )
         return TestBlockchainScanner(manager)
     }
