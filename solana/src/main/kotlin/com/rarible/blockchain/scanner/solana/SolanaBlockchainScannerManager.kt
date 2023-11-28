@@ -16,6 +16,7 @@ import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
 import com.rarible.blockchain.scanner.solana.service.SolanaLogService
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
+import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogRecordComparator
 import org.springframework.stereotype.Component
 
@@ -31,6 +32,7 @@ class SolanaBlockchainScannerManager(
     logMonitor: LogMonitor,
     reindexMonitor: ReindexMonitor,
     transactionRecordEventPublisher: TransactionRecordEventPublisher,
+    logEventSubscriberExceptionResolver: SolanaLogEventSubscriberExceptionResolver,
 ) : BlockchainScannerManager<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, TransactionRecord, SolanaDescriptor>(
     blockchainClient = blockchainClient,
     logSubscribers = subscribers,
@@ -44,4 +46,5 @@ class SolanaBlockchainScannerManager(
     reindexMonitor = reindexMonitor,
     transactionRecordEventPublisher = transactionRecordEventPublisher,
     transactionSubscribers = emptyList(),
+    logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver,
 )

@@ -32,6 +32,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
     private val properties = manager.properties
     private val transactionRecordEventPublisher = manager.transactionRecordEventPublisher
     private val transactionSubscribers = manager.transactionSubscribers
+    private val logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver
 
     suspend fun scan(once: Boolean = false) {
         if (!properties.scan.enabled) {
@@ -60,6 +61,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                     logService = logService,
                     logRecordComparator = logRecordComparator,
                     logRecordEventPublisher = logRecordEventPublisher,
+                    logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver,
                     logMonitor = logMonitor
                 )
             }

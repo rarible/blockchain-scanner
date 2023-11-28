@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.solana.client.SolanaClient
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
 import com.rarible.blockchain.scanner.solana.service.SolanaLogService
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
+import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogRecordComparator
 import com.rarible.core.logging.RaribleMDCContext
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,8 @@ class ReindexHandler(
     private val logService: SolanaLogService,
     private val blockchainScannerProperties: BlockchainScannerProperties,
     private val blockMonitor: BlockMonitor,
-    private val logMonitor: LogMonitor
+    private val logEventSubscriberExceptionResolver: SolanaLogEventSubscriberExceptionResolver,
+    private val logMonitor: LogMonitor,
 ) {
     private val retryableClient = RetryableBlockchainClient(
         original = solanaClient,
@@ -57,7 +59,8 @@ class ReindexHandler(
                         logService = logService,
                         logRecordComparator = SolanaLogRecordComparator,
                         logRecordEventPublisher = reindexLogRecordEventPublisher,
-                        logMonitor = logMonitor
+                        logMonitor = logMonitor,
+                        logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver
                     )
                 }
 

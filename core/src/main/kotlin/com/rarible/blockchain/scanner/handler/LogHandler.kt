@@ -17,6 +17,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.framework.subscriber.LogRecordComparator
 import com.rarible.blockchain.scanner.framework.util.addScannerOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
@@ -30,7 +31,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
-import java.io.IOException
 import java.util.TreeMap
 
 class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
@@ -40,7 +40,8 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private val logService: LogService<R, D>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
-    private val logMonitor: LogMonitor
+    private val logEventSubscriberExceptionResolver: LogEventSubscriberExceptionResolver,
+    private val logMonitor: LogMonitor,
 ) : BlockEventListener<BB> {
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
@@ -252,15 +253,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
                             logRecordsToUpdate = toRevert
                         )
                         SubscriberResultOk(fullBlock.block.number, descriptor.id, logEvent)
-                    } catch (e: IOException) {
-                        logger.error(
-                            "Failed to handle block {} by descriptor {} (IOException): ",
-                            event.number,
-                            descriptor.id,
-                            e
-                        )
-                        throw e
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
+                        if (logEventSubscriberExceptionResolver.shouldInterruptScan(e)) {
+                            logger.error(
+                                "Failed to handle block {} by descriptor {}, scanner has interrupted: ",
+                                event.number, descriptor.id, e
+                            )
+                            throw e
+                        }
                         logger.error("Failed to handle block {} by descriptor {}: ", event.number, descriptor.id, e)
                         SubscriberResultFail(event.number, descriptor.id, e.message ?: "Unknown error")
                     }
