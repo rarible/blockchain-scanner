@@ -36,7 +36,7 @@ testcontainers:
 
 rarible:
   ethereum:
-    maxBlockDelay: 30d
+    maxBlockDelay: 36500d
 
 ethereumAddress: "0x88966e42b688a2216369bEce3Ea29Cf583465765"
 ethereumPrivateKey: "0x7d1331c00f4cbf44a74f8fa0a846e02f2dd2edf03fa6a3cc96f8ec8bce682963"
