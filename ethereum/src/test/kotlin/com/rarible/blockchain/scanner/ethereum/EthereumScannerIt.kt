@@ -14,7 +14,7 @@ import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
-import com.rarible.core.test.wait.BlockingWait
+import com.rarible.core.test.wait.Wait
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.runBlocking
@@ -52,17 +52,17 @@ class EthereumScannerIt : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `scan - new block event handled`() = BlockingWait.waitAssert<Unit> {
+    fun `scan - new block event handled`() = runBlocking<Unit> {
 
         // Making random mint
         val beneficiary = randomAddress()
         val value = randomPositiveBigInt(1000000)
         val receipt = mintAndVerify(beneficiary, value)
 
-        BlockingWait.waitAssert {
+        Wait.waitAssert {
             // Checking Block is in storage, successfully processed
-            val block = findBlock(receipt.blockNumber().toLong())!!
-            assertEquals(receipt.blockHash().toString(), block.hash)
+            val block = findBlock(receipt.blockNumber().toLong())
+            assertEquals(receipt.blockHash().toString(), block?.hash)
 
             // We expect single LogRecord from our single Subscriber
             val allLogs = findAllLogs(collection)
@@ -132,7 +132,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         val value = randomPositiveBigInt(1000000)
         val receipt = mintAndVerify(beneficiary, value)
 
-        BlockingWait.waitAssert {
+        Wait.waitAssert {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())
             assertEquals(receipt.blockHash().toString(), block?.hash)
@@ -142,7 +142,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(allLogs).hasSize(1)
         }
 
-        BlockingWait.waitAssert {
+        Wait.waitAssert {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).hasSize(1)
         }
 
@@ -159,7 +159,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             publisher = manager.logRecordEventPublisher
         ).collect { }
 
-        BlockingWait.waitAssert {
+        Wait.waitAssert {
             val events = testEthereumLogEventPublisher.publishedLogRecords.map { it.record as ReversedEthereumLogRecord }
             assertThat(events).hasSize(2)
 
