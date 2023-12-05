@@ -27,6 +27,7 @@ import scala.jdk.javaapi.CollectionConverters
 import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
 import java.math.BigInteger
+import java.time.Duration
 
 @IntegrationTest
 class EthereumScannerIt : AbstractIntegrationTest() {
@@ -59,7 +60,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         val value = randomPositiveBigInt(1000000)
         val receipt = mintAndVerify(beneficiary, value)
 
-        Wait.waitAssert {
+        Wait.waitAssert(timeout = Duration.ofSeconds(30)) {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())
             assertThat(receipt.blockHash().toString()).isEqualTo(block?.hash)
@@ -132,7 +133,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         val value = randomPositiveBigInt(1000000)
         val receipt = mintAndVerify(beneficiary, value)
 
-        Wait.waitAssert {
+        Wait.waitAssert(timeout = Duration.ofSeconds(30)) {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())
             assertThat(receipt.blockHash().toString()).isEqualTo(block?.hash)
@@ -142,7 +143,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(allLogs).hasSize(1)
         }
 
-        Wait.waitAssert {
+        Wait.waitAssert(timeout = Duration.ofSeconds(30)) {
             assertThat(testEthereumLogEventPublisher.publishedLogRecords).hasSize(1)
         }
 
@@ -159,7 +160,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             publisher = manager.logRecordEventPublisher
         ).collect { }
 
-        Wait.waitAssert {
+        Wait.waitAssert(timeout = Duration.ofSeconds(30)) {
             val events = testEthereumLogEventPublisher.publishedLogRecords.map { it.record as ReversedEthereumLogRecord }
             assertThat(events).hasSize(2)
 
