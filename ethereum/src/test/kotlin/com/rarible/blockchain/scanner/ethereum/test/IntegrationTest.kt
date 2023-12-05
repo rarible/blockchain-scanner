@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.test
 
 import com.rarible.core.test.ext.EthereumTest
+import com.rarible.core.test.ext.KafkaCleanup
 import com.rarible.core.test.ext.KafkaTest
 import com.rarible.core.test.ext.MongoCleanup
 import com.rarible.core.test.ext.MongoTest
@@ -24,4 +25,5 @@ import org.springframework.test.context.ContextConfiguration
 @ActiveProfiles("test")
 @EthereumTest
 @KafkaTest
+@KafkaCleanup
 annotation class IntegrationTest
