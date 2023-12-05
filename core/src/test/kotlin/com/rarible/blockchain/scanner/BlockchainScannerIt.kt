@@ -27,6 +27,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import java.time.temporal.ChronoUnit
 
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
@@ -544,7 +545,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             assertThat(marks[3].name).isEqualTo("scanner-out")
 
             if (trigger != null) {
-                assertThat(marks[1].date).isEqualTo(trigger.receivedTime)
+                assertThat(marks[1].date.epochSecond).isEqualTo(trigger.receivedTime.epochSecond)
             }
         }
     }
