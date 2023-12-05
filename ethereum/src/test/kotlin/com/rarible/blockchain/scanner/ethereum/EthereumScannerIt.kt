@@ -62,7 +62,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         Wait.waitAssert {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())
-            assertEquals(receipt.blockHash().toString(), block?.hash)
+            assertThat(receipt.blockHash().toString()).isEqualTo(block?.hash)
 
             // We expect single LogRecord from our single Subscriber
             val allLogs = findAllLogs(collection)
@@ -135,7 +135,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         Wait.waitAssert {
             // Checking Block is in storage, successfully processed
             val block = findBlock(receipt.blockNumber().toLong())
-            assertEquals(receipt.blockHash().toString(), block?.hash)
+            assertThat(receipt.blockHash().toString()).isEqualTo(block?.hash)
 
             // We expect single LogRecord from our single Subscriber
             val allLogs = findAllLogs(collection)
