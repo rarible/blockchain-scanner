@@ -283,9 +283,13 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         val descriptor = subscriber.getDescriptor()
         val logRecords = withExceptionLogging("Prepare log records to insert for $event by ${descriptor.id}") {
             val records = fullBlock.logs.flatMap {
-                subscriber.getEventRecords(fullBlock.block, it)
+                logMonitor.onGetEventRecords(subscriber.getDescriptor()) {
+                    subscriber.getEventRecords(fullBlock.block, it)
+                }
             }
-            subscriber.postProcess(event = event, block = fullBlock, logs = records)
+            logMonitor.onPostProcess(subscriber.getDescriptor()) {
+                subscriber.postProcess(event = event, block = fullBlock, logs = records)
+            }
         }
 
         logging("prepared ${logRecords.size} log records to insert", event, subscriber)
