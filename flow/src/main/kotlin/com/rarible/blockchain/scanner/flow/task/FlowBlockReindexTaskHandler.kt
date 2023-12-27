@@ -1,7 +1,5 @@
 package com.rarible.blockchain.scanner.flow.task
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.flow.FlowBlockchainScannerManager
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
@@ -22,8 +20,6 @@ class FlowBlockReindexTaskHandler(
     manager
 ) {
 
-    val mapper = ObjectMapper().registerModules().registerKotlinModule()
-
     override fun getFilter(
         param: FlowReindexParam
     ): SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor> {
@@ -31,7 +27,7 @@ class FlowBlockReindexTaskHandler(
     }
 
     override fun getParam(param: String): FlowReindexParam {
-        return mapper.readValue(param, FlowReindexParam::class.java)
+        return FlowReindexParam.parse(param)
     }
 }
 
@@ -40,7 +36,12 @@ data class FlowReindexParam(
     override val range: BlockRange,
     override val publishEvents: Boolean = true,
     val addresses: Set<String> = emptySet()
-) : ReindexParam
+) : ReindexParam {
+
+    companion object {
+        fun parse(json: String) = ReindexParam.parse(json, FlowReindexParam::class.java)
+    }
+}
 
 class FlowSubscriberFilter(
     private val addresses: Set<String>

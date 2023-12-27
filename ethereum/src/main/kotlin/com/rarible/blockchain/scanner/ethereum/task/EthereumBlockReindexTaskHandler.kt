@@ -1,7 +1,5 @@
 package com.rarible.blockchain.scanner.ethereum.task
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
@@ -25,8 +23,6 @@ class EthereumBlockReindexTaskHandler(
     manager
 ) {
 
-    val mapper = ObjectMapper().registerModules().registerKotlinModule()
-
     override fun getFilter(
         param: EthereumReindexParam
     ): SubscriberFilter<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor> {
@@ -34,7 +30,7 @@ class EthereumBlockReindexTaskHandler(
     }
 
     override fun getParam(param: String): EthereumReindexParam {
-        return mapper.readValue(param, EthereumReindexParam::class.java)
+        return EthereumReindexParam.parse(param)
     }
 }
 
@@ -44,7 +40,12 @@ data class EthereumReindexParam(
     override val publishEvents: Boolean = false,
     val topics: List<Word>,
     val addresses: List<Address>,
-) : ReindexParam
+) : ReindexParam {
+
+    companion object {
+        fun parse(json: String) = ReindexParam.parse(json, EthereumReindexParam::class.java)
+    }
+}
 
 class EthereumSubscriberFilter(
     private val topics: List<Word>,
