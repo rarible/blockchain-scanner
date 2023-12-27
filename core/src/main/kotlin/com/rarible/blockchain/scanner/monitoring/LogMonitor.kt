@@ -2,11 +2,13 @@ package com.rarible.blockchain.scanner.monitoring
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.framework.model.Descriptor
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 class LogMonitor(
     properties: BlockchainScannerProperties,
@@ -44,20 +46,20 @@ class LogMonitor(
         return recordTime(getTimer(PUBLISH_LOGS), block)
     }
 
-    inline fun <T> onGetEventRecords(descriptor: Descriptor, handler: () -> T): T {
+    inline fun <T> onGetEventRecords(subscriber: KClass<out LogEventSubscriber<*, *, *, *>>, handler: () -> T): T {
         return recordTime(
             getTimer(
                 SUBSCRIBER_RECORDS,
-                ImmutableTag("subscriber", descriptor.alias ?: descriptor.id)
+                ImmutableTag("subscriber", subscriber.simpleName ?: "")
             ), handler
         )
     }
 
-    inline fun <T> onPostProcess(descriptor: Descriptor, handler: () -> T): T {
+    inline fun <T> onPostProcess(subscriber: KClass<out LogEventSubscriber<*, *, *, *>>, handler: () -> T): T {
         return recordTime(
             getTimer(
                 SUBSCRIBER_POST_PROCESS,
-                ImmutableTag("subscriber", descriptor.alias ?: descriptor.id)
+                ImmutableTag("subscriber", subscriber.simpleName ?: "")
             ), handler
         )
     }
