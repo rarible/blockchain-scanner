@@ -24,7 +24,7 @@ abstract class BlockReindexTaskHandler<BB : BlockchainBlock, BL : BlockchainLog,
 
     protected val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-    override val type = "BLOCK_SCANNER_REINDEX_TASK"
+    override val type = ReindexParam.BLOCK_SCANNER_REINDEX_TASK
 
     private val enabled = manager.properties.task.reindex.enabled
     private val monitor = manager.reindexMonitor
