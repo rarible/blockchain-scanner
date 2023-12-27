@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.monitoring
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.ImmutableTag
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import java.util.concurrent.ConcurrentHashMap
@@ -43,10 +44,30 @@ class LogMonitor(
         return recordTime(getTimer(PUBLISH_LOGS), block)
     }
 
+    inline fun <T> onGetEventRecords(descriptor: Descriptor, handler: () -> T): T {
+        return recordTime(
+            getTimer(
+                SUBSCRIBER_RECORDS,
+                ImmutableTag("subscriber", descriptor.alias ?: descriptor.id)
+            ), handler
+        )
+    }
+
+    inline fun <T> onPostProcess(descriptor: Descriptor, handler: () -> T): T {
+        return recordTime(
+            getTimer(
+                SUBSCRIBER_POST_PROCESS,
+                ImmutableTag("subscriber", descriptor.alias ?: descriptor.id)
+            ), handler
+        )
+    }
+
     companion object {
         const val INSERTED_LOGS = "inserted_logs"
         const val PREPARE_LOGS = "prepare_logs"
         const val SAVE_LOGS = "save_logs"
         const val PUBLISH_LOGS = "publish_logs"
+        const val SUBSCRIBER_RECORDS = "subscriber_get_event_records"
+        const val SUBSCRIBER_POST_PROCESS = "subscriber_post_process"
     }
 }

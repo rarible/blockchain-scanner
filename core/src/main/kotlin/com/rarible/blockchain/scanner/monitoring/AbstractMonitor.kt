@@ -52,9 +52,10 @@ abstract class AbstractMonitor(
         return ImmutableTag(key, value)
     }
 
-    fun getTimer(name: String): Timer {
+    fun getTimer(name: String, vararg tags: Tag): Timer {
         return Timer.builder("$fullPrefix.$name")
             .tag("blockchain", blockchain)
+            .tags(tags.toList())
             .register(meterRegistry)
     }
 
