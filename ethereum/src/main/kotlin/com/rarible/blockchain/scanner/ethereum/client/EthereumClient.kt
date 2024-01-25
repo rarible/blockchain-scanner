@@ -243,7 +243,10 @@ class EthereumClient(
         ethFullBlock: Block<Transaction>,
         logsInBlock: List<Log>
     ): FullBlock<EthereumBlockchainBlock, EthereumBlockchainLog> {
-        val indexedEthLogs = attachIndex(logsInBlock)
+        val indexedEthLogs = attachIndex(
+            logsInBlock
+                .filterNot { properties.ignoreEpochBlocks && it.isEpoch() }
+        )
         val transactions = CollectionConverters.asJava(ethFullBlock.transactions())
             .filterNot { properties.ignoreNullableLogs && it.hash().isNullable() }
             .associateBy { it.hash() }
@@ -270,6 +273,12 @@ class EthereumClient(
     // In zksync blockchain a tx with the hash == 0x0..0 means that the current block is empty
     private fun Word.isNullable(): Boolean {
         return this == NULLABLE_WORD
+    }
+
+    // In Celo blockchain a Epoch reword blocks contains logs with the same hash as the block hash
+    // We need to ignore this
+    private fun Log.isEpoch(): Boolean {
+        return this.transactionHash() == this.blockHash()
     }
 
     private companion object {
