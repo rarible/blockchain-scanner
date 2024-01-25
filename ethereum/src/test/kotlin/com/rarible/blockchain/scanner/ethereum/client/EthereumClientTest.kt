@@ -6,7 +6,6 @@ import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.BlockPollerProperties
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
-import com.rarible.blockchain.scanner.ethereum.reduce.createRandomEthereumLog
 import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomInt
