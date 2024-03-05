@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.7.71</revision>
+        <revision>2.7.72</revision>
 
         <rarible.ethereum.version>1.7.33</rarible.ethereum.version>
         <rarible.core.version>2.6.12</rarible.core.version>
@@ -26,7 +26,7 @@
         <repository>
             <id>nexus-ext-maven-public</id>
             <name>nexus-ext-maven-public</name>
-            <url>https://repo.rarible.org/repository/maven-public/</url>
+            <url>http://nexus.rarible.int/repository/maven-public/</url>
         </repository>
     </repositories>
 
