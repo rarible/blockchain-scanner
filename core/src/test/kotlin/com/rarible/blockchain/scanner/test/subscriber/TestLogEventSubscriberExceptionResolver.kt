@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriberExc
 import java.io.IOException
 
 class TestLogEventSubscriberExceptionResolver : LogEventSubscriberExceptionResolver {
-    override fun shouldInterruptScan(e: Throwable): Boolean {
+    override fun isRetriable(e: Throwable): Boolean {
         return e is IOException
     }
 }

@@ -17,5 +17,4 @@ class FlowLogEventSubscriberExceptionResolver : LogEventSubscriberExceptionResol
         is MongoSocketException -> true // Mongo connection error as well
         else -> false
     }
-
 }
