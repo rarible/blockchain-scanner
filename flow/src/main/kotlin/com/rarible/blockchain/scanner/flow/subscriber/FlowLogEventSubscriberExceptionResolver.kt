@@ -11,9 +11,9 @@ import java.io.IOException
 class FlowLogEventSubscriberExceptionResolver : LogEventSubscriberExceptionResolver {
 
     override fun isRetriable(e: Throwable): Boolean = when (e) {
-        is WebClientException -> true // Request to external HTTP resource failed
-        is IOException -> true // Request to internal HTTP resource failed, e.g. protocol-currency-api
-        is DataAccessResourceFailureException -> true // Mongo connection error
+        is WebClientException, // Request to an external or internal HTTP resource failed
+        is IOException, // Generic I/O problem should be retriable
+        is DataAccessResourceFailureException, // Mongo connection error
         is MongoSocketException -> true // Mongo connection error as well
         else -> false
     }

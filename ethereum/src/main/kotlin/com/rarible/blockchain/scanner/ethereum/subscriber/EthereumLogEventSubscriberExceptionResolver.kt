@@ -11,10 +11,10 @@ import java.io.IOException
 @Component
 class EthereumLogEventSubscriberExceptionResolver : LogEventSubscriberExceptionResolver {
     override fun isRetriable(e: Throwable): Boolean = when (e) {
-        is RpcCodeException -> true // Node unavailable
-        is WebClientException -> true // Request to external HTTP resource failed
-        is IOException -> true // In general, IOException should be retriable
-        is DataAccessResourceFailureException -> true // Mongo connection error
+        is RpcCodeException, // Node unavailable
+        is WebClientException, // Request to an external or internal HTTP resource failed
+        is IOException, // Generic I/O problem should be retriable
+        is DataAccessResourceFailureException, // Mongo connection error
         is MongoSocketException -> true // Mongo connection error as well
         else -> false
     }
