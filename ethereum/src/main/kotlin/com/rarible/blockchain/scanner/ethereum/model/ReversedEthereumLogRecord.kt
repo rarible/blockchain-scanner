@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.model
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.rarible.core.common.nowMillis
 import io.daonomic.rpc.domain.Word
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
@@ -116,7 +117,7 @@ data class ReversedEthereumLogRecord(
     }
 
     fun withUpdatedAt(): ReversedEthereumLogRecord {
-        return copy(updatedAt = Instant.now())
+        return copy(updatedAt = nowMillis())
     }
 }
 
