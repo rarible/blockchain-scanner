@@ -20,10 +20,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
 import scala.jdk.javaapi.CollectionConverters
-import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
 import scalether.domain.request.LogFilter
@@ -364,13 +362,11 @@ class EthereumBlockchainLogIndexTest {
             ).toMono()
         }
 
-        val ethPubSub = mockk<EthPubSub>()
-        every { ethPubSub.newHeads() } returns Flux.empty()
         val properties = EthereumScannerProperties(
             enableUnstableBlockParallelLoad = enableUnstableBlockParallelLoad,
             ignoreNullableLogs = ignoreNullableLogs
         )
 
-        return EthereumClient(monoEthereum, properties, ethPubSub)
+        return EthereumClient(monoEthereum, properties)
     }
 }
