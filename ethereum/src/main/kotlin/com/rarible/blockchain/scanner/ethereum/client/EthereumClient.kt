@@ -25,7 +25,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import scala.jdk.javaapi.CollectionConverters
-import scalether.core.EthPubSub
 import scalether.core.MonoEthereum
 import scalether.domain.Address
 import scalether.domain.request.LogFilter
@@ -43,8 +42,6 @@ class EthereumClient(
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethereum: MonoEthereum,
     private val properties: EthereumScannerProperties,
-    @Suppress("SpringJavaInjectionPointsAutowiringInspection")
-    ethPubSub: EthPubSub,
     // Retries delegated to MonoEthereum
 ) : EthereumBlockchainClient, AbstractRetryableClient(ClientRetryPolicyProperties(attempts = 0)) {
 
@@ -63,8 +60,7 @@ class EthereumClient(
         return ethereum.ethBlockNumber().awaitFirst().toLong()
     }
 
-    private val subscriber = if (properties.blockPoller.enabled)
-        EthereumNewBlockPoller(ethereum, properties.blockPoller.period) else EthereumNewBlockPubSub(ethPubSub)
+    private val subscriber = EthereumNewBlockPoller(ethereum, properties.blockPoller.period)
 
     private suspend fun firstAvailableBlock(): Long {
         return if (properties.scan.startFromCurrentBlock) {
