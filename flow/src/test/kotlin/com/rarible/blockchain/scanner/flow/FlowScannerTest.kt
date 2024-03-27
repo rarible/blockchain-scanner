@@ -37,9 +37,6 @@ import java.time.Duration
     properties = [
         "application.environment = test",
         "spring.application.name = test-flow-scanner",
-        "spring.cloud.consul.config.enabled = false",
-        "spring.cloud.service-registry.auto-registration.enabled = false",
-        "spring.cloud.discovery.enabled = false",
         "logging.logstash.tcp-socket.enabled = false",
         "logging.logjson.enabled = false",
         "rarible.task.initialDelay=0",
