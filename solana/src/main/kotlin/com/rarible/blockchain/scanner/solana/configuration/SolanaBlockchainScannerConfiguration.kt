@@ -26,7 +26,8 @@ class SolanaBlockchainScannerConfiguration {
         properties: SolanaBlockchainScannerProperties,
         subscribers: List<SolanaLogEventSubscriber>
     ): SolanaClient = SolanaClient(
-        api,
+        api = api,
+        properties = properties,
         programIds = subscribers.map { it.getDescriptor().programId }.toSet()
     )
 }

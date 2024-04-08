@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.solana.client.test.TestSolanaScannerConfiguration
+import com.rarible.blockchain.scanner.solana.configuration.SolanaBlockchainScannerProperties
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -15,6 +16,7 @@ class SolanaClientTest {
             urls = listOf(TestSolanaScannerConfiguration.MAIN_NET_BETA),
             timeoutMillis = 30000
         ),
+        properties = SolanaBlockchainScannerProperties(rpcApiUrls = emptyList()),
         programIds = emptySet() // All programs.
     )
 

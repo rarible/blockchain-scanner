@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDtoParser
 import com.rarible.blockchain.scanner.solana.client.dto.getSafeResult
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
+import com.rarible.blockchain.scanner.solana.configuration.SolanaBlockchainScannerProperties
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -16,8 +17,10 @@ import org.slf4j.LoggerFactory
 
 class SolanaClient(
     private val api: SolanaApi,
-    programIds: Set<String>
+    private val properties: SolanaBlockchainScannerProperties,
+    programIds: Set<String>,
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
+
     private val solanaBlockDtoParser = SolanaBlockDtoParser(
         programIds = programIds
     )
@@ -77,7 +80,11 @@ class SolanaClient(
     }
 
     override suspend fun getFirstAvailableBlock(): SolanaBlockchainBlock {
-        val slot = api.getFirstAvailableBlock().toModel()
+        val slot = if (properties.scan.startFromCurrentBlock) {
+            api.getLatestSlot().toModel()
+        } else {
+            api.getFirstAvailableBlock().toModel()
+        }
         val root = getBlock(slot)
 
         return if (root == null) {
