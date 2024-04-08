@@ -65,13 +65,6 @@ class SolanaClient(
                 val logs = block.logs.filter { log ->
                     log.instruction.programId == descriptor.programId
                 }
-                logger.info("Block {} has {} logs for {}, total {}. {}",
-                    block.slot,
-                    logs.size,
-                    descriptor.programId,
-                    block.logs.size,
-                    block.logs.map { it.instruction.programId }.toSet()
-                )
                 FullBlock(
                     block,
                     logs
