@@ -59,9 +59,19 @@ class SolanaClient(
     ): Flow<FullBlock<SolanaBlockchainBlock, SolanaBlockchainLog>> {
         return blocks.asFlow()
             .map { block ->
+                val logs = block.logs.filter { log ->
+                    log.instruction.programId == descriptor.programId
+                }
+                logger.info("Block {} has {} logs for {}, total {}. {}",
+                    block.slot,
+                    logs.size,
+                    descriptor.programId,
+                    block.logs.size,
+                    block.logs.map { it.instruction.programId }.toSet()
+                )
                 FullBlock(
                     block,
-                    block.logs.filter { log -> log.instruction.programId == descriptor.programId }
+                    logs
                 )
             }
     }
