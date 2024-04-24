@@ -150,7 +150,7 @@ class CachedSporksFlowGrpcApi(
             block.collectionGuarantees.map { guarantee ->
                 asyncWithTraceId(context = NonCancellable) {
                     val collection = getCollectionById(api, guarantee.id, block) ?: error(
-                        "Can't get collection ${guarantee.id}, for block ${block.height}"
+                        "Can't get collection ${guarantee.id.base16Value}, for block ${block.height}"
                     )
                     collection.transactionIds.map { transactionId ->
                         asyncWithTraceId(context = NonCancellable) {
