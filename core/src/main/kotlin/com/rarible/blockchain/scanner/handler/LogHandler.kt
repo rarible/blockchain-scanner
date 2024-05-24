@@ -27,6 +27,7 @@ import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
@@ -282,10 +283,14 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
         val descriptor = subscriber.getDescriptor()
         val logRecords = withExceptionLogging("Prepare log records to insert for $event by ${descriptor.id}") {
-            val records = fullBlock.logs.flatMap {
-                logMonitor.onGetEventRecords(subscriber::class) {
-                    subscriber.getEventRecords(fullBlock.block, it)
-                }
+            val records = coroutineScope {
+                fullBlock.logs.map {
+                    async {
+                        logMonitor.onGetEventRecords(subscriber::class) {
+                            subscriber.getEventRecords(fullBlock.block, it)
+                        }
+                    }
+                }.awaitAll().flatten()
             }
             logMonitor.onPostProcess(subscriber::class) {
                 subscriber.postProcess(event = event, block = fullBlock, logs = records)
