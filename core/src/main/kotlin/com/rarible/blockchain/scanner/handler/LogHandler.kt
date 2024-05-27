@@ -284,13 +284,15 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         val descriptor = subscriber.getDescriptor()
         val logRecords = withExceptionLogging("Prepare log records to insert for $event by ${descriptor.id}") {
             val records = coroutineScope {
-                fullBlock.logs.map {
-                    async {
-                        logMonitor.onGetEventRecords(subscriber::class) {
-                            subscriber.getEventRecords(fullBlock.block, it)
+                fullBlock.logs.chunked(LOG_CHUNK_SIZE).map {
+                    it.map {
+                        async {
+                            logMonitor.onGetEventRecords(subscriber::class) {
+                                subscriber.getEventRecords(fullBlock.block, it)
+                            }
                         }
-                    }
-                }.awaitAll().flatten()
+                    }.awaitAll().flatten()
+                }.flatten()
             }
             logMonitor.onPostProcess(subscriber::class) {
                 subscriber.postProcess(event = event, block = fullBlock, logs = records)
@@ -328,5 +330,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     ) {
         val id = subscriber?.getDescriptor()?.id ?: ("group $groupId")
         logger.info("Logs for $event by '$id': $message")
+    }
+
+    companion object {
+        const val LOG_CHUNK_SIZE = 10
     }
 }
