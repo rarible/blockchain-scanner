@@ -61,7 +61,10 @@
             <groupId>com.rarible.core</groupId>
             <artifactId>rarible-core-kafka</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.rarible.core</groupId>
+            <artifactId>rarible-core-common</artifactId>
+        </dependency>
         <!-- ================== Spring =================== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
