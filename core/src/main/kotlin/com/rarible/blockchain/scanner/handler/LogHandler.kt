@@ -23,6 +23,7 @@ import com.rarible.blockchain.scanner.framework.util.addScannerOut
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.util.BlockRanges
+import com.rarible.core.common.asyncBatchHandle
 import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.CompletableDeferred
@@ -282,11 +283,11 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
 
         val descriptor = subscriber.getDescriptor()
         val logRecords = withExceptionLogging("Prepare log records to insert for $event by ${descriptor.id}") {
-            val records = fullBlock.logs.flatMap {
+            val records = fullBlock.logs.asyncBatchHandle(LOG_CHUNK_SIZE) {
                 logMonitor.onGetEventRecords(subscriber::class) {
                     subscriber.getEventRecords(fullBlock.block, it)
                 }
-            }
+            }.flatten()
             logMonitor.onPostProcess(subscriber::class) {
                 subscriber.postProcess(event = event, block = fullBlock, logs = records)
             }
@@ -323,5 +324,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     ) {
         val id = subscriber?.getDescriptor()?.id ?: ("group $groupId")
         logger.info("Logs for $event by '$id': $message")
+    }
+
+    companion object {
+        const val LOG_CHUNK_SIZE = 10
     }
 }
