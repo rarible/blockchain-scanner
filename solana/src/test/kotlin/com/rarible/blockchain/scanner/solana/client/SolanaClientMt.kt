@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-class SolanaClientTest {
+@Disabled("for manual run")
+class SolanaClientMt {
     private val client = SolanaClient(
         SolanaHttpRpcApi(
             urls = listOf(TestSolanaScannerConfiguration.MAIN_NET_BETA),
@@ -21,7 +22,6 @@ class SolanaClientTest {
     )
 
     @Test
-    @Disabled
     fun testGetBlock() = runBlocking {
         val slot = client.getLatestSlot()
         val block = client.getBlock(slot)
@@ -30,14 +30,12 @@ class SolanaClientTest {
     }
 
     @Test
-    @Disabled
     fun testGetBlockByNumber() = runBlocking {
         val block = client.getBlock(114371623)
         println(block)
     }
 
     @Test
-    @Disabled
     fun testBlockFlow() = runBlocking {
         val blocks = client.newBlocks.take(3).toList()
 
