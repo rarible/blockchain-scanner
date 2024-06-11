@@ -1,11 +1,13 @@
 package com.rarible.blockchain.scanner.solana.client
 
 import com.rarible.blockchain.scanner.solana.client.dto.ApiResponse
+import com.rarible.blockchain.scanner.solana.client.dto.GetAccountInfo
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.GetFirstAvailableBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaAccountInfoDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
 import com.rarible.core.common.asyncWithTraceId
@@ -38,6 +40,8 @@ interface SolanaApi {
     suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto>
 
     suspend fun getTransaction(signature: String): ApiResponse<SolanaTransactionDto>
+
+    suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto>
 }
 
 class SolanaHttpRpcApi(
@@ -88,6 +92,13 @@ class SolanaHttpRpcApi(
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaTransactionDto>>()
+        .awaitSingle()
+
+    override suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto> = client.post()
+        .uri(uri)
+        .body(BodyInserters.fromValue(GetAccountInfo(address)))
+        .retrieve()
+        .bodyToMono<ApiResponse<SolanaAccountInfoDto>>()
         .awaitSingle()
 
     companion object {

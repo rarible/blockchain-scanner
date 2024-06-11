@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
@@ -65,6 +67,18 @@ class GetTransactionRequest(
     )
 )
 
+class GetAccountInfo(
+    address: String,
+) : Request(
+    method = "getAccountInfo",
+    params = listOf(
+        address,
+        mapOf(
+            "encoding" to "jsonParsed"
+        )
+    )
+)
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ApiResponse<T>(
@@ -79,14 +93,66 @@ data class ApiResponse<T>(
     )
 }
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SolanaAccountInfoDto(
+    val value: Value
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Value(
+        val data: Data,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Data(
+        val parsed: Parsed,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Parsed(
+        val info: Info,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Info(
+        val extensions: List<Extension>
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Extension(
+        val extension: String,
+        val state: Map<String, Any?>?,
+    ) {
+
+        fun toMetadata(): Metadata {
+            return objectMapper.convertValue(state, Metadata::class.java)
+        }
+
+        companion object {
+            private val objectMapper = ObjectMapper().registerModules().registerKotlinModule()
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Metadata(
+        val mint: String?,
+        val name: String?,
+        val symbol: String?,
+        val updateAuthority: String?,
+        val uri: String?,
+        val additionalMetadata: List<List<String>>,
+    )
+}
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaTransactionDto(
     val transaction: Details?,
     val meta: Meta?
 ) {
     @get:JsonIgnore
-    val isSuccessful: Boolean get() =
-        meta != null && meta.err == null
+    val isSuccessful: Boolean
+        get() =
+            meta != null && meta.err == null
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Instruction(
@@ -158,7 +224,7 @@ class SolanaBlockDtoParser(
             }
             val transaction = transactionDto.transaction ?: return@flatMapIndexed emptyList()
             val accountKeys = transaction.message.accountKeys +
-                    (transactionDto.meta?.loadedAddresses?.let { it.writable + it.readonly } ?: emptyList())
+                (transactionDto.meta?.loadedAddresses?.let { it.writable + it.readonly } ?: emptyList())
             val transactionHash = transactionDto.transaction.signatures.first()
             val result = arrayListOf<SolanaBlockchainLog>().apply {
                 this += transaction.message.instructions.mapIndexedNotNull { instructionIndex, instruction ->
