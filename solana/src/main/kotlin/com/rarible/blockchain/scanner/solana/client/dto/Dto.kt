@@ -121,7 +121,7 @@ data class SolanaAccountInfoDto(
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Extension(
         val extension: String,
-        val state: Map<String, Any>?,
+        val state: Map<String, Any?>?,
     ) {
 
         fun toMetadata(): Metadata {
