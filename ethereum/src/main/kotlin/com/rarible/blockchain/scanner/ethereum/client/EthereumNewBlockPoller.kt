@@ -9,6 +9,7 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.asFlux
 import kotlinx.coroutines.time.delay
 import org.slf4j.LoggerFactory
+import reactor.core.publisher.BufferOverflowStrategy.DROP_OLDEST
 import reactor.core.publisher.Flux
 import scalether.core.MonoEthereum
 import scalether.domain.response.Block
@@ -30,5 +31,5 @@ class EthereumNewBlockPoller(
             if (head != null) send(ReceivedBlock(head))
             delay(pollingDelay)
         }
-    }.asFlux()
+    }.asFlux().onBackpressureBuffer(1, DROP_OLDEST)
 }
