@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -34,7 +33,6 @@ import scalether.domain.response.Log
 import scalether.domain.response.Transaction
 import scalether.util.Hex
 import java.math.BigInteger
-import java.time.Duration
 
 @ExperimentalCoroutinesApi
 @Component
@@ -70,26 +68,16 @@ class EthereumClient(
         }
     }
 
-    override val newBlocks: Flow<EthereumBlockchainBlock> = subscriber.newHeads()
-        .flatMap { block ->
-            logger.info("Detected new block from subscriber: ${block.block.blockNumber}")
-            ethereum
-                .ethGetFullBlockByHash(block.block.hash())
-                .wrapWithRetry("ethGetFullBlockByHash", block.block.hash(), block.block.number())
-                .map { ReceivedBlock(it, block.receivedTime) }
-        }
-        .map { EthereumBlockchainBlock(it) }
-        .timeout(Duration.ofMinutes(5))
-        .doOnCancel {
-            logger.info("Subscription canceled")
-        }
-        .doOnError { e ->
-            logger.warn("Subscription error: ${e.message}", e)
-        }
-        .doOnComplete {
-            logger.info("Subscription completed")
-        }
-        .asFlow()
+    override val newBlocks: Flow<EthereumBlockchainBlock> =
+        subscriber.newHeads()
+            .map { block ->
+                logger.info("Detected new block from subscriber: ${block.block.blockNumber}")
+                ethereum
+                    .ethGetFullBlockByHash(block.block.hash())
+                    .wrapWithRetry("ethGetFullBlockByHash", block.block.hash(), block.block.number())
+                    .map { EthereumBlockchainBlock(ReceivedBlock(it, block.receivedTime)) }
+                    .awaitFirst()
+            }
 
     override suspend fun getBlocks(numbers: List<Long>): List<EthereumBlockchainBlock> =
         coroutineScope { numbers.map { asyncWithTraceId(context = NonCancellable) { getBlock(it) } }.awaitAll() }
@@ -252,7 +240,7 @@ class EthereumClient(
                 val transaction = transactions[ethLog.transactionHash()]
                     ?: throw NonRetryableBlockchainClientException(
                         "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
-                            "All transactions: $transactions"
+                                "All transactions: $transactions"
                     )
                 EthereumBlockchainLog(
                     ethLog = ethLog,
