@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.8.8</revision>
+        <revision>2.8.10</revision>
 
         <rarible.ethereum.version>1.8.0</rarible.ethereum.version>
         <rarible.core.version>2.7.14</rarible.core.version>
