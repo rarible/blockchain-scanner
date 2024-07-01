@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
+import com.rarible.blockchain.scanner.ethereum.configuration.BlockPollerProperties
 import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import io.daonomic.rpc.domain.Word
 import io.mockk.every
@@ -14,14 +15,14 @@ import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
 import scalether.domain.response.Block
 import java.math.BigInteger
-import java.time.Duration
+import java.time.Duration.ofSeconds
 
 @Suppress("ReactiveStreamsUnusedPublisher")
 internal class EthereumNewBlockPollerTest {
     private val ethereum = mockk<MonoEthereum>()
 
     @ExperimentalCoroutinesApi
-    private val poller = EthereumNewBlockPoller(ethereum, Duration.ofSeconds(2))
+    private val poller = EthereumNewBlockPoller(ethereum, BlockPollerProperties(period = ofSeconds(2)))
 
     @ExperimentalCoroutinesApi
     @Test
