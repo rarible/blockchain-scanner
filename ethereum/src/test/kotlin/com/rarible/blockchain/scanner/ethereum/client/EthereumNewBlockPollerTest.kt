@@ -1,13 +1,11 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
-import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import io.daonomic.rpc.domain.Word
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
-import org.apache.commons.lang3.RandomUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import reactor.core.publisher.Mono
@@ -19,9 +17,10 @@ import java.time.Duration
 @Suppress("ReactiveStreamsUnusedPublisher")
 internal class EthereumNewBlockPollerTest {
     private val ethereum = mockk<MonoEthereum>()
+    private val pollingDelay = Duration.ZERO
 
     @ExperimentalCoroutinesApi
-    private val poller = EthereumNewBlockPoller(ethereum, Duration.ofSeconds(2))
+    private val poller = EthereumNewBlockPoller(ethereum, pollingDelay)
 
     @ExperimentalCoroutinesApi
     @Test
@@ -30,23 +29,18 @@ internal class EthereumNewBlockPollerTest {
         val blockNumber2 = BigInteger("2")
         val block1 = mockk<Block<Word>> {
             every { number() } returns BigInteger.ONE
-            every { hash() } returns Word(RandomUtils.nextBytes(32))
         }
         val block2 = mockk<Block<Word>> {
             every { number() } returns BigInteger.TEN
-            every { hash() } returns Word(RandomUtils.nextBytes(32))
         }
         every { ethereum.ethBlockNumber() } returnsMany listOf(
             Mono.just(blockNumber1),
-            Mono.just(blockNumber1),
-            Mono.just(blockNumber2),
             Mono.just(blockNumber2),
         )
         every { ethereum.ethGetBlockByNumber(blockNumber1) } returns Mono.just(block1)
         every { ethereum.ethGetBlockByNumber(blockNumber2) } returns Mono.just(block2)
 
-        val result = mutableListOf<ReceivedBlock<Block<Word>>>()
-        poller.newHeads().take(2).collect { receivedBlock -> result.add(receivedBlock) }
+        val result = poller.newHeads().take(2).collectList().awaitFirst()
         assertThat(result.map { it.block }).containsExactly(block1, block2)
     }
 }
