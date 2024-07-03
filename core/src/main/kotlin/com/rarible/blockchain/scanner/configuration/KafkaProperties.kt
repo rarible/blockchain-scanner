@@ -11,4 +11,5 @@ data class KafkaProperties(
     val enabled: Boolean = true,
     val numberOfPartitionsPerLogGroup: Int = 9,
     val compression: Compression = Compression.SNAPPY,
+    val producerProperties: Map<String, String> = emptyMap(),
 )
