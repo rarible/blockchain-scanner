@@ -17,7 +17,7 @@ class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
     service: String,
     type: String,
     private val kafkaRecordEventWrapper: KafkaRecordEventWrapper<E, R, RE>,
-    private val numberOfPartitionsPerGroup: Int
+    private val numberOfPartitionsPerGroup: Int,
 ) : RecordEventPublisher<R, RE> {
 
     private val topicPrefix = getLogTopicPrefix(environment, service, blockchain, type)
@@ -30,6 +30,7 @@ class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
         defaultTopic = topicPrefix, // ends with .log, not required originally
         bootstrapServers = brokerReplicaSet,
         compression = properties.compression,
+        properties = properties.producerProperties,
     )
 
     override suspend fun prepareGroup(groupId: String) {
