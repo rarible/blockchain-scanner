@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
+import java.math.BigInteger
 
 @Suppress("unused")
 abstract class Request(
@@ -77,6 +78,13 @@ class GetAccountInfo(
             "encoding" to "jsonParsed"
         )
     )
+)
+
+class GetBalance(
+    address: String,
+) : Request(
+    method = "getBalance",
+    params = listOf(address)
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -213,6 +221,9 @@ data class SolanaBlockDto(
         )
     }
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SolanaBalanceDto(val value: BigInteger)
 
 class SolanaBlockDtoParser(
     private val programIds: Set<String>

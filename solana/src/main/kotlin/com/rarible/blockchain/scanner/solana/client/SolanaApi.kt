@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.solana.client
 import com.rarible.blockchain.scanner.solana.client.dto.ApiResponse
 import com.rarible.blockchain.scanner.solana.client.dto.GetAccountInfo
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
+import com.rarible.blockchain.scanner.solana.client.dto.GetBalance
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
 import com.rarible.blockchain.scanner.solana.client.dto.GetFirstAvailableBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
@@ -10,6 +11,7 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaAccountInfoDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaBalanceDto
 import com.rarible.core.common.asyncWithTraceId
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
@@ -42,6 +44,8 @@ interface SolanaApi {
     suspend fun getTransaction(signature: String): ApiResponse<SolanaTransactionDto>
 
     suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto>
+
+    suspend fun getBalance(address: String): ApiResponse<SolanaBalanceDto>
 }
 
 class SolanaHttpRpcApi(
@@ -99,6 +103,13 @@ class SolanaHttpRpcApi(
         .body(BodyInserters.fromValue(GetAccountInfo(address)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaAccountInfoDto>>()
+        .awaitSingle()
+
+    override suspend fun getBalance(address: String): ApiResponse<SolanaBalanceDto> = client.post()
+        .uri(uri)
+        .body(BodyInserters.fromValue(GetBalance(address)))
+        .retrieve()
+        .bodyToMono<ApiResponse<SolanaBalanceDto>>()
         .awaitSingle()
 
     companion object {
