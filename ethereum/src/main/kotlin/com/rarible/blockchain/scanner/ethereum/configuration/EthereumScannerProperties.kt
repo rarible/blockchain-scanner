@@ -31,4 +31,5 @@ data class EthereumScannerProperties(
     val enableUnstableBlockParallelLoad: Boolean = false,
     val ignoreNullableLogs: Boolean = false,
     val ignoreEpochBlocks: Boolean = false,
+    val ignoreLogWithoutTransaction: Boolean = false,
 ) : BlockchainScannerProperties
