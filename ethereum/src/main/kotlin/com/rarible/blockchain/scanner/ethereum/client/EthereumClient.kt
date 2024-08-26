@@ -261,12 +261,17 @@ class EthereumClient(
             .associateBy { it.hash() }
         return FullBlock(
             block = EthereumBlockchainBlock(ethFullBlock),
-            logs = indexedEthLogs.map { (index, total, ethLog) ->
+            logs = indexedEthLogs.mapNotNull { (index, total, ethLog) ->
                 val transaction = transactions[ethLog.transactionHash()]
-                    ?: throw NonRetryableBlockchainClientException(
-                        "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
+                    ?: if (properties.ignoreLogWithoutTransaction) {
+                        logger.info("Not found transaction #${ethLog.transactionHash()} for log #${ethLog.logIndex()}")
+                        return@mapNotNull null
+                    } else {
+                        throw NonRetryableBlockchainClientException(
+                            "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
                                 "All transactions: $transactions"
-                    )
+                        )
+                    }
                 EthereumBlockchainLog(
                     ethLog = ethLog,
                     ethTransaction = transaction,
