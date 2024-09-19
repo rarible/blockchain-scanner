@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
+import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriberExceptionResolver
 import com.rarible.blockchain.scanner.framework.subscriber.TransactionEventSubscriber
 import com.rarible.blockchain.scanner.framework.util.addScannerOut
 import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
@@ -17,6 +18,7 @@ class TransactionHandler<BB : BlockchainBlock, R : TransactionRecord>(
     override val groupId: String,
     private val subscribers: List<TransactionEventSubscriber<BB, R>>,
     private val transactionRecordEventPublisher: TransactionRecordEventPublisher,
+    private val logEventSubscriberExceptionResolver: LogEventSubscriberExceptionResolver
 ) : BlockEventListener<BB> {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -39,6 +41,13 @@ class TransactionHandler<BB : BlockchainBlock, R : TransactionRecord>(
                     }
                     SubscriberResultOk(blockEvent.number, group, logEvents)
                 } catch (e: Exception) {
+                    if (logEventSubscriberExceptionResolver.shouldInterruptScan(e)) {
+                        logger.error(
+                            "Failed to handle block {} by TX subscriber {}: ",
+                            blockEvent.number, group, e
+                        )
+                        throw e
+                    }
                     logger.error("Failed to handle block {} by TX subscriber {}: ", blockEvent.number, group, e)
                     SubscriberResultFail(blockEvent.number, group, e.message ?: "Unknown error")
                 }
