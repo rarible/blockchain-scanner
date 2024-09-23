@@ -1,6 +1,8 @@
 package com.rarible.blockchain.scanner.solana.repository
 
+import com.rarible.blockchain.scanner.solana.model.SolanaLog
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
+import com.rarible.core.mongo.util.div
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
@@ -10,6 +12,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.findAll
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import reactor.kotlin.core.publisher.toMono
 
@@ -50,6 +54,11 @@ class SolanaLogRepository(
 
     suspend fun save(collection: String, record: SolanaLogRecord): SolanaLogRecord =
         mongo.save(record, collection).awaitSingle()
+
+    suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        val criteria = SolanaLogRecord::log / SolanaLog::blockNumber isEqualTo blockNumber
+        return mongo.count(Query(criteria), collection).awaitSingle()
+    }
 
     @TestOnly
     fun findAll(collection: String): Flow<SolanaLogRecord> =

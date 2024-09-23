@@ -1,14 +1,10 @@
-package com.rarible.blockchain.scanner.ethereum.reconciliation
+package com.rarible.blockchain.scanner.reconciliation
 
 import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockRepository
-import com.rarible.blockchain.scanner.configuration.BlockBatchLoadProperties
-import com.rarible.blockchain.scanner.configuration.ScanProperties
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
-import com.rarible.blockchain.scanner.ethereum.configuration.ReconciliationProperties
-import com.rarible.blockchain.scanner.ethereum.model.ReconciliationLogState
-import com.rarible.blockchain.scanner.ethereum.repository.EthereumReconciliationStateRepository
+import com.rarible.blockchain.scanner.configuration.ReconciliationProperties
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
+import com.rarible.blockchain.scanner.test.configuration.TestBlockchainScannerProperties
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,24 +17,15 @@ import org.junit.jupiter.api.Test
 @ExperimentalCoroutinesApi
 internal class ReconciliationLogWorkerHandlerTest {
     private val reconciliationLogHandler = mockk<ReconciliationLogHandler>()
-    private val stateRepository = mockk<EthereumReconciliationStateRepository>()
+    private val stateRepository = mockk<ReconciliationStateRepository>()
     private val blockRepository = mockk<BlockRepository>()
-    private val monitor = mockk<EthereumLogReconciliationMonitor> {
+    private val monitor = mockk<LogReconciliationMonitor> {
         every { onReconciledRange(any()) } returns Unit
     }
-    private val reconciliationProperties = mockk<ReconciliationProperties>() {
-        every { batchSize } returns 10
-    }
-    private val blockBatchLoadProperties = mockk<BlockBatchLoadProperties> {
-        every { confirmationBlockDistance } returns 10
-    }
-    private val scanProperties = mockk<ScanProperties> {
-        every { batchLoad } returns blockBatchLoadProperties
-    }
-    private val scannerProperties = mockk<EthereumScannerProperties> {
-        every { scan } returns scanProperties
-        every { reconciliation } returns reconciliationProperties
-    }
+    private val reconciliationProperties = ReconciliationProperties(batchSize = 10)
+    private val scannerProperties = TestBlockchainScannerProperties(
+        reconciliation = reconciliationProperties
+    )
     private val handler = ReconciliationLogWorkerHandler(
         reconciliationLogHandler = reconciliationLogHandler,
         stateRepository = stateRepository,

@@ -1,4 +1,4 @@
-package com.rarible.blockchain.scanner.ethereum.model
+package com.rarible.blockchain.scanner.reconciliation
 
 import org.springframework.data.annotation.AccessType
 import org.springframework.data.annotation.Id

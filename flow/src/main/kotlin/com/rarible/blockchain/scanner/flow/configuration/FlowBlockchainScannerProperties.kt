@@ -4,6 +4,7 @@ import com.nftco.flow.sdk.Flow
 import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
+import com.rarible.blockchain.scanner.configuration.ReconciliationProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.configuration.TaskProperties
@@ -28,6 +29,7 @@ data class FlowBlockchainScannerProperties(
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     override val scan: ScanProperties = ScanProperties(),
     override val task: TaskProperties = TaskProperties(),
+    override val reconciliation: ReconciliationProperties = ReconciliationProperties(),
     val poller: BlockPollerProperties = BlockPollerProperties(),
     val chainId: FlowChainId = Flow.DEFAULT_CHAIN_ID,
     val httpApiClient: HttpApiClientProperties = HttpApiClientProperties(),

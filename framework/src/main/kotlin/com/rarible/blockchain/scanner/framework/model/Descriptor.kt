@@ -36,6 +36,11 @@ interface Descriptor {
     val entityType: Class<*>
 
     /**
+     * Table/MongoDB collection name where the logs are stored
+     * */
+    val collection: String
+
+    /**
      * Indicates should logs be saved or just published
      */
     fun shouldSaveLogs(): Boolean = true
