@@ -6,7 +6,8 @@ import com.rarible.blockchain.scanner.test.model.TestTransactionRecord
 import java.util.concurrent.ConcurrentHashMap
 
 class TestTransactionEventSubscriber(
-    private val eventDataCount: Int = 1
+    private val eventDataCount: Int = 1,
+    private val exceptionProvider: () -> Exception? = { null }
 ) : TransactionEventSubscriber<TestBlockchainBlock, TestTransactionRecord> {
 
     private val expectedRecords: MutableMap<TestBlockchainBlock, List<TestTransactionRecord>> =
@@ -21,6 +22,10 @@ class TestTransactionEventSubscriber(
     }
 
     override suspend fun getEventRecords(block: TestBlockchainBlock): List<TestTransactionRecord> {
+        val exception = exceptionProvider()
+        if (exception != null) {
+            throw exception
+        }
         expectedRecords[block]?.let { return it }
         val records = (0 until eventDataCount).map { minorIndex ->
             TestTransactionRecord(

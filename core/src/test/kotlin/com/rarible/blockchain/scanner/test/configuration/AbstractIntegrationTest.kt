@@ -73,7 +73,8 @@ abstract class AbstractIntegrationTest {
         testBlockchainClient: TestBlockchainClient,
         subscribers: List<TestLogEventSubscriber>,
         transactionSubscribers: List<TestTransactionEventSubscriber>,
-        scanProperties: ScanProperties = ScanProperties()
+        scanProperties: ScanProperties = ScanProperties(),
+        scanRetryProperties: ScanRetryPolicyProperties = ScanRetryPolicyProperties(reconnectAttempts = 1)
     ): TestBlockchainScanner {
         val manager = TestBlockchainScannerManager(
             blockchainClient = testBlockchainClient,
@@ -82,9 +83,7 @@ abstract class AbstractIntegrationTest {
             properties = TestBlockchainScannerProperties(
                 scan = scanProperties,
                 retryPolicy = RetryPolicyProperties(
-                    scan = ScanRetryPolicyProperties(
-                        reconnectAttempts = 1
-                    )
+                    scan = scanRetryProperties
                 )
             ),
             logRecordEventPublisher = testLogRecordEventPublisher,

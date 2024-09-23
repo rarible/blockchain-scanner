@@ -79,6 +79,7 @@ abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : L
                     groupId = groupId,
                     subscribers = subscribers,
                     transactionRecordEventPublisher = transactionRecordEventPublisher,
+                    logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver
                 )
             }
         val blockHandler = BlockHandler(

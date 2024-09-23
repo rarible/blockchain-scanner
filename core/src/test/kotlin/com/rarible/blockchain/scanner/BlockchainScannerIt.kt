@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.block.toBlock
 import com.rarible.blockchain.scanner.configuration.ScanProperties
+import com.rarible.blockchain.scanner.configuration.ScanRetryPolicyProperties
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
@@ -27,6 +28,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import java.time.Duration
 
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
@@ -90,6 +92,68 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     }
 
     @Test
+     fun `new block - retried`() = runBlocking<Unit> {
+        val blocks = randomBlockchain(2).map {
+            it.withReceivedTime(nowMillis().plusSeconds(1))
+        }
+        val block0 = blocks[0]
+        val block1 = blocks[1]
+        val block2 = blocks[2]
+
+        val log = randomOriginalLog(block = block1, topic = descriptor.topic, logIndex = 1)
+        // log2 should be filtered
+        val logFiltered = randomOriginalLog(block = block1, topic = descriptor.topic, logIndex = 1)
+
+        val testBlockchainData = TestBlockchainData(
+            blocks = blocks,
+            logs = listOf(log, logFiltered),
+            newBlocks = blocks
+        )
+
+        val subscriber = TestLogEventSubscriber(descriptor, exceptionProvider = ThrowOnce(IOException("log exception")) )
+        val transactionSubscriber = TestTransactionEventSubscriber(exceptionProvider = ThrowOnce(IOException("transaction exception")))
+        val blockScanner = createBlockchainScanner(
+            testBlockchainClient = TestBlockchainClient(testBlockchainData),
+            subscribers = listOf(subscriber),
+            transactionSubscribers = listOf(transactionSubscriber),
+            scanRetryProperties = ScanRetryPolicyProperties(
+                reconnectDelay = Duration.ofMillis(1),
+                reconnectAttempts = 3
+            )
+        )
+
+        // Throws on scan ending
+        assertThrows<java.lang.IllegalStateException> {
+            blockScanner.scan()
+        }
+
+        assertThat(findBlock(block0.number)!!.copy(stats = null)).isEqualTo(block0.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block1.number)!!.copy(stats = null)).isEqualTo(block1.toBlock(BlockStatus.SUCCESS))
+        assertThat(findBlock(block2.number)!!.copy(stats = null)).isEqualTo(block2.toBlock(BlockStatus.SUCCESS))
+
+        assertPublishedLogRecords(
+            descriptor.groupId,
+            listOf(
+                LogRecordEvent(
+                    record = subscriber.getReturnedRecords(block1, log).single(),
+                    reverted = false,
+                    eventTimeMarks = EventTimeMarks("test")
+                )
+            ),
+            block0
+        )
+
+        assertPublishedTransactionRecords(
+            "test",
+            listOf(
+                transactionSubscriber.getExpected(block0),
+                transactionSubscriber.getExpected(block1),
+                transactionSubscriber.getExpected(block2),
+            )
+        )
+    }
+
+    @Test
     fun `new block - 2 subscribers, one failed, block saved`() = runBlocking<Unit> {
         val descriptor1 = TestDescriptor(
             topic = "topic",
@@ -107,7 +171,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
-        val subscriber2 = TestLogEventSubscriber(descriptor2, exception = RuntimeException(""))
+        val subscriber2 = TestLogEventSubscriber(descriptor2, exceptionProvider = { RuntimeException("") })
         val transactionSubscriber = TestTransactionEventSubscriber()
 
         val blocks = randomBlockchain(0)
@@ -169,7 +233,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         )
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
-        val subscriber2 = TestLogEventSubscriber(descriptor2, exception = RuntimeException(""))
+        val subscriber2 = TestLogEventSubscriber(descriptor2, exceptionProvider = { RuntimeException("") })
         val transactionSubscriber = TestTransactionEventSubscriber()
 
         val blocks = randomBlockchain(2)
@@ -232,7 +296,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
         val subscriber = TestLogEventSubscriber(
             descriptor = descriptor,
-            exception = IOException("")
+            exceptionProvider = { IOException("") }
         )
 
         val blocks = randomBlockchain(2)
@@ -585,4 +649,9 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
         reverted = reverted,
         eventTimeMarks = EventTimeMarks("test")
     )
+}
+
+class ThrowOnce(private val exception: Exception) : () -> Exception? {
+    private var invoked: Boolean = false
+    override fun invoke(): Exception? = exception.takeIf { !invoked }?.also { invoked = true }
 }
