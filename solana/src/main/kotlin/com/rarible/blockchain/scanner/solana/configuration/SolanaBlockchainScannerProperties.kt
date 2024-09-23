@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.solana.configuration
 
 import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.configuration.MonitoringProperties
+import com.rarible.blockchain.scanner.configuration.ReconciliationProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.configuration.TaskProperties
@@ -24,6 +25,7 @@ data class SolanaBlockchainScannerProperties(
     ),
     override val daemon: DaemonWorkerProperties = DaemonWorkerProperties(),
     override val task: TaskProperties = TaskProperties(),
+    override val reconciliation: ReconciliationProperties = ReconciliationProperties(),
     val rpcApiUrls: List<String>,
     val rpcApiTimeout: Long = 30000,
     val programIds: Set<String> = emptySet(),

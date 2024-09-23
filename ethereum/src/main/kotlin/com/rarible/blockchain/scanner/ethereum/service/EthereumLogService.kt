@@ -181,4 +181,8 @@ class EthereumLogService(
         blockHash = Word.apply(revertedBlockHash),
         topic = descriptor.ethTopic
     ).toList().map { it.withLog(it.log.copy(status = EthereumBlockStatus.REVERTED)) }
+
+    override suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        return ethereumLogRepository.countByBlockNumber(collection, blockNumber)
+    }
 }

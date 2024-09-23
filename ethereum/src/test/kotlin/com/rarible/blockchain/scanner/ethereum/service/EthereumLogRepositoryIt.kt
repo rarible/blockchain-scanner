@@ -25,7 +25,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 
 @IntegrationTest
-class EthereumLogServiceIt : AbstractIntegrationTest() {
+class EthereumLogRepositoryIt : AbstractIntegrationTest() {
 
     private var descriptor: EthereumDescriptor = mockk()
     private var collection = ""

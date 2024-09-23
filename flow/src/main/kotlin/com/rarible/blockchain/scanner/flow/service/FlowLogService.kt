@@ -44,4 +44,8 @@ class FlowLogService(
         // TODO: are we sure that in Flow no logs must be reverted?
         return emptyList()
     }
+
+    override suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        return logRepository.countByBlockNumber(collection, blockNumber)
+    }
 }

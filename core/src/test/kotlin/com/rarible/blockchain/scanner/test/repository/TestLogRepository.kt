@@ -1,8 +1,10 @@
 package com.rarible.blockchain.scanner.test.repository
 
+import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -58,5 +60,10 @@ class TestLogRepository(
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
         }
         return mongo.find(query, entityType, collection) as Flux<TestLogRecord>
+    }
+
+    suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        val criteria = TestLog::blockNumber isEqualTo blockNumber
+        return mongo.count(Query(criteria), collection).awaitSingle()
     }
 }
