@@ -32,4 +32,8 @@ class SolanaLogService(
         descriptor: SolanaDescriptor,
         revertedBlockHash: String
     ): List<SolanaLogRecord> = emptyList()
+
+    override suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        return logRepository.countByBlockNumber(collection, blockNumber)
+    }
 }

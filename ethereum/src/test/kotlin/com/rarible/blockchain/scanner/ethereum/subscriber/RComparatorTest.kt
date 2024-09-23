@@ -8,7 +8,7 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class EthereumLogRecordComparatorTest {
+class RComparatorTest {
 
     @Test
     fun `sort records`() {

@@ -7,7 +7,7 @@ data class FlowDescriptor(
     override val groupId: String,
     val events: Set<String>,
     val address: String,
-    val collection: String, // DB collection
+    override val collection: String, // DB collection
     val startFrom: Long? = null,
     override val entityType: Class<*>,
     override val alias: String? = null

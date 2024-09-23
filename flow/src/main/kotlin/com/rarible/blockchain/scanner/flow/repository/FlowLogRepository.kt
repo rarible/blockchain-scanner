@@ -72,4 +72,10 @@ class FlowLogRepository(
 
     suspend fun save(collection: String, record: FlowLogRecord): FlowLogRecord =
         mongo.save(record, collection).awaitSingle()
+
+    suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        // TODO there is an assumption that there is an index on log.blockHeight for all collections that can be in descriptor
+        val criteria = FlowLogRecord::log / FlowLog::blockHeight isEqualTo blockNumber
+        return mongo.count(Query(criteria), collection).awaitSingle()
+    }
 }

@@ -1,14 +1,12 @@
-package com.rarible.blockchain.scanner.ethereum.reconciliation
+package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.monitoring.AbstractMonitor
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.stereotype.Component
 
-@Component
-class EthereumLogReconciliationMonitor(
-    properties: EthereumScannerProperties,
+class LogReconciliationMonitor(
+    properties: BlockchainScannerProperties,
     meterRegistry: MeterRegistry
 ) : AbstractMonitor(
     properties,

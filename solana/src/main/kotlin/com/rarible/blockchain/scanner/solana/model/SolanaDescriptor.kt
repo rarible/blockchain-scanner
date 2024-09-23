@@ -7,5 +7,5 @@ abstract class SolanaDescriptor(
     override val id: String,
     override val groupId: String,
     override val entityType: Class<*>,
-    val collection: String
+    override val collection: String
 ) : Descriptor

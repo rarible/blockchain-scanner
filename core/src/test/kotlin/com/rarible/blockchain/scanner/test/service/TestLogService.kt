@@ -64,4 +64,8 @@ class TestLogService(
         descriptor: TestDescriptor,
         fullBlock: FullBlock<*, *>
     ): List<TestLogRecord> = emptyList()
+
+    override suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
+        return testLogRepository.countByBlockNumber(collection, blockNumber)
+    }
 }
