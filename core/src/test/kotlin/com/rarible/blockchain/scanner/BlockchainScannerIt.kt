@@ -110,7 +110,7 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             newBlocks = blocks
         )
 
-        val subscriber = TestLogEventSubscriber(descriptor, exceptionProvider = ThrowOnce(IOException("log exception")) )
+        val subscriber = TestLogEventSubscriber(descriptor, exceptionProvider = ThrowOnce(IOException("log exception")))
         val transactionSubscriber = TestTransactionEventSubscriber(exceptionProvider = ThrowOnce(IOException("transaction exception")))
         val blockScanner = createBlockchainScanner(
             testBlockchainClient = TestBlockchainClient(testBlockchainData),

@@ -21,6 +21,11 @@ class SolanaClientMt {
         programIds = emptySet() // All programs.
     )
 
+    private val eclipseTestnetHttpRpcApi = SolanaHttpRpcApi(
+        urls = listOf("https://testnet.dev2.eclipsenetwork.xyz"),
+        timeoutMillis = 30000
+    )
+
     @Test
     fun testGetBlock() = runBlocking {
         val slot = client.getLatestSlot()
@@ -42,5 +47,11 @@ class SolanaClientMt {
         (1 until blocks.lastIndex).forEach {
             assertTrue(blocks[it - 1].number < blocks[it].number)
         }
+    }
+
+    @Test
+    fun testGetAccountBase64Info() = runBlocking<Unit> {
+        val result = eclipseTestnetHttpRpcApi.getAccountBase64Info("DDGye6JCGsnV3CXcUwCRyu5W5RiFxBtd2aMpRooxYMpw")
+        println(result.result?.value?.data)
     }
 }

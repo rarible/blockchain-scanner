@@ -70,12 +70,13 @@ class GetTransactionRequest(
 
 class GetAccountInfo(
     address: String,
+    encoding: Encoding,
 ) : Request(
     method = "getAccountInfo",
     params = listOf(
         address,
         mapOf(
-            "encoding" to "jsonParsed"
+            "encoding" to encoding.value
         )
     )
 )
@@ -152,6 +153,17 @@ data class SolanaAccountInfoDto(
     )
 }
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SolanaAccountBase64InfoDto(
+    val value: Value
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Value(
+        val data: List<String>,
+    )
+}
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaTransactionDto(
     val transaction: Details?,
@@ -224,6 +236,11 @@ data class SolanaBlockDto(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaBalanceDto(val value: BigInteger)
+
+enum class Encoding(val value: String) {
+    JSON_PARSED("jsonParsed"),
+    BASE64("base64")
+}
 
 class SolanaBlockDtoParser(
     private val programIds: Set<String>
