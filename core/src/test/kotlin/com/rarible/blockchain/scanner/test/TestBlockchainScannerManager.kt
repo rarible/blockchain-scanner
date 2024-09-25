@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.model.TestTransactionRecord
+import com.rarible.blockchain.scanner.test.repository.TestLogStorage
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriberExceptionResolver
@@ -33,7 +34,7 @@ class TestBlockchainScannerManager(
     transactionRecordEventPublisher: TransactionRecordEventPublisher,
     transactionSubscribers: List<TestTransactionEventSubscriber>,
     logEventSubscriberExceptionResolver: TestLogEventSubscriberExceptionResolver,
-) : BlockchainScannerManager<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestTransactionRecord, TestDescriptor>(
+) : BlockchainScannerManager<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestTransactionRecord, TestDescriptor, TestLogStorage>(
     blockchainClient = blockchainClient,
     logSubscribers = subscribers,
     blockService = blockService,

@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.framework.service
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 
 /**
  * Interface describes operations with persistent storage for Log Records. Each Blockchain Scanner implementation
@@ -11,13 +12,15 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * For example, each subscriber has it own collection/table to store data. In such case descriptor can provide
  * name of the collection current operation should be executed to.
  */
-interface LogService<R : LogRecord, D : Descriptor> {
+interface LogService<R : LogRecord, D : Descriptor<S>, S : LogStorage> {
 
+    // todo unused, remove
     /**
      * Delete LogRecord from persistent storage.
      */
     suspend fun delete(descriptor: D, record: R): R
 
+    // todo unused, remove
     /**
      * Delete multiple LogRecord-s from the persistent storage.
      */
@@ -38,11 +41,4 @@ interface LogService<R : LogRecord, D : Descriptor> {
      * Returns logs that must be reverted when a block is reverted.
      */
     suspend fun prepareLogsToRevertOnRevertedBlock(descriptor: D, revertedBlockHash: String): List<R>
-
-    /**
-     * Counts transaction log entries for the given block in the given DB table.
-     *
-     * @param collection DB table/collection where the specific type of log is stored
-     * */
-    suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long
 }

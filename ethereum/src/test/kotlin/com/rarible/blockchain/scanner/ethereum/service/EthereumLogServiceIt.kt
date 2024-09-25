@@ -3,6 +3,8 @@ package com.rarible.blockchain.scanner.ethereum.service
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.repository.DefaultEthereumLogRepository
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
@@ -12,9 +14,9 @@ import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
-import io.mockk.mockk
-import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -22,41 +24,40 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.query.Query
 
 @IntegrationTest
-class EthereumLogRepositoryIt : AbstractIntegrationTest() {
+class EthereumLogServiceIt : AbstractIntegrationTest() {
 
-    private var descriptor: EthereumDescriptor = mockk()
-    private var collection = ""
+    private lateinit var descriptor: EthereumDescriptor
     private var topic = randomWord()
+    private lateinit var storage: EthereumLogRepository
 
     @BeforeEach
     fun beforeEach() {
         descriptor = testTransferSubscriber.getDescriptor()
-        collection = descriptor.collection
         topic = descriptor.ethTopic
+        storage = descriptor.storage
     }
 
     @Test
     fun `delete existing`() = runBlocking {
-        val record = randomLogRecord(descriptor.ethTopic, randomBlockHash())
-        val savedRecord = saveLog(collection, record)
+        val record = randomLogRecord(topic, randomBlockHash())
+        val savedRecord = storage.save(record)
 
-        assertNotNull(findLog(collection, record.id))
+        assertNotNull(storage.findLogEvent(record.id))
 
         ethereumLogService.delete(descriptor, savedRecord)
 
-        assertNull(findLog(collection, record.id))
+        assertNull(storage.findLogEvent(record.id))
     }
 
     @Test
     fun `delete not existing`() = runBlocking {
-        val record = randomLogRecord(descriptor.ethTopic, randomBlockHash())
+        val record = randomLogRecord(topic, randomBlockHash())
 
         ethereumLogService.delete(descriptor, record)
 
-        assertNull(findLog(collection, record.id))
+        assertNull(storage.findLogEvent(record.id))
     }
 
     @Test
@@ -65,7 +66,7 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
 
         ethereumLogService.save(descriptor, listOf(newLog), newLog.blockHash!!.prefixed())
 
-        val savedVisibleRecord = findLog(collection, newLog.id) as ReversedEthereumLogRecord
+        val savedVisibleRecord = storage.findLogEvent(newLog.id) as ReversedEthereumLogRecord
 
         assertNotNull(savedVisibleRecord)
         assertEquals(savedVisibleRecord.data, newLog.data)
@@ -89,11 +90,11 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
         val visibleRecordData = visibleRecord.data as TestEthereumLogData
         val updatedVisibleRecord = visibleRecord.copy(data = visibleRecordData.copy(customData = randomString()))
 
-        saveLog(descriptor.collection, visibleRecord)
+        storage.save(visibleRecord)
         ethereumLogService.save(descriptor, listOf(updatedVisibleRecord), blockHash.prefixed())
-        assertEquals(1, mongo.count(Query(), descriptor.collection).awaitFirst())
+        assertThat(storage.findAll().toList()).hasSize(1)
 
-        val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
+        val savedVisibleRecord = storage.findLogEvent(visibleRecord.id) as ReversedEthereumLogRecord
 
         val expectedLog = updatedVisibleRecord.log.copy(updatedAt = savedVisibleRecord.log.updatedAt)
 
@@ -124,11 +125,11 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
             status = EthereumBlockStatus.CONFIRMED
         )
 
-        saveLog(descriptor.collection, visibleRecord)
+        storage.save(visibleRecord)
         ethereumLogService.save(descriptor, listOf(updatedVisibleRecord), blockHash.prefixed())
-        assertEquals(1, mongo.count(Query(), descriptor.collection).awaitFirst())
+        assertThat(descriptor.storage.findAll().toList()).hasSize(1)
 
-        val savedVisibleRecord = findLog(collection, visibleRecord.id) as ReversedEthereumLogRecord
+        val savedVisibleRecord = storage.findLogEvent(visibleRecord.id) as ReversedEthereumLogRecord
 
         val expectedLog = updatedVisibleRecord.log.copy(updatedAt = savedVisibleRecord.log.updatedAt)
 
@@ -146,7 +147,7 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
             address = randomAddress()
         )
         val visibleRecord = randomLogRecord(existingLog)
-        saveLog(descriptor.collection, visibleRecord)
+        storage.save(visibleRecord)
         val errorLog = randomLog(
             transactionHash = existingLog.transactionHash,
             blockHash = existingLog.blockHash!!,
@@ -154,7 +155,7 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
         ).copy(logIndex = existingLog.logIndex, minorLogIndex = existingLog.minorLogIndex)
         // The following unique index is violated: transactionHash.blockHash.logIndex.minorLogIndex
         assertThrows<DuplicateKeyException> {
-            saveLog(descriptor.collection, randomLogRecord(errorLog))
+            storage.save(randomLogRecord(errorLog))
         }
     }
 
@@ -162,10 +163,10 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
     fun `save - log record not changed`() = runBlocking {
         val log = randomLogRecord(topic, randomBlockHash())
 
-        val savedLog = saveLog(collection, log)
+        val savedLog = storage.save(log)
         ethereumLogService.save(descriptor, listOf(log), log.blockHash!!.prefixed())
 
-        val updatedLog = findLog(collection, log.id) as ReversedEthereumLogRecord
+        val updatedLog = storage.findLogEvent(log.id) as ReversedEthereumLogRecord
 
         assertNotNull(updatedLog)
         assertEquals(savedLog.version, updatedLog.version)
@@ -174,16 +175,16 @@ class EthereumLogRepositoryIt : AbstractIntegrationTest() {
 
     @Test
     fun `prepare reverted logs`() = runBlocking {
-        val anotherCollection = testBidSubscriber.getDescriptor().collection
+        val anotherStorage = DefaultEthereumLogRepository(mongo, "another")
         val blockHash = randomBlockHash()
 
-        val reverted = saveLog(collection, randomLogRecord(topic, blockHash))
+        val reverted = storage.save(randomLogRecord(topic, blockHash))
         // wrongBlockHash
-        saveLog(collection, randomLogRecord(topic, randomBlockHash()))
+        storage.save(randomLogRecord(topic, randomBlockHash()))
         // wrongTopic
-        saveLog(collection, randomLogRecord(randomWord(), blockHash))
+        storage.save(randomLogRecord(randomWord(), blockHash))
         // wrongCollection
-        saveLog(anotherCollection, randomLogRecord(topic, blockHash))
+        anotherStorage.save(randomLogRecord(topic, blockHash))
 
         val revertedLogs =
             ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()

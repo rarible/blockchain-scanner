@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.ScanMode
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
@@ -16,10 +17,16 @@ import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class BlockReindexer<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
-    private val subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
-    private val blockHandlerFactory: BlockHandlerFactory<BB, BL, R, D>,
-    private val logHandlerFactory: LogHandlerFactory<BB, BL, R, D>
+class BlockReindexer<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    >(
+    private val subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
+    private val blockHandlerFactory: BlockHandlerFactory<BB, BL, R, D, S>,
+    private val logHandlerFactory: LogHandlerFactory<BB, BL, R, D, S>
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
@@ -34,7 +41,7 @@ class BlockReindexer<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D 
     suspend fun reindex(
         baseBlock: Block,
         blocksRanges: Flow<TypedBlockRange>,
-        filter: SubscriberFilter<BB, BL, R, D>? = null,
+        filter: SubscriberFilter<BB, BL, R, D, S>? = null,
         publisher: LogRecordEventPublisher? = null
     ): Flow<Block> {
         return withContext(RaribleMDCContext(mapOf("reindex-task" to "true"))) {

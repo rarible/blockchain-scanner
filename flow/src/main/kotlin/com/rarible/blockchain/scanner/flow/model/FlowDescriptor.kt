@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.flow.model
 
+import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 
 data class FlowDescriptor(
@@ -10,5 +11,6 @@ data class FlowDescriptor(
     override val collection: String, // DB collection
     val startFrom: Long? = null,
     override val entityType: Class<*>,
-    override val alias: String? = null
-) : Descriptor
+    override val alias: String? = null,
+    override val storage: FlowLogRepository,
+) : Descriptor<FlowLogRepository>

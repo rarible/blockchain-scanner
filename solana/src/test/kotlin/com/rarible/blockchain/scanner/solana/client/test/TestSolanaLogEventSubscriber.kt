@@ -5,18 +5,24 @@ import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.stereotype.Component
 
 const val testRecordsCollection: String = "test-records"
 
 @Component
-class TestSolanaLogEventSubscriber : SolanaLogEventSubscriber {
+class TestSolanaLogEventSubscriber(
+    mongo: ReactiveMongoTemplate,
+) : SolanaLogEventSubscriber {
+    private val testLogStorage = TestSolanaLogStorage(mongo, testRecordsCollection)
+
     override fun getDescriptor(): SolanaDescriptor = object : SolanaDescriptor(
         programId = "testProgramId",
         id = "test",
         groupId = "testGroupId",
         entityType = TestSolanaLogRecord::class.java,
-        collection = testRecordsCollection
+        collection = testRecordsCollection,
+        storage = testLogStorage,
     ) {}
 
     override suspend fun getEventRecords(

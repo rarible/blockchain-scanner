@@ -4,6 +4,8 @@ import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.repository.DefaultEthereumLogRepository
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
@@ -19,6 +21,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.web3jold.utils.Numeric
 import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
@@ -42,14 +45,28 @@ class TestEthereumScannerConfiguration {
     @Bean
     fun meterRegistry(): MeterRegistry = SimpleMeterRegistry()
 
+    @Bean("TransferRepository")
+    fun transferRepository(mongo: ReactiveMongoOperations): EthereumLogRepository = DefaultEthereumLogRepository(mongo, "transfer")
+
     @Bean
-    fun testTransferSubscriber(): TestTransferSubscriber = TestTransferSubscriber()
+    fun testTransferSubscriber(
+        @Qualifier("TransferRepository") bidRepository: EthereumLogRepository
+    ): TestTransferSubscriber {
+        return TestTransferSubscriber(bidRepository)
+    }
+
+    @Bean("BidRepository")
+    fun bidRepository(mongo: ReactiveMongoOperations): EthereumLogRepository = DefaultEthereumLogRepository(mongo, "bid")
+
+    @Bean
+    fun testBidSubscriber(
+        @Qualifier("BidRepository") bidRepository: EthereumLogRepository
+    ): TestBidSubscriber {
+        return TestBidSubscriber(bidRepository)
+    }
 
     @Bean
     fun testTransactionSubscriber(): TestTransactionSubscriber = TestTransactionSubscriber()
-
-    @Bean
-    fun testBidSubscriber(): TestBidSubscriber = TestBidSubscriber()
 
     @Bean
     fun sender(ethereum: MonoEthereum) = MonoSigningTransactionSender(

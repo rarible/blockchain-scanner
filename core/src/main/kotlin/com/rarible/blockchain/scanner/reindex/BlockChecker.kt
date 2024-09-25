@@ -8,16 +8,23 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.lastOrNull
 import org.slf4j.LoggerFactory
 
-class BlockChecker<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
+class BlockChecker<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    >(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
     private val blockService: BlockService,
-    private val reindexer: BlockReindexer<BB, BL, R, D>,
+    private val reindexer: BlockReindexer<BB, BL, R, D, S>,
     private val planner: BlockScanPlanner<BB>,
     private val properties: BlockchainScannerProperties
 ) {

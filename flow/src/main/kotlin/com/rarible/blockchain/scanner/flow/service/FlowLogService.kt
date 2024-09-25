@@ -9,24 +9,17 @@ import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
 @Service
-class FlowLogService(
-    private val logRepository: FlowLogRepository
-) : LogService<FlowLogRecord, FlowDescriptor> {
+class FlowLogService : LogService<FlowLogRecord, FlowDescriptor, FlowLogRepository> {
 
     override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord): FlowLogRecord =
-        logRepository.delete(descriptor.collection, record)
-
-    override suspend fun delete(
-        descriptor: FlowDescriptor,
-        records: List<FlowLogRecord>
-    ): List<FlowLogRecord> = records.map { delete(descriptor, it) }
+        descriptor.storage.delete(record)
 
     override suspend fun save(
         descriptor: FlowDescriptor,
         records: List<FlowLogRecord>,
         blockHash: String,
     ): List<FlowLogRecord> {
-        return logRepository.saveAll(descriptor.collection, records).toList()
+        return descriptor.storage.saveAll(records).toList()
     }
 
     override suspend fun prepareLogsToRevertOnNewBlock(
@@ -43,9 +36,5 @@ class FlowLogService(
     ): List<FlowLogRecord> {
         // TODO: are we sure that in Flow no logs must be reverted?
         return emptyList()
-    }
-
-    override suspend fun countByBlockNumber(collection: String, blockNumber: Long): Long {
-        return logRepository.countByBlockNumber(collection, blockNumber)
     }
 }

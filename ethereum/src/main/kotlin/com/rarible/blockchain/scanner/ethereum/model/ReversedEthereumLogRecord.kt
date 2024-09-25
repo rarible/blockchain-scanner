@@ -14,6 +14,9 @@ import java.time.Instant
  * It has reverted structure - Log fields placed in the root of object,
  * custom data are nested object here
  */
+// todo the name is confusing - the name suggests that the record has been reversed in some way,
+//  but the class description suggests it is a normal record, just with a different structure
+//  (maybe the word was supposed to be "inverted"?)
 data class ReversedEthereumLogRecord(
     @Id
     override val id: String,

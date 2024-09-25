@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
+import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.reindex.BlockRange
@@ -16,13 +17,13 @@ import org.springframework.stereotype.Component
 @Component
 class FlowBlockReindexTaskHandler(
     manager: FlowBlockchainScannerManager
-) : BlockReindexTaskHandler<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, TransactionRecord, FlowDescriptor, FlowReindexParam>(
+) : BlockReindexTaskHandler<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, TransactionRecord, FlowDescriptor, FlowLogRepository, FlowReindexParam>(
     manager
 ) {
 
     override fun getFilter(
         param: FlowReindexParam
-    ): SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor> {
+    ): SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor, FlowLogRepository> {
         return FlowSubscriberFilter(param.addresses)
     }
 
@@ -45,11 +46,11 @@ data class FlowReindexParam(
 
 class FlowSubscriberFilter(
     private val addresses: Set<String>
-) : SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor> {
+) : SubscriberFilter<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor, FlowLogRepository> {
 
     override fun filter(
-        all: List<LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor>>
-    ): List<LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor>> {
+        all: List<LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor, FlowLogRepository>>
+    ): List<LogEventSubscriber<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, FlowDescriptor, FlowLogRepository>> {
         if (addresses.isEmpty()) {
             return all
         }

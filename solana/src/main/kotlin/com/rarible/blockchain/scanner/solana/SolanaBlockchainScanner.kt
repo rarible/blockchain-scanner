@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
+import com.rarible.blockchain.scanner.solana.model.SolanaLogStorage
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component
 @Component
 class SolanaBlockchainScanner(
     manager: SolanaBlockchainScannerManager
-) : BlockchainScanner<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, TransactionRecord, SolanaDescriptor>(
+) : BlockchainScanner<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, TransactionRecord, SolanaDescriptor, SolanaLogStorage>(
     manager = manager
 ) {
 

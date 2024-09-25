@@ -36,7 +36,6 @@ class FlowBlockchainScannerConfiguration {
         subscribers: List<FlowLogEventSubscriber>,
     ): ReconciliationLogHandler {
         return ReconciliationLogHandlerImpl(
-            logService = logService,
             reconciliationProperties = scannerProperties.reconciliation,
             blockchainClient = manager.retryableClient,
             logHandlerFactory = manager.logHandlerFactory,

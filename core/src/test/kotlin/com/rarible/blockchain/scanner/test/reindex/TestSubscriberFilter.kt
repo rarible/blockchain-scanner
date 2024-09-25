@@ -6,14 +6,15 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.repository.TestLogStorage
 
 class TestSubscriberFilter(
-    private val collections: Set<String>
-) : SubscriberFilter<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor> {
+    private val storages: Set<TestLogStorage>
+) : SubscriberFilter<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage> {
 
     override fun filter(
-        all: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>>
-    ): List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>> {
-        return all.filter { collections.contains(it.getDescriptor().collection) }
+        all: List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage>>
+    ): List<LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage>> {
+        return all.filter { storages.contains(it.getDescriptor().storage) }
     }
 }

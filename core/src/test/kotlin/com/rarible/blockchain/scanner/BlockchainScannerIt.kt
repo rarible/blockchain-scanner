@@ -16,8 +16,6 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchain
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomString
-import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
-import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.revert
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestTransactionEventSubscriber
@@ -33,12 +31,13 @@ import java.time.Duration
 @IntegrationTest
 class BlockchainScannerIt : AbstractIntegrationTest() {
 
-    private val descriptor = TestDescriptor(
-        topic = randomString(),
-        collection = randomString(),
-        contracts = listOf(randomString(), randomString()),
-        entityType = TestCustomLogRecord::class.java
-    )
+    private val descriptor by lazy {
+        testDescriptor(
+            topic = randomString(),
+            collection = randomString(),
+            contracts = listOf(randomString(), randomString()),
+        )
+    }
 
     @Test
     fun `new block - single`() = runBlocking<Unit> {
@@ -155,19 +154,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `new block - 2 subscribers, one failed, block saved`() = runBlocking<Unit> {
-        val descriptor1 = TestDescriptor(
+        val descriptor1 = testDescriptor(
             topic = "topic",
             collection = "collection1",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = "group1"
+            groupId = "group1",
         )
-        val descriptor2 = TestDescriptor(
+        val descriptor2 = testDescriptor(
             topic = "topic",
             collection = "collection2",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = "group2"
+            groupId = "group2",
         )
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
@@ -217,19 +212,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `new block - 2 subscribers, one failed, too many failed blocks`() = runBlocking<Unit> {
-        val descriptor1 = TestDescriptor(
+        val descriptor1 = testDescriptor(
             topic = "topic",
             collection = "collection1",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = "group1"
+            groupId = "group1",
         )
-        val descriptor2 = TestDescriptor(
+        val descriptor2 = testDescriptor(
             topic = "topic",
             collection = "collection2",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = "group2"
+            groupId = "group2",
         )
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
@@ -286,12 +277,10 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
 
     @Test
     fun `new block - subscriber failed with IOException`() = runBlocking<Unit> {
-        val descriptor = TestDescriptor(
+        val descriptor = testDescriptor(
             topic = "topic",
             collection = "collection2",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = "group"
+            groupId = "group",
         )
 
         val subscriber = TestLogEventSubscriber(
@@ -329,19 +318,15 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     @Test
     fun `new block - 2 subscribers - different descriptors with the same group`() = runBlocking<Unit> {
         val groupId = "group"
-        val descriptor1 = TestDescriptor(
+        val descriptor1 = testDescriptor(
             topic = "topic",
             collection = "collection1",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = groupId
+            groupId = groupId,
         )
-        val descriptor2 = TestDescriptor(
+        val descriptor2 = testDescriptor(
             topic = "topic",
             collection = "collection2",
-            contracts = emptyList(),
-            entityType = TestCustomLogRecord::class.java,
-            groupId = groupId
+            groupId = groupId,
         )
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
@@ -397,8 +382,16 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
     @Test
     fun `new block - 2 subscribers, log save disabled`() = runBlocking<Unit> {
         val groupId = descriptor.groupId
-        val descriptor1 = descriptor.copy(collection = randomString())
-        val descriptor2 = descriptor.copy(collection = randomString(), saveLogs = false)
+        val descriptor1 = testDescriptor(
+            topic = descriptor.topic,
+            collection = randomString(),
+            contracts = descriptor.contracts,
+        )
+        val descriptor2 = testDescriptor(
+            topic = descriptor.topic,
+            collection = randomString(),
+            contracts = descriptor.contracts,
+        ).copy(saveLogs = false)
 
         val subscriber1 = TestLogEventSubscriber(descriptor1)
         val subscriber2 = TestLogEventSubscriber(descriptor2)
@@ -435,8 +428,8 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             )
         )
 
-        assertThat(findAllLogs(descriptor1.collection)).hasSize(2)
-        assertThat(findAllLogs(descriptor2.collection)).isEmpty()
+        assertThat(descriptor1.storage.findAllLogs()).hasSize(2)
+        assertThat(descriptor2.storage.findAllLogs()).isEmpty()
     }
 
     @Test
@@ -511,14 +504,14 @@ class BlockchainScannerIt : AbstractIntegrationTest() {
             confirmedTransactions + listOf(transactionSubscriber.getExpected(newBlock2))
         )
 
-        val savedLog21 = findLog(descriptor.collection, newRecord21.id)
+        val savedLog21 = descriptor.storage.findLogEvent(newRecord21.id)
         assertThat(savedLog21?.log?.reverted).isFalse
-        val savedLog22 = findLog(descriptor.collection, newRecord22.id)
+        val savedLog22 = descriptor.storage.findLogEvent(newRecord22.id)
         assertThat(savedLog22?.log?.reverted).isFalse
 
-        val savedRevertedLog22 = findLog(descriptor.collection, revertedRecord22.id)
+        val savedRevertedLog22 = descriptor.storage.findLogEvent(revertedRecord22.id)
         assertThat(savedRevertedLog22?.log?.reverted).isTrue
-        val savedRevertedLog21 = findLog(descriptor.collection, revertedRecord21.id)
+        val savedRevertedLog21 = descriptor.storage.findLogEvent(revertedRecord21.id)
         assertThat(savedRevertedLog21?.log?.reverted).isTrue
     }
 

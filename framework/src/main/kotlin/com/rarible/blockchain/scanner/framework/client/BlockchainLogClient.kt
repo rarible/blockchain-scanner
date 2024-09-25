@@ -4,7 +4,7 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.flow.Flow
 
-interface BlockchainLogClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor> {
+interface BlockchainLogClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor<*>> {
 
     /**
      * Get logs for the given [blocks].

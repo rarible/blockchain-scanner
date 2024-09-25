@@ -12,7 +12,6 @@ import com.nftco.flow.sdk.FlowTransactionProposalKey
 import com.nftco.flow.sdk.crypto.Crypto
 import com.nftco.flow.sdk.waitForSeal
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
-import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.flow.test.TestFlowScannerConfiguration
 import com.rarible.core.test.containers.KGenericContainer
@@ -53,9 +52,6 @@ class FlowScannerTest {
 
     private lateinit var accessApi: FlowAccessApi
     private val latestBlockID: FlowId get() = accessApi.getLatestBlockHeader().id
-
-    @Autowired
-    private lateinit var logRepository: FlowLogRepository
 
     @Autowired
     private lateinit var allFlowLogEventSubscriber: FlowLogEventSubscriber
@@ -265,9 +261,7 @@ class FlowScannerTest {
                 while (founded == null) {
                     founded = try {
                         val descriptor = allFlowLogEventSubscriber.getDescriptor()
-                        logRepository.findByLogEventType(
-                            entityType = descriptor.entityType,
-                            collection = descriptor.collection,
+                        descriptor.storage.findByLogEventType(
                             eventType = "A.f8d6e0586b0a20c7.ExampleNFT.Mint"
                         )
                     } catch (e: Exception) {

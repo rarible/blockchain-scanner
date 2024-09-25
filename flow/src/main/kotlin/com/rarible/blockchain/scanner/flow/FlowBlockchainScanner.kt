@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.flow.client.FlowBlockchainBlock
 import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
+import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.util.subscribeWithRetry
 import kotlinx.coroutines.reactor.mono
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component
 @Component
 class FlowBlockchainScanner(
     manager: FlowBlockchainScannerManager
-) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, TransactionRecord, FlowDescriptor>(
+) : BlockchainScanner<FlowBlockchainBlock, FlowBlockchainLog, FlowLogRecord, TransactionRecord, FlowDescriptor, FlowLogRepository>(
     manager
 ) {
 

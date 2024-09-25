@@ -40,7 +40,8 @@ class RetryableBlockchainClientTest {
         topic = randomString(),
         collection = randomString(),
         contracts = listOf(randomString(), randomString()),
-        entityType = TestCustomLogRecord::class.java
+        entityType = TestCustomLogRecord::class.java,
+        storage = mockk(),
     )
 
     @BeforeEach
