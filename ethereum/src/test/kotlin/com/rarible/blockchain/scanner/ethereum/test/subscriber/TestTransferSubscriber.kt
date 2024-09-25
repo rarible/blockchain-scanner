@@ -5,12 +5,15 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.contracts.test.erc20.TransferEvent
 
-class TestTransferSubscriber : EthereumLogEventSubscriber() {
+class TestTransferSubscriber(
+    private val transferRepository: EthereumLogRepository,
+) : EthereumLogEventSubscriber() {
 
     override fun getDescriptor(): EthereumDescriptor {
         return EthereumDescriptor(
@@ -18,7 +21,8 @@ class TestTransferSubscriber : EthereumLogEventSubscriber() {
             groupId = "transfers",
             collection = "transfers",
             contracts = listOf(),
-            entityType = ReversedEthereumLogRecord::class.java
+            entityType = ReversedEthereumLogRecord::class.java,
+            storage = transferRepository,
         )
     }
 

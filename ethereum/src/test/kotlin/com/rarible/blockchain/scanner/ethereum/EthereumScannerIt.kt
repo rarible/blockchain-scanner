@@ -1,8 +1,8 @@
 package com.rarible.blockchain.scanner.ethereum
 
 import com.rarible.blockchain.scanner.block.BlockService
-import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
@@ -33,7 +33,6 @@ import java.time.Duration
 class EthereumScannerIt : AbstractIntegrationTest() {
 
     private lateinit var descriptor: EthereumDescriptor
-    private lateinit var collection: String
     private lateinit var topic: Word
     private lateinit var contract: TestERC20
 
@@ -46,7 +45,6 @@ class EthereumScannerIt : AbstractIntegrationTest() {
     @BeforeEach
     fun beforeEach() {
         descriptor = testTransferSubscriber.getDescriptor()
-        collection = descriptor.collection
         topic = descriptor.ethTopic
 
         contract = TestERC20.deployAndWait(sender, poller, "NAME", "NM").block()!!
@@ -66,7 +64,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(receipt.blockHash().toString()).isEqualTo(block?.hash)
 
             // We expect single LogRecord from our single Subscriber
-            val allLogs = findAllLogs(collection)
+            val allLogs = findAllLogs(descriptor)
             assertThat(allLogs).hasSize(1)
 
             val testRecord = allLogs.single() as ReversedEthereumLogRecord
@@ -139,7 +137,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(receipt.blockHash().toString()).isEqualTo(block?.hash)
 
             // We expect single LogRecord from our single Subscriber
-            val allLogs = findAllLogs(collection)
+            val allLogs = findAllLogs(descriptor)
             assertThat(allLogs).hasSize(1)
         }
 
@@ -165,7 +163,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
             assertThat(events).hasSize(2)
 
             // We still have a single LogRecord in db
-            val allLogs = findAllLogs(collection)
+            val allLogs = findAllLogs(descriptor)
             assertThat(allLogs).hasSize(1)
 
             // We use random id in the TestTransferSubscriber, we must be sure that id from logEvents are the same

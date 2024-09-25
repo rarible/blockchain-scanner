@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriberExceptionResolver
@@ -13,9 +14,15 @@ import com.rarible.blockchain.scanner.handler.LogHandler
 import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 
-class LogHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
+class LogHandlerFactory<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    >(
     private val blockchainClient: BlockchainClient<BB, BL, D>,
-    private val logService: LogService<R, D>,
+    private val logService: LogService<R, D, S>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logEventSubscriberExceptionResolver: LogEventSubscriberExceptionResolver,
     private val logMonitor: LogMonitor
@@ -23,15 +30,9 @@ class LogHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord,
 
     fun create(
         groupId: String,
-        subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+        subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
         logRecordEventPublisher: LogRecordEventPublisher,
-    ) = create(groupId, subscribers, logService, logRecordEventPublisher)
-
-    fun create(
-        groupId: String,
-        subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
-        logService: LogService<R, D>,
-        logRecordEventPublisher: LogRecordEventPublisher,
+        readOnly: Boolean = false,
     ) = LogHandler(
         groupId = groupId,
         blockchainClient = blockchainClient,
@@ -40,6 +41,7 @@ class LogHandlerFactory<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord,
         logRecordComparator = logRecordComparator,
         logRecordEventPublisher = logRecordEventPublisher,
         logMonitor = logMonitor,
-        logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver
+        logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver,
+        readOnly = readOnly,
     )
 }

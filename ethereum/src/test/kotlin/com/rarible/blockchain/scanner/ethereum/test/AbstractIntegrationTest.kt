@@ -6,9 +6,8 @@ import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
-import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
@@ -19,6 +18,7 @@ import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
-import org.springframework.data.mongodb.core.findAll
 import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
 import scalether.domain.response.Transaction
@@ -60,9 +59,6 @@ abstract class AbstractIntegrationTest {
     lateinit var ethereumBlockService: BlockService
 
     @Autowired
-    lateinit var ethereumLogRepository: EthereumLogRepository
-
-    @Autowired
     lateinit var ethereumLogService: EthereumLogService
 
     @Autowired
@@ -92,20 +88,12 @@ abstract class AbstractIntegrationTest {
     @Autowired
     lateinit var properties: EthereumScannerProperties
 
-    protected fun findLog(collection: String, id: String): EthereumLogRecord? = runBlocking {
-        ethereumLogRepository.findLogEvent(ReversedEthereumLogRecord::class.java, collection, id)
+    protected suspend fun findBlock(number: Long): Block? {
+        return ethereumBlockRepository.findById(number)
     }
 
-    protected fun findBlock(number: Long): Block? {
-        return mono { ethereumBlockRepository.findById(number) }.block()
-    }
-
-    protected fun findAllLogs(collection: String): List<Any> {
-        return mongo.findAll<Any>(collection).collectList().block() ?: emptyList()
-    }
-
-    protected fun saveLog(collection: String, logRecord: EthereumLogRecord): EthereumLogRecord {
-        return mono { ethereumLogRepository.save(collection, logRecord) }.block()!!
+    protected suspend fun findAllLogs(descriptor: EthereumDescriptor): List<EthereumLogRecord> {
+        return descriptor.storage.findAll().toList()
     }
 
     protected fun saveBlock(

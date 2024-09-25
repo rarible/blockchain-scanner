@@ -15,6 +15,7 @@ import com.rarible.blockchain.scanner.framework.data.NewUnstableBlockEvent
 import com.rarible.blockchain.scanner.framework.data.RevertedBlockEvent
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriberExceptionResolver
@@ -27,6 +28,8 @@ import com.rarible.core.common.asyncBatchHandle
 import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.common.nowMillis
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -34,15 +37,22 @@ import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 import java.util.TreeMap
 
-class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor>(
+class LogHandler<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    >(
     override val groupId: String,
     private val blockchainClient: BlockchainClient<BB, BL, D>,
-    private val subscribers: List<LogEventSubscriber<BB, BL, R, D>>,
-    private val logService: LogService<R, D>,
+    private val subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
+    private val logService: LogService<R, D, S>,
     private val logRecordComparator: LogRecordComparator<R>,
     private val logRecordEventPublisher: LogRecordEventPublisher,
     private val logEventSubscriberExceptionResolver: LogEventSubscriberExceptionResolver,
     private val logMonitor: LogMonitor,
+    private val readOnly: Boolean = false,
 ) : BlockEventListener<BB> {
 
     private val logger = LoggerFactory.getLogger(LogHandler::class.java)
@@ -57,10 +67,10 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
             BlockRanges.toBatches(events).flatMap { prepareBlockEventsBatch(it) }
         }
 
-        val failed = logEvents.filterIsInstance<SubscriberResultFail<LogEvent<R, D>>>()
+        val failed = logEvents.filterIsInstance<SubscriberResultFail<LogEvent<R, D, S>>>()
             .map { BlockError(it.blockNumber, groupId, it.errorMessage) }.groupBy { it.blockNumber }
 
-        val records = logEvents.filterIsInstance<SubscriberResultOk<LogEvent<R, D>>>().map { it.result }
+        val records = logEvents.filterIsInstance<SubscriberResultOk<LogEvent<R, D, S>>>().map { it.result }
 
         val saved = logMonitor.onSaveLogs {
             insertOrUpdateRecords(records)
@@ -84,7 +94,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         }
     }
 
-    private fun gatherStats(logs: List<LogEvent<R, D>>): Map<Long, BlockStats> {
+    private fun gatherStats(logs: List<LogEvent<R, D, S>>): Map<Long, BlockStats> {
         val start = System.currentTimeMillis()
         val result = HashMap<Long, BlockStats>()
         logs.groupBy { it.blockEvent.number }.forEach {
@@ -115,7 +125,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         return result
     }
 
-    private suspend fun sortAndPublishEvents(events: List<BlockEvent<BB>>, logEvents: List<LogEvent<R, D>>) {
+    private suspend fun sortAndPublishEvents(events: List<BlockEvent<BB>>, logEvents: List<LogEvent<R, D, S>>) {
         val start = System.currentTimeMillis()
         val blockLogsToInsert = HashMap<BlockEvent<*>, MutableList<List<R>>>(events.size)
         val blockLogsToUpdate = HashMap<BlockEvent<*>, MutableList<List<R>>>(events.size)
@@ -162,7 +172,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
         return records.map { it.copy(eventTimeMarks = it.eventTimeMarks.addScannerOut()) }
     }
 
-    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<SubscriberResult<LogEvent<R, D>>> {
+    private suspend fun prepareBlockEventsBatch(batch: List<BlockEvent<BB>>): List<SubscriberResult<LogEvent<R, D, S>>> {
         return coroutineScope {
             subscribers.map { subscriber ->
                 asyncWithTraceId(context = NonCancellable) {
@@ -178,49 +188,71 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     // Important! If data not saved it means ID of same events in reindex case will be different
-    private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D>>) = coroutineScope {
-        val updated: List<LogEvent<R, D>> = logEvents.mapNotNull {
-            if (it.logRecordsToUpdate.isEmpty()) {
-                return@mapNotNull null
-            }
-            if (!it.descriptor.shouldSaveLogs()) {
-                logging("skipping update for ${it.logRecordsToUpdate.size} log records (disabled)", it.blockEvent)
-                return@mapNotNull CompletableDeferred(it)
-            }
-            asyncWithTraceId(context = NonCancellable) {
-                logging("updating ${it.logRecordsToUpdate.size} log records", it.blockEvent)
-                withExceptionLogging("Update log records for ${it.blockEvent} by ${it.descriptor.groupId}") {
-                    val saved = logService.save(it.descriptor, it.logRecordsToUpdate, it.blockEvent.hash)
-                    it.copy(logRecordsToUpdate = saved)
-                }
-            }
-        }.awaitAll()
-
-        val inserted: List<LogEvent<R, D>> = logEvents.mapNotNull {
-            if (it.logRecordsToInsert.isEmpty()) {
-                return@mapNotNull null
-            }
-            if (!it.descriptor.shouldSaveLogs()) {
-                logging("skipping insert for ${it.logRecordsToInsert.size} log records (disabled)", it.blockEvent)
-                return@mapNotNull CompletableDeferred(it)
-            }
-            asyncWithTraceId(context = NonCancellable) {
-                logging("inserting ${it.logRecordsToInsert.size} log records", it.blockEvent)
-                val saved = withExceptionLogging("Insert log records for ${it.blockEvent} by $groupId") {
-                    logService.save(it.descriptor, it.logRecordsToInsert, it.blockEvent.hash)
-                }
-                logMonitor.onLogsInserted(descriptor = it.descriptor, inserted = it.logRecordsToInsert.size)
-                it.copy(logRecordsToInsert = saved)
-            }
-        }.awaitAll()
+    private suspend fun insertOrUpdateRecords(logEvents: List<LogEvent<R, D, S>>) = coroutineScope {
+        // todo can we do it in parallel?
+        val updated: List<LogEvent<R, D, S>> = updateRecords(logEvents).awaitAll()
+        val inserted: List<LogEvent<R, D, S>> = insertRecords(logEvents).awaitAll()
         updated + inserted
     }
 
+    private fun CoroutineScope.updateRecords(logEvents: List<LogEvent<R, D, S>>): List<Deferred<LogEvent<R, D, S>>> {
+        return logEvents.mapNotNull { event ->
+            val recordsToUpdate = event.logRecordsToUpdate
+            if (recordsToUpdate.isEmpty()) {
+                return@mapNotNull null
+            }
+            val descriptor = event.descriptor
+            val blockEvent = event.blockEvent
+            if (!descriptor.shouldSaveLogs()) {
+                logging("skipping update for ${recordsToUpdate.size} log records (disabled)", blockEvent)
+                return@mapNotNull CompletableDeferred(event)
+            }
+            asyncWithTraceId(context = NonCancellable) {
+                logging("updating ${recordsToUpdate.size} log records", blockEvent)
+                withExceptionLogging("Update log records for $blockEvent by ${descriptor.groupId}") {
+                    val saved = saveRecords(descriptor, recordsToUpdate, blockEvent)
+                    event.copy(logRecordsToUpdate = saved)
+                }
+            }
+        }
+    }
+
+    private fun CoroutineScope.insertRecords(logEvents: List<LogEvent<R, D, S>>): List<Deferred<LogEvent<R, D, S>>> {
+        return logEvents.mapNotNull { event ->
+            val logRecordsToInsert = event.logRecordsToInsert
+            if (logRecordsToInsert.isEmpty()) {
+                return@mapNotNull null
+            }
+            val descriptor = event.descriptor
+            val blockEvent = event.blockEvent
+            if (!descriptor.shouldSaveLogs()) {
+                logging("skipping insert for ${logRecordsToInsert.size} log records (disabled)", blockEvent)
+                return@mapNotNull CompletableDeferred(event)
+            }
+            asyncWithTraceId(context = NonCancellable) {
+                logging("inserting ${logRecordsToInsert.size} log records", blockEvent)
+                val saved = withExceptionLogging("Insert log records for $blockEvent by $groupId") {
+                    saveRecords(descriptor, logRecordsToInsert, blockEvent)
+                }
+                logMonitor.onLogsInserted(descriptor = descriptor, inserted = logRecordsToInsert.size)
+                event.copy(logRecordsToInsert = saved)
+            }
+        }
+    }
+
+    private suspend fun saveRecords(descriptor: D, records: List<R>, blockEvent: BlockEvent<*>): List<R> {
+        return if (readOnly) {
+            records
+        } else {
+            logService.save(descriptor, records, blockEvent.hash)
+        }
+    }
+
     private suspend fun onBlock(
-        subscriber: LogEventSubscriber<BB, BL, R, D>,
+        subscriber: LogEventSubscriber<BB, BL, R, D, S>,
         events: List<NewBlockEvent<BB>>,
         stable: Boolean
-    ): List<SubscriberResult<LogEvent<R, D>>> {
+    ): List<SubscriberResult<LogEvent<R, D, S>>> {
         val descriptor = subscriber.getDescriptor()
         val blockLogs = blockchainClient.getBlockLogs(
             descriptor = descriptor,
@@ -272,7 +304,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private suspend fun prepareLogsToInsert(
-        subscriber: LogEventSubscriber<BB, BL, R, D>,
+        subscriber: LogEventSubscriber<BB, BL, R, D, S>,
         fullBlock: FullBlock<BB, BL>,
         event: NewBlockEvent<BB>
     ): List<R> {
@@ -298,9 +330,9 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     }
 
     private suspend fun onRevertedBlocks(
-        subscriber: LogEventSubscriber<BB, BL, R, D>,
+        subscriber: LogEventSubscriber<BB, BL, R, D, S>,
         events: List<RevertedBlockEvent<BB>>
-    ): List<SubscriberResult<LogEvent<R, D>>> {
+    ): List<SubscriberResult<LogEvent<R, D, S>>> {
         val descriptor = subscriber.getDescriptor()
         return events.map { event ->
 
@@ -320,7 +352,7 @@ class LogHandler<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : De
     private fun logging(
         message: String,
         event: BlockEvent<*>,
-        subscriber: LogEventSubscriber<*, *, *, *>? = null
+        subscriber: LogEventSubscriber<*, *, *, *, *>? = null
     ) {
         val id = subscriber?.getDescriptor()?.id ?: ("group $groupId")
         logger.info("Logs for $event by '$id': $message")

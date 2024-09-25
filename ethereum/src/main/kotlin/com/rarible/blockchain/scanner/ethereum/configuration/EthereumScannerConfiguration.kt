@@ -42,7 +42,6 @@ class EthereumScannerConfiguration {
         subscribers: List<EthereumLogEventSubscriber>,
     ): ReconciliationLogHandler {
         return ReconciliationLogHandlerImpl(
-            logService = logService,
             reconciliationProperties = scannerProperties.reconciliation,
             blockchainClient = manager.retryableClient,
             logHandlerFactory = manager.logHandlerFactory,

@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.flow.client.FlowBlockchainLog
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
+import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
 import com.rarible.blockchain.scanner.flow.subscriber.FlowLogEventSubscriber
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import org.springframework.beans.factory.annotation.Qualifier
@@ -14,6 +15,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import java.time.Instant
 
 @Configuration
@@ -27,7 +29,7 @@ class TestFlowScannerConfiguration {
     fun testEthereumLogEventPublisher(): LogRecordEventPublisher = TestFlowLogRecordEventPublisher()
 
     @Bean
-    fun allEventsSubscriber(): FlowLogEventSubscriber = object : FlowLogEventSubscriber {
+    fun allEventsSubscriber(mongo: ReactiveMongoTemplate): FlowLogEventSubscriber = object : FlowLogEventSubscriber {
 
         private val descriptor: FlowDescriptor = FlowDescriptor(
             id = "ExampleNFTDescriptor",
@@ -35,7 +37,8 @@ class TestFlowScannerConfiguration {
             events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"),
             address = "test_contract",
             collection = "test_history",
-            entityType = TestFlowLogRecord::class.java
+            entityType = TestFlowLogRecord::class.java,
+            storage = FlowLogRepository(mongo, TestFlowLogRecord::class.java, "test_history")
         )
 
         override fun getDescriptor(): FlowDescriptor = descriptor

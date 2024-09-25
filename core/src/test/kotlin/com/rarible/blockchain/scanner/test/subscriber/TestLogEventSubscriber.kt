@@ -10,12 +10,13 @@ import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
+import com.rarible.blockchain.scanner.test.repository.TestLogStorage
 
 class TestLogEventSubscriber(
     private val descriptor: TestDescriptor,
     private val eventDataCount: Int = 1,
     private val exceptionProvider: () -> Exception? = { null }
-) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor> {
+) : LogEventSubscriber<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage> {
 
     private val expectedRecords: MutableMap<Pair<TestBlockchainBlock, TestOriginalLog>, List<TestLogRecord>> =
         hashMapOf()

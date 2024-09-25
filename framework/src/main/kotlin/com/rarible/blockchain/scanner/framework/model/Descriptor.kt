@@ -5,7 +5,7 @@ package com.rarible.blockchain.scanner.framework.model
  * or BlockchainClient. For example, such descriptor may define what collection should be used
  * to store specific Log events or may contain properties, required to query filtered data from Blockchain Client.
  */
-interface Descriptor {
+interface Descriptor<S : LogStorage> {
     /**
      * Identifier of descriptor without specific format used for logging and debugging purposes,
      * should be unique across application instance
@@ -23,7 +23,7 @@ interface Descriptor {
     /**
      * Name of the group of the descriptors. Subscribers with descriptors of the same group will
      * be handled together and will be published in the same topic (if KafkaPublisher is used).
-     * This value will ge used for naming of topic and consumer group, so better to keep it short and
+     * This value will be used for naming of topic and consumer group, so better to keep it short and
      * human-readable.
      */
     val groupId: String
@@ -33,12 +33,20 @@ interface Descriptor {
      * Due to mongo framework specific of dealing with interfaces, we need to specify such types
      * explicitly in order to avoid unnecessary mongo reflective field checks in queries.
      */
+    @Deprecated("Only used in ethereum, could be pushed down to EthereumDescriptor; should be replaced with storage")
     val entityType: Class<*>
 
+    @Deprecated("collection should be encapsulated in Storage")
     /**
-     * Table/MongoDB collection name where the logs are stored
+     * Database table (in MongoDB, collection) name where the logs are stored.
      * */
     val collection: String
+
+    /**
+     * Encapsulates knowledge about persistent storage of this kind of logs. Can be shared across different [Descriptor]s.
+     * The same object must be used for the same DB structure (table or MongoDB collection).
+     */
+    val storage: S
 
     /**
      * Indicates should logs be saved or just published

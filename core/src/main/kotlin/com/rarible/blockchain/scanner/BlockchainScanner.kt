@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.handler.BlockHandler
 import com.rarible.blockchain.scanner.handler.LogHandler
@@ -17,8 +18,15 @@ import com.rarible.blockchain.scanner.handler.TransactionHandler
 import com.rarible.core.logging.withTraceId
 import org.slf4j.LoggerFactory
 
-abstract class BlockchainScanner<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, TR : TransactionRecord, D : Descriptor>(
-    manager: BlockchainScannerManager<BB, BL, R, TR, D>
+abstract class BlockchainScanner<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    TR : TransactionRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    >(
+    manager: BlockchainScannerManager<BB, BL, R, TR, D, S>
 ) {
 
     private val retryableClient = manager.retryableClient

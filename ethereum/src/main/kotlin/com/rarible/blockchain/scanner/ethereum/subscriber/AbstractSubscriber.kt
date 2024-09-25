@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.ethereum.model.EventData
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.model.SubscriberGroup
 import com.rarible.blockchain.scanner.ethereum.model.SubscriberGroupAlias
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import io.daonomic.rpc.domain.Word
 import org.bson.types.ObjectId
 import scalether.domain.Address
@@ -18,8 +19,8 @@ import java.time.Instant
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractSubscriber<T : EventData>(
     group: SubscriberGroup,
-    collection: String,
     topic: Word,
+    storage: EthereumLogRepository,
     contracts: List<Address>,
     alias: SubscriberGroupAlias? = null
 ) : EthereumLogEventSubscriber() {
@@ -30,7 +31,8 @@ abstract class AbstractSubscriber<T : EventData>(
         collection = collection,
         ethTopic = topic,
         contracts = contracts,
-        entityType = ReversedEthereumLogRecord::class.java
+        entityType = ReversedEthereumLogRecord::class.java,
+        storage = storage,
     )
 
     override fun getDescriptor(): EthereumDescriptor = ethereumDescriptor

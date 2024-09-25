@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.reindex.TestSubscriberFilter
+import com.rarible.blockchain.scanner.test.repository.TestLogStorage
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -26,23 +27,24 @@ import org.junit.jupiter.api.Test
 class BlockReindexerTest {
 
     private val blockHandlerFactory =
-        mockk<BlockHandlerFactory<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>>()
+        mockk<BlockHandlerFactory<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage>>()
 
     private val logHandlerFactory =
-        mockk<LogHandlerFactory<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>>()
+        mockk<LogHandlerFactory<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage>>()
 
     private val blockHandler = mockk<BlockHandler<TestBlockchainBlock>>()
-    private val logHandler = mockk<LogHandler<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor>>()
+    private val logHandler = mockk<LogHandler<TestBlockchainBlock, TestBlockchainLog, TestLogRecord, TestDescriptor, TestLogStorage>>()
 
     private val descriptor1 = TestDescriptor(
         topic = "topic",
         collection = "collection1",
         contracts = emptyList(),
         entityType = TestCustomLogRecord::class.java,
-        groupId = "group"
+        groupId = "group",
+        storage = mockk(),
     )
 
-    private val descriptor2 = descriptor1.copy(collection = "collection2")
+    private val descriptor2 = descriptor1.copy(collection = "collection2", storage = mockk())
 
     private val subscriber1 = TestLogEventSubscriber(descriptor1)
     private val subscriber2 = TestLogEventSubscriber(descriptor2)
@@ -97,7 +99,7 @@ class BlockReindexerTest {
     fun `reindex - ok, with filter`() = runBlocking<Unit> {
         val subscribers = listOf(subscriber1, subscriber2)
         val reindexer = getReindexer(subscribers)
-        val filter = TestSubscriberFilter(setOf(descriptor1.collection))
+        val filter = TestSubscriberFilter(setOf(descriptor1.storage))
 
         val startBlock = randomBlock(id = 1)
         val endBlock = randomBlock(id = 100)
