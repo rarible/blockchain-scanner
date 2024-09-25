@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.Transact
 import com.rarible.blockchain.scanner.solana.client.dto.GetFirstAvailableBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaAccountBase64InfoDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaAccountInfoDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
@@ -44,6 +45,8 @@ interface SolanaApi {
     suspend fun getTransaction(signature: String): ApiResponse<SolanaTransactionDto>
 
     suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto>
+
+    suspend fun getAccountBase64Info(address: String): ApiResponse<SolanaAccountBase64InfoDto>
 
     suspend fun getBalance(address: String): ApiResponse<SolanaBalanceDto>
 }
@@ -100,9 +103,16 @@ class SolanaHttpRpcApi(
 
     override suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto> = client.post()
         .uri(uri)
-        .body(BodyInserters.fromValue(GetAccountInfo(address)))
+        .body(BodyInserters.fromValue(GetAccountInfo(address, "jsonParsed")))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaAccountInfoDto>>()
+        .awaitSingle()
+
+    override suspend fun getAccountBase64Info(address: String): ApiResponse<SolanaAccountBase64InfoDto> = client.post()
+        .uri(uri)
+        .body(BodyInserters.fromValue(GetAccountInfo(address, "base64")))
+        .retrieve()
+        .bodyToMono<ApiResponse<SolanaAccountBase64InfoDto>>()
         .awaitSingle()
 
     override suspend fun getBalance(address: String): ApiResponse<SolanaBalanceDto> = client.post()

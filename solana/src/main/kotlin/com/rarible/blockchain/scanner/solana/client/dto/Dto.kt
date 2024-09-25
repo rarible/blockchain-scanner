@@ -70,6 +70,7 @@ class GetTransactionRequest(
 
 class GetAccountInfo(
     address: String,
+    encoding: String,
 ) : Request(
     method = "getAccountInfo",
     params = listOf(
@@ -149,6 +150,17 @@ data class SolanaAccountInfoDto(
         val updateAuthority: String?,
         val uri: String?,
         val additionalMetadata: List<List<String>>,
+    )
+}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SolanaAccountBase64InfoDto(
+    val value: Value
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Value(
+        val data: List<String>,
     )
 }
 
