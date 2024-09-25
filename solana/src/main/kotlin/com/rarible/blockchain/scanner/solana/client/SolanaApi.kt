@@ -103,14 +103,14 @@ class SolanaHttpRpcApi(
 
     override suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto> = client.post()
         .uri(uri)
-        .body(BodyInserters.fromValue(GetAccountInfo(address, "jsonParsed")))
+        .body(BodyInserters.fromValue(GetAccountInfo(address, Encoding.JSON_PARSED.value)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaAccountInfoDto>>()
         .awaitSingle()
 
     override suspend fun getAccountBase64Info(address: String): ApiResponse<SolanaAccountBase64InfoDto> = client.post()
         .uri(uri)
-        .body(BodyInserters.fromValue(GetAccountInfo(address, "base64")))
+        .body(BodyInserters.fromValue(GetAccountInfo(address, Encoding.BASE64.value)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaAccountBase64InfoDto>>()
         .awaitSingle()
@@ -121,6 +121,11 @@ class SolanaHttpRpcApi(
         .retrieve()
         .bodyToMono<ApiResponse<SolanaBalanceDto>>()
         .awaitSingle()
+
+    private enum class Encoding(val value: String) {
+        JSON_PARSED("jsonParsed"),
+        BASE64("base64")
+    }
 
     companion object {
         const val MAX_BODY_SIZE = 100 * 1024 * 1024
