@@ -5,6 +5,7 @@ import com.nftco.flow.sdk.FlowChainId
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.service.FlowApiFactoryImpl
 import com.rarible.blockchain.scanner.flow.service.SESSION_HASH_HEADER
+import com.rarible.blockchain.scanner.flow.service.Spork
 import com.rarible.blockchain.scanner.flow.service.SporkService
 import com.rarible.blockchain.scanner.monitoring.BlockchainMonitor
 import io.grpc.Metadata
@@ -25,16 +26,24 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.onflow.protobuf.access.Access.BlockResponse
 import org.onflow.protobuf.access.Access
 import org.onflow.protobuf.access.Access.BlockHeaderResponse
+import org.onflow.protobuf.access.Access.BlockResponse
 import org.onflow.protobuf.access.AccessAPIGrpc.AccessAPIImplBase
 import org.onflow.protobuf.entities.BlockHeaderOuterClass
 import org.onflow.protobuf.entities.BlockOuterClass
 import java.util.concurrent.TimeUnit
 
 class CachedSporksFlowGrpcApiTest {
-    private val properties = FlowBlockchainScannerProperties(chainId = FlowChainId.MAINNET)
+    private val properties = FlowBlockchainScannerProperties(
+        chainId = FlowChainId.MAINNET,
+        sporks = listOf(
+            Spork(
+                from = 0,
+                nodeUrl = "test"
+            )
+        )
+    )
     private val blockchainMonitor = mockk<BlockchainMonitor>()
     private val sporkService = SporkService(properties, FlowApiFactoryImpl(blockchainMonitor, properties))
     private val serverInterceptor = spyk(object : ServerInterceptor {
@@ -60,7 +69,8 @@ class CachedSporksFlowGrpcApiTest {
                 responseObserver.onNext(
                     BlockHeaderResponse.newBuilder()
                         .setBlock(BlockHeaderOuterClass.BlockHeader.getDefaultInstance())
-                        .build())
+                        .build()
+                )
                 responseObserver.onCompleted()
             }
 
@@ -71,7 +81,8 @@ class CachedSporksFlowGrpcApiTest {
                 responseObserver.onNext(
                     BlockResponse.newBuilder()
                         .setBlock(BlockOuterClass.Block.getDefaultInstance())
-                        .build())
+                        .build()
+                )
                 responseObserver.onCompleted()
             }
 

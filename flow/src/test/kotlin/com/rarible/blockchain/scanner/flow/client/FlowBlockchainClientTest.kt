@@ -5,6 +5,7 @@ import com.nftco.flow.sdk.bytesToHex
 import com.nftco.flow.sdk.impl.AsyncFlowAccessApiImpl
 import com.rarible.blockchain.scanner.flow.configuration.FlowBlockchainScannerProperties
 import com.rarible.blockchain.scanner.flow.http.FlowHttpClientImpl
+import com.rarible.blockchain.scanner.flow.service.Spork
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
@@ -42,7 +43,16 @@ class FlowBlockchainClientTest {
         AsyncFlowAccessApiImpl(AccessAPIGrpc.newFutureStub(channel))
     }
 
-    private val httpClient = FlowHttpClientImpl(FlowBlockchainScannerProperties())
+    private val httpClient = FlowHttpClientImpl(
+        FlowBlockchainScannerProperties(
+            sporks = listOf(
+                Spork(
+                    from = 0,
+                    nodeUrl = "access.mainnet.nodes.onflow.org"
+                )
+            )
+        )
+    )
 
     @Test
     @Disabled

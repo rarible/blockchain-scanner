@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.configuration.MonitoringProperties
 import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.configuration.TaskProperties
+import com.rarible.blockchain.scanner.flow.service.Spork
 import com.rarible.core.daemon.DaemonWorkerProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -35,4 +36,11 @@ data class FlowBlockchainScannerProperties(
     val proxy: String? = null,
     val enableUseUndocumentedMethods: Boolean = false,
     val timeout: Duration = Duration.ofSeconds(30),
+    val chunkSize: Int = 25,
+    val sporks: List<Spork> = listOf(
+        Spork(
+            from = 0,
+            nodeUrl = "access.devnet.nodes.onflow.org"
+        )
+    ),
 ) : BlockchainScannerProperties

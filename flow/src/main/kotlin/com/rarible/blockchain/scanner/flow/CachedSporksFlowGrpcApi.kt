@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.nftco.flow.sdk.FlowBlock
 import com.nftco.flow.sdk.FlowBlockHeader
-import com.nftco.flow.sdk.FlowChainId
 import com.nftco.flow.sdk.FlowCollection
 import com.nftco.flow.sdk.FlowEvent
 import com.nftco.flow.sdk.FlowEventResult
@@ -24,7 +23,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
@@ -107,11 +105,7 @@ class CachedSporksFlowGrpcApi(
     }
 
     override fun chunk(range: LongRange): Flow<LongRange> {
-        return when (sporkService.chainId) {
-            FlowChainId.MAINNET -> range.chunked(250) { it.first()..it.last() }.asFlow()
-            FlowChainId.TESTNET -> range.chunked(25) { it.first()..it.last() }.asFlow()
-            else -> flowOf(range)
-        }
+        return range.chunked(properties.chunkSize) { it.first()..it.last() }.asFlow()
     }
 
     private fun getFullBlockByHeight(height: Long): Mono<FullBlock> = mono {
