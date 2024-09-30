@@ -6,4 +6,7 @@ blockchain:
   scanner:
     kafka:
       broker-replica-set: ${kafka.hosts}
-
+    flow:
+      sporks:
+        - from: 50540412
+          nodeUrl: "access.devnet.nodes.onflow.org"
