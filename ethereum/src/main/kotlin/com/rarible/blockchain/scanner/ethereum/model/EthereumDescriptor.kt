@@ -8,9 +8,7 @@ import scalether.domain.Address
 data class EthereumDescriptor(
     val ethTopic: Word,
     override val groupId: String,
-    override val collection: String,
     val contracts: List<Address>,
-    override val entityType: Class<*>,
     override val id: String = ethTopic.toString(),
     override val alias: String? = null,
     override val storage: EthereumLogRepository,

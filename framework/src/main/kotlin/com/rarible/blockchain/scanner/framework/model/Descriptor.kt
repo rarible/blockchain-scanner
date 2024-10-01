@@ -29,20 +29,6 @@ interface Descriptor<S : LogStorage> {
     val groupId: String
 
     /**
-     * Type of objects related to this descriptor. Subscriber should produce LogRecords of this type.
-     * Due to mongo framework specific of dealing with interfaces, we need to specify such types
-     * explicitly in order to avoid unnecessary mongo reflective field checks in queries.
-     */
-    @Deprecated("Only used in ethereum, could be pushed down to EthereumDescriptor; should be replaced with storage")
-    val entityType: Class<*>
-
-    @Deprecated("collection should be encapsulated in Storage")
-    /**
-     * Database table (in MongoDB, collection) name where the logs are stored.
-     * */
-    val collection: String
-
-    /**
      * Encapsulates knowledge about persistent storage of this kind of logs. Can be shared across different [Descriptor]s.
      * The same object must be used for the same DB structure (table or MongoDB collection).
      */

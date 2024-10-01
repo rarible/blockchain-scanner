@@ -36,8 +36,6 @@ class TestFlowScannerConfiguration {
             groupId = "NFT",
             events = setOf("A.f8d6e0586b0a20c7.ExampleNFT.Mint"),
             address = "test_contract",
-            collection = "test_history",
-            entityType = TestFlowLogRecord::class.java,
             storage = FlowLogRepository(mongo, TestFlowLogRecord::class.java, "test_history")
         )
 

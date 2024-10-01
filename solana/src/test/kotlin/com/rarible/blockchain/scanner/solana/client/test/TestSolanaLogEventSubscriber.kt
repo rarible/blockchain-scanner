@@ -20,8 +20,6 @@ class TestSolanaLogEventSubscriber(
         programId = "testProgramId",
         id = "test",
         groupId = "testGroupId",
-        entityType = TestSolanaLogRecord::class.java,
-        collection = testRecordsCollection,
         storage = testLogStorage,
     ) {}
 
