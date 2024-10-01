@@ -1,5 +1,3 @@
-@file:OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-
 package com.rarible.blockchain.scanner.ethereum.test
 
 import com.rarible.blockchain.scanner.block.Block
@@ -16,8 +14,6 @@ import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.core.test.wait.BlockingWait
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.mono
