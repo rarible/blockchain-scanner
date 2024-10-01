@@ -29,10 +29,8 @@ abstract class AbstractSubscriber<T : EventData>(
     protected val ethereumDescriptor = EthereumDescriptor(
         groupId = group,
         alias = alias,
-        collection = collection,
         ethTopic = topic,
         contracts = contracts,
-        entityType = ReversedEthereumLogRecord::class.java,
         storage = storage,
     )
 

@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomBlock
-import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
@@ -37,14 +36,12 @@ class BlockReindexerTest {
 
     private val descriptor1 = TestDescriptor(
         topic = "topic",
-        collection = "collection1",
         contracts = emptyList(),
-        entityType = TestCustomLogRecord::class.java,
         groupId = "group",
         storage = mockk(),
     )
 
-    private val descriptor2 = descriptor1.copy(collection = "collection2", storage = mockk())
+    private val descriptor2 = descriptor1.copy(storage = mockk())
 
     private val subscriber1 = TestLogEventSubscriber(descriptor1)
     private val subscriber2 = TestLogEventSubscriber(descriptor2)

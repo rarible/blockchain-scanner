@@ -125,9 +125,7 @@ abstract class AbstractIntegrationTest {
         entityType: Class<out TestLogRecord> = TestCustomLogRecord::class.java
     ) = TestDescriptor(
         topic = topic,
-        collection = collection,
         contracts = contracts,
-        entityType = entityType,
         groupId = groupId,
         storage = TestLogStorage(mongo, collection = collection, entityType = entityType),
     )

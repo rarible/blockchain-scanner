@@ -5,9 +5,7 @@ import com.rarible.blockchain.scanner.test.repository.TestLogStorage
 
 data class TestDescriptor(
     val topic: String,
-    override val collection: String,
     val contracts: List<String>,
-    override val entityType: Class<*>,
     override val groupId: String = topic,
     override val id: String = topic,
     val saveLogs: Boolean = true,

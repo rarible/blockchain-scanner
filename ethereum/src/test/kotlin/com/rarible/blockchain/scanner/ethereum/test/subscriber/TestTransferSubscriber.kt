@@ -19,9 +19,7 @@ class TestTransferSubscriber(
         return EthereumDescriptor(
             ethTopic = TransferEvent.id(),
             groupId = "transfers",
-            collection = "transfers",
             contracts = listOf(),
-            entityType = ReversedEthereumLogRecord::class.java,
             storage = transferRepository,
         )
     }

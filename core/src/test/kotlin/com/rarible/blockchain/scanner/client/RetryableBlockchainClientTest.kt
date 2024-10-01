@@ -10,7 +10,6 @@ import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomOriginalLog
 import com.rarible.blockchain.scanner.test.data.randomPositiveInt
 import com.rarible.blockchain.scanner.test.data.randomString
-import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.core.common.nowMillis
 import io.mockk.clearMocks
@@ -38,9 +37,7 @@ class RetryableBlockchainClientTest {
     private lateinit var retryableClient: BlockchainClient<TestBlockchainBlock, TestBlockchainLog, TestDescriptor>
     private val descriptor = TestDescriptor(
         topic = randomString(),
-        collection = randomString(),
         contracts = listOf(randomString(), randomString()),
-        entityType = TestCustomLogRecord::class.java,
         storage = mockk(),
     )
 

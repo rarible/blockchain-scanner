@@ -16,7 +16,6 @@ import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.client.TestBlockchainLog
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.stubListenerResult
-import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
 import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.repository.TestLogStorage
@@ -47,10 +46,8 @@ internal class ReconciliationLogHandlerImplTest {
     private val storage1 = mockk<TestLogStorage>()
     private val descriptor11a = TestDescriptor(
         topic = "topic",
-        collection = "collection1",
         storage = storage1,
         contracts = emptyList(),
-        entityType = TestCustomLogRecord::class.java,
         groupId = "groupId1",
     )
     private val subscriber11a = TestLogEventSubscriber(descriptor11a)
@@ -58,10 +55,8 @@ internal class ReconciliationLogHandlerImplTest {
 
     private val descriptor11b = TestDescriptor(
         topic = "topic",
-        collection = "collection1",
         storage = storage1,
         contracts = emptyList(),
-        entityType = TestCustomLogRecord::class.java,
         groupId = "groupId1",
     )
     private val subscriber11b = TestLogEventSubscriber(descriptor11b)
@@ -69,10 +64,8 @@ internal class ReconciliationLogHandlerImplTest {
     private val storage2 = mockk<TestLogStorage>()
     private val descriptor22 = TestDescriptor(
         topic = "topic",
-        collection = "collection2",
         storage = storage2,
         contracts = emptyList(),
-        entityType = TestCustomLogRecord::class.java,
         groupId = "groupId2",
     )
     private val subscriber22 = TestLogEventSubscriber(descriptor22)
@@ -80,10 +73,8 @@ internal class ReconciliationLogHandlerImplTest {
 
     private val descriptor23 = TestDescriptor(
         topic = "topic",
-        collection = "collection2",
         storage = storage2,
         contracts = emptyList(),
-        entityType = TestCustomLogRecord::class.java,
         groupId = "groupId3",
     )
     private val subscriber23 = TestLogEventSubscriber(descriptor23)
