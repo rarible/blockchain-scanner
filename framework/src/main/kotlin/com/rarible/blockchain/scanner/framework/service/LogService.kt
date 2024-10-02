@@ -14,19 +14,6 @@ import com.rarible.blockchain.scanner.framework.model.LogStorage
  */
 interface LogService<R : LogRecord, D : Descriptor<S>, S : LogStorage> {
 
-    // todo unused, remove
-    /**
-     * Delete LogRecord from persistent storage.
-     */
-    suspend fun delete(descriptor: D, record: R): R
-
-    // todo unused, remove
-    /**
-     * Delete multiple LogRecord-s from the persistent storage.
-     */
-    suspend fun delete(descriptor: D, records: List<R>): List<R> =
-        records.map { delete(descriptor, it) }
-
     /**
      * Insert or update list of LogRecords to the persistent storage.
      */

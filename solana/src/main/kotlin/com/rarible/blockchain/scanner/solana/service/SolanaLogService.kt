@@ -10,9 +10,6 @@ import org.springframework.stereotype.Component
 @Component
 class SolanaLogService : LogService<SolanaLogRecord, SolanaDescriptor, SolanaLogStorage> {
 
-    override suspend fun delete(descriptor: SolanaDescriptor, record: SolanaLogRecord): SolanaLogRecord =
-        descriptor.storage.delete(record)
-
     override suspend fun save(
         descriptor: SolanaDescriptor,
         records: List<SolanaLogRecord>,

@@ -25,7 +25,7 @@ class EthereumLogService(
 
     private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
+    suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
         return descriptor.storage.delete(record)
     }
 

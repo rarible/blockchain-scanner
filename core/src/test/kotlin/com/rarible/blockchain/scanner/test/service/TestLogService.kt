@@ -10,9 +10,6 @@ import kotlinx.coroutines.reactive.awaitFirst
 
 class TestLogService : LogService<TestLogRecord, TestDescriptor, TestLogStorage> {
 
-    override suspend fun delete(descriptor: TestDescriptor, record: TestLogRecord): TestLogRecord =
-        descriptor.storage.delete(record)
-
     override suspend fun save(
         descriptor: TestDescriptor,
         records: List<TestLogRecord>,
