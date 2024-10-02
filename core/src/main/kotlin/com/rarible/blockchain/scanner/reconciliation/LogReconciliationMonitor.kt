@@ -4,7 +4,9 @@ import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.monitoring.AbstractMonitor
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.stereotype.Component
 
+@Component
 class LogReconciliationMonitor(
     properties: BlockchainScannerProperties,
     meterRegistry: MeterRegistry
