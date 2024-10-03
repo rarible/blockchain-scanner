@@ -9,8 +9,10 @@ import io.grpc.ClientCall
 import io.grpc.ClientInterceptor
 import io.grpc.HttpConnectProxiedSocketAddress
 import io.grpc.ManagedChannelBuilder
+import io.grpc.Metadata
 import io.grpc.MethodDescriptor
 import io.grpc.ProxyDetector
+import io.grpc.stub.MetadataUtils
 import org.onflow.protobuf.access.AccessAPIGrpc
 import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
@@ -39,20 +41,29 @@ class FlowApiFactoryImpl(
             }
         }
         val timeout = flowBlockchainScannerProperties.timeout.toMillis()
+        val metadata = Metadata()
+        if (spork.headers.isNotEmpty()) {
+            spork.headers.forEach { (key, value) ->
+                metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value)
+            }
+        }
+        val headerInterceptor = MetadataUtils.newAttachHeadersInterceptor(metadata)
         val channel = ManagedChannelBuilder.forAddress(spork.nodeUrl, spork.port)
             .maxInboundMessageSize(DEFAULT_MESSAGE_SIZE)
             .run { if (detector != null) proxyDetector(detector) else this }
             .usePlaintext()
             .userAgent(Flow.DEFAULT_USER_AGENT)
-            .intercept(object : ClientInterceptor {
-                override fun <ReqT : Any?, RespT : Any?> interceptCall(
-                    descriptor: MethodDescriptor<ReqT, RespT>?,
-                    options: CallOptions,
-                    channel: Channel
-                ): ClientCall<ReqT, RespT> {
-                    return channel.newCall(descriptor, options.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS))
-                }
-            })
+            .intercept(
+                headerInterceptor,
+                object : ClientInterceptor {
+                    override fun <ReqT : Any?, RespT : Any?> interceptCall(
+                        descriptor: MethodDescriptor<ReqT, RespT>?,
+                        options: CallOptions,
+                        channel: Channel
+                    ): ClientCall<ReqT, RespT> {
+                        return channel.newCall(descriptor, options.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS))
+                    }
+                })
             .build()
         val api = AsyncFlowAccessApiImpl(AccessAPIGrpc.newFutureStub(channel))
         return MonitoredFlowApi(delegate = api, closeable = api, blockchainMonitor = blockchainMonitor)
