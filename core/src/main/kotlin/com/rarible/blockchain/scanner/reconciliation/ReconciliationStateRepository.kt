@@ -1,13 +1,12 @@
-package com.rarible.blockchain.scanner.ethereum.repository
+package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.ethereum.model.ReconciliationLogState
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.stereotype.Component
 
 @Component
-class EthereumReconciliationStateRepository(
+class ReconciliationStateRepository(
     private val mongo: ReactiveMongoOperations
 ) {
     suspend fun saveReconciliationLogState(state: ReconciliationLogState): ReconciliationLogState {

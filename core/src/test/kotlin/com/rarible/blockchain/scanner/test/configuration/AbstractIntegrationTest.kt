@@ -14,10 +14,11 @@ import com.rarible.blockchain.scanner.test.TestBlockchainScanner
 import com.rarible.blockchain.scanner.test.TestBlockchainScannerManager
 import com.rarible.blockchain.scanner.test.client.TestBlockchainClient
 import com.rarible.blockchain.scanner.test.model.TestCustomLogRecord
+import com.rarible.blockchain.scanner.test.model.TestDescriptor
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import com.rarible.blockchain.scanner.test.publisher.TestLogRecordEventPublisher
 import com.rarible.blockchain.scanner.test.publisher.TestTransactionRecordEventPublisher
-import com.rarible.blockchain.scanner.test.repository.TestLogRepository
+import com.rarible.blockchain.scanner.test.repository.TestLogStorage
 import com.rarible.blockchain.scanner.test.service.TestLogService
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriber
 import com.rarible.blockchain.scanner.test.subscriber.TestLogEventSubscriberExceptionResolver
@@ -26,7 +27,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.convert.MongoConverter
@@ -47,12 +47,8 @@ abstract class AbstractIntegrationTest {
         BlockService(blockRepository)
     }
 
-    private val testLogRepository: TestLogRepository by lazy {
-        TestLogRepository(mongo)
-    }
-
     private val testLogService: TestLogService by lazy {
-        TestLogService(testLogRepository)
+        TestLogService()
     }
 
     protected val testLogRecordEventPublisher: TestLogRecordEventPublisher = TestLogRecordEventPublisher()
@@ -60,14 +56,6 @@ abstract class AbstractIntegrationTest {
         TestTransactionRecordEventPublisher()
 
     protected suspend fun findBlock(number: Long): Block? = blockRepository.findById(number)
-
-    protected suspend fun findLog(collection: String, id: Long): TestLogRecord? {
-        return testLogRepository.findLogEvent(TestCustomLogRecord::class.java, collection, id)
-    }
-
-    protected suspend fun findAllLogs(collection: String): List<TestLogRecord> {
-        return mongo.findAll(TestCustomLogRecord::class.java, collection).collectList().awaitSingle()
-    }
 
     protected fun createBlockchainScanner(
         testBlockchainClient: TestBlockchainClient,
@@ -128,4 +116,17 @@ abstract class AbstractIntegrationTest {
 
     protected suspend fun getAllBlocks(): List<Block> =
         blockRepository.getAll().toList().sortedBy { it.id }.map { it.copy(stats = null) }
+
+    protected fun testDescriptor(
+        topic: String,
+        collection: String,
+        groupId: String = topic,
+        contracts: List<String> = emptyList(),
+        entityType: Class<out TestLogRecord> = TestCustomLogRecord::class.java
+    ) = TestDescriptor(
+        topic = topic,
+        contracts = contracts,
+        groupId = groupId,
+        storage = TestLogStorage(mongo, collection = collection, entityType = entityType),
+    )
 }

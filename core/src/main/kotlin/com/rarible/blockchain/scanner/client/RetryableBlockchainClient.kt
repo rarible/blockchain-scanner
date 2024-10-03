@@ -9,7 +9,7 @@ import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import kotlinx.coroutines.flow.Flow
 
-class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor>(
+class RetryableBlockchainClient<BB : BlockchainBlock, BL : BlockchainLog, D : Descriptor<*>>(
     private val original: BlockchainClient<BB, BL, D>,
     retryPolicy: ClientRetryPolicyProperties
 ) : BlockchainClient<BB, BL, D>, AbstractRetryableClient(retryPolicy) {

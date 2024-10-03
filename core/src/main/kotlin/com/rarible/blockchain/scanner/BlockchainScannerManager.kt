@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.service.LogService
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
@@ -26,12 +27,19 @@ import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 
 // TODO not really a good way to construct generic components, but don't see other way to do it
-abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, TR : TransactionRecord, D : Descriptor>(
+abstract class BlockchainScannerManager<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    TR : TransactionRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    >(
     blockchainClient: BlockchainClient<BB, BL, D>,
     val properties: BlockchainScannerProperties,
-    val logSubscribers: List<LogEventSubscriber<BB, BL, R, D>>,
+    val logSubscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
     val blockService: BlockService,
-    val logService: LogService<R, D>,
+    val logService: LogService<R, D, S>,
     val logRecordComparator: LogRecordComparator<R>,
     val logRecordEventPublisher: LogRecordEventPublisher,
     val blockMonitor: BlockMonitor,
@@ -55,7 +63,7 @@ abstract class BlockchainScannerManager<BB : BlockchainBlock, BL : BlockchainLog
         logEventSubscriberExceptionResolver = logEventSubscriberExceptionResolver
     )
 
-    val blockHandlerFactory = BlockHandlerFactory<BB, BL, R, D>(
+    val blockHandlerFactory = BlockHandlerFactory<BB, BL, R, D, S>(
         blockchainClient = retryableClient,
         blockService = blockService,
         blockMonitor = blockMonitor,

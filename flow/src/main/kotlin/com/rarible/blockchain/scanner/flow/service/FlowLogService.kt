@@ -2,31 +2,21 @@ package com.rarible.blockchain.scanner.flow.service
 
 import com.rarible.blockchain.scanner.flow.model.FlowDescriptor
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
-import com.rarible.blockchain.scanner.flow.repository.FlowLogRepository
+import com.rarible.blockchain.scanner.flow.repository.FlowLogStorage
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.service.LogService
 import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
 @Service
-class FlowLogService(
-    private val logRepository: FlowLogRepository
-) : LogService<FlowLogRecord, FlowDescriptor> {
-
-    override suspend fun delete(descriptor: FlowDescriptor, record: FlowLogRecord): FlowLogRecord =
-        logRepository.delete(descriptor.collection, record)
-
-    override suspend fun delete(
-        descriptor: FlowDescriptor,
-        records: List<FlowLogRecord>
-    ): List<FlowLogRecord> = records.map { delete(descriptor, it) }
+class FlowLogService : LogService<FlowLogRecord, FlowDescriptor, FlowLogStorage> {
 
     override suspend fun save(
         descriptor: FlowDescriptor,
         records: List<FlowLogRecord>,
         blockHash: String,
     ): List<FlowLogRecord> {
-        return logRepository.saveAll(descriptor.collection, records).toList()
+        return descriptor.storage.saveAll(records).toList()
     }
 
     override suspend fun prepareLogsToRevertOnNewBlock(

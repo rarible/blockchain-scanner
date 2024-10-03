@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 
 /**
  * Subscriber is high-level component, provided from end services, who want to gather Blockchain Log history
@@ -14,7 +15,13 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * implementations. Also, subscriber must provide way to generate custom event data from original
  * Blockchain Block and Log.
  */
-interface LogEventSubscriber<BB : BlockchainBlock, BL : BlockchainLog, R : LogRecord, D : Descriptor> {
+interface LogEventSubscriber<
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    D : Descriptor<S>,
+    S : LogStorage
+    > {
 
     /**
      * Descriptor used to define where to store data and how to serialize/deserialize it.

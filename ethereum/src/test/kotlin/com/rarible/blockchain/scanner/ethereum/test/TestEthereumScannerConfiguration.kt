@@ -4,6 +4,7 @@ import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.repository.DefaultEthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
@@ -19,6 +20,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.web3jold.utils.Numeric
 import reactor.core.publisher.Mono
 import scalether.core.MonoEthereum
@@ -43,13 +45,17 @@ class TestEthereumScannerConfiguration {
     fun meterRegistry(): MeterRegistry = SimpleMeterRegistry()
 
     @Bean
-    fun testTransferSubscriber(): TestTransferSubscriber = TestTransferSubscriber()
+    fun testTransferSubscriber(mongo: ReactiveMongoOperations): TestTransferSubscriber {
+        return TestTransferSubscriber(DefaultEthereumLogRepository(mongo, "transfer"))
+    }
+
+    @Bean
+    fun testBidSubscriber(mongo: ReactiveMongoOperations): TestBidSubscriber {
+        return TestBidSubscriber(DefaultEthereumLogRepository(mongo, "bid"))
+    }
 
     @Bean
     fun testTransactionSubscriber(): TestTransactionSubscriber = TestTransactionSubscriber()
-
-    @Bean
-    fun testBidSubscriber(): TestBidSubscriber = TestBidSubscriber()
 
     @Bean
     fun sender(ethereum: MonoEthereum) = MonoSigningTransactionSender(

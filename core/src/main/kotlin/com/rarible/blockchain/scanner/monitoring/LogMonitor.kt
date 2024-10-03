@@ -22,7 +22,7 @@ class LogMonitor(
 
     override fun register() = Unit
 
-    private fun getInsertedLogsCounter(descriptor: Descriptor): Counter =
+    private fun getInsertedLogsCounter(descriptor: Descriptor<*>): Counter =
         logCounters.getOrPut(descriptor.id) {
             addCounter(
                 metricName = INSERTED_LOGS,
@@ -30,7 +30,7 @@ class LogMonitor(
             )
         }
 
-    fun onLogsInserted(descriptor: Descriptor, inserted: Int) {
+    fun onLogsInserted(descriptor: Descriptor<*>, inserted: Int) {
         getInsertedLogsCounter(descriptor).increment(inserted.toDouble())
     }
 
@@ -46,7 +46,7 @@ class LogMonitor(
         return recordTime(getTimer(PUBLISH_LOGS), block)
     }
 
-    inline fun <T> onGetEventRecords(subscriber: KClass<out LogEventSubscriber<*, *, *, *>>, handler: () -> T): T {
+    inline fun <T> onGetEventRecords(subscriber: KClass<out LogEventSubscriber<*, *, *, *, *>>, handler: () -> T): T {
         return recordTime(
             getTimer(
                 SUBSCRIBER_RECORDS,
@@ -55,7 +55,7 @@ class LogMonitor(
         )
     }
 
-    inline fun <T> onPostProcess(subscriber: KClass<out LogEventSubscriber<*, *, *, *>>, handler: () -> T): T {
+    inline fun <T> onPostProcess(subscriber: KClass<out LogEventSubscriber<*, *, *, *, *>>, handler: () -> T): T {
         return recordTime(
             getTimer(
                 SUBSCRIBER_POST_PROCESS,

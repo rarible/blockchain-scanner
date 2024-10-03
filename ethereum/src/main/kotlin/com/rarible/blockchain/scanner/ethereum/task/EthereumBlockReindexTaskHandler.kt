@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
@@ -19,13 +20,13 @@ import scalether.domain.Address
 @Component
 class EthereumBlockReindexTaskHandler(
     manager: EthereumScannerManager
-) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumReindexParam>(
+) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
     manager
 ) {
 
     override fun getFilter(
         param: EthereumReindexParam
-    ): SubscriberFilter<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor> {
+    ): SubscriberFilter<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor, EthereumLogRepository> {
         return EthereumSubscriberFilter(param.topics, param.addresses)
     }
 
@@ -50,11 +51,11 @@ data class EthereumReindexParam(
 class EthereumSubscriberFilter(
     private val topics: List<Word>,
     private val addresses: List<Address>,
-) : SubscriberFilter<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor> {
+) : SubscriberFilter<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor, EthereumLogRepository> {
 
     override fun filter(
-        all: List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>>
-    ): List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor>> {
+        all: List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor, EthereumLogRepository>>
+    ): List<LogEventSubscriber<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor, EthereumLogRepository>> {
 
         val filteredSubscribers = all.filter {
             topics.isEmpty() || it.getDescriptor().ethTopic in topics

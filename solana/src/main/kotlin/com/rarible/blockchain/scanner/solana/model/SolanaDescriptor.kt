@@ -6,6 +6,5 @@ abstract class SolanaDescriptor(
     val programId: String,
     override val id: String,
     override val groupId: String,
-    override val entityType: Class<*>,
-    val collection: String
-) : Descriptor
+    override val storage: SolanaLogStorage
+) : Descriptor<SolanaLogStorage>

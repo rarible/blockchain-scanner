@@ -20,20 +20,14 @@ import org.springframework.stereotype.Component
 
 @Component
 class EthereumLogService(
-    private val ethereumLogRepository: EthereumLogRepository,
     private val properties: EthereumScannerProperties
-) : LogService<EthereumLogRecord, EthereumDescriptor> {
+) : LogService<EthereumLogRecord, EthereumDescriptor, EthereumLogRepository> {
 
     private val logger = LoggerFactory.getLogger(EthereumLogService::class.java)
 
-    override suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
-        return ethereumLogRepository.delete(descriptor.collection, record)
+    suspend fun delete(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord {
+        return descriptor.storage.delete(record)
     }
-
-    override suspend fun delete(
-        descriptor: EthereumDescriptor,
-        records: List<EthereumLogRecord>
-    ): List<EthereumLogRecord> = records.map { ethereumLogRepository.delete(descriptor.collection, it) }
 
     override suspend fun save(
         descriptor: EthereumDescriptor,
@@ -42,9 +36,7 @@ class EthereumLogService(
     ): List<EthereumLogRecord> {
         logger.info("Saving {} records for {}", records.size, descriptor.ethTopic)
         val start = System.currentTimeMillis()
-        val exists = ethereumLogRepository.exists(
-            entityType = descriptor.entityType,
-            collection = descriptor.collection,
+        val exists = descriptor.storage.exists(
             blockHash = Word.apply(blockHash),
             topic = descriptor.ethTopic
         )
@@ -68,7 +60,7 @@ class EthereumLogService(
             val inserted = coroutineScope {
                 records.chunked(properties.logSaveBatchSize).map { batch ->
                     asyncWithTraceId(context = NonCancellable) {
-                        ethereumLogRepository.saveAll(descriptor.collection, batch)
+                        descriptor.storage.saveAll(batch)
                     }
                 }.awaitAll().flatten()
             }
@@ -107,12 +99,9 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord
     ): EthereumLogRecord {
-        val collection = descriptor.collection
         val log = record.log
 
-        var found = ethereumLogRepository.findVisibleByKey(
-            descriptor.entityType,
-            collection,
+        var found = descriptor.storage.findVisibleByKey(
             log.transactionHash,
             log.topic,
             log.address,
@@ -122,7 +111,7 @@ class EthereumLogService(
 
         if (found == null) {
             try {
-                val result = ethereumLogRepository.save(collection, record)
+                val result = descriptor.storage.save(record)
                 logger.info("Saved new LogEvent: {}", record)
                 return result
             } catch (e: DuplicateKeyException) {
@@ -137,8 +126,8 @@ class EthereumLogService(
 
         val withCorrectId = record.withIdAndVersion(found.id, found.version, found.updatedAt)
         return if (withCorrectId != found) {
-            logger.info("Saving changed LogEvent to collection '{}' : {}", collection, withCorrectId)
-            ethereumLogRepository.save(collection, withCorrectId)
+            logger.info("Saving changed LogEvent to storage '{}' : {}", descriptor.storage::class.simpleName, withCorrectId)
+            descriptor.storage.save(withCorrectId)
         } else {
             logger.info("LogEvent wasn't changed: {}", withCorrectId)
             found
@@ -149,12 +138,9 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord
     ): EthereumLogRecord? {
-        val collection = descriptor.collection
         val log = record.log
         // Workaround for legacy logs we meet during reindexing
-        val duplicate = ethereumLogRepository.findLegacyRecord(
-            descriptor.entityType,
-            collection,
+        val duplicate = descriptor.storage.findLegacyRecord(
             log.transactionHash,
             log.blockHash!!,
             log.logIndex!!,
@@ -175,10 +161,13 @@ class EthereumLogService(
     override suspend fun prepareLogsToRevertOnRevertedBlock(
         descriptor: EthereumDescriptor,
         revertedBlockHash: String
-    ): List<EthereumLogRecord> = ethereumLogRepository.find(
-        entityType = descriptor.entityType,
-        collection = descriptor.collection,
-        blockHash = Word.apply(revertedBlockHash),
-        topic = descriptor.ethTopic
-    ).toList().map { it.withLog(it.log.copy(status = EthereumBlockStatus.REVERTED)) }
+    ): List<EthereumLogRecord> {
+        return descriptor.storage.find(
+            blockHash = Word.apply(revertedBlockHash),
+            topic = descriptor.ethTopic
+        ).toList()
+            .map { record ->
+                record.withLog(record.log.copy(status = EthereumBlockStatus.REVERTED))
+            }
+    }
 }

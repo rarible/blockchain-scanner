@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.framework.service
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
+import com.rarible.blockchain.scanner.framework.model.LogStorage
 
 /**
  * Interface describes operations with persistent storage for Log Records. Each Blockchain Scanner implementation
@@ -11,18 +12,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
  * For example, each subscriber has it own collection/table to store data. In such case descriptor can provide
  * name of the collection current operation should be executed to.
  */
-interface LogService<R : LogRecord, D : Descriptor> {
-
-    /**
-     * Delete LogRecord from persistent storage.
-     */
-    suspend fun delete(descriptor: D, record: R): R
-
-    /**
-     * Delete multiple LogRecord-s from the persistent storage.
-     */
-    suspend fun delete(descriptor: D, records: List<R>): List<R> =
-        records.map { delete(descriptor, it) }
+interface LogService<R : LogRecord, D : Descriptor<S>, S : LogStorage> {
 
     /**
      * Insert or update list of LogRecords to the persistent storage.

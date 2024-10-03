@@ -14,6 +14,7 @@ import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.client.SolanaClient
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
 import com.rarible.blockchain.scanner.solana.model.SolanaLogRecord
+import com.rarible.blockchain.scanner.solana.model.SolanaLogStorage
 import com.rarible.blockchain.scanner.solana.service.SolanaLogService
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriber
 import com.rarible.blockchain.scanner.solana.subscriber.SolanaLogEventSubscriberExceptionResolver
@@ -33,7 +34,7 @@ class SolanaBlockchainScannerManager(
     reindexMonitor: ReindexMonitor,
     transactionRecordEventPublisher: TransactionRecordEventPublisher,
     logEventSubscriberExceptionResolver: SolanaLogEventSubscriberExceptionResolver,
-) : BlockchainScannerManager<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, TransactionRecord, SolanaDescriptor>(
+) : BlockchainScannerManager<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaLogRecord, TransactionRecord, SolanaDescriptor, SolanaLogStorage>(
     blockchainClient = blockchainClient,
     logSubscribers = subscribers,
     blockService = blockService,

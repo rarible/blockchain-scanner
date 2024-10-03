@@ -1,26 +1,30 @@
 package com.rarible.blockchain.scanner.test.repository
 
+import com.rarible.blockchain.scanner.framework.model.LogStorage
+import com.rarible.blockchain.scanner.test.model.TestLog
 import com.rarible.blockchain.scanner.test.model.TestLogRecord
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 
 @Suppress("UNCHECKED_CAST")
-class TestLogRepository(
-    private val mongo: ReactiveMongoOperations
-) {
-    fun delete(collection: String, event: TestLogRecord): Mono<TestLogRecord> {
-        return mongo.remove(event, collection).thenReturn(event)
+class TestLogStorage(
+    private val mongo: ReactiveMongoOperations,
+    private val collection: String,
+    private val entityType: Class<out TestLogRecord>,
+) : LogStorage {
+
+    suspend fun delete(record: TestLogRecord): TestLogRecord {
+        mongo.remove(record, collection).awaitSingle()
+        return record
     }
 
     suspend fun findByKey(
-        entityType: Class<*>,
-        collection: String,
         transactionHash: String,
         blockHash: String,
         logIndex: Int,
@@ -30,26 +34,22 @@ class TestLogRepository(
             .and("log.blockHash").`is`(blockHash)
             .and("log.logIndex").`is`(logIndex)
             .and("log.minorLogIndex").`is`(minorLogIndex)
-        return mongo.findOne(Query(criteria), entityType, collection).awaitFirstOrNull() as TestLogRecord?
+        return mongo.findOne(Query(criteria), entityType, collection).awaitFirstOrNull()
     }
 
-    suspend fun save(collection: String, event: TestLogRecord): TestLogRecord {
+    suspend fun findAllLogs(): List<TestLogRecord> {
+        return mongo.findAll(entityType, collection).collectList().awaitSingle()
+    }
+
+    suspend fun save(event: TestLogRecord): TestLogRecord {
         return mongo.save(event, collection).awaitFirst()
     }
 
-    suspend fun saveAll(collection: String, vararg events: TestLogRecord) {
-        events.forEach {
-            mongo.save(it, collection).awaitFirstOrNull()
-        }
-    }
-
-    suspend fun findLogEvent(entityType: Class<*>, collection: String, id: Long): TestLogRecord? {
-        return mongo.findById(id, entityType, collection).awaitFirstOrNull() as TestLogRecord?
+    suspend fun findLogEvent(id: Long): TestLogRecord? {
+        return mongo.findById(id, entityType, collection).awaitFirstOrNull()
     }
 
     fun find(
-        entityType: Class<*>,
-        collection: String,
         blockHash: String,
         topic: String
     ): Flux<TestLogRecord> {
@@ -58,5 +58,10 @@ class TestLogRepository(
             addCriteria(Criteria.where("log.topic").isEqualTo(topic))
         }
         return mongo.find(query, entityType, collection) as Flux<TestLogRecord>
+    }
+
+    override suspend fun countByBlockNumber(blockNumber: Long): Long {
+        val criteria = TestLog::blockNumber isEqualTo blockNumber
+        return mongo.count(Query(criteria), collection).awaitSingle()
     }
 }

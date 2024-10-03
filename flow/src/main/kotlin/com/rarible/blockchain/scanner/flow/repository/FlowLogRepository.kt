@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.flow.repository
 
+import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate
 import com.rarible.blockchain.scanner.flow.model.FlowLog
 import com.rarible.blockchain.scanner.flow.model.FlowLogRecord
 import com.rarible.core.mongo.util.div
@@ -9,29 +10,32 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.index.Index
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Component
+import org.springframework.data.mongodb.core.query.toPath
 
-@Component
-@Suppress("UNCHECKED_CAST")
-class FlowLogRepository(
-    private val mongo: ReactiveMongoTemplate
-) {
-    suspend fun getById(id: String, entityType: Class<*>, collection: String): FlowLogRecord? {
-        return mongo.findById(id, entityType, collection).awaitSingleOrNull() as FlowLogRecord?
+open class FlowLogRepository<R : FlowLogRecord>(
+    protected val mongo: ReactiveMongoTemplate,
+    protected val entityType: Class<R>,
+    protected val collection: String,
+) : FlowLogStorage {
+    protected val logger: Logger = LoggerFactory.getLogger(javaClass)
+
+    override suspend fun getById(id: String): R? {
+        return mongo.findById(id, entityType, collection).awaitSingleOrNull()
     }
 
-    fun findAfterEventIndex(
+    override fun findAfterEventIndex(
         transactionHash: String,
         afterEventIndex: Int,
-        entityType: Class<*>,
-        collection: String
-    ): Flow<FlowLogRecord> {
+    ): Flow<R> {
         val criteria = (FlowLogRecord::log / FlowLog::transactionHash isEqualTo transactionHash)
             .and(FlowLogRecord::log / FlowLog::eventIndex).gt(afterEventIndex)
 
@@ -39,15 +43,13 @@ class FlowLogRepository(
             .query(criteria)
             .with(Sort.by(Sort.Direction.ASC, "${FlowLogRecord::log.name}.${FlowLog::eventIndex.name}"))
 
-        return mongo.find(query, entityType, collection).asFlow() as Flow<FlowLogRecord>
+        return mongo.find(query, entityType, collection).asFlow()
     }
 
-    fun findBeforeEventIndex(
+    override fun findBeforeEventIndex(
         transactionHash: String,
         beforeEventIndex: Int,
-        entityType: Class<*>,
-        collection: String
-    ): Flow<FlowLogRecord> {
+    ): Flow<R> {
         val criteria = (FlowLogRecord::log / FlowLog::transactionHash isEqualTo transactionHash)
             .and(FlowLogRecord::log / FlowLog::eventIndex).lt(beforeEventIndex)
 
@@ -55,21 +57,41 @@ class FlowLogRepository(
             .query(criteria)
             .with(Sort.by(Sort.Direction.DESC, "${FlowLogRecord::log.name}.${FlowLog::eventIndex.name}"))
 
-        return mongo.find(query, entityType, collection).asFlow() as Flow<FlowLogRecord>
+        return mongo.find(query, entityType, collection).asFlow()
     }
 
-    suspend fun findByLogEventType(entityType: Class<*>, collection: String, eventType: String): FlowLogRecord? {
+    override suspend fun findByLogEventType(eventType: String): R? {
         val criteria = Criteria.where("log.eventType").isEqualTo(eventType)
-        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull() as FlowLogRecord?
+        return mongo.findOne(Query.query(criteria), entityType, collection).awaitSingleOrNull()
     }
 
-    suspend fun delete(collection: String, record: FlowLogRecord): FlowLogRecord {
+    override suspend fun delete(record: FlowLogRecord): FlowLogRecord {
         return mongo.remove(record, collection).thenReturn(record).awaitSingle()
     }
 
-    suspend fun saveAll(collection: String, records: List<FlowLogRecord>): Flow<FlowLogRecord> =
-        records.asFlow().map { save(collection, it) }
+    override suspend fun saveAll(records: List<FlowLogRecord>): Flow<FlowLogRecord> =
+        records.asFlow().map { save(it) }
 
-    suspend fun save(collection: String, record: FlowLogRecord): FlowLogRecord =
+    override suspend fun save(record: FlowLogRecord): FlowLogRecord =
         mongo.save(record, collection).awaitSingle()
+
+    override suspend fun countByBlockNumber(blockNumber: Long): Long {
+        val criteria = LOG_BLOCKHEIGHT isEqualTo blockNumber
+        return mongo.count(Query(criteria), collection).awaitSingle()
+    }
+
+    override fun createIndexes(mongockTemplate: MongockTemplate) {
+        logger.info("Creating indexes for $collection")
+        val indexOps = mongockTemplate.indexOps(collection)
+        ALL_INDEXES.forEach(indexOps::ensureIndex)
+    }
+
+    companion object Indexes {
+        val LOG_BLOCKHEIGHT = FlowLogRecord::log / FlowLog::blockHeight
+        val LOG_BLOCKHEIGHT_INDEX = Index().on(LOG_BLOCKHEIGHT.toPath(), Sort.Direction.ASC).background()
+
+        val ALL_INDEXES = listOf(
+            LOG_BLOCKHEIGHT_INDEX,
+        )
+    }
 }
