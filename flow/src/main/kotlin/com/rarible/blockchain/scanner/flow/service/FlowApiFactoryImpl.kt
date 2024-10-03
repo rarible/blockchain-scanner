@@ -44,7 +44,9 @@ class FlowApiFactoryImpl(
         val metadata = Metadata()
         if (spork.headers.isNotEmpty()) {
             spork.headers.forEach { (key, value) ->
-                metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value)
+                if (value.isNotBlank()) {
+                    metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value)
+                }
             }
         }
         val headerInterceptor = MetadataUtils.newAttachHeadersInterceptor(metadata)
