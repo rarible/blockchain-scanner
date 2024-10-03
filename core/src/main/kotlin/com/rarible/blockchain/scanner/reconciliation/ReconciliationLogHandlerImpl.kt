@@ -1,7 +1,5 @@
 package com.rarible.blockchain.scanner.reconciliation
 
-import com.rarible.blockchain.scanner.BlockchainScannerManager
-import com.rarible.blockchain.scanner.configuration.BlockchainScannerProperties
 import com.rarible.blockchain.scanner.configuration.ReconciliationProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
@@ -26,10 +24,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 
-@Component
 class ReconciliationLogHandlerImpl<
     BB : BlockchainBlock,
     BL : BlockchainLog,
@@ -45,22 +40,6 @@ class ReconciliationLogHandlerImpl<
     private val monitor: LogReconciliationMonitor,
     subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
 ) : ReconciliationLogHandler {
-
-    @Autowired
-    constructor(
-        manager: BlockchainScannerManager<BB, BL, R, *, D, S>,
-        scannerProperties: BlockchainScannerProperties,
-        monitor: LogReconciliationMonitor,
-        subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
-    ) : this(
-        reconciliationProperties = scannerProperties.reconciliation,
-        blockchainClient = manager.retryableClient,
-        logHandlerFactory = manager.logHandlerFactory,
-        reindexer = manager.blockReindexer,
-        planner = manager.blockScanPlanner,
-        monitor = monitor,
-        subscribers = subscribers,
-    )
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
