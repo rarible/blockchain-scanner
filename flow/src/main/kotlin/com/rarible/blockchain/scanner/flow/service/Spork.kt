@@ -5,6 +5,7 @@ data class Spork(
     val to: Long = Long.MAX_VALUE,
     val nodeUrl: String,
     val port: Int = 9000,
+    val headers: Map<String, String> = emptyMap(),
 ) {
 
     fun containsBlock(blockHeight: Long): Boolean = blockHeight in from..to
