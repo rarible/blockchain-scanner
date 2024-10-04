@@ -124,5 +124,6 @@ class BlockchainScannerConfiguration(
         planner = manager.blockScanPlanner,
         monitor = monitor,
         subscribers = subscribers,
+        publisher = manager.logRecordEventPublisher,
     )
 }

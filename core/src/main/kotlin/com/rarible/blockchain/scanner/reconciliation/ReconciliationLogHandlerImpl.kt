@@ -85,14 +85,14 @@ class ReconciliationLogHandlerImpl<
                 reindex(reconciledBlockRangesFlow)
             } else {
                 reconciledBlockRangesFlow.collect()
-                    }
+            }
             logger.info("Handled {}", blockRange)
         }
     }
 
     private suspend fun isBlockConsistent(blockNumber: Long): Boolean {
         return coroutineScope {
-        logHandlersByStorageAndGroupId.map { (storage, logHandlers) ->
+            logHandlersByStorageAndGroupId.map { (storage, logHandlers) ->
                 asyncWithTraceId(context = NonCancellable) {
                     areBlockLogsConsistent(blockNumber, storage, logHandlers)
                 }
@@ -110,11 +110,11 @@ class ReconciliationLogHandlerImpl<
         if (savedLogCount == chainLogCount) {
             return true
         }
-            monitor.onInconsistency()
-            logger.error(
-                "Saved logs count for block {} and log storage '{}' are not consistent (saved={}, fetched={})",
-                blockNumber, storage::class.simpleName, savedLogCount, chainLogCount
-            )
+        monitor.onInconsistency()
+        logger.error(
+            "Saved logs count for block {} and log storage '{}' are not consistent (saved={}, fetched={})",
+            blockNumber, storage::class.simpleName, savedLogCount, chainLogCount
+        )
         return false
     }
 
@@ -156,13 +156,13 @@ class ReconciliationLogHandlerImpl<
                         batchSize = reconciliationProperties.reindexBatchSize,
                     )
                 )
-        reindexer.reindex(
+                reindexer.reindex(
                     baseBlock = plan.baseBlock,
                     blocksRanges = plan.ranges,
                     publisher = publisher,
-        ).collect {
+                ).collect {
                     logger.info("block {} was re-indexed", it)
-        }
+                }
                 blockNumberRange
             }
         val nReindexedBlocks = reindexFlow.fold(0L) { sum, r2 -> sum + r2.span }
