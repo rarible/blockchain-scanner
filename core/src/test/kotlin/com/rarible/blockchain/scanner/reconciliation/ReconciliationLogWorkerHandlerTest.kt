@@ -22,7 +22,7 @@ internal class ReconciliationLogWorkerHandlerTest {
     private val monitor = mockk<LogReconciliationMonitor> {
         every { onReconciledRange(any()) } returns Unit
     }
-    private val reconciliationProperties = ReconciliationProperties(batchSize = 10)
+    private val reconciliationProperties = ReconciliationProperties(blockHandleParallelism = 10)
     private val scannerProperties = TestBlockchainScannerProperties(
         reconciliation = reconciliationProperties
     )
@@ -49,7 +49,7 @@ internal class ReconciliationLogWorkerHandlerTest {
             assertThat(it.lastReconciledBlock).isEqualTo(100)
         }) }
         coVerify(exactly = 0) {
-            reconciliationLogHandler.check(any(), any())
+            reconciliationLogHandler.handle(any(), any())
         }
     }
 
@@ -64,7 +64,7 @@ internal class ReconciliationLogWorkerHandlerTest {
         handler.handle()
 
         coVerify(exactly = 0) { stateRepository.saveReconciliationLogState(any()) }
-        coVerify(exactly = 0) { reconciliationLogHandler.check(any(), any()) }
+        coVerify(exactly = 0) { reconciliationLogHandler.handle(any(), any()) }
     }
 
     @Test
@@ -78,7 +78,7 @@ internal class ReconciliationLogWorkerHandlerTest {
 
         coEvery { blockRepository.getLastBlock() } returns latestBlock
         coEvery { stateRepository.getReconciliationLogState() } returns savedState
-        coEvery { reconciliationLogHandler.check(expectedRange, any()) } returns 90
+        coEvery { reconciliationLogHandler.handle(expectedRange, any()) } returns Unit
         coEvery { stateRepository.saveReconciliationLogState(expectedNewState) } returns expectedNewState
 
         handler.handle()

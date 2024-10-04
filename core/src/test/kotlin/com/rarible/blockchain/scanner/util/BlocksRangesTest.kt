@@ -8,6 +8,10 @@ import com.rarible.blockchain.scanner.handler.TypedBlockRange
 import com.rarible.blockchain.scanner.test.client.TestBlockchainBlock
 import com.rarible.blockchain.scanner.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.test.data.randomBlockchainBlock
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -158,6 +162,34 @@ class BlocksRangesTest {
                 listOf(b3, b4)
             )
         )
+    }
+
+    @Test
+    fun `flow to ranges`() = runBlocking<Unit> {
+        assertThat(
+            listOf(1L, 2L, 3L).asFlow().toRanges().toList()
+        ).describedAs("direct")
+            .containsExactly(LongRange(1, 3))
+
+        assertThat(
+            listOf(3L, 1L, 2L).asFlow().toRanges().toList()
+        ).describedAs("mixed")
+            .containsExactly(LongRange(3, 3), LongRange(1, 2))
+
+        assertThat(
+            listOf(1L).asFlow().toRanges().toList()
+        ).describedAs("single")
+            .containsExactly(LongRange(1, 1))
+
+        assertThat(
+            listOf(1L, 2L, 4L).asFlow().toRanges().toList()
+        ).describedAs("skipped")
+            .containsExactly(LongRange(1, 2), LongRange(4, 4))
+
+        assertThat(
+            emptyFlow<Long>().toRanges().toList()
+        ).describedAs("empty")
+            .isEmpty()
     }
 
     private fun range(from: Long, to: Long, step: Int): List<LongRange> =

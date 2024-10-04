@@ -3,6 +3,11 @@ package com.rarible.blockchain.scanner.util
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
 import com.rarible.blockchain.scanner.framework.data.BlockEvent
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.scan
 
 object BlockRanges {
 
@@ -103,4 +108,25 @@ object BlockRanges {
         result += LongRange(start, current)
         return result
     }
+}
+
+fun Flow<Long>.toRanges(): Flow<LongRange> {
+    class State(
+        val last: LongRange?,
+        val yieldRange: LongRange?
+    )
+
+    return this.map<Long, Long?> { it }
+        .onCompletion { emit(null) }
+        .scan(State(null, null)) { state: State, n: Long? ->
+            val prevEnd = state.last?.last
+            if (n == null) {
+                // Last n
+                State(null, state.last)
+            } else if (prevEnd == null || prevEnd + 1 != n) {
+                State(LongRange(n, n), state.last)
+            } else {
+                State(LongRange(state.last.first, n), null)
+            }
+        }.mapNotNull { it.yieldRange }
 }
