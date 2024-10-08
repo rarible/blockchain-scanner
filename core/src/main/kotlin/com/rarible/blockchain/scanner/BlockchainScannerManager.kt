@@ -27,7 +27,7 @@ import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 
 // TODO not really a good way to construct generic components, but don't see other way to do it
-abstract class BlockchainScannerManager<
+open class BlockchainScannerManager<
     BB : BlockchainBlock,
     BL : BlockchainLog,
     R : LogRecord,

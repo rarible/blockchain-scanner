@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.BlockchainScanner
 import com.rarible.blockchain.scanner.BlockchainScannerManager
 import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.framework.client.BlockchainBlock
+import com.rarible.blockchain.scanner.framework.client.BlockchainClientFactory
 import com.rarible.blockchain.scanner.framework.client.BlockchainLog
 import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
@@ -113,17 +114,35 @@ class BlockchainScannerConfiguration(
         S : LogStorage
         > reconciliationLogHandler(
         manager: BlockchainScannerManager<BB, BL, R, TR, D, S>,
+        blockchainClientFactory: BlockchainClientFactory<BB, BL, D>,
         scannerProperties: BlockchainScannerProperties,
         monitor: LogReconciliationMonitor,
         subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
-    ): ReconciliationLogHandler = ReconciliationLogHandlerImpl(
-        reconciliationProperties = scannerProperties.reconciliation,
-        blockchainClient = manager.retryableClient,
-        logHandlerFactory = manager.logHandlerFactory,
-        reindexer = manager.blockReindexer,
-        planner = manager.blockScanPlanner,
-        monitor = monitor,
-        subscribers = subscribers,
-        publisher = manager.logRecordEventPublisher,
-    )
+    ): ReconciliationLogHandler {
+        val reconciliationManager = BlockchainScannerManager(
+            properties = scannerProperties,
+            blockService = manager.blockService,
+            logService = manager.logService,
+            logRecordEventPublisher = manager.logRecordEventPublisher,
+            transactionSubscribers = manager.transactionSubscribers,
+            blockchainClient = blockchainClientFactory.createReconciliationClient(),
+            blockMonitor = manager.blockMonitor,
+            transactionRecordEventPublisher = manager.transactionRecordEventPublisher,
+            logMonitor = manager.logMonitor,
+            logRecordComparator = manager.logRecordComparator,
+            logSubscribers = manager.logSubscribers,
+            reindexMonitor = manager.reindexMonitor,
+            logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
+        )
+        return ReconciliationLogHandlerImpl(
+            reconciliationProperties = scannerProperties.reconciliation,
+            blockchainClient = reconciliationManager.retryableClient,
+            logHandlerFactory = reconciliationManager.logHandlerFactory,
+            reindexer = reconciliationManager.blockReindexer,
+            planner = reconciliationManager.blockScanPlanner,
+            monitor = monitor,
+            subscribers = subscribers,
+            publisher = reconciliationManager.logRecordEventPublisher,
+        )
+    }
 }

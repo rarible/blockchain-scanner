@@ -9,9 +9,7 @@ import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.time.delay
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
-@Component
 class FlowNetNewBlockPoller(
     private val properties: FlowBlockchainScannerProperties,
     private val api: FlowGrpcApi

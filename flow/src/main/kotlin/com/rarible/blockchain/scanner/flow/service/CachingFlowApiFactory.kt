@@ -1,12 +1,8 @@
 package com.rarible.blockchain.scanner.flow.service
 
-import org.springframework.context.annotation.Primary
-import org.springframework.stereotype.Component
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
 
-@Primary
-@Component
 class CachingFlowApiFactory(
     private val flowApiFactory: FlowApiFactory
 ) : FlowApiFactory, Closeable {

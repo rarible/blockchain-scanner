@@ -27,6 +27,7 @@ data class SolanaBlockchainScannerProperties(
     override val task: TaskProperties = TaskProperties(),
     override val reconciliation: ReconciliationProperties = ReconciliationProperties(),
     val rpcApiUrls: List<String>,
+    val reconciliationRpcApiUrls: List<String> = rpcApiUrls,
     val rpcApiTimeout: Long = 30000,
     val programIds: Set<String> = emptySet(),
     override val scan: ScanProperties = ScanProperties()

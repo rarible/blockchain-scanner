@@ -14,15 +14,15 @@ import io.grpc.MethodDescriptor
 import io.grpc.ProxyDetector
 import io.grpc.stub.MetadataUtils
 import org.onflow.protobuf.access.AccessAPIGrpc
-import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.KProperty
 
-@Component
 class FlowApiFactoryImpl(
     private val blockchainMonitor: BlockchainMonitor,
     private val flowBlockchainScannerProperties: FlowBlockchainScannerProperties,
+    private val urlProvider: KProperty<String> = Spork::nodeUrl
 ) : FlowApiFactory {
 
     override fun getApi(spork: Spork): AsyncFlowAccessApi {
@@ -50,7 +50,7 @@ class FlowApiFactoryImpl(
             }
         }
         val headerInterceptor = MetadataUtils.newAttachHeadersInterceptor(metadata)
-        val channel = ManagedChannelBuilder.forAddress(spork.nodeUrl, spork.port)
+        val channel = ManagedChannelBuilder.forAddress(urlProvider.getter.call(spork), spork.port)
             .maxInboundMessageSize(DEFAULT_MESSAGE_SIZE)
             .run { if (detector != null) proxyDetector(detector) else this }
             .usePlaintext()
