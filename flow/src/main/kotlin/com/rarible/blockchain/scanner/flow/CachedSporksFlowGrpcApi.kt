@@ -29,13 +29,11 @@ import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.core.publisher.toMono
 import java.util.UUID
 
-@Component
 class CachedSporksFlowGrpcApi(
     private val sporkService: SporkService,
     private val properties: FlowBlockchainScannerProperties,

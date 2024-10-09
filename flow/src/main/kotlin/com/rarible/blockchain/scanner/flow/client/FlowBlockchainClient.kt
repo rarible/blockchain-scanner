@@ -23,13 +23,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import java.time.ZoneOffset
 
 /**
  * Client for Flow blockchain
  */
-@Component
 @ExperimentalCoroutinesApi
 class FlowBlockchainClient(
     private val poller: FlowNetNewBlockPoller,

@@ -4,6 +4,7 @@ data class Spork(
     val from: Long,
     val to: Long = Long.MAX_VALUE,
     val nodeUrl: String,
+    val reconciliationNodeUrl: String = nodeUrl,
     val port: Int = 9000,
     val headers: Map<String, String> = emptyMap(),
 ) {

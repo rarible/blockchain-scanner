@@ -7,9 +7,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.future.await
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 
-@Service
 class SporkService(
     properties: FlowBlockchainScannerProperties,
     private val flowApiFactory: FlowApiFactory,

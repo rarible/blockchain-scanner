@@ -23,7 +23,6 @@ import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import scala.jdk.javaapi.CollectionConverters
 import scalether.core.MonoEthereum
 import scalether.domain.Address
@@ -37,7 +36,6 @@ import java.math.BigInteger
 import java.time.Duration
 
 @ExperimentalCoroutinesApi
-@Component
 class EthereumClient(
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     ethereum: MonoEthereum,
