@@ -81,8 +81,8 @@ class ReconciliationLogHandlerImpl<
                 }.filterNotNull()
                 .toRanges()
 
-            if (reconciliationProperties.autoReindex) {
-                reindex(reconciledBlockRangesFlow)
+            if (reconciliationProperties.autoReindex.enabled) {
+                reindex(reconciledBlockRangesFlow, reconciliationProperties.autoReindex.publishEvents)
             } else {
                 reconciledBlockRangesFlow.collect()
             }
@@ -146,7 +146,7 @@ class ReconciliationLogHandlerImpl<
             .toLong()
     }
 
-    private suspend fun reindex(blockNumberRanges: Flow<LongRange>) {
+    private suspend fun reindex(blockNumberRanges: Flow<LongRange>, publishEvents: Boolean) {
         val reindexFlow = blockNumberRanges
             .mapAsync(reconciliationProperties.reindexParallelism) { blockNumberRange ->
                 val plan = planner.getPlan(
@@ -159,7 +159,7 @@ class ReconciliationLogHandlerImpl<
                 reindexer.reindex(
                     baseBlock = plan.baseBlock,
                     blocksRanges = plan.ranges,
-                    publisher = publisher,
+                    publisher = publisher.takeIf { publishEvents },
                 ).collect {
                     logger.info("block {} was re-indexed", it)
                 }
