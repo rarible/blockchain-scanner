@@ -219,7 +219,12 @@ internal class ReconciliationLogHandlerImplTest {
         coEvery { handlerPlanner.getPlan(BlockRange(100, 100, ReconciliationProperties().reindexBatchSize)) } returns plan
         coEvery { reindexHandler.reindex(baseBlock, planRange, any(), any()) } returns flowOf(baseBlock)
 
-        val handler = create(listOf(subscriber11a), reconciliationProperties = ReconciliationProperties(autoReindex = true))
+        val handler = create(
+            listOf(subscriber11a),
+            reconciliationProperties = ReconciliationProperties(
+                autoReindex = ReconciliationProperties.ReindexMode.WITHOUT_EVENTS
+            )
+        )
 
         coEvery { monitor.onInconsistency() } returns Unit
 
@@ -229,7 +234,9 @@ internal class ReconciliationLogHandlerImplTest {
 
     private fun create(
         subscribers: List<TestLogEventSubscriber>,
-        reconciliationProperties: ReconciliationProperties = ReconciliationProperties()
+        reconciliationProperties: ReconciliationProperties = ReconciliationProperties(
+            autoReindex = ReconciliationProperties.ReindexMode.DISABLED
+        )
     ): ReconciliationLogHandler {
         return ReconciliationLogHandlerImpl(
             reconciliationProperties = reconciliationProperties,
