@@ -222,7 +222,7 @@ internal class ReconciliationLogHandlerImplTest {
         val handler = create(
             listOf(subscriber11a),
             reconciliationProperties = ReconciliationProperties(
-                autoReindex = ReconciliationProperties.ReindexMode.WITHOUT_EVENTS
+                autoReindexMode = ReconciliationProperties.ReindexMode.WITHOUT_EVENTS
             )
         )
 
@@ -235,7 +235,7 @@ internal class ReconciliationLogHandlerImplTest {
     private fun create(
         subscribers: List<TestLogEventSubscriber>,
         reconciliationProperties: ReconciliationProperties = ReconciliationProperties(
-            autoReindex = ReconciliationProperties.ReindexMode.DISABLED
+            autoReindexMode = ReconciliationProperties.ReindexMode.DISABLED
         )
     ): ReconciliationLogHandler {
         return ReconciliationLogHandlerImpl(

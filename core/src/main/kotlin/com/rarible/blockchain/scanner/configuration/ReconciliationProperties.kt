@@ -5,7 +5,7 @@ import java.time.Duration
 data class ReconciliationProperties(
     val enabled: Boolean = false,
     val blockHandleParallelism: Int = 50,
-    val autoReindex: ReindexMode = ReindexMode.WITH_EVENTS,
+    val autoReindexMode: ReindexMode = ReindexMode.WITH_EVENTS,
     val reindexBatchSize: Int = 50,
     val reindexParallelism: Int = 10,
     val checkPeriod: Duration = Duration.ofMinutes(1),

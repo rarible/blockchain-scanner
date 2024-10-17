@@ -81,8 +81,8 @@ class ReconciliationLogHandlerImpl<
                 }.filterNotNull()
                 .toRanges()
 
-            if (reconciliationProperties.autoReindex.enabled) {
-                reindex(reconciledBlockRangesFlow, reconciliationProperties.autoReindex.publishEvents)
+            if (reconciliationProperties.autoReindexMode.enabled) {
+                reindex(reconciledBlockRangesFlow, reconciliationProperties.autoReindexMode.publishEvents)
             } else {
                 reconciledBlockRangesFlow.collect()
             }
