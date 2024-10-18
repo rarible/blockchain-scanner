@@ -21,7 +21,7 @@ class ChangeLog00001 {
         )
     }
 
-    @ChangeSet(id = "ensureInitialIndexes", order = "00002", author = "eugene")
+    @ChangeSet(id = "ensureInitialIndexes", order = "00002", author = "eugene", runAlways = true)
     fun ensureInitialIndexes(
         template: MongockTemplate,
         @NonLockGuarded subscriberHolder: EthereumLogEventSubscriberHolder
