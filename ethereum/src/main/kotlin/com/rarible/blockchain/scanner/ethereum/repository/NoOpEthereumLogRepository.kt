@@ -12,7 +12,7 @@ object NoOpEthereumLogRepository : EthereumLogRepository {
 
     override suspend fun delete(record: EthereumLogRecord): EthereumLogRecord = record
 
-    override suspend fun findVisibleByKey(transactionHash: String, topic: Word, address: Address, index: Int, minorLogIndex: Int): EthereumLogRecord? {
+    override suspend fun findByKey(transactionHash: String, topic: Word, address: Address, index: Int, minorLogIndex: Int): EthereumLogRecord? {
         return null
     }
 
@@ -46,5 +46,5 @@ object NoOpEthereumLogRepository : EthereumLogRepository {
 
     override fun createIndexes(template: MongockTemplate) {}
 
-    override fun dropStatusIndex(mongockTemplate: MongockTemplate) {}
+    override fun dropIndexes(mongockTemplate: MongockTemplate) {}
 }

@@ -101,7 +101,7 @@ class EthereumLogService(
     ): EthereumLogRecord {
         val log = record.log
 
-        var found = descriptor.storage.findVisibleByKey(
+        var found = descriptor.storage.findByKey(
             log.transactionHash,
             log.topic,
             log.address,
