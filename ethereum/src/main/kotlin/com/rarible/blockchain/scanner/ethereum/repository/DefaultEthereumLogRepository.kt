@@ -10,11 +10,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.bson.Document
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.index.Index
+import org.springframework.data.mongodb.core.index.PartialIndexFilter
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
@@ -146,6 +148,7 @@ open class DefaultEthereumLogRepository(
             .named(VISIBLE_INDEX_NAME)
             .background()
             .unique()
+            .partial(PartialIndexFilter.of(Document("visible", true)))
 
         // This index is not used for queries but only to ensure the consistency of the database.
         private val UNIQUE_RECORD_INDEX = Index()
