@@ -10,13 +10,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
-import org.bson.Document
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.index.Index
-import org.springframework.data.mongodb.core.index.PartialIndexFilter
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
@@ -41,7 +39,7 @@ open class DefaultEthereumLogRepository(
         return record
     }
 
-    override suspend fun findVisibleByKey(
+    override suspend fun findByKey(
         transactionHash: String,
         topic: Word,
         address: Address,
@@ -53,9 +51,9 @@ open class DefaultEthereumLogRepository(
             .and("address").isEqualTo(address)
             .and("index").isEqualTo(index)
             .and("minorLogIndex").isEqualTo(minorLogIndex)
-            .and("visible").isEqualTo(true)
+
         return mongo.findOne(
-            Query.query(criteria).withHint(VISIBLE_INDEX_NAME),
+            Query.query(criteria).withHint(UNIQUE_RECORD_INDEX_NAME),
             entityType,
             collection
         ).awaitSingleOrNull()
@@ -120,31 +118,22 @@ open class DefaultEthereumLogRepository(
         }
     }
 
-    override fun dropStatusIndex(mongockTemplate: MongockTemplate) {
+    override fun dropIndexes(mongockTemplate: MongockTemplate) {
         val indexOps = mongockTemplate.indexOps(collection)
-        if (indexOps.indexInfo.any { it.name == STATUS_INDEX_NAME }) {
-            indexOps.dropIndex(STATUS_INDEX_NAME)
+        indexOps.indexInfo.forEach {
+            if (it.name in INDEXES_TO_DROP) {
+                indexOps.dropIndex(it.name)
+            }
         }
     }
 
     companion object {
-        const val VISIBLE_INDEX_NAME =
-            "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1"
-        const val UNIQUE_RECORD_INDEX_NAME =
-            "transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1"
-        private const val STATUS_INDEX_NAME = "status"
+        private val INDEXES_TO_DROP = listOf(
+            "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1",
+            "status"
+        )
 
-        private val VISIBLE_INDEX = Index()
-            .on("transactionHash", Sort.Direction.ASC)
-            .on("topic", Sort.Direction.ASC)
-            .on("address", Sort.Direction.ASC)
-            .on("index", Sort.Direction.ASC)
-            .on("minorLogIndex", Sort.Direction.ASC)
-            .on("visible", Sort.Direction.ASC)
-            .named(VISIBLE_INDEX_NAME)
-            .background()
-            .unique()
-            .partial(PartialIndexFilter.of(Document("visible", true)))
+        const val UNIQUE_RECORD_INDEX_NAME = "transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1"
 
         // This index is not used for queries but only to ensure the consistency of the database.
         private val UNIQUE_RECORD_INDEX = Index()
@@ -156,11 +145,6 @@ open class DefaultEthereumLogRepository(
             .background()
             .unique()
 
-        private val STATUS_INDEX = Index()
-            .on("status", Sort.Direction.ASC)
-            .named(STATUS_INDEX_NAME)
-            .background()
-
         private val BLOCKHASH_INDEX = Index()
             .on("blockHash", Sort.Direction.ASC)
             .named("blockHash")
@@ -171,9 +155,7 @@ open class DefaultEthereumLogRepository(
             .background()
 
         private val allIndexes = listOf(
-            VISIBLE_INDEX,
             UNIQUE_RECORD_INDEX,
-            STATUS_INDEX,
             BLOCKHASH_INDEX,
             BLOCKNUMNBER_INDEX,
         )

@@ -12,7 +12,7 @@ interface EthereumLogRepository : LogStorage {
 
     suspend fun delete(record: EthereumLogRecord): EthereumLogRecord
 
-    suspend fun findVisibleByKey(
+    suspend fun findByKey(
         transactionHash: String,
         topic: Word,
         address: Address,
@@ -39,5 +39,5 @@ interface EthereumLogRepository : LogStorage {
 
     fun createIndexes(template: MongockTemplate)
 
-    fun dropStatusIndex(mongockTemplate: MongockTemplate)
+    fun dropIndexes(mongockTemplate: MongockTemplate)
 }

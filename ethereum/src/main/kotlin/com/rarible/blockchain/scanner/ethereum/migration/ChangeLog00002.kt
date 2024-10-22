@@ -8,14 +8,14 @@ import io.changock.migration.api.annotations.NonLockGuarded
 @ChangeLog(order = "00002")
 class ChangeLog00002 {
 
-    @ChangeSet(id = "00002_dropStatusIndex", order = "00001", author = "igorbaltiyskiy-rari")
-    fun dropStatusIndex(
+    @ChangeSet(id = "ChangeLog00002.dropIndexes", order = "00001", author = "protocol", runAlways = true)
+    fun dropIndexes(
         mongockTemplate: MongockTemplate,
         @NonLockGuarded subscriberHolder: EthereumLogEventSubscriberHolder
     ) {
         val repositories = subscriberHolder.subscribers.map { it.getDescriptor().storage }.toSet()
         repositories.forEach {
-            it.dropStatusIndex(mongockTemplate)
+            it.dropIndexes(mongockTemplate)
         }
     }
 }
