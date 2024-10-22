@@ -51,9 +51,10 @@ open class DefaultEthereumLogRepository(
             .and("address").isEqualTo(address)
             .and("index").isEqualTo(index)
             .and("minorLogIndex").isEqualTo(minorLogIndex)
+            .and("visible").isEqualTo(true)
 
         return mongo.findOne(
-            Query.query(criteria).withHint(UNIQUE_RECORD_INDEX_NAME),
+            Query.query(criteria),
             entityType,
             collection
         ).awaitSingleOrNull()
@@ -129,11 +130,22 @@ open class DefaultEthereumLogRepository(
 
     companion object {
         private val INDEXES_TO_DROP = listOf(
-            "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1",
             "status"
         )
 
-        const val UNIQUE_RECORD_INDEX_NAME = "transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1"
+        private const val VISIBLE_INDEX_NAME = "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1"
+        private const val UNIQUE_RECORD_INDEX_NAME = "transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1"
+
+        private val VISIBLE_INDEX = Index()
+            .on("transactionHash", Sort.Direction.ASC)
+            .on("topic", Sort.Direction.ASC)
+            .on("address", Sort.Direction.ASC)
+            .on("index", Sort.Direction.ASC)
+            .on("minorLogIndex", Sort.Direction.ASC)
+            .on("visible", Sort.Direction.ASC)
+            .named(VISIBLE_INDEX_NAME)
+            .background()
+            .unique()
 
         // This index is not used for queries but only to ensure the consistency of the database.
         private val UNIQUE_RECORD_INDEX = Index()
@@ -155,6 +167,7 @@ open class DefaultEthereumLogRepository(
             .background()
 
         private val allIndexes = listOf(
+            VISIBLE_INDEX,
             UNIQUE_RECORD_INDEX,
             BLOCKHASH_INDEX,
             BLOCKNUMNBER_INDEX,
