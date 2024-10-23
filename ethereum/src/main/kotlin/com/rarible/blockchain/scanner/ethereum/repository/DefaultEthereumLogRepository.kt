@@ -117,7 +117,11 @@ open class DefaultEthereumLogRepository(
         logger.info("Creating indexes for $collection")
         val indexOps = template.indexOps(collection)
         allIndexes.forEach {
-            indexOps.ensureIndex(it)
+            try {
+                indexOps.ensureIndex(it)
+            } catch (ex: Throwable) {
+                logger.error("Can't creating index $it", ex)
+            }
         }
     }
 
