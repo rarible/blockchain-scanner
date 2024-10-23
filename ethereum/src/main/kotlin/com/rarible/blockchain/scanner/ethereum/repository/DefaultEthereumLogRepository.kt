@@ -170,7 +170,7 @@ open class DefaultEthereumLogRepository(
             .background()
 
         private val allIndexes = listOf(
-//            VISIBLE_INDEX,
+            VISIBLE_INDEX,
             UNIQUE_RECORD_INDEX,
             BLOCKHASH_INDEX,
             BLOCKNUMNBER_INDEX,
