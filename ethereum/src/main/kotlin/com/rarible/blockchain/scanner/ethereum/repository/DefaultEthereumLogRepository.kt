@@ -134,7 +134,8 @@ open class DefaultEthereumLogRepository(
 
     companion object {
         private val INDEXES_TO_DROP = listOf(
-            "status"
+            "status",
+            "transactionHash_1_topic_1_address_1_index_1_minorLogIndex_1_visible_1" // VISIBLE_INDEX
         )
 
         private const val UNIQUE_RECORD_INDEX_NAME = "transactionHash_1_blockHash_1_logIndex_1_minorLogIndex_1"
