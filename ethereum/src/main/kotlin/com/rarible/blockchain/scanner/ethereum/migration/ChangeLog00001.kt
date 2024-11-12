@@ -24,9 +24,9 @@ class ChangeLog00001 {
     @ChangeSet(id = "ensureInitialIndexes", order = "00002", author = "eugene", runAlways = true)
     fun ensureInitialIndexes(
         template: MongockTemplate,
-        @NonLockGuarded subscriberHolder: EthereumLogEventSubscriberHolder
+        @NonLockGuarded repositoryHolder: EthereumLogRepositoryHolder
     ) {
-        val repositories = subscriberHolder.subscribers.map { it.getDescriptor().storage }.toSet()
+        val repositories = repositoryHolder.repositories
         repositories.forEach {
             it.createIndexes(template)
         }

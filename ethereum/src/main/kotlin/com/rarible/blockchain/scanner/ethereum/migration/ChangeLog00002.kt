@@ -11,9 +11,9 @@ class ChangeLog00002 {
     @ChangeSet(id = "ChangeLog00002.dropIndexes", order = "00001", author = "protocol", runAlways = true)
     fun dropIndexes(
         mongockTemplate: MongockTemplate,
-        @NonLockGuarded subscriberHolder: EthereumLogEventSubscriberHolder
+        @NonLockGuarded repositoryHolder: EthereumLogRepositoryHolder
     ) {
-        val repositories = subscriberHolder.subscribers.map { it.getDescriptor().storage }.toSet()
+        val repositories = repositoryHolder.repositories
         repositories.forEach {
             it.dropIndexes(mongockTemplate)
         }
