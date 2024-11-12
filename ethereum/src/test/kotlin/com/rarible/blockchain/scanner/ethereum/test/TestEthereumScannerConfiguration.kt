@@ -45,13 +45,23 @@ class TestEthereumScannerConfiguration {
     fun meterRegistry(): MeterRegistry = SimpleMeterRegistry()
 
     @Bean
-    fun testTransferSubscriber(mongo: ReactiveMongoOperations): TestTransferSubscriber {
-        return TestTransferSubscriber(DefaultEthereumLogRepository(mongo, "transfer"))
+    fun testTransferRepository(mongo: ReactiveMongoOperations): DefaultEthereumLogRepository {
+        return DefaultEthereumLogRepository(mongo, "transfer")
     }
 
     @Bean
-    fun testBidSubscriber(mongo: ReactiveMongoOperations): TestBidSubscriber {
-        return TestBidSubscriber(DefaultEthereumLogRepository(mongo, "bid"))
+    fun testTransferSubscriber(testTransferRepository: DefaultEthereumLogRepository): TestTransferSubscriber {
+        return TestTransferSubscriber(testTransferRepository)
+    }
+
+    @Bean
+    fun testBidRepository(mongo: ReactiveMongoOperations): DefaultEthereumLogRepository {
+        return DefaultEthereumLogRepository(mongo, "bid")
+    }
+
+    @Bean
+    fun testBidSubscriber(testBidRepository: DefaultEthereumLogRepository): TestBidSubscriber {
+        return TestBidSubscriber(testBidRepository)
     }
 
     @Bean
