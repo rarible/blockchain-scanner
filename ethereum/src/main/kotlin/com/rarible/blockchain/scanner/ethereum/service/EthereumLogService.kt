@@ -101,7 +101,7 @@ class EthereumLogService(
     ): EthereumLogRecord {
         val log = record.log
 
-        var found = descriptor.storage.findByKey(
+        var found = descriptor.storage.findLogEvent(record.id) ?: descriptor.storage.findByKey(
             log.transactionHash,
             log.topic,
             log.address,
@@ -126,7 +126,11 @@ class EthereumLogService(
 
         val withCorrectId = record.withIdAndVersion(found.id, found.version, found.updatedAt)
         return if (withCorrectId != found) {
-            logger.info("Saving changed LogEvent to storage '{}' : {}", descriptor.storage::class.simpleName, withCorrectId)
+            logger.info(
+                "Saving changed LogEvent to storage '{}' : {}",
+                descriptor.storage::class.simpleName,
+                withCorrectId
+            )
             descriptor.storage.save(withCorrectId)
         } else {
             logger.info("LogEvent wasn't changed: {}", withCorrectId)
