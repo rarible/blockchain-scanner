@@ -217,7 +217,6 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
             )
         ) as ReversedEthereumLogRecord
 
-
         val revertedLogs =
             ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
 
