@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
 import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLog
+import com.rarible.blockchain.scanner.ethereum.test.data.randomLogHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomLogRecord
 import com.rarible.blockchain.scanner.ethereum.test.data.randomString
 import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.dao.DuplicateKeyException
@@ -190,5 +192,44 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
             ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
         assertEquals(1, revertedLogs.size)
         assertEquals(reverted.id, revertedLogs[0].id)
+    }
+
+    @RepeatedTest(10)
+    fun `revert already reverted transaction`() = runBlocking<Unit> {
+        val blockHash = randomBlockHash()
+        val transactionHash = randomLogHash()
+
+        val alreadyRevertedRecord = storage.save(
+            randomLogRecord(
+                topic = topic,
+                blockHash = randomBlockHash(),
+                transactionHash = transactionHash,
+                status = EthereumBlockStatus.REVERTED,
+            )
+        ) as ReversedEthereumLogRecord
+        val confirmedRecord = storage.save(
+            alreadyRevertedRecord.copy(
+                id = randomString(),
+                version = null,
+                blockHash = blockHash,
+                transactionHash = transactionHash,
+                status = EthereumBlockStatus.CONFIRMED,
+            )
+        ) as ReversedEthereumLogRecord
+
+        val revertedLogs =
+            ethereumLogService.prepareLogsToRevertOnRevertedBlock(descriptor, blockHash.toString()).toList()
+
+        ethereumLogService.save(descriptor, revertedLogs, blockHash.toString())
+
+        val records = descriptor.storage.findAll().toList()
+
+        assertThat(records).hasSize(2)
+
+        val revertedConfirmedRecord = storage.findLogEvent(confirmedRecord.id) as ReversedEthereumLogRecord
+        assertThat(revertedConfirmedRecord.status).isEqualTo(EthereumBlockStatus.REVERTED)
+
+        val alreadyRevertedRecordNotUpdated = storage.findLogEvent(alreadyRevertedRecord.id)
+        assertThat(alreadyRevertedRecordNotUpdated).isEqualTo(alreadyRevertedRecord)
     }
 }
