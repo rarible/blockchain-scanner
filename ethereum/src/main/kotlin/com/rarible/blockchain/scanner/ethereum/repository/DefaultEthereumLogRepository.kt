@@ -146,6 +146,7 @@ open class DefaultEthereumLogRepository(
             .on("blockHash", Sort.Direction.ASC)
             .on("logIndex", Sort.Direction.ASC)
             .on("minorLogIndex", Sort.Direction.ASC)
+            .on("status", Sort.Direction.ASC)
             .named(UNIQUE_RECORD_INDEX_NAME)
             .background()
             .unique()
