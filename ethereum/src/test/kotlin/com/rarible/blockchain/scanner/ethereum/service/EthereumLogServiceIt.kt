@@ -232,4 +232,52 @@ class EthereumLogServiceIt : AbstractIntegrationTest() {
         val alreadyRevertedRecordNotUpdated = storage.findLogEvent(alreadyRevertedRecord.id)
         assertThat(alreadyRevertedRecordNotUpdated).isEqualTo(alreadyRevertedRecord)
     }
+
+    @RepeatedTest(10)
+    fun `should confirm previously reverted transaction`() = runBlocking<Unit> {
+        val blockHash = randomBlockHash()
+        val transactionHash = randomLogHash()
+
+        // Given
+        val revertedRecord = storage.save(
+            randomLogRecord(
+                topic = topic,
+                blockHash = blockHash,
+                transactionHash = transactionHash,
+                status = EthereumBlockStatus.REVERTED,
+            )
+        ) as ReversedEthereumLogRecord
+
+        // And
+        val revertedRecordWithDifferentBlock = storage.save(
+            revertedRecord.copy(
+                id = randomString(),
+                version = null,
+                blockHash = randomBlockHash(),
+                transactionHash = transactionHash,
+                status = EthereumBlockStatus.REVERTED,
+            )
+        ) as ReversedEthereumLogRecord
+
+        // And
+        val recordToConfirm = revertedRecord.copy(
+            id = randomString(),
+            version = null,
+            blockHash = blockHash,
+            transactionHash = transactionHash,
+            status = EthereumBlockStatus.CONFIRMED,
+        )
+
+        // When
+        val confirmedRecord = ethereumLogService.save(descriptor, listOf(recordToConfirm), blockHash.toString()).first()
+
+        // Then
+        assertThat(confirmedRecord.id).isEqualTo(revertedRecord.id)
+
+        // And
+        assertThat(storage.findLogEvent(revertedRecordWithDifferentBlock.id)).isEqualTo(revertedRecordWithDifferentBlock)
+
+        // And
+        assertThat(descriptor.storage.findAll().toList()).hasSize(2)
+    }
 }

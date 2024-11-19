@@ -99,22 +99,16 @@ class EthereumLogService(
         descriptor: EthereumDescriptor,
         record: EthereumLogRecord
     ): EthereumLogRecord {
-        val log = record.log
-
-        var found = descriptor.storage.findLogEvent(record.id) ?: descriptor.storage.findByKey(
-            log.transactionHash,
-            log.topic,
-            log.address,
-            log.index,
-            log.minorLogIndex
-        )
+        var found = findDuplicate(descriptor, record)
 
         if (found == null) {
             try {
+                logger.info("saving log record: {}", record)
                 val result = descriptor.storage.save(record)
-                logger.info("Saved new LogEvent: {}", record)
+                logger.info("saved log record with id {}", record.id)
                 return result
             } catch (e: DuplicateKeyException) {
+                logger.warn("duplicate key exception saving $record", e)
                 found = getLegacyDuplicate(descriptor, record) ?: throw e
             }
         }
@@ -136,6 +130,18 @@ class EthereumLogService(
             logger.info("LogEvent wasn't changed: {}", withCorrectId)
             found
         }
+    }
+
+    private suspend fun findDuplicate(descriptor: EthereumDescriptor, record: EthereumLogRecord): EthereumLogRecord? {
+        return descriptor.storage.findLogEvent(record.id)
+            ?: getLegacyDuplicate(descriptor, record)
+            ?: descriptor.storage.findByKey(
+                record.log.transactionHash,
+                record.log.topic,
+                record.log.address,
+                record.log.index,
+                record.log.minorLogIndex
+            )
     }
 
     private suspend fun getLegacyDuplicate(
