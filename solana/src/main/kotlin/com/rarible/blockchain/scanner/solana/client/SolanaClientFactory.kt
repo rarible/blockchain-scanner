@@ -15,7 +15,7 @@ class SolanaClientFactory(
         return SolanaClient(
             api = SolanaHttpRpcApi(urls = properties.rpcApiUrls, timeoutMillis = properties.rpcApiTimeout),
             properties = properties,
-            programIds = subscribers.map { it.getDescriptor().programId }.toSet()
+            filters = subscribers.map { it.getDescriptor().filter }.toSet()
         )
     }
 
@@ -26,7 +26,7 @@ class SolanaClientFactory(
                 timeoutMillis = properties.rpcApiTimeout
             ),
             properties = properties,
-            programIds = subscribers.map { it.getDescriptor().programId }.toSet()
+            filters = subscribers.map { it.getDescriptor().filter }.toSet()
         )
     }
 }

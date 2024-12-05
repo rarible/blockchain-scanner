@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.solana.client.dto.getSafeResult
 import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.blockchain.scanner.solana.configuration.SolanaBlockchainScannerProperties
 import com.rarible.blockchain.scanner.solana.model.SolanaDescriptor
+import com.rarible.blockchain.scanner.solana.model.SolanaInstructionFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
@@ -18,12 +19,10 @@ import org.slf4j.LoggerFactory
 class SolanaClient(
     private val api: SolanaApi,
     private val properties: SolanaBlockchainScannerProperties,
-    programIds: Set<String>,
+    filters: Set<SolanaInstructionFilter>,
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
 
-    private val solanaBlockDtoParser = SolanaBlockDtoParser(
-        programIds = programIds
-    )
+    private val solanaBlockDtoParser = SolanaBlockDtoParser(SolanaInstructionFilter.Or(filters))
 
     override val newBlocks: Flow<SolanaBlockchainBlock>
         get() = flow {
@@ -63,7 +62,7 @@ class SolanaClient(
         return blocks.asFlow()
             .map { block ->
                 val logs = block.logs.filter { log ->
-                    log.instruction.programId == descriptor.programId
+                    descriptor.filter.matches(log.instruction)
                 }
                 FullBlock(
                     block,

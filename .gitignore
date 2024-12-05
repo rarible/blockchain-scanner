@@ -1,5 +1,8 @@
 *.iml
 .idea
+.vscode
 target
 .flattened-pom.xml
 .DS_Store
+.aider*
+.env
