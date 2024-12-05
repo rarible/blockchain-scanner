@@ -22,7 +22,7 @@ class SolanaClient(
     filters: Set<SolanaInstructionFilter>,
 ) : BlockchainClient<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
 
-    private val solanaBlockDtoParser = SolanaBlockDtoParser(SolanaInstructionFilter.Or(filters))
+    private val solanaBlockDtoParser = SolanaBlockDtoParser(filters)
 
     override val newBlocks: Flow<SolanaBlockchainBlock>
         get() = flow {

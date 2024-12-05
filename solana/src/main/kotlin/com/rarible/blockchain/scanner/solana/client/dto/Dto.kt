@@ -245,8 +245,10 @@ enum class Encoding(val value: String) {
 }
 
 class SolanaBlockDtoParser(
-    private val filter: SolanaInstructionFilter,
+    filters: Set<SolanaInstructionFilter>,
 ) {
+    private val filter = SolanaInstructionFilter.Or(filters)
+
     fun toModel(
         blockDto: SolanaBlockDto,
         slot: Long,
