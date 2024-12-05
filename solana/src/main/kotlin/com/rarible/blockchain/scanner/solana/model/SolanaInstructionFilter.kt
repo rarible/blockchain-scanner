@@ -34,4 +34,8 @@ sealed interface SolanaInstructionFilter {
         override fun matches(instruction: SolanaInstruction): Boolean =
             filters.any { it.matches(instruction) }
     }
+
+    object True : SolanaInstructionFilter {
+        override fun matches(instruction: SolanaInstruction): Boolean = true
+    }
 }
