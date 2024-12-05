@@ -20,3 +20,15 @@ abstract class ProgramIdSolanaDescriptor(
     groupId = groupId,
     storage = storage
 )
+
+abstract class DiscriminatorSolanaDescriptor(
+    discriminator: ByteArray,
+    id: String,
+    groupId: String,
+    storage: SolanaLogStorage
+) : SolanaDescriptor(
+    filter = SolanaInstructionFilter.ByDiscriminator(discriminator),
+    id = id,
+    groupId = groupId,
+    storage = storage
+)
