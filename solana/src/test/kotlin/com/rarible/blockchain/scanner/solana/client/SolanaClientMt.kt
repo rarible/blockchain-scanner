@@ -18,7 +18,7 @@ class SolanaClientMt {
             timeoutMillis = 30000
         ),
         properties = SolanaBlockchainScannerProperties(rpcApiUrls = emptyList()),
-        programIds = emptySet() // All programs.
+        filters = emptySet() // All programs.
     )
 
     private val eclipseTestnetHttpRpcApi = SolanaHttpRpcApi(
