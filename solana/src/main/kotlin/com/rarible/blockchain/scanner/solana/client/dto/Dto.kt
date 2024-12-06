@@ -313,12 +313,7 @@ class SolanaBlockDtoParser(
         instructionIndex: Int,
         innerInstructionIndex: Int?,
     ): SolanaBlockchainLog? {
-        val programId = accountKeys[programIdIndex]
-        val instruction = SolanaInstruction(
-            programId = programId,
-            data = data,
-            accounts = accounts.map { accountKeys[it] }
-        )
+        val instruction = toModel(accountKeys)
         val solanaLog = SolanaLog(
             blockNumber = blockNumber,
             transactionHash = transactionHash,
@@ -329,6 +324,15 @@ class SolanaBlockDtoParser(
         )
         return if (filter.matches(instruction)) SolanaBlockchainLog(solanaLog, instruction) else null
     }
+}
+
+fun Instruction.toModel(accountKeys: List<String>): SolanaInstruction {
+    val programId = accountKeys[programIdIndex]
+    return SolanaInstruction(
+        programId = programId,
+        data = data,
+        accounts = accounts.map { accountKeys[it] }
+    )
 }
 
 fun ApiResponse<Long>.toModel(): Long = convert { this }
