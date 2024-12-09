@@ -12,6 +12,14 @@ sealed interface SolanaInstructionFilter {
         }
     }
 
+    data class ByProgramIds(val programIds: Collection<String>) : SolanaInstructionFilter {
+        private val programIdsSet = programIds.toSet()
+
+        override fun matches(instruction: SolanaInstruction): Boolean {
+            return instruction.programId in programIdsSet
+        }
+    }
+
     @Suppress("ArrayInDataClass")
     data class ByDiscriminator(val discriminator: ByteArray) : SolanaInstructionFilter {
         override fun matches(instruction: SolanaInstruction): Boolean {
