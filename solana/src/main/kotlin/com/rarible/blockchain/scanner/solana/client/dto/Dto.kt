@@ -247,7 +247,7 @@ enum class Encoding(val value: String) {
 class SolanaBlockDtoParser(
     filters: Set<SolanaInstructionFilter>,
 ) {
-    private val filter = SolanaInstructionFilter.Or(filters)
+    private val orFilter = SolanaInstructionFilter.Or(filters)
 
     fun toModel(
         blockDto: SolanaBlockDto,
@@ -322,7 +322,7 @@ class SolanaBlockDtoParser(
             instructionIndex = instructionIndex,
             innerInstructionIndex = innerInstructionIndex
         )
-        return if (filter.matches(instruction)) SolanaBlockchainLog(solanaLog, instruction) else null
+        return if (orFilter.matches(instruction)) SolanaBlockchainLog(solanaLog, instruction) else null
     }
 }
 
