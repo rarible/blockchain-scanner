@@ -247,7 +247,7 @@ enum class Encoding(val value: String) {
 class SolanaBlockDtoParser(
     filters: Set<SolanaInstructionFilter>,
 ) {
-    private val orFilter = SolanaInstructionFilter.Or(filters)
+    private val orFilter = if (filters.isEmpty()) SolanaInstructionFilter.True else SolanaInstructionFilter.Or(filters)
 
     fun toModel(
         blockDto: SolanaBlockDto,
