@@ -14,10 +14,9 @@ sealed interface SolanaInstructionFilter {
 
     @Suppress("ArrayInDataClass")
     data class ByDiscriminator(val discriminator: ByteArray) : SolanaInstructionFilter {
-        private val discriminatorBase58 = Base58.encode(discriminator)
         override fun matches(instruction: SolanaInstruction): Boolean {
-            val data = instruction.data
-            return data.length > discriminatorBase58.length && data.startsWith(discriminatorBase58)
+            val data = Base58.decode(instruction.data)
+            return data.size >= discriminator.size && data.sliceArray(discriminator.indices).contentEquals(discriminator)
         }
     }
 
