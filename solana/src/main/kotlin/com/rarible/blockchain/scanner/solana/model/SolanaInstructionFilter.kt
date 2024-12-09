@@ -3,7 +3,7 @@ package com.rarible.blockchain.scanner.solana.model
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.util.Base58
 
-sealed interface SolanaInstructionFilter {
+interface SolanaInstructionFilter {
     fun matches(instruction: SolanaInstruction): Boolean
 
     data class ByProgramId(val programId: String) : SolanaInstructionFilter {
@@ -13,6 +13,8 @@ sealed interface SolanaInstructionFilter {
     }
 
     data class ByProgramIds(val programIds: Collection<String>) : SolanaInstructionFilter {
+        constructor(vararg programId: String) : this(programId.toSet())
+
         private val programIdsSet = programIds.toSet()
 
         override fun matches(instruction: SolanaInstruction): Boolean {
