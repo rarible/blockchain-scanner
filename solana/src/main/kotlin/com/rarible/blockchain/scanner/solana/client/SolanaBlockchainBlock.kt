@@ -20,6 +20,8 @@ data class SolanaBlockchainBlock(
         return copy(receivedTime = value)
     }
 
+    override fun getDatetime(): Instant = Instant.ofEpochSecond(timestamp)
+
     override fun toString(): String = buildString {
         appendLine("Block #$slot:$hash (parent = #$parentSlot:$parentHash) at $timestamp")
         append(buildString {
