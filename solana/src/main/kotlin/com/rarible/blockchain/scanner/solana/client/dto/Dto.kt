@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainBlock
 import com.rarible.blockchain.scanner.solana.client.SolanaBlockchainLog
 import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
+import com.rarible.blockchain.scanner.solana.model.SolanaInstructionFilter
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
 import java.math.BigInteger
 
@@ -244,9 +245,14 @@ enum class Encoding(val value: String) {
 }
 
 class SolanaBlockDtoParser(
-    private val programIds: Set<String>
+    filters: Set<SolanaInstructionFilter>,
 ) {
-    fun toModel(blockDto: SolanaBlockDto, slot: Long): SolanaBlockchainBlock = with(blockDto) {
+    private val orFilter = if (filters.isEmpty()) SolanaInstructionFilter.True else SolanaInstructionFilter.Or(filters)
+
+    fun toModel(
+        blockDto: SolanaBlockDto,
+        slot: Long,
+    ): SolanaBlockchainBlock = with(blockDto) {
         val logs = transactions.flatMapIndexed { transactionIndex, transactionDto ->
             if (!transactionDto.isSuccessful) {
                 return@flatMapIndexed emptyList()
@@ -264,7 +270,7 @@ class SolanaBlockDtoParser(
                         transactionHash = transactionHash,
                         transactionIndex = transactionIndex,
                         instructionIndex = instructionIndex,
-                        innerInstructionIndex = null
+                        innerInstructionIndex = null,
                     )
                 }
 
@@ -305,17 +311,9 @@ class SolanaBlockDtoParser(
         transactionHash: String,
         transactionIndex: Int,
         instructionIndex: Int,
-        innerInstructionIndex: Int?
+        innerInstructionIndex: Int?,
     ): SolanaBlockchainLog? {
-        val programId = accountKeys[programIdIndex]
-        if (programIds.isNotEmpty() && programId !in programIds) {
-            return null
-        }
-        val instruction = SolanaInstruction(
-            programId = programId,
-            data = data,
-            accounts = accounts.map { accountKeys[it] }
-        )
+        val instruction = toModel(accountKeys)
         val solanaLog = SolanaLog(
             blockNumber = blockNumber,
             transactionHash = transactionHash,
@@ -324,9 +322,17 @@ class SolanaBlockDtoParser(
             instructionIndex = instructionIndex,
             innerInstructionIndex = innerInstructionIndex
         )
-
-        return SolanaBlockchainLog(solanaLog, instruction)
+        return if (orFilter.matches(instruction)) SolanaBlockchainLog(solanaLog, instruction) else null
     }
+}
+
+fun Instruction.toModel(accountKeys: List<String>): SolanaInstruction {
+    val programId = accountKeys[programIdIndex]
+    return SolanaInstruction(
+        programId = programId,
+        data = data,
+        accounts = accounts.map { accountKeys[it] }
+    )
 }
 
 fun ApiResponse<Long>.toModel(): Long = convert { this }
