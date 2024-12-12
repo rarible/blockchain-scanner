@@ -411,6 +411,7 @@ class BlockHandler<BB : BlockchainBlock>(
                 ScanMode.REINDEX -> blockService.save(blocks)
                 // For partial reindex we should NOT overwrite block stats (only except the case block is missing)
                 ScanMode.REINDEX_PARTIAL -> blockService.insertMissing(blocks)
+                ScanMode.RECONCILIATION -> blocks
             }
         }
         return result

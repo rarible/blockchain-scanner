@@ -102,33 +102,33 @@ internal class ReconciliationLogHandlerImplTest {
         // Block 10 statistics
         val block10Handler1Stats = mockk<BlockStats> { every { inserted } returns 10 }
         coEvery {
-            logHandler11a.process(listOf(NewStableBlockEvent(block10, ScanMode.REINDEX)))
+            logHandler11a.process(listOf(NewStableBlockEvent(block10, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block10.number), block10Handler1Stats)
 
         val block10Handler2Stats = mockk<BlockStats> { every { inserted } returns 9 }
         coEvery {
-            logHandler22.process(listOf(NewStableBlockEvent(block10, ScanMode.REINDEX)))
+            logHandler22.process(listOf(NewStableBlockEvent(block10, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block10.number), block10Handler2Stats)
 
         val block10Handler3Stats = mockk<BlockStats> { every { inserted } returns 2 }
         coEvery {
-            logHandler23.process(listOf(NewStableBlockEvent(block10, ScanMode.REINDEX)))
+            logHandler23.process(listOf(NewStableBlockEvent(block10, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block10.number), block10Handler3Stats)
 
         // Block 11 statistics
         val block11Handler1Stats = mockk<BlockStats> { every { inserted } returns 12 }
         coEvery {
-            logHandler11a.process(listOf(NewStableBlockEvent(block11, ScanMode.REINDEX)))
+            logHandler11a.process(listOf(NewStableBlockEvent(block11, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block11.number), block11Handler1Stats)
 
         val block11Handler2Stats = mockk<BlockStats> { every { inserted } returns 5 }
         coEvery {
-            logHandler22.process(listOf(NewStableBlockEvent(block11, ScanMode.REINDEX)))
+            logHandler22.process(listOf(NewStableBlockEvent(block11, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block11.number), block11Handler2Stats)
 
         val block11Handler3Stats = mockk<BlockStats> { every { inserted } returns 8 }
         coEvery {
-            logHandler23.process(listOf(NewStableBlockEvent(block11, ScanMode.REINDEX)))
+            logHandler23.process(listOf(NewStableBlockEvent(block11, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block11.number), block11Handler3Stats)
 
         val handler = create(listOf(subscriber11a, subscriber11b, subscriber22, subscriber23))
@@ -161,33 +161,33 @@ internal class ReconciliationLogHandlerImplTest {
         // Block 10 statistics
         val block10Handler1Stats = mockk<BlockStats> { every { inserted } returns 10 }
         coEvery {
-            logHandler11a.process(listOf(NewStableBlockEvent(block10, ScanMode.REINDEX)))
+            logHandler11a.process(listOf(NewStableBlockEvent(block10, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block10.number), block10Handler1Stats)
 
         val block10Handler2Stats = mockk<BlockStats> { every { inserted } returns 9 }
         coEvery {
-            logHandler22.process(listOf(NewStableBlockEvent(block10, ScanMode.REINDEX)))
+            logHandler22.process(listOf(NewStableBlockEvent(block10, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block10.number), block10Handler2Stats)
 
         val block10Handler3Stats = mockk<BlockStats> { every { inserted } returns 2 }
         coEvery {
-            logHandler23.process(listOf(NewStableBlockEvent(block10, ScanMode.REINDEX)))
+            logHandler23.process(listOf(NewStableBlockEvent(block10, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block10.number), block10Handler3Stats)
 
         // Block 11 statistics
         val block11Handler1Stats = mockk<BlockStats> { every { inserted } returns 12 }
         coEvery {
-            logHandler11a.process(listOf(NewStableBlockEvent(block11, ScanMode.REINDEX)))
+            logHandler11a.process(listOf(NewStableBlockEvent(block11, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block11.number), block11Handler1Stats)
 
         val block11Handler2Stats = mockk<BlockStats> { every { inserted } returns 4 }
         coEvery {
-            logHandler22.process(listOf(NewStableBlockEvent(block11, ScanMode.REINDEX)))
+            logHandler22.process(listOf(NewStableBlockEvent(block11, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block11.number), block11Handler2Stats)
 
         val block11Handler3Stats = mockk<BlockStats> { every { inserted } returns 8 }
         coEvery {
-            logHandler23.process(listOf(NewStableBlockEvent(block11, ScanMode.REINDEX)))
+            logHandler23.process(listOf(NewStableBlockEvent(block11, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block11.number), block11Handler3Stats)
 
         every { monitor.onInconsistency() } returns Unit
@@ -210,7 +210,7 @@ internal class ReconciliationLogHandlerImplTest {
         every { logHandlerFactory.create("groupId1", listOf(subscriber11a), any(), true) } returns logHandler11a
 
         coEvery {
-            logHandler11a.process(listOf(NewStableBlockEvent(block100, ScanMode.REINDEX)))
+            logHandler11a.process(listOf(NewStableBlockEvent(block100, ScanMode.RECONCILIATION)))
         } returns stubListenerResult(listOf(block100.number))
 
         val baseBlock = mockk<Block>()
