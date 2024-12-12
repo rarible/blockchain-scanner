@@ -127,7 +127,7 @@ class ReconciliationLogHandlerImpl<
         logHandlers: List<LogHandler<BB, BL, R, D, S>>
     ) = coroutineScope {
         val block = blockchainClient.getBlock(blockNumber) ?: error("Can't get stable block $blockNumber")
-        val events = listOf(NewStableBlockEvent(block, ScanMode.REINDEX))
+        val events = listOf(NewStableBlockEvent(block, ScanMode.RECONCILIATION))
 
         logHandlers
             .map { logHandler ->
