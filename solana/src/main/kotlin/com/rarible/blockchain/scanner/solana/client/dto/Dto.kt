@@ -107,22 +107,22 @@ data class ApiResponse<T>(
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SolanaAccountInfoDto(
-    val value: Value,
+    val value: Value?,
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Value(
-        val data: Data,
+        val data: Data?,
         val owner: String?,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Data(
-        val parsed: Parsed,
+        val parsed: Parsed?,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Parsed(
-        val info: Info,
+        val info: Info?,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
