@@ -13,6 +13,7 @@ import com.rarible.blockchain.scanner.solana.client.SolanaInstruction
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto.Instruction
 import com.rarible.blockchain.scanner.solana.model.SolanaInstructionFilter
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
+import java.math.BigDecimal
 import java.math.BigInteger
 
 @Suppress("unused")
@@ -126,7 +127,21 @@ data class SolanaAccountInfoDto(
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Info(
-        val extensions: List<Extension>
+        val delegate: String?,
+        val delegatedAmount: TokenAmount?,
+        val extensions: List<Extension>?,
+        val isNative: Boolean?,
+        val mint: String?,
+        val owner: String?,
+        val state: String?,
+        val tokenAmount: TokenAmount?,
+    )
+
+    data class TokenAmount(
+        val amount: BigDecimal,
+        val decimals: Int,
+        val uiAmount: BigDecimal,
+        val uiAmountString: String
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

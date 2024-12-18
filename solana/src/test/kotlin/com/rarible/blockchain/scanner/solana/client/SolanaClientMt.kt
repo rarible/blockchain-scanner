@@ -59,5 +59,8 @@ class SolanaClientMt {
     fun testGetAccountInfo() = runBlocking<Unit> {
         val result = eclipseTestnetHttpRpcApi.getAccountInfo("Gh7bfxEbU4eTLsAuCDGUBWQudm9aKpzbL8A97RshnSVF")
         println(result.result?.value?.owner)
+
+        val result2 = eclipseTestnetHttpRpcApi.getAccountInfo("GpGD296xWJGsyddoCtTG7H7PXd7xmPVuwHqJcEqaUoYP")
+        println(result2.result?.value?.data?.parsed?.info)
     }
 }
