@@ -145,13 +145,9 @@ class EthereumClient(
                 .awaitAll()
                 .flatten()
         }
-        val stopGetLogs = System.currentTimeMillis() - startGetLogs
-        logger.info("Loaded ${allLogs.size} logs for topic ${descriptor.ethTopic} for blocks $range (${stopGetLogs}ms)")
 
         val blocksMap = blocks.map { it.ethBlock }.associateBy { it.hash().toString() }
         coroutineScope {
-            val startGetFullBlocks = System.currentTimeMillis()
-
             allLogs.groupBy { log ->
                 log.blockHash()
             }.entries.map { (blockHash, blockLogs) ->
@@ -161,10 +157,7 @@ class EthereumClient(
                     }
                     createFullBlock(ethFullBlock, blockLogs)
                 }
-            }.awaitAll().also {
-                val stopGetFullBlocks = System.currentTimeMillis() - startGetFullBlocks
-                logger.info("Loaded ${it.size} full blocks for topic ${descriptor.ethTopic} for blocks $range (${stopGetFullBlocks}ms)")
-            }
+            }.awaitAll()
         }.forEach { emit(it) }
     }
 
@@ -216,13 +209,6 @@ class EthereumClient(
         val blockHash = Word.apply(blockHeader.hash)
         val finalFilter = filter.blockHash(blockHash)
         val allLogs = ethereum.ethGetLogsJava(finalFilter).awaitFirst().filterNot(::ignoreLog)
-        logger.info(
-            "Loaded {} logs of topic {} for fresh block [{}:{}]",
-            allLogs.size,
-            descriptor.ethTopic,
-            blockHeader.number,
-            blockHash
-        )
         val ethFullBlock = ethereum.ethGetFullBlockByHash(blockHash).awaitFirst()
         return createFullBlock(ethFullBlock, allLogs)
     }
