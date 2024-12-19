@@ -301,9 +301,7 @@ class BlockHandler<BB : BlockchainBlock>(
     }
 
     private suspend fun fetchBlocksByRange(blocksRange: TypedBlockRange): BlocksBatch<BB> {
-        logger.info("Fetching $blocksRange")
         val fetchedBlocks = blockClient.getBlocks(blocksRange.range.toList())
-        logger.info("Fetched ${fetchedBlocks.size} for $blocksRange")
         return BlocksBatch(blocksRange, fetchedBlocks)
     }
 
