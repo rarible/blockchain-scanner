@@ -145,9 +145,19 @@ class LogHandler<
             val eventsToInsert = blockEventsToInsert[blockEvent] ?: continue
             val eventsToUpdate = blockEventsToUpdate.getValue(blockEvent)
 
+            val statForUpdated = System.currentTimeMillis()
             logRecordEventPublisher.publish(groupId, addOutMark(eventsToUpdate))
+            val stopForUpdated = System.currentTimeMillis() - statForUpdated
 
+            val statForInserted = System.currentTimeMillis()
             logRecordEventPublisher.publish(groupId, addOutMark(eventsToInsert))
+            val stopForInserted = System.currentTimeMillis() - statForInserted
+
+            logging(
+                message = "published ${eventsToInsert.size} new and ${eventsToUpdate.size}" +
+                    " reverted log records (new=${stopForInserted}ms, reverted=${stopForUpdated}ms)",
+                event = blockEvent
+            )
         }
     }
 
