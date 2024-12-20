@@ -60,9 +60,6 @@ class LogHandler<
     override suspend fun process(events: List<BlockEvent<BB>>): BlockListenerResult {
         events.ifEmpty { return BlockListenerResult.EMPTY }
 
-        val range = LongRange(events.first().number, events.last().number)
-        logger.info("Processing ${events.size} block events $range for group '$groupId'")
-
         val logEvents = logMonitor.onPrepareLogs {
             BlockRanges.toBatches(events).flatMap { prepareBlockEventsBatch(it) }
         }
@@ -95,7 +92,6 @@ class LogHandler<
     }
 
     private fun gatherStats(logs: List<LogEvent<R, D, S>>): Map<Long, BlockStats> {
-        val start = System.currentTimeMillis()
         val result = HashMap<Long, BlockStats>()
         logs.groupBy { it.blockEvent.number }.forEach {
             val blockNumber = it.key
@@ -120,8 +116,6 @@ class LogHandler<
                 subscriberStats
             )
         }
-        val stop = System.currentTimeMillis() - start
-        logger.info("Gathered stats for {} {} log events ({}ms)", groupId, logs.size, stop)
         return result
     }
 
@@ -147,7 +141,6 @@ class LogHandler<
                 .sortedWith(logRecordComparator.reversed())
                 .map { LogRecordEvent(it, true, blockEvent.eventTimeMarks) }
         }
-        logger.info("Sorted {} log events for publish ({}ms)", logEvents.size, System.currentTimeMillis() - start)
         for (blockEvent in events) {
             val eventsToInsert = blockEventsToInsert[blockEvent] ?: continue
             val eventsToUpdate = blockEventsToUpdate.getValue(blockEvent)
@@ -309,7 +302,6 @@ class LogHandler<
         event: NewBlockEvent<BB>
     ): List<R> {
         if (fullBlock.logs.isEmpty()) {
-            logging("no logs in the block", event, subscriber)
             return emptyList()
         }
 
@@ -325,7 +317,6 @@ class LogHandler<
             }
         }
 
-        logging("prepared ${logRecords.size} log records to insert", event, subscriber)
         return logRecords
     }
 
