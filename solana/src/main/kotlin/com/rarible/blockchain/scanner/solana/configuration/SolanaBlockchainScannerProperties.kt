@@ -29,6 +29,9 @@ data class SolanaBlockchainScannerProperties(
     val rpcApiUrls: List<String>,
     val reconciliationRpcApiUrls: List<String> = rpcApiUrls,
     val rpcApiTimeout: Long = 30000,
+    val haEnabled: Boolean = false,
+    val monitoringThreadInterval: Duration = Duration.ofSeconds(30),
+    val maxBlockDelay: Duration = Duration.ofMinutes(10),
     val programIds: Set<String> = emptySet(),
     override val scan: ScanProperties = ScanProperties()
 ) : BlockchainScannerProperties
