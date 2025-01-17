@@ -13,7 +13,13 @@ class SolanaClientFactory(
 ) : BlockchainClientFactory<SolanaBlockchainBlock, SolanaBlockchainLog, SolanaDescriptor> {
     override fun createMainClient(): SolanaClient {
         return SolanaClient(
-            api = SolanaHttpRpcApi(urls = properties.rpcApiUrls, timeoutMillis = properties.rpcApiTimeout),
+            api = SolanaHttpRpcApi(
+                urls = properties.rpcApiUrls,
+                timeoutMillis = properties.rpcApiTimeout,
+                haEnabled = properties.haEnabled,
+                monitoringInterval = properties.monitoringThreadInterval,
+                maxBlockDelay = properties.maxBlockDelay
+            ),
             properties = properties,
             filters = subscribers.map { it.getDescriptor().filter }.toSet()
         )
@@ -23,7 +29,10 @@ class SolanaClientFactory(
         return SolanaClient(
             api = SolanaHttpRpcApi(
                 urls = properties.reconciliationRpcApiUrls,
-                timeoutMillis = properties.rpcApiTimeout
+                timeoutMillis = properties.rpcApiTimeout,
+                haEnabled = properties.haEnabled,
+                monitoringInterval = properties.monitoringThreadInterval,
+                maxBlockDelay = properties.maxBlockDelay
             ),
             properties = properties,
             filters = subscribers.map { it.getDescriptor().filter }.toSet()

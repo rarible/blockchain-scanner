@@ -1,19 +1,24 @@
 package com.rarible.blockchain.scanner.solana.client
 
+import com.rarible.blockchain.scanner.client.HaNodeProvider
+import com.rarible.blockchain.scanner.client.NodeProvider
 import com.rarible.blockchain.scanner.solana.client.dto.ApiResponse
 import com.rarible.blockchain.scanner.solana.client.dto.Encoding
 import com.rarible.blockchain.scanner.solana.client.dto.GetAccountInfo
-import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetBalance
+import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails
+import com.rarible.blockchain.scanner.solana.client.dto.GetBlockRequest.TransactionDetails.None
 import com.rarible.blockchain.scanner.solana.client.dto.GetFirstAvailableBlockRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetSlotRequest
 import com.rarible.blockchain.scanner.solana.client.dto.GetTransactionRequest
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaAccountBase64InfoDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaAccountInfoDto
+import com.rarible.blockchain.scanner.solana.client.dto.SolanaBalanceDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaBlockDto
 import com.rarible.blockchain.scanner.solana.client.dto.SolanaTransactionDto
-import com.rarible.blockchain.scanner.solana.client.dto.SolanaBalanceDto
+import com.rarible.blockchain.scanner.solana.client.dto.getSafeResult
+import com.rarible.blockchain.scanner.solana.client.dto.toModel
 import com.rarible.core.common.asyncWithTraceId
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
@@ -31,8 +36,8 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.resources.ConnectionProvider
 import java.time.Duration
+import java.time.Instant.now
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 interface SolanaApi {
     suspend fun getFirstAvailableBlock(): ApiResponse<Long>
@@ -53,11 +58,12 @@ interface SolanaApi {
 }
 
 class SolanaHttpRpcApi(
-    private val urls: List<String>,
-    timeoutMillis: Long = DEFAULT_TIMEOUT
+    val urls: List<String>,
+    val timeoutMillis: Long = DEFAULT_TIMEOUT,
+    private val haEnabled: Boolean = false,
+    private val monitoringInterval: Duration = Duration.ofSeconds(DEFAULT_MONITORING_INTERVAL_SECONDS),
+    private val maxBlockDelay: Duration = Duration.ofMinutes(DEFAULT_MAX_BLOCK_DELAY_MINUTES),
 ) : SolanaApi {
-    private val uri
-        get() = urls[Random.nextInt(urls.size)]
 
     private val client = WebClient.builder().apply {
         SolanaRpcApiWebClientCustomizer(
@@ -66,14 +72,37 @@ class SolanaHttpRpcApi(
         ).customize(it)
     }.build()
 
+    private val nodeProvider = if (haEnabled) haProvider() else object : NodeProvider<String, String> {
+        override suspend fun getNode(): String = urls.random()
+    }
+
+    private fun haProvider() = HaNodeProvider(
+        localNodeConfigs = urls,
+        monitoringInterval = monitoringInterval,
+        connect = { it },
+        isHealthy = { url, _ ->
+            try {
+                val slot = getLatestSlot(url).toModel()
+                val block = getBlock(url, slot, None).getSafeResult(slot, SolanaBlockDto.errorsToSkip)
+                block?.let { (now().epochSecond - it.blockTime) < maxBlockDelay.seconds } ?: false
+            } catch (e: Exception) {
+                false
+            }
+        }
+    )
+
+    private suspend fun uri() = nodeProvider.getNode()
+
     override suspend fun getFirstAvailableBlock(): ApiResponse<Long> = client.post()
-        .uri(uri)
+        .uri(uri())
         .body(BodyInserters.fromValue(GetFirstAvailableBlockRequest))
         .retrieve()
         .bodyToMono<ApiResponse<Long>>()
         .awaitSingle()
 
-    override suspend fun getLatestSlot(): ApiResponse<Long> = client.post()
+    override suspend fun getLatestSlot(): ApiResponse<Long> = getLatestSlot(uri())
+
+    private suspend fun getLatestSlot(uri: String): ApiResponse<Long> = client.post()
         .uri(uri)
         .body(BodyInserters.fromValue(GetSlotRequest))
         .retrieve()
@@ -88,7 +117,10 @@ class SolanaHttpRpcApi(
             slots.map { asyncWithTraceId(context = NonCancellable) { it to getBlock(it, details) } }.awaitAll().toMap()
         }
 
-    override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> = client.post()
+    override suspend fun getBlock(slot: Long, details: TransactionDetails): ApiResponse<SolanaBlockDto> =
+        getBlock(uri(), slot, details)
+
+    private suspend fun getBlock(uri: String, slot: Long, details: TransactionDetails) = client.post()
         .uri(uri)
         .body(BodyInserters.fromValue(GetBlockRequest(slot, details)))
         .retrieve()
@@ -96,28 +128,28 @@ class SolanaHttpRpcApi(
         .awaitSingle()
 
     override suspend fun getTransaction(signature: String) = client.post()
-        .uri(uri)
+        .uri(uri())
         .body(BodyInserters.fromValue(GetTransactionRequest(signature)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaTransactionDto>>()
         .awaitSingle()
 
     override suspend fun getAccountInfo(address: String): ApiResponse<SolanaAccountInfoDto> = client.post()
-        .uri(uri)
+        .uri(uri())
         .body(BodyInserters.fromValue(GetAccountInfo(address, Encoding.JSON_PARSED)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaAccountInfoDto>>()
         .awaitSingle()
 
     override suspend fun getAccountBase64Info(address: String): ApiResponse<SolanaAccountBase64InfoDto> = client.post()
-        .uri(uri)
+        .uri(uri())
         .body(BodyInserters.fromValue(GetAccountInfo(address, Encoding.BASE64)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaAccountBase64InfoDto>>()
         .awaitSingle()
 
     override suspend fun getBalance(address: String): ApiResponse<SolanaBalanceDto> = client.post()
-        .uri(uri)
+        .uri(uri())
         .body(BodyInserters.fromValue(GetBalance(address)))
         .retrieve()
         .bodyToMono<ApiResponse<SolanaBalanceDto>>()
@@ -126,6 +158,8 @@ class SolanaHttpRpcApi(
     companion object {
         const val MAX_BODY_SIZE = 100 * 1024 * 1024
         const val DEFAULT_TIMEOUT = 5000L
+        const val DEFAULT_MONITORING_INTERVAL_SECONDS = 10000L
+        const val DEFAULT_MAX_BLOCK_DELAY_MINUTES = 10L
     }
 }
 
