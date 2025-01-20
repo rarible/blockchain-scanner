@@ -72,6 +72,22 @@ class BlockchainMonitor(
         ).record(executionTime, TimeUnit.MILLISECONDS)
     }
 
+    suspend fun <T> onBlockchainCallSuspend(
+        blockchain: String,
+        method: String,
+        call: suspend () -> T
+    ): T {
+        val startTimeMs = System.currentTimeMillis()
+        return try {
+            call().also {
+                onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.SUCCESS)
+            }
+        } catch (e: Exception) {
+            onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.ERROR)
+            throw e
+        }
+    }
+
     enum class CallStatus(val value: String) {
         SUCCESS("success"),
         ERROR("error")
