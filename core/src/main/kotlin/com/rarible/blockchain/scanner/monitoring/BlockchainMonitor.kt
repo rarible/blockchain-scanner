@@ -58,7 +58,8 @@ class BlockchainMonitor(
         startTimeMs: Long,
         blockchain: String,
         method: String,
-        status: CallStatus
+        status: CallStatus,
+        node: CallNode = CallNode.MAIN
     ) {
         val endTimeMs = System.currentTimeMillis()
         val executionTime = endTimeMs - startTimeMs
@@ -68,12 +69,35 @@ class BlockchainMonitor(
                 tag("blockchain", blockchain),
                 tag("method", method),
                 tag("status", status.value),
+                tag("node", node.value),
             )
         ).record(executionTime, TimeUnit.MILLISECONDS)
+    }
+
+    suspend fun <T> onBlockchainCallSuspend(
+        blockchain: String,
+        method: String,
+        node: CallNode,
+        call: suspend () -> T
+    ): T {
+        val startTimeMs = System.currentTimeMillis()
+        return try {
+            call().also {
+                onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.SUCCESS, node)
+            }
+        } catch (e: Exception) {
+            onBlockchainCallLatency(startTimeMs, blockchain, method, CallStatus.ERROR, node)
+            throw e
+        }
     }
 
     enum class CallStatus(val value: String) {
         SUCCESS("success"),
         ERROR("error")
+    }
+
+    enum class CallNode(val value: String) {
+        MAIN("main"),
+        RECONCILIATION("reconciliation")
     }
 }
