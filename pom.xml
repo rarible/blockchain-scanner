@@ -86,6 +86,12 @@
 
             <dependency>
                 <groupId>com.rarible.blockchain.scanner</groupId>
+                <artifactId>rarible-blockchain-scanner-hedera</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.rarible.blockchain.scanner</groupId>
                 <artifactId>rarible-blockchain-scanner-flow</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -167,6 +173,7 @@
         <module>ethereum</module>
         <module>flow</module>
         <module>solana</module>
+        <module>hedera</module>
 <!--        <module>test-coverage</module>-->
     </modules>
 
