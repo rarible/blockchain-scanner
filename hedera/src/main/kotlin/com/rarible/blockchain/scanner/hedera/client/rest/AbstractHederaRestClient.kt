@@ -30,11 +30,18 @@ abstract class AbstractHederaRestClient(
         val method = HttpMethod.GET.name
         val requestSpec = webClient.get()
             .uri { uriBuilder ->
-                val builder = uriBuilder.path(uri)
-                if (params.isNotEmpty()) {
-                    builder.build(*params)
+                if (uri.contains("?")) {
+                    // If URI contains query parameters, use it as is
+                    uriBuilder.path(uri.substringBefore("?"))
+                        .query(uri.substringAfter("?"))
+                        .build()
                 } else {
-                    uriCustomizer.invoke(builder).build()
+                    val builder = uriBuilder.path(uri)
+                    if (params.isNotEmpty()) {
+                        builder.build(*params)
+                    } else {
+                        uriCustomizer.invoke(builder).build()
+                    }
                 }
             }
             .accept(MediaType.ALL)

@@ -87,7 +87,7 @@ class HederaRestApiClientIt {
         val filter = HederaTransactionRequest(
             timestampFrom = HederaTimestampFrom.Gte(block.timestamp.from),
             timestampTo = HederaTimestampTo.Lte(block.timestamp.to),
-            limit = 100,
+            limit = 10,
             order = HederaOrder.ASC,
         )
         val transactions = CopyOnWriteArrayList<HederaTransaction>()
@@ -98,6 +98,6 @@ class HederaRestApiClientIt {
             transactions.addAll(result.transactions)
             nextLink.set(result.links)
         } while (nextLink.get()?.next != null)
-        logger.info("Found total transactions for block {}: {}", block.number, transactions)
+        logger.info("Found total transactions for block {}: {}", block.number, transactions.size)
     }
 }
