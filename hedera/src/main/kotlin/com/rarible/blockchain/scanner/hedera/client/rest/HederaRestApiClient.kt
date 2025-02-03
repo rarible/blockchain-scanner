@@ -3,8 +3,9 @@ package com.rarible.blockchain.scanner.hedera.client.rest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockDetails
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlocksResponse
-import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionFilter
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionsResponse
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.Links
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
 
@@ -15,7 +16,7 @@ class HederaRestApiClient(
     slowRequestLatency: Duration = Duration.ofSeconds(2)
 ) : AbstractHederaRestClient(webClient, maxErrorBodyLogLength, metrics, slowRequestLatency) {
 
-    suspend fun getBlocks(request: HederaBlockRequest): HederaBlocksResponse {
+    suspend fun getBlocks(request: HederaBlockRequest = HederaBlockRequest()): HederaBlocksResponse {
         return get("/api/v1/blocks") {
             request.limit?.let { queryParam("limit", it.coerceIn(1, MAX_LIMIT)) }
             request.order?.let { queryParam("order", it.value) }
@@ -23,14 +24,20 @@ class HederaRestApiClient(
         }
     }
 
-    suspend fun getTransactions(filter: HederaTransactionFilter = HederaTransactionFilter()): HederaTransactionsResponse {
+    suspend fun getTransactions(
+        request: HederaTransactionRequest = HederaTransactionRequest(),
+        nextLink: Links? = null
+    ): HederaTransactionsResponse {
+        if (nextLink?.next != null) {
+            return get(nextLink.next)
+        }
         return get("/api/v1/transactions") {
-            filter.timestampFrom?.let { queryParam("timestamp", it.queryValue()) }
-            filter.timestampTo?.let { queryParam("timestamp", it.queryValue()) }
-            filter.limit?.let { queryParam("limit", it.coerceIn(1, MAX_LIMIT)) }
-            filter.order?.let { queryParam("order", it.value) }
-            filter.transactionType?.let { queryParam("transactiontype", it.value) }
-            filter.result?.let { queryParam("result", it.value) }
+            request.timestampFrom?.let { queryParam("timestamp", it.queryValue()) }
+            request.timestampTo?.let { queryParam("timestamp", it.queryValue()) }
+            request.limit?.let { queryParam("limit", it.coerceIn(1, MAX_LIMIT)) }
+            request.order?.let { queryParam("order", it.value) }
+            request.transactionType?.let { queryParam("transactiontype", it.value) }
+            request.result?.let { queryParam("result", it.value) }
             this
         }
     }

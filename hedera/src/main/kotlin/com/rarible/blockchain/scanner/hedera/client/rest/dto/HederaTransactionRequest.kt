@@ -1,12 +1,12 @@
 package com.rarible.blockchain.scanner.hedera.client.rest.dto
 
-data class HederaTransactionFilter(
+data class HederaTransactionRequest(
     val timestampFrom: HederaTimestampFrom? = null,
     val timestampTo: HederaTimestampTo? = null,
     val limit: Int? = null,
     val order: HederaOrder? = null,
     val transactionType: HederaTransactionType? = null,
-    val result: HederaTransactionResult? = null
+    val result: HederaTransactionResult? = null,
 )
 
 sealed class HederaTimestamp(private val prefix: String) {
