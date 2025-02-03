@@ -18,20 +18,19 @@ class HederaRestApiClient(
         return get("/api/v1/blocks")
     }
 
-    suspend fun getTransactions(
-        filter: HederaTransactionFilter
-    ): HederaTransactionsResponse {
+    suspend fun getTransactions(filter: HederaTransactionFilter = HederaTransactionFilter()): HederaTransactionsResponse {
         return get("/api/v1/transactions") {
             filter.accountId?.let { queryParam("account.id", it) }
             filter.timestamp?.let { queryParam("timestamp", it) }
             filter.limit?.let { queryParam("limit", it.coerceIn(1, HederaTransactionFilter.MAX_LIMIT)) }
             filter.order?.let { queryParam("order", it.value) }
             filter.transactionType?.let { queryParam("transactiontype", it.value) }
+            filter.result?.let { queryParam("result", it.value) }
             this
         }
     }
 
     suspend fun getBlockByHashOrNumber(hashOrNumber: String): HederaBlockDetails {
-        return get("/api/v1/blocks/", hashOrNumber)
+        return get("/api/v1/blocks/{hashOrNumber}", hashOrNumber)
     }
 }

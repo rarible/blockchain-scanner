@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.hedera.client.rest
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
@@ -23,33 +24,19 @@ abstract class AbstractHederaRestClient(
     protected suspend inline fun <reified T : Any> get(
         uri: String,
         vararg params: Any,
-        errorProcessor: ErrorProcessor<T> = defaultErrorProcessor
-    ): T {
-        val method = "get"
-        val requestSpec = webClient.get().uri(uri, *params).accept(MediaType.ALL)
-        return performRequest(
-            requestSpec = requestSpec,
-            requestType = uri,
-            method = method,
-            typeDebugInfo = { T::class.java.simpleName },
-            resultParser = { responseBody ->
-                WebClientFactory.webClientMapper.readValue(responseBody, T::class.java)
-            },
-            errorProcessor = errorProcessor
-        )
-    }
-
-    protected suspend inline fun <reified T : Any> get(
-        uri: String,
         errorProcessor: ErrorProcessor<T> = defaultErrorProcessor,
-        noinline uriCustomizer: (UriBuilder.() -> UriBuilder)? = null,
+        noinline uriCustomizer: UriBuilder.() -> UriBuilder = { this },
     ): T {
-        val method = "get"
+        val method = HttpMethod.GET.name
         val requestSpec = webClient.get()
             .uri { uriBuilder ->
                 val builder = uriBuilder.path(uri)
-                uriCustomizer?.invoke(builder)
-                builder.build()
+                if (params.isNotEmpty()) {
+                    builder.build(params)
+                } else {
+                    uriCustomizer.invoke(builder)
+                    builder.build()
+                }
             }
             .accept(MediaType.ALL)
 
