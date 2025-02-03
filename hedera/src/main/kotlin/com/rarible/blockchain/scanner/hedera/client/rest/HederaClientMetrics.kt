@@ -2,11 +2,9 @@ package com.rarible.blockchain.scanner.hedera.client.rest
 
 import com.rarible.core.telemetry.metrics.AbstractMetrics
 import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.Instant
 
-@Component
 class HederaClientMetrics(
     meterRegistry: MeterRegistry
 ) : AbstractMetrics(meterRegistry) {
