@@ -32,10 +32,9 @@ abstract class AbstractHederaRestClient(
             .uri { uriBuilder ->
                 val builder = uriBuilder.path(uri)
                 if (params.isNotEmpty()) {
-                    builder.build(params)
+                    builder.build(*params)
                 } else {
-                    uriCustomizer.invoke(builder)
-                    builder.build()
+                    uriCustomizer.invoke(builder).build()
                 }
             }
             .accept(MediaType.ALL)

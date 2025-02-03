@@ -17,5 +17,5 @@ data class HederaBlockDetails(
     val timestamp: Timestamp,
     val gasUsed: Long,
     val logsBloom: String,
-    val transactions: List<HederaTransaction>
+    val transactions: List<HederaTransaction> = emptyList()
 )

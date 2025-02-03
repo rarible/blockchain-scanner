@@ -21,7 +21,7 @@ data class HederaTransaction(
     val maxFee: String,
     val memoBase64: String?,
     val name: String,
-    val node: String,
+    val node: String?,
     val nonce: Int,
     val parentConsensusTimestamp: String?,
     val result: String,
@@ -29,7 +29,7 @@ data class HederaTransaction(
     val transactionHash: String,
     val transactionId: String,
     val transfers: List<Transfer>,
-    val validDurationSeconds: String,
+    val validDurationSeconds: String?,
     val validStartTimestamp: String
 )
 
