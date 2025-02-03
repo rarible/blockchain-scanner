@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.hedera.client.rest
 
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionFilter
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionResult
@@ -27,14 +28,14 @@ class HederaRestApiClientIt {
 
     @Test
     fun `get blocks`() = runBlocking<Unit> {
-        val blocks = client.getBlocks()
+        val blocks = client.getBlocks(HederaBlockRequest())
         logger.info("Found blocks: {}", blocks)
     }
 
     @Test
     fun `get block by hash`() = runBlocking<Unit> {
         // Get blocks first to get a valid hash
-        val blocks = client.getBlocks()
+        val blocks = client.getBlocks(HederaBlockRequest(limit = 1))
         val hash = blocks.blocks.first().hash
 
         val block = client.getBlockByHashOrNumber(hash)
@@ -44,7 +45,7 @@ class HederaRestApiClientIt {
     @Test
     fun `get block by number`() = runBlocking<Unit> {
         // Get blocks first to get a valid number
-        val blocks = client.getBlocks()
+        val blocks = client.getBlocks(HederaBlockRequest())
         val number = blocks.blocks.first().number.toString()
 
         val block = client.getBlockByHashOrNumber(number)

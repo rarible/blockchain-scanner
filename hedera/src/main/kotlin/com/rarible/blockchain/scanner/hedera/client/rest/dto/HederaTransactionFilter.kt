@@ -7,12 +7,7 @@ data class HederaTransactionFilter(
     val order: HederaOrder? = null,
     val transactionType: HederaTransactionType? = null,
     val result: HederaTransactionResult? = null
-) {
-    companion object {
-        const val DEFAULT_LIMIT = 25
-        const val MAX_LIMIT = 100
-    }
-}
+)
 
 sealed class HederaTimestamp(private val prefix: String) {
     protected abstract val value: String
@@ -30,11 +25,6 @@ sealed class HederaTimestampFrom(prefix: String) : HederaTimestamp(prefix) {
 sealed class HederaTimestampTo(prefix: String) : HederaTimestamp(prefix) {
     data class Lt(override val value: String) : HederaTimestampTo("lt")
     data class Lte(override val value: String) : HederaTimestampTo("lte")
-}
-
-enum class HederaOrder(val value: String) {
-    ASC("asc"),
-    DESC("desc")
 }
 
 enum class HederaTransactionResult(val value: String) {
