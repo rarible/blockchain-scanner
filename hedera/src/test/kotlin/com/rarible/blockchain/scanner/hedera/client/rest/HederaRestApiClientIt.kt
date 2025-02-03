@@ -62,7 +62,7 @@ class HederaRestApiClientIt {
         val filter = HederaTransactionFilter(
             limit = 5,
             order = HederaOrder.DESC,
-            transactionType = HederaTransactionType.CRYPTOTRANSFER,
+            transactionType = HederaTransactionType.CRYPTO_TRANSFER,
             result = HederaTransactionResult.SUCCESS
         )
         val transactions = client.getTransactions(filter)

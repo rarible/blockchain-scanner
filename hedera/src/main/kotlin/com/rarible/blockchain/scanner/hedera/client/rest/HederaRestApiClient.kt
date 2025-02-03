@@ -20,8 +20,8 @@ class HederaRestApiClient(
 
     suspend fun getTransactions(filter: HederaTransactionFilter = HederaTransactionFilter()): HederaTransactionsResponse {
         return get("/api/v1/transactions") {
-            filter.accountId?.let { queryParam("account.id", it) }
-            filter.timestamp?.let { queryParam("timestamp", it) }
+            filter.timestampFrom?.let { queryParam("timestamp", it.queryValue()) }
+            filter.timestampTo?.let { queryParam("timestamp", it.queryValue()) }
             filter.limit?.let { queryParam("limit", it.coerceIn(1, HederaTransactionFilter.MAX_LIMIT)) }
             filter.order?.let { queryParam("order", it.value) }
             filter.transactionType?.let { queryParam("transactiontype", it.value) }
