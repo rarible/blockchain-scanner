@@ -7,12 +7,15 @@ import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampTo
+import com.rarible.blockchain.scanner.hedera.configuration.BlockchainClientProperties
 import com.rarible.blockchain.scanner.hedera.model.HederaDescriptor
 import com.rarible.blockchain.scanner.hedera.model.HederaLog
 import com.rarible.core.common.asyncWithTraceId
+import com.rarible.core.common.mapAsync
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -20,7 +23,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 @Component
 class HederaBlockchainClient(
-    private val hederaApiClient: CachedHederaApiClient
+    private val hederaApiClient: CachedHederaApiClient,
+    private val properties: BlockchainClientProperties
 ) : BlockchainClient<HederaBlockchainBlock, HederaBlockchainLog, HederaDescriptor> {
 
     private val logger = LoggerFactory.getLogger(HederaBlockchainClient::class.java)
@@ -65,8 +69,8 @@ class HederaBlockchainClient(
         descriptor: HederaDescriptor,
         blocks: List<HederaBlockchainBlock>,
         stable: Boolean
-    ): Flow<FullBlock<HederaBlockchainBlock, HederaBlockchainLog>> = flow {
-        for (block in blocks) {
+    ): Flow<FullBlock<HederaBlockchainBlock, HederaBlockchainLog>> {
+        return blocks.asFlow().mapAsync(properties.concurrencyLimit) { block ->
             val transactions = hederaApiClient.getTransactions(
                 from = HederaTimestampFrom.Gte(block.consensusTimestampFrom),
                 to = HederaTimestampTo.Lte(block.consensusTimestampTo),
@@ -83,7 +87,7 @@ class HederaBlockchainClient(
                     transaction = transaction
                 )
             }
-            emit(FullBlock(block, logs))
+            FullBlock(block, logs)
         }
     }
 
