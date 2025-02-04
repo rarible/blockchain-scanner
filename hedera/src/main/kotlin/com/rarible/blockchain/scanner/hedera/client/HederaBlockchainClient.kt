@@ -3,15 +3,17 @@ package com.rarible.blockchain.scanner.hedera.client
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.HederaRestApiClient
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampTo
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionRequest
-import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionType
 import com.rarible.blockchain.scanner.hedera.model.HederaDescriptor
 import com.rarible.blockchain.scanner.hedera.model.HederaLog
-import com.rarible.blockchain.scanner.hedera.model.HederaTransactionFilter
+import com.rarible.core.common.asyncWithTraceId
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.slf4j.LoggerFactory
@@ -31,13 +33,10 @@ class HederaBlockchainClient(
 
             while (true) {
                 try {
-                    val currentBlockNumber = getLastBlockNumber()
-                    if (currentBlockNumber > latestBlockNumber.get()) {
-                        val block = getBlock(currentBlockNumber)
-                        if (block != null) {
-                            latestBlockNumber.set(currentBlockNumber)
-                            emit(block)
-                        }
+                    val block = getLatestBlock()
+                    if (block != null && block.number > latestBlockNumber.get()) {
+                        latestBlockNumber.set(block.number)
+                        emit(block.toBlockchainBlock())
                     }
                 } catch (e: Exception) {
                     logger.error("Error while getting new blocks", e)
@@ -46,38 +45,22 @@ class HederaBlockchainClient(
         }
 
     override suspend fun getBlock(number: Long): HederaBlockchainBlock? {
-        return try {
-            val block = hederaRestApiClient.getBlockByHashOrNumber(number.toString())
-            block.toBlockchainBlock()
-        } catch (e: Exception) {
-            logger.error("Failed to get block $number", e)
-            null
-        }
+        val block = hederaRestApiClient.getBlockByHashOrNumber(number.toString())
+        return block.toBlockchainBlock()
     }
 
-    override suspend fun getBlocks(numbers: List<Long>): List<HederaBlockchainBlock> {
-        return numbers.mapNotNull { getBlock(it) }
+    override suspend fun getBlocks(numbers: List<Long>) = coroutineScope {
+        numbers.map { number -> asyncWithTraceId { getBlock(number) } }.awaitAll().filterNotNull()
     }
 
     override suspend fun getFirstAvailableBlock(): HederaBlockchainBlock {
-        val blocks = hederaRestApiClient.getBlocks(
-            HederaBlockRequest(
-                limit = 1,
-                order = HederaOrder.ASC
-            )
-        ).blocks
+        val blocks = hederaRestApiClient.getBlocks(EARLIEST_BLOCK_REQUEST).blocks
         val block = blocks.firstOrNull() ?: throw IllegalStateException("No blocks available")
         return block.toBlockchainBlock()
     }
 
     override suspend fun getLastBlockNumber(): Long {
-        val blocks = hederaRestApiClient.getBlocks(
-            HederaBlockRequest(
-                limit = 1,
-                order = HederaOrder.DESC
-            )
-        ).blocks
-        return blocks.firstOrNull()?.number ?: throw IllegalStateException("No blocks available")
+        return getLatestBlock()?.number ?: throw IllegalStateException("No blocks available")
     }
 
     override fun getBlockLogs(
@@ -90,14 +73,10 @@ class HederaBlockchainClient(
                 HederaTransactionRequest(
                     timestampFrom = HederaTimestampFrom.Gte(block.consensusTimestampFrom),
                     timestampTo = HederaTimestampTo.Lte(block.consensusTimestampTo),
-                    transactionType = when (val filter = descriptor.filter) {
-                        is HederaTransactionFilter.ByTransactionType -> HederaTransactionType.valueOf(filter.transactionType)
-                        else -> null
-                    }
                 )
             ).transactions
 
-            val logs = transactions.map { transaction ->
+            val logs = transactions.filter { descriptor.filter.matches(it) }.map { transaction ->
                 HederaBlockchainLog(
                     log = HederaLog(
                         blockNumber = block.number,
@@ -109,8 +88,24 @@ class HederaBlockchainClient(
                     transaction = transaction
                 )
             }
-
             emit(FullBlock(block, logs))
         }
+    }
+
+    private suspend fun getLatestBlock(): HederaBlock? {
+        val blocks = hederaRestApiClient.getBlocks(LATEST_BLOCK_REQUEST).blocks
+        return blocks.firstOrNull()
+    }
+
+    private companion object {
+        val LATEST_BLOCK_REQUEST = HederaBlockRequest(
+            limit = 1,
+            order = HederaOrder.DESC
+        )
+
+        val EARLIEST_BLOCK_REQUEST = HederaBlockRequest(
+            limit = 1,
+            order = HederaOrder.ASC
+        )
     }
 }
