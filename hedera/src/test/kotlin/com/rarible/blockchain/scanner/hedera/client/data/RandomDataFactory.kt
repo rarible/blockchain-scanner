@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.hedera.client.data
 
+import com.rarible.blockchain.scanner.hedera.client.HederaBlockchainBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransaction
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionType
@@ -17,14 +18,16 @@ fun randomConsensusTimestamp(): String {
     return "$seconds.$nanos"
 }
 
-fun createRandomHederaTransaction() = HederaTransaction(
+fun createRandomHederaTransaction(
+    name: String = HederaTransactionType.values().random().value,
+) = HederaTransaction(
     bytes = randomString(),
     chargedTxFee = randomLong(),
     consensusTimestamp = randomConsensusTimestamp(),
     entityId = randomString(),
     maxFee = randomLong().toString(),
     memoBase64 = null,
-    name = HederaTransactionType.values().random().value,
+    name = name,
     node = randomString(),
     nonce = randomInt(),
     parentConsensusTimestamp = null,
@@ -53,3 +56,14 @@ fun createRandomHederaBlock() = HederaBlock(
     gasUsed = randomLong(),
     logsBloom = randomString()
 )
+
+fun createRandomHederaBlockchainBlock(): HederaBlockchainBlock {
+    return HederaBlockchainBlock(
+        number = randomLong(),
+        hash = randomString(),
+        parentHash = randomString(),
+        consensusTimestampFrom = randomConsensusTimestamp(),
+        consensusTimestampTo = randomConsensusTimestamp(),
+        timestamp = nowMillis().epochSecond,
+    )
+}

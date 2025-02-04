@@ -2,7 +2,6 @@ package com.rarible.blockchain.scanner.hedera.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
@@ -12,39 +11,24 @@ import com.rarible.blockchain.scanner.hedera.model.HederaDescriptor
 import com.rarible.blockchain.scanner.hedera.model.HederaLog
 import com.rarible.core.common.asyncWithTraceId
 import com.rarible.core.common.mapAsync
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flow
-import org.slf4j.LoggerFactory
+import kotlinx.coroutines.flow.map
 import org.springframework.stereotype.Component
-import java.util.concurrent.atomic.AtomicLong
 
 @Component
+@ExperimentalCoroutinesApi
 class HederaBlockchainClient(
     private val hederaApiClient: CachedHederaApiClient,
-    private val properties: BlockchainClientProperties
+    private val hederaBlockPoller: HederaNewBlockPoller,
+    private val properties: BlockchainClientProperties,
 ) : BlockchainClient<HederaBlockchainBlock, HederaBlockchainLog, HederaDescriptor> {
 
-    private val logger = LoggerFactory.getLogger(HederaBlockchainClient::class.java)
-
     override val newBlocks: Flow<HederaBlockchainBlock>
-        get() = flow {
-            val latestBlockNumber = AtomicLong(-1)
-
-            while (true) {
-                try {
-                    val block = getLatestBlock()
-                    if (block != null && block.number > latestBlockNumber.get()) {
-                        latestBlockNumber.set(block.number)
-                        emit(block.toBlockchainBlock())
-                    }
-                } catch (e: Exception) {
-                    logger.error("Error while getting new blocks", e)
-                }
-            }
-        }
+        get() = hederaBlockPoller.newBlocks().map { it.block }
 
     override suspend fun getBlock(number: Long): HederaBlockchainBlock? {
         val block = hederaApiClient.getBlockByHashOrNumber(number.toString())
@@ -91,9 +75,9 @@ class HederaBlockchainClient(
         }
     }
 
-    private suspend fun getLatestBlock(): HederaBlock? {
+    private suspend fun getLatestBlock(): HederaBlockchainBlock? {
         val blocks = hederaApiClient.getBlocks(LATEST_BLOCK_REQUEST).blocks
-        return blocks.firstOrNull()
+        return blocks.firstOrNull()?.toBlockchainBlock()
     }
 
     private companion object {

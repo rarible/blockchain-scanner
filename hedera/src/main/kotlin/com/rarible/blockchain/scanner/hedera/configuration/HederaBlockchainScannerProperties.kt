@@ -30,11 +30,17 @@ data class HederaBlockchainScannerProperties(
     override val scan: ScanProperties = ScanProperties(),
 
     val mirrorNode: MirrorNodeClientProperties = MirrorNodeClientProperties(),
-    val blockchainClient: BlockchainClientProperties = BlockchainClientProperties()
+    val blockchainClient: BlockchainClientProperties = BlockchainClientProperties(),
+    val blockPoller: BlockPollerProperties = BlockPollerProperties()
 ) : BlockchainScannerProperties
 
 data class BlockchainClientProperties(
     val concurrencyLimit: Int = 10,
+)
+
+data class BlockPollerProperties(
+    val period: Duration = Duration.ofSeconds(2),
+    val bufferSize: Int = 1,
 )
 
 data class MirrorNodeClientProperties(
