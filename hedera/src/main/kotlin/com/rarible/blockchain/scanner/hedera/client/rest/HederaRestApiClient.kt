@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.hedera.client.rest
 
-import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockDetails
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlocksResponse
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionRequest
@@ -42,7 +42,7 @@ class HederaRestApiClient(
         }
     }
 
-    suspend fun getBlockByHashOrNumber(hashOrNumber: String): HederaBlockDetails {
+    suspend fun getBlockByHashOrNumber(hashOrNumber: String): HederaBlock {
         return get("/api/v1/blocks/{hashOrNumber}", hashOrNumber)
     }
 
