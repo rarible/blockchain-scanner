@@ -2,13 +2,11 @@ package com.rarible.blockchain.scanner.hedera.client
 
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
-import com.rarible.blockchain.scanner.hedera.client.rest.HederaRestApiClient
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampTo
-import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionRequest
 import com.rarible.blockchain.scanner.hedera.model.HederaDescriptor
 import com.rarible.blockchain.scanner.hedera.model.HederaLog
 import com.rarible.core.common.asyncWithTraceId
@@ -22,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 @Component
 class HederaBlockchainClient(
-    private val hederaRestApiClient: HederaRestApiClient
+    private val hederaApiClient: CachedHederaApiClient
 ) : BlockchainClient<HederaBlockchainBlock, HederaBlockchainLog, HederaDescriptor> {
 
     private val logger = LoggerFactory.getLogger(HederaBlockchainClient::class.java)
@@ -45,7 +43,7 @@ class HederaBlockchainClient(
         }
 
     override suspend fun getBlock(number: Long): HederaBlockchainBlock? {
-        val block = hederaRestApiClient.getBlockByHashOrNumber(number.toString())
+        val block = hederaApiClient.getBlockByHashOrNumber(number.toString())
         return block.toBlockchainBlock()
     }
 
@@ -54,7 +52,7 @@ class HederaBlockchainClient(
     }
 
     override suspend fun getFirstAvailableBlock(): HederaBlockchainBlock {
-        val blocks = hederaRestApiClient.getBlocks(EARLIEST_BLOCK_REQUEST).blocks
+        val blocks = hederaApiClient.getBlocks(EARLIEST_BLOCK_REQUEST).blocks
         val block = blocks.firstOrNull() ?: throw IllegalStateException("No blocks available")
         return block.toBlockchainBlock()
     }
@@ -69,13 +67,10 @@ class HederaBlockchainClient(
         stable: Boolean
     ): Flow<FullBlock<HederaBlockchainBlock, HederaBlockchainLog>> = flow {
         for (block in blocks) {
-            val transactions = hederaRestApiClient.getTransactions(
-                HederaTransactionRequest(
-                    timestampFrom = HederaTimestampFrom.Gte(block.consensusTimestampFrom),
-                    timestampTo = HederaTimestampTo.Lte(block.consensusTimestampTo),
-                )
-            ).transactions
-
+            val transactions = hederaApiClient.getTransactions(
+                from = HederaTimestampFrom.Gte(block.consensusTimestampFrom),
+                to = HederaTimestampTo.Lte(block.consensusTimestampTo),
+            )
             val logs = transactions.filter { descriptor.filter.matches(it) }.map { transaction ->
                 HederaBlockchainLog(
                     log = HederaLog(
@@ -93,7 +88,7 @@ class HederaBlockchainClient(
     }
 
     private suspend fun getLatestBlock(): HederaBlock? {
-        val blocks = hederaRestApiClient.getBlocks(LATEST_BLOCK_REQUEST).blocks
+        val blocks = hederaApiClient.getBlocks(LATEST_BLOCK_REQUEST).blocks
         return blocks.firstOrNull()
     }
 
