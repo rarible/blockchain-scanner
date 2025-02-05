@@ -24,6 +24,16 @@ class HederaBlockchainScannerConfiguration(
     private val properties: HederaBlockchainScannerProperties
 ) {
     @Bean
+    fun hederaBlockchainClientProperties(): BlockchainClientProperties {
+        return properties.blockchainClient
+    }
+
+    @Bean
+    fun hederaBlockPollerProperties(): BlockPollerProperties {
+        return properties.blockPoller
+    }
+
+    @Bean
     fun hederaMirrorNodeClientProperties(): MirrorNodeClientProperties {
         return properties.mirrorNode
     }
