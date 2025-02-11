@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.hedera.client
 
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.model.ReceivedBlock
 import com.rarible.blockchain.scanner.hedera.client.data.createRandomHederaBlock
 import com.rarible.blockchain.scanner.hedera.client.data.createRandomHederaBlockchainBlock
@@ -30,8 +31,9 @@ class HederaBlockchainClientTest {
 
     private val hederaApiClient = mockk<CachedHederaApiClient>()
     private val properties = BlockchainClientProperties()
+    private val scan = ScanProperties()
     private val poller = mockk<HederaNewBlockPoller>()
-    private val client = HederaBlockchainClient(hederaApiClient, poller, properties)
+    private val client = HederaBlockchainClient(hederaApiClient, poller, properties, scan)
 
     @Test
     fun `get block by number`() = runBlocking<Unit> {

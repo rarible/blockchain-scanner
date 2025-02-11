@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.hedera.client
 
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
 import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
@@ -25,6 +26,7 @@ class HederaBlockchainClient(
     private val hederaApiClient: CachedHederaApiClient,
     private val hederaBlockPoller: HederaNewBlockPoller,
     private val properties: BlockchainClientProperties,
+    private val scan: ScanProperties,
 ) : BlockchainClient<HederaBlockchainBlock, HederaBlockchainLog, HederaDescriptor> {
 
     override val newBlocks: Flow<HederaBlockchainBlock>
@@ -40,7 +42,8 @@ class HederaBlockchainClient(
     }
 
     override suspend fun getFirstAvailableBlock(): HederaBlockchainBlock {
-        val blocks = hederaApiClient.getBlocks(EARLIEST_BLOCK_REQUEST).blocks
+        val order = if (scan.startFromCurrentBlock) LATEST_BLOCK_REQUEST else EARLIEST_BLOCK_REQUEST
+        val blocks = hederaApiClient.getBlocks(order).blocks
         val block = blocks.firstOrNull() ?: throw IllegalStateException("No blocks available")
         return block.toBlockchainBlock()
     }
