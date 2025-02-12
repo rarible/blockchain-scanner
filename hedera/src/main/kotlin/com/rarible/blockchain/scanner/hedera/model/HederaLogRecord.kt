@@ -17,4 +17,6 @@ abstract class HederaLogRecord : LogRecord {
     open val id: String get() = log.stringValue
 
     override fun getBlock() = log.blockNumber
+
+    abstract fun withLog(log: HederaLog): HederaLogRecord
 }

@@ -73,16 +73,24 @@ class HederaRestApiClientIt {
     }
 
     @Test
-    fun `get block transactions`() = runBlocking<Unit> {
+    fun `find block transactions by type`() = runBlocking<Unit> {
         // Get a single block
-        val blocks = client.getBlocks(HederaBlockRequest(limit = 1))
-        val block = blocks.blocks.first()
-        logger.info("Found block: {}", block)
-
-        val result = client.getTransactions(
-            from = HederaTimestampFrom.Gte(block.timestamp.from),
-            to = HederaTimestampTo.Lte(block.timestamp.to)
-        )
-        logger.info("Found transactions for block: size {}", result.transactions.size)
+        val latest = client.getBlocks(HederaBlockRequest(limit = 1)).blocks.single()
+        val type = HederaTransactionType.TOKEN_MINT.value
+        (latest.number downTo 1).forEach { number ->
+            val block = client.getBlockByHashOrNumber(number.toString())
+            val transactions = client.getTransactions(
+                from = HederaTimestampFrom.Gte(block.timestamp.from),
+                to = HederaTimestampTo.Lte(block.timestamp.to)
+            )
+            transactions.transactions.forEach { tx ->
+                if (tx.name == type && tx.nftTransfers?.isNotEmpty() == true) {
+                    logger.info("Found transaction: block={}, txHash={}, consensusTimestamp={}, tx={}",
+                        block.number, tx.transactionHash, tx.consensusTimestamp, tx
+                    )
+                    return@runBlocking
+                }
+            }
+        }
     }
 }
