@@ -47,7 +47,7 @@ data class Transfer(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class NftTransfer(
     val isApproval: Boolean,
-    val receiverAccountId: String,
+    val receiverAccountId: String?,
     val senderAccountId: String?,
     val serialNumber: BigInteger,
     val tokenId: String

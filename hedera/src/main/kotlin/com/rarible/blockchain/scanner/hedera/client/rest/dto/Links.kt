@@ -8,4 +8,10 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Links(
     val next: String?
-)
+) {
+    companion object {
+        fun empty(): Links {
+            return Links(null)
+        }
+    }
+}

@@ -1,13 +1,18 @@
 package com.rarible.blockchain.scanner.hedera.client.rest
 
-import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockDetails
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlock
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlocksResponse
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampTo
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransaction
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionsResponse
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.Links
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicReference
 
 class HederaRestApiClient(
     webClient: WebClient,
@@ -42,7 +47,29 @@ class HederaRestApiClient(
         }
     }
 
-    suspend fun getBlockByHashOrNumber(hashOrNumber: String): HederaBlockDetails {
+    suspend fun getTransactions(
+        from: HederaTimestampFrom,
+        to: HederaTimestampTo,
+    ): HederaTransactionsResponse {
+        val transactions = CopyOnWriteArrayList<HederaTransaction>()
+        val nextLink = AtomicReference<Links?>(null)
+        do {
+            val response = getTransactions(
+                HederaTransactionRequest(
+                    timestampFrom = from,
+                    timestampTo = to,
+                    limit = MAX_LIMIT
+                ),
+                nextLink.get()
+            )
+            transactions.addAll(response.transactions)
+            nextLink.set(response.links)
+        } while (nextLink.get()?.next != null)
+
+        return HederaTransactionsResponse(transactions, Links.empty())
+    }
+
+    suspend fun getBlockByHashOrNumber(hashOrNumber: String): HederaBlock {
         return get("/api/v1/blocks/{hashOrNumber}", hashOrNumber)
     }
 

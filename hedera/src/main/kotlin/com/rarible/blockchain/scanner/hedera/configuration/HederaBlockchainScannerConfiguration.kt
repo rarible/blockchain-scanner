@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.hedera.configuration
 
 import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.EnableBlockchainScanner
+import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.hedera.client.rest.HederaClientMetrics
 import com.rarible.blockchain.scanner.hedera.client.rest.HederaRestApiClient
 import com.rarible.blockchain.scanner.hedera.client.rest.HederaWebClientCustomizer
@@ -23,6 +24,21 @@ import org.springframework.web.reactive.function.client.WebClient
 class HederaBlockchainScannerConfiguration(
     private val properties: HederaBlockchainScannerProperties
 ) {
+    @Bean
+    fun hederaBlockchainClientProperties(): BlockchainClientProperties {
+        return properties.blockchainClient
+    }
+
+    @Bean
+    fun hederaScanProperties(): ScanProperties {
+        return properties.scan
+    }
+
+    @Bean
+    fun hederaBlockPollerProperties(): BlockPollerProperties {
+        return properties.blockPoller
+    }
+
     @Bean
     fun hederaMirrorNodeClientProperties(): MirrorNodeClientProperties {
         return properties.mirrorNode

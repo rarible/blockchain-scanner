@@ -8,26 +8,21 @@ data class HederaLog(
     val consensusTimestamp: String,
     val transactionHash: String,
     val transactionId: String,
-    val transactionIndex: Int,
+    val minorLogIndex: Int = 0
 ) : Comparable<HederaLog> {
+
     override fun compareTo(other: HederaLog): Int = comparator.compare(this, other)
 
     val stringValue: String
-        get() = blockNumber.toFixedLengthString(12) +
-                ":$blockHash" +
-                ":${transactionIndex.toLong().toFixedLengthString(6)}" +
-                ":$transactionHash" +
-                ":$transactionId" +
-                ":$consensusTimestamp"
+        get() = "$consensusTimestamp:${minorLogIndex.toLong().toFixedLengthString(6)}"
 
     override fun toString(): String = stringValue
 
     private companion object {
         private val comparator =
             compareBy<HederaLog>(
-                { it.blockNumber },
                 { it.consensusTimestamp },
-                { it.transactionIndex }
+                { it.minorLogIndex },
             )
     }
 }
