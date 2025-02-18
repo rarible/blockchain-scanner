@@ -16,7 +16,7 @@ import java.time.Duration
 @ConfigurationProperties(prefix = "blockchain.scanner.hedera")
 data class HederaBlockchainScannerProperties(
     override val blockchain: String = "hedera",
-    override val service: String = "transaction-scanner",
+    override val service: String = "scanner",
     override val retryPolicy: RetryPolicyProperties = RetryPolicyProperties(),
     override val monitoring: MonitoringProperties = MonitoringProperties(
         worker = DaemonWorkerProperties(
