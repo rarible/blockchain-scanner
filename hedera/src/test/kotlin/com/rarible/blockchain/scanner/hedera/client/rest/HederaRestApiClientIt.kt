@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import org.assertj.core.api.Assertions.assertThat
 
 @Disabled("Manual integration test")
 class HederaRestApiClientIt {
@@ -104,5 +105,21 @@ class HederaRestApiClientIt {
         require(nft != null) { "NFT not found" }
         require(nft.tokenId == tokenId) { "Unexpected token ID: ${nft.tokenId}" }
         require(nft.serialNumber == serialNumber) { "Unexpected serial number: ${nft.serialNumber}" }
+    }
+
+    @Test
+    fun `get token - ok`() = runBlocking<Unit> {
+        val tokenId = "0.0.1456986"
+        val token = client.getToken(tokenId)
+        logger.info("Found token: {}", token)
+
+        assertThat(token.tokenId).isEqualTo(tokenId)
+        assertThat(token.name).isEqualTo("Wrapped Hbar")
+        assertThat(token.symbol).isEqualTo("WHBAR")
+        assertThat(token.type).isEqualTo("FUNGIBLE_COMMON")
+        assertThat(token.decimals).isEqualTo("8")
+        assertThat(token.supplyType).isEqualTo("INFINITE")
+        assertThat(token.treasuryAccountId).isEqualTo("0.0.1456985")
+        assertThat(token.memo).isEqualTo("SaucerSwap staked WHBAR")
     }
 }
