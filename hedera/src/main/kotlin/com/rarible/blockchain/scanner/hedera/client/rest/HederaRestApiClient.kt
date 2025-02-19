@@ -75,7 +75,7 @@ class HederaRestApiClient(
     }
 
     suspend fun getNftByTokenIdAndSerialNumber(tokenId: String, serialNumber: Long): HederaNftResponse {
-        return get("/api/v1/tokens/${tokenId}/nfts") {
+        return get("/api/v1/tokens/$tokenId/nfts") {
             queryParam("serialNumber", serialNumber)
             this
         }
