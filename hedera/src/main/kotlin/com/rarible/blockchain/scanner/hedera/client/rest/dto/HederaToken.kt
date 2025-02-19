@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HederaToken(
-    val adminKey: String?,
     val autoRenewAccount: String,
     val autoRenewPeriod: Long,
     val createdTimestamp: String,
