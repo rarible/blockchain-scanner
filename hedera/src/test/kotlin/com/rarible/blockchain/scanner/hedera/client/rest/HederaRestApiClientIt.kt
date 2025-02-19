@@ -93,4 +93,16 @@ class HederaRestApiClientIt {
             }
         }
     }
+
+    @Test
+    fun `get nft by token id and serial number`() = runBlocking<Unit> {
+        val tokenId = "0.0.1274110"
+        val serialNumber = 103L
+        val nftResponse = client.getNftByTokenIdAndSerialNumber(tokenId, serialNumber)
+        logger.info("Found NFT: {}", nftResponse)
+        val nft = nftResponse.nfts.firstOrNull()
+        require(nft != null) { "NFT not found" }
+        require(nft.tokenId == tokenId) { "Unexpected token ID: ${nft.tokenId}" }
+        require(nft.serialNumber == serialNumber) { "Unexpected serial number: ${nft.serialNumber}" }
+    }
 }

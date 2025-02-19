@@ -9,6 +9,7 @@ import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransaction
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionsResponse
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.Links
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaNftResponse
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
@@ -71,6 +72,13 @@ class HederaRestApiClient(
 
     suspend fun getBlockByHashOrNumber(hashOrNumber: String): HederaBlock {
         return get("/api/v1/blocks/{hashOrNumber}", hashOrNumber)
+    }
+
+    suspend fun getNftByTokenIdAndSerialNumber(tokenId: String, serialNumber: Long): HederaNftResponse {
+        return get("/api/v1/tokens/$tokenId/nfts") {
+            queryParam("serialNumber", serialNumber)
+            this
+        }
     }
 
     companion object {
