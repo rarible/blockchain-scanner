@@ -34,4 +34,19 @@ data class HederaToken(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomFees(
     val createdTimestamp: String,
+    val royaltyFees: List<CustomRoyaltyFee>?,
+)
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class CustomRoyaltyFee(
+    val collectorAccountId: String,
+    val amount: Fee,
+)
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Fee(
+    val numerator: Long,
+    val denominator: Long,
 )

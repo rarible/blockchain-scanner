@@ -1,5 +1,8 @@
 package com.rarible.blockchain.scanner.hedera.client.rest
 
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.CustomFees
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.CustomRoyaltyFee
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.Fee
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
@@ -86,7 +89,8 @@ class HederaRestApiClientIt {
             )
             transactions.transactions.forEach { tx ->
                 if (tx.name == type && tx.nftTransfers?.isNotEmpty() == true) {
-                    logger.info("Found transaction: block={}, txHash={}, consensusTimestamp={}, tx={}",
+                    logger.info(
+                        "Found transaction: block={}, txHash={}, consensusTimestamp={}, tx={}",
                         block.number, tx.transactionHash, tx.consensusTimestamp, tx
                     )
                     return@runBlocking
@@ -121,5 +125,27 @@ class HederaRestApiClientIt {
         assertThat(token.supplyType).isEqualTo("INFINITE")
         assertThat(token.treasuryAccountId).isEqualTo("0.0.1456985")
         assertThat(token.memo).isEqualTo("SaucerSwap staked WHBAR")
+    }
+
+    @Test
+    fun `get token with royalties - ok`() = runBlocking<Unit> {
+        val tokenId = "0.0.1274110"
+        val token = client.getToken(tokenId)
+        logger.info("Found token: {}", token)
+
+        assertThat(token.customFees).isEqualTo(
+            CustomFees(
+                createdTimestamp = "1663381794.059045391",
+                royaltyFees = listOf(
+                    CustomRoyaltyFee(
+                        collectorAccountId = "0.0.517699",
+                        amount = Fee(
+                            numerator = 50,
+                            denominator = 1000
+                        )
+                    )
+                )
+            )
+        )
     }
 }
