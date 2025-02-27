@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.hedera.client.rest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.CustomFees
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.CustomRoyaltyFee
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.Fee
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
@@ -147,5 +148,26 @@ class HederaRestApiClientIt {
                 )
             )
         )
+    }
+
+    @Test
+    fun `get balances - all accounts`() = runBlocking<Unit> {
+        val balances = client.getBalances(HederaBalanceRequest(limit = 5))
+        logger.info("Found balances: {}", balances)
+
+        assertThat(balances.balances).isNotEmpty
+        assertThat(balances.timestamp).isNotEmpty
+    }
+
+    @Test
+    fun `get balances - specific account`() = runBlocking<Unit> {
+        val accountId = "0.0.7723163"
+        val balances = client.getBalances(HederaBalanceRequest(accountId = accountId))
+        logger.info("Found account balance: {}", balances)
+
+        assertThat(balances.balances).isNotEmpty
+        val account = balances.balances.singleOrNull { it.account == accountId }
+        assertThat(account).isNotNull
+        assertThat(account?.balance).isNotNull
     }
 }
