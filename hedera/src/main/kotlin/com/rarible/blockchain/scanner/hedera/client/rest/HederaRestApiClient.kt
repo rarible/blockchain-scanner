@@ -11,6 +11,8 @@ import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTransactionsR
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.Links
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaNftResponse
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaToken
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceRequest
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceResponse
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
@@ -84,6 +86,15 @@ class HederaRestApiClient(
 
     suspend fun getToken(tokenId: String): HederaToken {
         return get("/api/v1/tokens/{tokenId}", tokenId)
+    }
+
+    suspend fun getBalances(request: HederaBalanceRequest = HederaBalanceRequest()): HederaBalanceResponse {
+        return get("/api/v1/balances") {
+            request.accountId?.let { queryParam("account.id", it) }
+            request.limit?.let { queryParam("limit", it.coerceIn(1, MAX_LIMIT)) }
+            request.order?.let { queryParam("order", it.value) }
+            this
+        }
     }
 
     companion object {
