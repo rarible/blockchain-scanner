@@ -10,6 +10,7 @@ import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscr
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.reindex.BlockRange
+import com.rarible.blockchain.scanner.reindex.BlockReindexer
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.blockchain.scanner.task.BlockReindexTaskHandler
@@ -19,10 +20,12 @@ import scalether.domain.Address
 
 @Component
 class EthereumBlockReindexTaskHandler(
-    manager: EthereumScannerManager
+    ethereumScannerManager: EthereumScannerManager,
+    reconciliationManager: EthereumScannerManager,
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
-    manager
+    ethereumScannerManager
 ) {
+    private val reconciliationReindexer = reconciliationManager.blockReindexer
 
     override fun getFilter(
         param: EthereumReindexParam
@@ -33,7 +36,17 @@ class EthereumBlockReindexTaskHandler(
     override fun getParam(param: String): EthereumReindexParam {
         return EthereumReindexParam.parse(param)
     }
+
+    override fun getReindexer(param: EthereumReindexParam, defaultReindexer: EthereumBlockReindexer): EthereumBlockReindexer {
+        return if (param.useReconciliationRpcNode) {
+            reconciliationReindexer
+        } else {
+            super.getReindexer(param, defaultReindexer)
+        }
+    }
 }
+
+private typealias EthereumBlockReindexer = BlockReindexer<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, EthereumDescriptor, EthereumLogRepository>
 
 data class EthereumReindexParam(
     override val name: String? = null,
@@ -41,6 +54,7 @@ data class EthereumReindexParam(
     override val publishEvents: Boolean = false,
     val topics: List<Word>,
     val addresses: List<Address>,
+    val useReconciliationRpcNode: Boolean = false,
 ) : ReindexParam {
 
     companion object {
