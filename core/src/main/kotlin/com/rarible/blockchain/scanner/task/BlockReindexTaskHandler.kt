@@ -7,6 +7,7 @@ import com.rarible.blockchain.scanner.framework.model.Descriptor
 import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
+import com.rarible.blockchain.scanner.reindex.BlockReindexer
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.core.task.TaskHandler
@@ -71,6 +72,10 @@ abstract class BlockReindexTaskHandler<
             )
             it.id
         }
+    }
+
+    protected open fun getReindexer(param: P, defaultReindexer: BlockReindexer<BB, BL, R, D, S>): BlockReindexer<BB, BL, R, D, S> {
+        return defaultReindexer
     }
 
     private fun getTaskProgress(from: Long, to: Long, position: Long): Double {

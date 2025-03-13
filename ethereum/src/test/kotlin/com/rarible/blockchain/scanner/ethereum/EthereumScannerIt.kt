@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import scala.jdk.javaapi.CollectionConverters
 import scalether.domain.Address
 import scalether.domain.response.TransactionReceipt
@@ -36,6 +37,7 @@ class EthereumScannerIt : AbstractIntegrationTest() {
     private lateinit var topic: Word
     private lateinit var contract: TestERC20
 
+    @Qualifier("ethereumScannerManager")
     @Autowired
     private lateinit var manager: EthereumScannerManager
 
