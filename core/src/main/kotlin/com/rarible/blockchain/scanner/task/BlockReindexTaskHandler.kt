@@ -43,13 +43,14 @@ abstract class BlockReindexTaskHandler<
         return param.isNotBlank() && enabled
     }
 
-    private val reindexer = manager.blockReindexer
+    private val defaultReindexer = manager.blockReindexer
     private val planner = manager.blockScanPlanner
     private val publisher = manager.logRecordEventPublisher
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
         val taskParam = getParam(param)
         val filter = getFilter(taskParam)
+        val reindexer = getReindexer(taskParam, defaultReindexer)
         val publisher = if (taskParam.publishEvents) publisher else null
         val (reindexRanges, baseBlock, planFrom, planTo) = runBlocking {
             planner.getPlan(taskParam.range, from)
