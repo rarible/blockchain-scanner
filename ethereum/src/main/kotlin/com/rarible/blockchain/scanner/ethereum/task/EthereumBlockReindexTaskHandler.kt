@@ -15,12 +15,15 @@ import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.blockchain.scanner.task.BlockReindexTaskHandler
 import io.daonomic.rpc.domain.Word
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import scalether.domain.Address
 
 @Component
 class EthereumBlockReindexTaskHandler(
+    @Qualifier("ethereumScannerManager")
     ethereumScannerManager: EthereumScannerManager,
+    @Qualifier("reconciliationManager")
     reconciliationManager: EthereumScannerManager,
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
     ethereumScannerManager
