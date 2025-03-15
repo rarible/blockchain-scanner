@@ -51,7 +51,7 @@ abstract class BlockReindexTaskHandler<
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
         val taskParam = getParam(param)
         val filter = getFilter(taskParam)
-        val reindexer = getReindexer(taskParam, defaultReindexer)
+        val reindexer = getBlockReindexer(taskParam, defaultReindexer)
         val planner = getBlockScanPlanner(taskParam, defaultPlanner)
         val publisher = if (taskParam.publishEvents) publisher else null
         val (reindexRanges, baseBlock, planFrom, planTo) = runBlocking {
@@ -77,7 +77,7 @@ abstract class BlockReindexTaskHandler<
         }
     }
 
-    protected open fun getReindexer(param: P, defaultReindexer: BlockReindexer<BB, BL, R, D, S>): BlockReindexer<BB, BL, R, D, S> {
+    protected open fun getBlockReindexer(param: P, defaultReindexer: BlockReindexer<BB, BL, R, D, S>): BlockReindexer<BB, BL, R, D, S> {
         return defaultReindexer
     }
 

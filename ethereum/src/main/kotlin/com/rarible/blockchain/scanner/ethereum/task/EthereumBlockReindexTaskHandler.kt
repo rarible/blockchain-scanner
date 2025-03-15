@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.task
 
+import com.rarible.blockchain.scanner.BlockchainScannerManager
 import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
@@ -13,7 +14,6 @@ import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
 import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
-import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.blockchain.scanner.task.BlockReindexTaskHandler
@@ -30,23 +30,7 @@ class EthereumBlockReindexTaskHandler(
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
     manager
 ) {
-    private val reconciliationBlockchainClient = blockchainClientFactory.createReconciliationClient()
-    private val reconciliationReindexer = EthereumBlockReindexer(
-        subscribers = manager.logSubscribers,
-        blockHandlerFactory = manager.blockHandlerFactory,
-        logHandlerFactory = LogHandlerFactory(
-            blockchainClient = reconciliationBlockchainClient,
-            logService = manager.logService,
-            logRecordComparator = manager.logRecordComparator,
-            logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
-            logMonitor = manager.logMonitor,
-        )
-    )
-    private val reconciliationPlanner = BlockScanPlanner(
-        blockService = manager.blockService,
-        blockchainClient = reconciliationBlockchainClient,
-        properties = manager.properties,
-    )
+    private val reconciliationManager = BlockchainScannerManager(blockchainClientFactory.createReconciliationClient(), manager)
 
     override fun getFilter(
         param: EthereumReindexParam
@@ -58,11 +42,11 @@ class EthereumBlockReindexTaskHandler(
         return EthereumReindexParam.parse(param)
     }
 
-    override fun getReindexer(param: EthereumReindexParam, defaultReindexer: EthereumBlockReindexer): EthereumBlockReindexer {
+    override fun getBlockReindexer(param: EthereumReindexParam, defaultReindexer: EthereumBlockReindexer): EthereumBlockReindexer {
         return if (param.useReconciliationRpcNode) {
-            reconciliationReindexer
+            reconciliationManager.blockReindexer
         } else {
-            super.getReindexer(param, defaultReindexer)
+            super.getBlockReindexer(param, defaultReindexer)
         }
     }
 
@@ -71,7 +55,7 @@ class EthereumBlockReindexTaskHandler(
         defaultPlanner: BlockScanPlanner<EthereumBlockchainBlock>
     ): BlockScanPlanner<EthereumBlockchainBlock> {
         return if (param.useReconciliationRpcNode) {
-            reconciliationPlanner
+            reconciliationManager.blockScanPlanner
         } else {
             return super.getBlockScanPlanner(param, defaultPlanner)
         }
