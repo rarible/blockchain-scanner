@@ -68,23 +68,6 @@ open class BlockchainScannerManager<
         logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
     )
 
-    constructor(blockchainClient: BlockchainClient<BB, BL, D>, manager: BlockchainScannerManager<BB, BL, R, TR, D, S>)
-        : this(
-        blockchainClient = blockchainClient,
-        properties = manager.properties,
-        logSubscribers = manager.logSubscribers,
-        blockService = manager.blockService,
-        logService = manager.logService,
-        logRecordComparator = manager.logRecordComparator,
-        logRecordEventPublisher = manager.logRecordEventPublisher,
-        blockMonitor = manager.blockMonitor,
-        logMonitor = manager.logMonitor,
-        reindexMonitor = manager.reindexMonitor,
-        transactionSubscribers = manager.transactionSubscribers,
-        transactionRecordEventPublisher = manager.transactionRecordEventPublisher,
-        logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
-    )
-
     val retryableClient = RetryableBlockchainClient(
         original = blockchainClient,
         retryPolicy = properties.retryPolicy.client
