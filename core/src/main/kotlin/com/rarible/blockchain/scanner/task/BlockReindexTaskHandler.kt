@@ -8,6 +8,7 @@ import com.rarible.blockchain.scanner.framework.model.LogRecord
 import com.rarible.blockchain.scanner.framework.model.LogStorage
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
+import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.core.task.TaskHandler
@@ -44,13 +45,14 @@ abstract class BlockReindexTaskHandler<
     }
 
     private val defaultReindexer = manager.blockReindexer
-    private val planner = manager.blockScanPlanner
+    private val defaultPlanner = manager.blockScanPlanner
     private val publisher = manager.logRecordEventPublisher
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
         val taskParam = getParam(param)
         val filter = getFilter(taskParam)
         val reindexer = getReindexer(taskParam, defaultReindexer)
+        val planner = getBlockScanPlanner(taskParam, defaultPlanner)
         val publisher = if (taskParam.publishEvents) publisher else null
         val (reindexRanges, baseBlock, planFrom, planTo) = runBlocking {
             planner.getPlan(taskParam.range, from)
@@ -77,6 +79,10 @@ abstract class BlockReindexTaskHandler<
 
     protected open fun getReindexer(param: P, defaultReindexer: BlockReindexer<BB, BL, R, D, S>): BlockReindexer<BB, BL, R, D, S> {
         return defaultReindexer
+    }
+
+    protected open fun getBlockScanPlanner(param: P, defaultPlanner: BlockScanPlanner<BB>): BlockScanPlanner<BB> {
+        return defaultPlanner
     }
 
     private fun getTaskProgress(from: Long, to: Long, position: Long): Double {

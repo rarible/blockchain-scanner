@@ -12,6 +12,7 @@ import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
+import com.rarible.blockchain.scanner.reindex.BlockScanPlanner
 import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
@@ -22,15 +23,14 @@ import org.springframework.stereotype.Component
 import scalether.domain.Address
 
 @Component
+@OptIn(ExperimentalCoroutinesApi::class)
 class EthereumBlockReindexTaskHandler(
     manager: EthereumScannerManager,
     blockchainClientFactory: EthereumClientFactory,
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
     manager
 ) {
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val reconciliationBlockchainClient = blockchainClientFactory.createReconciliationClient()
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val reconciliationReindexer = EthereumBlockReindexer(
         subscribers = manager.logSubscribers,
         blockHandlerFactory = manager.blockHandlerFactory,
@@ -41,6 +41,11 @@ class EthereumBlockReindexTaskHandler(
             logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
             logMonitor = manager.logMonitor,
         )
+    )
+    private val reconciliationPlanner = BlockScanPlanner(
+        blockService = manager.blockService,
+        blockchainClient = reconciliationBlockchainClient,
+        properties = manager.properties,
     )
 
     override fun getFilter(
@@ -58,6 +63,17 @@ class EthereumBlockReindexTaskHandler(
             reconciliationReindexer
         } else {
             super.getReindexer(param, defaultReindexer)
+        }
+    }
+
+    override fun getBlockScanPlanner(
+        param: EthereumReindexParam,
+        defaultPlanner: BlockScanPlanner<EthereumBlockchainBlock>
+    ): BlockScanPlanner<EthereumBlockchainBlock> {
+        return if (param.useReconciliationRpcNode) {
+            reconciliationPlanner
+        } else {
+            return super.getBlockScanPlanner(param, defaultPlanner)
         }
     }
 }
