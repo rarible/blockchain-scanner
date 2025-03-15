@@ -3,6 +3,7 @@ package com.rarible.blockchain.scanner.ethereum.task
 import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
+import com.rarible.blockchain.scanner.ethereum.client.EthereumClientFactory
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
@@ -11,24 +12,36 @@ import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.reindex.BlockReindexer
+import com.rarible.blockchain.scanner.reindex.LogHandlerFactory
 import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.blockchain.scanner.task.BlockReindexTaskHandler
 import io.daonomic.rpc.domain.Word
-import org.springframework.beans.factory.annotation.Qualifier
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.springframework.stereotype.Component
 import scalether.domain.Address
 
 @Component
 class EthereumBlockReindexTaskHandler(
-    @Qualifier("ethereumScannerManager")
-    ethereumScannerManager: EthereumScannerManager,
-    @Qualifier("reconciliationManager")
-    reconciliationManager: EthereumScannerManager,
+    manager: EthereumScannerManager,
+    blockchainClientFactory: EthereumClientFactory,
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
-    ethereumScannerManager
+    manager
 ) {
-    private val reconciliationReindexer = reconciliationManager.blockReindexer
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val reconciliationBlockchainClient = blockchainClientFactory.createReconciliationClient()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val reconciliationReindexer = EthereumBlockReindexer(
+        subscribers = manager.logSubscribers,
+        blockHandlerFactory = manager.blockHandlerFactory,
+        logHandlerFactory = LogHandlerFactory(
+            blockchainClient = reconciliationBlockchainClient,
+            logService = manager.logService,
+            logRecordComparator = manager.logRecordComparator,
+            logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
+            logMonitor = manager.logMonitor,
+        )
+    )
 
     override fun getFilter(
         param: EthereumReindexParam

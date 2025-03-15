@@ -20,10 +20,8 @@ import com.rarible.blockchain.scanner.monitoring.LogMonitor
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
-import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 
-@Primary
 @Component
 class EthereumScannerManager(
     ethereumClient: EthereumBlockchainClient,
