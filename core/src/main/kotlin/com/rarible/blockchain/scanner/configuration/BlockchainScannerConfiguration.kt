@@ -119,21 +119,7 @@ class BlockchainScannerConfiguration(
         monitor: LogReconciliationMonitor,
         subscribers: List<LogEventSubscriber<BB, BL, R, D, S>>,
     ): ReconciliationLogHandler {
-        val reconciliationManager = BlockchainScannerManager(
-            properties = scannerProperties,
-            blockService = manager.blockService,
-            logService = manager.logService,
-            logRecordEventPublisher = manager.logRecordEventPublisher,
-            transactionSubscribers = manager.transactionSubscribers,
-            blockchainClient = blockchainClientFactory.createReconciliationClient(),
-            blockMonitor = manager.blockMonitor,
-            transactionRecordEventPublisher = manager.transactionRecordEventPublisher,
-            logMonitor = manager.logMonitor,
-            logRecordComparator = manager.logRecordComparator,
-            logSubscribers = manager.logSubscribers,
-            reindexMonitor = manager.reindexMonitor,
-            logEventSubscriberExceptionResolver = manager.logEventSubscriberExceptionResolver,
-        )
+        val reconciliationManager = BlockchainScannerManager(blockchainClientFactory.createReconciliationClient(), manager)
         return ReconciliationLogHandlerImpl(
             reconciliationProperties = scannerProperties.reconciliation,
             blockchainClient = reconciliationManager.retryableClient,
