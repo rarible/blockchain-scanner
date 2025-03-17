@@ -40,6 +40,10 @@
             <groupId>com.rarible.core</groupId>
             <artifactId>rarible-core-entity-reducer</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
 
         <!-- ================== Test ===================== -->
         <dependency>

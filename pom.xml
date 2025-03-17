@@ -20,6 +20,7 @@
         <rarible.core.version>2.7.31</rarible.core.version>
         <flow.version>0.22.rarible</flow.version>
         <flow.sdk.version>0.7.1.5</flow.sdk.version>
+        <aws.sdk.version>2.24.0</aws.sdk.version>
     </properties>
 
     <repositories>
@@ -56,6 +57,12 @@
                 <version>${rarible.ethereum.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${aws.sdk.version}</version>
             </dependency>
 
             <dependency>
