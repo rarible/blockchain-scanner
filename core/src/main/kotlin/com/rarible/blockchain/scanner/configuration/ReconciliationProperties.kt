@@ -25,6 +25,6 @@ data class ReconciliationProperties(
          * because full reindex will be run anyway.
          * */
         WITHOUT_EVENTS(enabled = true, publishEvents = false),
-        WITH_EVENTS(enabled = false, publishEvents = true),
+        WITH_EVENTS(enabled = true, publishEvents = true),
     }
 }
