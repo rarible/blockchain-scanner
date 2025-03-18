@@ -104,14 +104,26 @@ data class Reth115(
     val body: BlockBody
 )
 
+@Suppress("ArrayInDataClass")
 data class BlockHeader(
-    val hash: String,
+    val hash: ByteArray,
     val header: Header
 )
 
+@Suppress("ArrayInDataClass")
 data class Header(
-    val parentHash: String,
-    val timestamp: String,
+    val parentHash: ByteArray,
+    val timestamp: ByteArray,
+    val sha3Uncles: ByteArray,
+    val nonce: ByteArray,
+    val logsBloom: ByteArray,
+    val transactionsRoot: ByteArray,
+    val stateRoot: ByteArray,
+    val miner: ByteArray,
+    val difficulty: ByteArray,
+    val extraData: ByteArray,
+    val gasLimit: ByteArray,
+    val gasUsed: ByteArray,
 )
 
 data class BlockBody(
@@ -119,7 +131,7 @@ data class BlockBody(
 )
 
 data class Transaction(
-    val signature: List<String>,
+    val signature: List<ByteArray>,
     val transaction: TransactionData
 )
 
@@ -127,29 +139,47 @@ data class TransactionData(
     @JsonProperty("Legacy")
     val legacy: LegacyTransaction? = null,
     @JsonProperty("Eip1559")
-    val eip1559: Eip1559Transaction? = null
-)
+    val eip1559: Eip1559Transaction? = null,
+) {
+    fun getCommonTransaction(): CommonTransaction {
+        return legacy ?: eip1559 ?: throw IllegalArgumentException("Transaction type not supported")
+    }
+}
 
+interface CommonTransaction {
+    val chainId: ByteArray
+    val nonce: ByteArray
+    val to: ByteArray
+    val value: ByteArray
+    val input: ByteArray
+    val gas: ByteArray
+    val gasPrice: ByteArray
+}
+
+@Suppress("ArrayInDataClass")
 data class LegacyTransaction(
-    val chainId: String,
-    val nonce: String,
-    val gasPrice: String,
-    val gas: String,
-    val to: String,
-    val value: String,
-    val input: String
-)
+    override val chainId: ByteArray,
+    override val nonce: ByteArray,
+    override val to: ByteArray,
+    override val value: ByteArray,
+    override val input: ByteArray,
+    override val gas: ByteArray,
+    override val gasPrice: ByteArray,
+) : CommonTransaction
 
+@Suppress("ArrayInDataClass")
 data class Eip1559Transaction(
-    val chainId: String,
-    val nonce: String,
-    val gas: String,
-    val maxFeePerGas: String,
+    override val chainId: ByteArray,
+    override val nonce: ByteArray,
+    override val to: ByteArray,
+    override val value: ByteArray,
+    override val input: ByteArray,
+    override val gas: ByteArray,
+    val maxFeePerGas: ByteArray,
     val maxPriorityFeePerGas: String,
-    val to: String,
-    val value: String,
-    val input: String
-)
+) : CommonTransaction {
+    override val gasPrice = maxFeePerGas
+}
 
 data class Receipt(
     val txType: String?,
