@@ -12,13 +12,14 @@ class HyperBlockArchiverAdapter(
     private val hyperBlockArchiver: HyperBlockArchiver,
 ) {
     suspend fun getBlock(blockNumber: BigInteger): Block<Transaction> {
-        return convert(hyperBlockArchiver.downloadBlock(blockNumber), blockNumber)
+        return convert(hyperBlockArchiver.downloadBlock(blockNumber))
     }
 
-    private fun convert(hyperBlock: HyperBlock, blockNumber: BigInteger): Block<Transaction> {
+    private fun convert(hyperBlock: HyperBlock): Block<Transaction> {
         val blockHeader = hyperBlock.block.reth115.header
         val header = hyperBlock.block.reth115.header.header
         val blockBody = hyperBlock.block.reth115.body
+        val blockNumber = BigInteger(header.number)
 
         val transactions = blockBody.transactions.mapIndexed { index, tx ->
             convertTransaction(

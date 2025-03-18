@@ -4,6 +4,7 @@ import com.rarible.blockchain.scanner.ethereum.configuration.HyperProperties
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
@@ -17,6 +18,7 @@ class HyperBlockArchiverTest {
     private val s3Client = mockk<S3AsyncClient>()
     private val hyperProperties = HyperProperties()
     private val hyperBlockArchiver = HyperBlockArchiver(s3Client, hyperProperties)
+    private val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(hyperBlockArchiver)
 
     @Test
     fun `read block - ok`() = runBlocking<Unit> {
@@ -27,7 +29,7 @@ class HyperBlockArchiverTest {
             s3Client.getObject(any<GetObjectRequest>(), any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>())
         } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlock))
 
-        val block = hyperBlockArchiver.downloadBlock(BigInteger.ONE)
-        println(block)
+        val ethBlock = hyperBlockArchiverAdapter.getBlock(BigInteger.ONE)
+        assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(60025))
     }
 }

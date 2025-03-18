@@ -79,8 +79,6 @@ class HyperBlockArchiver(
     }
 
     private fun deserializeMessagePack(data: ByteArray): HyperBlock {
-        val stringJson = objectMapper.readTree(data)
-        println(stringJson.asText())
         return objectMapper.readValue(data, Array<HyperBlock>::class.java).single()
     }
 
@@ -112,6 +110,7 @@ data class BlockHeader(
 
 @Suppress("ArrayInDataClass")
 data class Header(
+    val number: ByteArray,
     val parentHash: ByteArray,
     val timestamp: ByteArray,
     val sha3Uncles: ByteArray,
@@ -188,12 +187,14 @@ data class Receipt(
     val logs: List<Log>
 )
 
+@Suppress("ArrayInDataClass")
 data class Log(
-    val address: String,
+    val address: ByteArray,
     val data: LogData
 )
 
+@Suppress("ArrayInDataClass")
 data class LogData(
-    val topics: List<String>,
-    val data: String
+    val topics: List<ByteArray>,
+    val data: ByteArray
 )
