@@ -21,6 +21,8 @@
         <flow.version>0.22.rarible</flow.version>
         <flow.sdk.version>0.7.1.5</flow.sdk.version>
         <aws.sdk.version>2.24.0</aws.sdk.version>
+        <lz4.java.version>1.8.0</lz4.java.version>
+        <msgpack.version>0.9.3</msgpack.version>
     </properties>
 
     <repositories>
@@ -63,6 +65,21 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>s3</artifactId>
                 <version>${aws.sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>${lz4.java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.msgpack</groupId>
+                <artifactId>msgpack-core</artifactId>
+                <version>${msgpack.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.msgpack</groupId>
+                <artifactId>jackson-dataformat-msgpack</artifactId>
+                <version>${msgpack.version}</version>
             </dependency>
 
             <dependency>

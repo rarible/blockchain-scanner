@@ -25,7 +25,7 @@ class CompositeMonoEthereum(
     private val delegate: MonoEthereum,
     private val archiver: HyperBlockArchiverAdapter,
     private val properties: HyperProperties,
-) : MonoEthereum(DummyMonoRpcTransport())  {
+) : MonoEthereum(DummyMonoRpcTransport()) {
 
     override fun executeRaw(request: Request?): Mono<Response<JsonNode>> {
         return delegate.executeRaw(request)

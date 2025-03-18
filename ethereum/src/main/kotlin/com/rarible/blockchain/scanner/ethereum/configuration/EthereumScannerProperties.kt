@@ -42,8 +42,14 @@ data class EthereumScannerProperties(
     val hyper: HyperProperties = HyperProperties()
 ) : BlockchainScannerProperties
 
-
 data class HyperProperties(
     val enabled: Boolean = false,
-    val s3: URI = URI.create("s3://hl-mainnet-evm-blocks")
-)
+    @NestedConfigurationProperty
+    val s3: S3Properties = S3Properties(),
+) {
+    data class S3Properties(
+        val uri: URI = URI.create("s3://hl-mainnet-evm-blocks"),
+        val username: String = "",
+        val password: String = "",
+    )
+}

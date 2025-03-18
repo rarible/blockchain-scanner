@@ -37,8 +37,7 @@ class HyperBlockArchiver(
      */
     suspend fun downloadBlock(blockNumber: BigInteger): HyperBlock {
         val objectKey = formatObjectKey(blockNumber.toLong())
-        val bucketName = hyperProperties.s3.path.substring(1) // Remove leading slash from path
-        logger.debug("Downloading block $blockNumber from S3 bucket $bucketName with key $objectKey")
+        val bucketName = hyperProperties.s3.uri.path
 
         val request = GetObjectRequest.builder()
             .bucket(bucketName)
@@ -60,7 +59,6 @@ class HyperBlockArchiver(
                         logger.warn("Block $blockNumber not found in S3 storage")
                         BlockNotFoundException("Block $blockNumber not found in S3 storage", e)
                     }
-
                     else -> {
                         logger.error("Failed to download or process block $blockNumber", e)
                         BlockProcessingException("Failed to download or process block $blockNumber", e)

@@ -11,7 +11,7 @@ class HyperBlockArchiverAdapter(
         return convert(hyperBlockArchiver.downloadBlock(blockNumber))
     }
 
-    private fun  convert(hyperBlock: HyperBlock): Block<Transaction> {
+    private fun convert(hyperBlock: HyperBlock): Block<Transaction> {
         TODO()
     }
 }
