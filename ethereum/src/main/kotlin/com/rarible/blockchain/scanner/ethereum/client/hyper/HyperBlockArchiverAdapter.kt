@@ -1,24 +1,56 @@
 package com.rarible.blockchain.scanner.ethereum.client.hyper
 
+import com.rarible.blockchain.scanner.ethereum.client.hyper.Block as HyperBlock
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
 import scalether.domain.Address
 import scalether.domain.response.Block
+import scalether.domain.response.Log
 import scalether.domain.response.Transaction
 import scalether.java.Lists
 import java.math.BigInteger
 
 class HyperBlockArchiverAdapter(
-    private val hyperBlockArchiver: HyperBlockArchiver,
+    private val hyperBlockArchiver: CachedHyperBlockArchiver,
 ) {
     suspend fun getBlock(blockNumber: BigInteger): Block<Transaction> {
-        return convert(hyperBlockArchiver.downloadBlock(blockNumber))
+        return convert(hyperBlockArchiver.downloadBlock(blockNumber).block)
+    }
+
+    suspend fun getLogsByBlockRange(fromBlock: BigInteger, toBlock: BigInteger): List<Log> {
+        val range = LongRange(fromBlock.toLong(), toBlock.toLong()).map { BigInteger.valueOf(it) }
+        return hyperBlockArchiver.downloadBlocks(range).flatMap { hyperBlock ->
+            val ethBlock = convert(hyperBlock.block)
+            convert(ethBlock, hyperBlock.receipts)
+        }
+    }
+
+    private fun convert(block: Block<Transaction>, receipts: List<Receipt>): List<Log> {
+        val transactions = Lists.toJava(block.transactions())
+        var logIndex = 0L
+        return receipts.mapIndexed { receiptIndex, receipt ->
+            val transaction = transactions[receiptIndex]
+            receipt.logs.map { log ->
+                Log(
+                    BigInteger.valueOf(logIndex++),
+                    BigInteger.valueOf(receiptIndex.toLong()),
+                    transaction.hash(),
+                    block.hash(),
+                    block.number(),
+                    Address.apply(log.address),
+                    Binary.apply(log.data.data),
+                    false, // removed
+                    Lists.toScala(log.data.topics.map { Word.apply(it) }),
+                    Binary.empty().prefixed() // type
+                )
+            }
+        }.flatten()
     }
 
     private fun convert(hyperBlock: HyperBlock): Block<Transaction> {
-        val blockHeader = hyperBlock.block.reth115.header
-        val header = hyperBlock.block.reth115.header.header
-        val blockBody = hyperBlock.block.reth115.body
+        val blockHeader = hyperBlock.reth115.header
+        val header = hyperBlock.reth115.header.header
+        val blockBody = hyperBlock.reth115.body
         val blockNumber = BigInteger(header.number)
 
         val transactions = blockBody.transactions.mapIndexed { index, tx ->

@@ -23,6 +23,7 @@ class HyperBlockArchiver(
     private val hyperProperties: HyperProperties
 ) {
     private val logger = LoggerFactory.getLogger(HyperBlockArchiver::class.java)
+
     private val objectMapper = ObjectMapper(MessagePackFactory()).apply {
         registerKotlinModule()
         configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -181,7 +182,8 @@ data class Eip1559Transaction(
 }
 
 data class Receipt(
-    val txType: String?,
+    @JsonProperty("tx_type")
+    val txType: String,
     val success: Boolean,
     val cumulativeGasUsed: Long,
     val logs: List<Log>

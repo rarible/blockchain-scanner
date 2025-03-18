@@ -18,7 +18,8 @@ class HyperBlockArchiverTest {
     private val s3Client = mockk<S3AsyncClient>()
     private val hyperProperties = HyperProperties()
     private val hyperBlockArchiver = HyperBlockArchiver(s3Client, hyperProperties)
-    private val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(hyperBlockArchiver)
+    private val cachedHyperBlockArchiver = CachedHyperBlockArchiver(hyperBlockArchiver, HyperProperties())
+    private val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(cachedHyperBlockArchiver)
 
     @Test
     fun `read block - ok`() = runBlocking<Unit> {
