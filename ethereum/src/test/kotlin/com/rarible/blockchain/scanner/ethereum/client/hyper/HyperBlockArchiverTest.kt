@@ -20,7 +20,7 @@ class HyperBlockArchiverTest {
 
     @Test
     fun `read block - ok`() = runBlocking<Unit> {
-        val archivedBlock = javaClass.getResourceAsStream("/hyper/block-5000.rmp.lz4").use {
+        val archivedBlock = javaClass.getResourceAsStream("/hyper/60025.rmp.lz4").use {
             it!!.readBytes()
         }
         every {
@@ -28,5 +28,6 @@ class HyperBlockArchiverTest {
         } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlock))
 
         val block = hyperBlockArchiver.downloadBlock(BigInteger.ONE)
+        println(block)
     }
 }

@@ -1,11 +1,12 @@
 package com.rarible.blockchain.scanner.ethereum.client.hyper
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.ethereum.configuration.HyperProperties
 import kotlinx.coroutines.reactive.awaitFirst
-import net.jpountz.lz4.LZ4Factory
+import net.jpountz.lz4.LZ4FrameInputStream
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
@@ -14,27 +15,19 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.math.BigInteger
-import java.nio.ByteBuffer
 
-/**
- * Downloads Hyper blocks from S3 storage, decompresses and deserializes them.
- */
 class HyperBlockArchiver(
     private val s3Client: S3AsyncClient,
     private val hyperProperties: HyperProperties
 ) {
     private val logger = LoggerFactory.getLogger(HyperBlockArchiver::class.java)
-    private val lz4Factory = LZ4Factory.fastestInstance()
-    private val objectMapper = ObjectMapper(MessagePackFactory()).registerKotlinModule()
+    private val objectMapper = ObjectMapper(MessagePackFactory()).apply {
+        registerKotlinModule()
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
 
-    /**
-     * Downloads a block by its number from the S3 storage.
-     * The block is stored as LZ4-compressed MessagePack data.
-     *
-     * @param blockNumber The block number to download
-     * @return A [Mono] that emits the downloaded [HyperBlock] or an error if the block could not be downloaded or processed
-     */
     suspend fun downloadBlock(blockNumber: BigInteger): HyperBlock {
         val objectKey = formatObjectKey(blockNumber.toLong())
         val bucketName = hyperProperties.s3.uri.path
@@ -49,8 +42,6 @@ class HyperBlockArchiver(
                 val compressedData = response.asByteArray()
                 val decompressedData = decompressLz4(compressedData)
                 val hyperBlock = deserializeMessagePack(decompressedData)
-
-                logger.debug("Successfully downloaded and processed block $blockNumber")
                 hyperBlock
             }
             .onErrorMap { e ->
@@ -67,42 +58,30 @@ class HyperBlockArchiver(
             }.awaitFirst()
     }
 
-    /**
-     * Formats the S3 object key for a specific block number.
-     */
     private fun formatObjectKey(blockNumber: Long): String {
-        // The format could be customized based on S3 storage structure
-        // For example: "blocks/0000000/00123456.bin"
         val millions = blockNumber / 1_000_000
         return "blocks/${millions.toString().padStart(7, '0')}/${blockNumber.toString().padStart(8, '0')}.bin"
     }
 
-    /**
-     * Decompresses the LZ4-compressed data.
-     */
     private fun decompressLz4(compressedData: ByteArray): ByteArray {
-        val decompressor = lz4Factory.fastDecompressor()
-
-        // Read the decompressed size from the first 4 bytes
-        val decompressedSize = ByteBuffer.wrap(compressedData, 0, 4).int
-
-        // Create the destination array
-        val decompressedData = ByteArray(decompressedSize)
-
-        // Decompress the data (skipping the first 4 bytes that contain the size)
-        decompressor.decompress(
-            compressedData, 4,
-            decompressedData, 0, decompressedSize
-        )
-
-        return decompressedData
+        ByteArrayInputStream(compressedData).use { input ->
+            LZ4FrameInputStream(input).use { lz4Input ->
+                ByteArrayOutputStream().use { output ->
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    while (lz4Input.read(buffer).also { bytesRead = it } != -1) {
+                        output.write(buffer, 0, bytesRead)
+                    }
+                    return output.toByteArray()
+                }
+            }
+        }
     }
 
-    /**
-     * Deserializes the MessagePack data into a [HyperBlock] object.
-     */
     private fun deserializeMessagePack(data: ByteArray): HyperBlock {
-        return objectMapper.readValue(ByteArrayInputStream(data), HyperBlock::class.java)
+        val stringJson = objectMapper.readTree(data)
+        println(stringJson.asText())
+        return objectMapper.readValue(data, Array<HyperBlock>::class.java).single()
     }
 
     // Custom exceptions
@@ -110,13 +89,9 @@ class HyperBlockArchiver(
     class BlockProcessingException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 }
 
-/**
- * Data classes representing the structure of a Hyper block.
- */
 data class HyperBlock(
     val block: Block,
     val receipts: List<Receipt>,
-    val systemTxs: List<Any> = emptyList()
 )
 
 data class Block(
@@ -151,6 +126,8 @@ data class Transaction(
 data class TransactionData(
     @JsonProperty("Legacy")
     val legacy: LegacyTransaction? = null,
+    @JsonProperty("Eip1559")
+    val eip1559: Eip1559Transaction? = null
 )
 
 data class LegacyTransaction(
@@ -163,8 +140,19 @@ data class LegacyTransaction(
     val input: String
 )
 
+data class Eip1559Transaction(
+    val chainId: String,
+    val nonce: String,
+    val gas: String,
+    val maxFeePerGas: String,
+    val maxPriorityFeePerGas: String,
+    val to: String,
+    val value: String,
+    val input: String
+)
+
 data class Receipt(
-    val txType: String,
+    val txType: String?,
     val success: Boolean,
     val cumulativeGasUsed: Long,
     val logs: List<Log>
