@@ -51,8 +51,8 @@ data class HyperArchiveProperties(
 ) {
     data class S3Properties(
         val uri: URI = URI.create("s3://hl-mainnet-evm-blocks"),
-        val username: String = "",
-        val password: String = "",
+        val accessKeyId: String = "",
+        val secretAccessKey: String = "",
     )
 
     data class CacheProperties(

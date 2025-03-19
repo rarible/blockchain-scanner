@@ -30,7 +30,7 @@ class EthereumBlockReindexTaskHandler(
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
     manager
 ) {
-    private val reconciliationManager = BlockchainScannerManager(blockchainClientFactory.createReconciliationClient(), manager)
+    private val reconciliationManager = BlockchainScannerManager(blockchainClientFactory.createReindexClient(), manager)
 
     override fun getFilter(
         param: EthereumReindexParam

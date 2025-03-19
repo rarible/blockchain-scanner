@@ -1,5 +1,9 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
+import com.rarible.blockchain.scanner.ethereum.client.hyper.HyperArchiveEthereumClient
+import com.rarible.blockchain.scanner.ethereum.client.hyper.HyperBlockArchiverAdapter
+import com.rarible.blockchain.scanner.ethereum.client.hyper.CachedHyperBlockArchiver
+import com.rarible.blockchain.scanner.ethereum.client.hyper.HyperBlockArchiver
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.framework.client.BlockchainClient
@@ -7,6 +11,10 @@ import com.rarible.blockchain.scanner.framework.client.BlockchainClientFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.springframework.stereotype.Component
 import scalether.core.MonoEthereum
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3AsyncClient
 
 @Component
 @Suppress("SpringJavaInjectionPointsAutowiringInspection")
@@ -24,10 +32,34 @@ class EthereumClientFactory(
 
     @ExperimentalCoroutinesApi
     override fun createReindexClient(): BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
-        return if (properties.hyperArchive.enabled) createHyperArchiveEthereumClient() else createMainClient()
+        return if (properties.hyperArchive.enabled) createHyperArchiveEthereumClient() else createReconciliationClient()
     }
 
-    private fun createHyperArchiveEthereumClient(): EthereumBlockchainClient {
-        TODO()
+    @ExperimentalCoroutinesApi
+    private fun createHyperArchiveEthereumClient(): HyperArchiveEthereumClient {
+        // Create S3AsyncClient with credentials from properties
+        val s3Client = S3AsyncClient.builder()
+            .region(Region.US_EAST_1)
+            .credentialsProvider(
+                if (properties.hyperArchive.s3.accessKeyId.isNotBlank() &&
+                    properties.hyperArchive.s3.secretAccessKey.isNotBlank()
+                ) {
+                    StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(
+                            properties.hyperArchive.s3.accessKeyId,
+                            properties.hyperArchive.s3.secretAccessKey
+                        )
+                    )
+                } else {
+                    null
+                }
+            )
+            .endpointOverride(properties.hyperArchive.s3.uri)
+            .build()
+
+        val hyperBlockArchiver = HyperBlockArchiver(s3Client, properties.hyperArchive)
+        val cachedHyperBlockArchiver = CachedHyperBlockArchiver(hyperBlockArchiver, properties.hyperArchive)
+        val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(cachedHyperBlockArchiver)
+        return HyperArchiveEthereumClient(hyperBlockArchiverAdapter, properties)
     }
 }
