@@ -30,7 +30,7 @@ abstract class BlockReindexTaskHandler<
     S : LogStorage,
     P : ReindexParam
     >(
-    manager: BlockchainScannerManager<BB, BL, R, TR, D, S>
+    manager: BlockchainScannerManager<BB, BL, R, TR, D, S>,
 ) : TaskHandler<Long> {
 
     protected val logger: Logger = LoggerFactory.getLogger(javaClass)

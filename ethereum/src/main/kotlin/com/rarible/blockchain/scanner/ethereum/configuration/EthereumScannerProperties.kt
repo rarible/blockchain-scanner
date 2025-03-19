@@ -9,6 +9,8 @@ import com.rarible.blockchain.scanner.configuration.TaskProperties
 import com.rarible.core.daemon.DaemonWorkerProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
+import org.springframework.boot.context.properties.NestedConfigurationProperty
+import java.net.URI
 import java.time.Duration
 
 @ConstructorBinding
@@ -36,4 +38,26 @@ data class EthereumScannerProperties(
     val ignoreNullableLogs: Boolean = false,
     val ignoreEpochBlocks: Boolean = false,
     val ignoreLogWithoutTransaction: Boolean = false,
+    @NestedConfigurationProperty
+    val hyperArchive: HyperArchiveProperties = HyperArchiveProperties()
 ) : BlockchainScannerProperties
+
+data class HyperArchiveProperties(
+    val enabled: Boolean = false,
+    val logBlockJson: Boolean = false,
+    @NestedConfigurationProperty
+    val s3: S3Properties = S3Properties(),
+    @NestedConfigurationProperty
+    val cache: CacheProperties = CacheProperties(),
+) {
+    data class S3Properties(
+        val uri: URI = URI.create("s3://hl-mainnet-evm-blocks"),
+        val accessKeyId: String = "",
+        val secretAccessKey: String = "",
+    )
+
+    data class CacheProperties(
+        val size: Long = 5000,
+        val expireAfterWrite: Duration = Duration.ofMinutes(5),
+    )
+}
