@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.rarible.blockchain.scanner.ethereum.configuration.HyperProperties
+import com.rarible.blockchain.scanner.ethereum.configuration.HyperArchiveProperties
 import kotlinx.coroutines.reactive.awaitFirst
 import net.jpountz.lz4.LZ4FrameInputStream
 import org.msgpack.jackson.dataformat.MessagePackFactory
@@ -20,7 +20,7 @@ import java.math.BigInteger
 
 class HyperBlockArchiver(
     private val s3Client: S3AsyncClient,
-    private val hyperProperties: HyperProperties
+    private val hyperProperties: HyperArchiveProperties
 ) {
     private val logger = LoggerFactory.getLogger(HyperBlockArchiver::class.java)
 

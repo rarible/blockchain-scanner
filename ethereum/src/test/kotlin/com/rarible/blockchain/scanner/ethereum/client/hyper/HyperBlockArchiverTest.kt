@@ -1,6 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client.hyper
 
-import com.rarible.blockchain.scanner.ethereum.configuration.HyperProperties
+import com.rarible.blockchain.scanner.ethereum.configuration.HyperArchiveProperties
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -16,9 +16,9 @@ import java.util.concurrent.CompletableFuture
 
 class HyperBlockArchiverTest {
     private val s3Client = mockk<S3AsyncClient>()
-    private val hyperProperties = HyperProperties()
+    private val hyperProperties = HyperArchiveProperties()
     private val hyperBlockArchiver = HyperBlockArchiver(s3Client, hyperProperties)
-    private val cachedHyperBlockArchiver = CachedHyperBlockArchiver(hyperBlockArchiver, HyperProperties())
+    private val cachedHyperBlockArchiver = CachedHyperBlockArchiver(hyperBlockArchiver, hyperProperties)
     private val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(cachedHyperBlockArchiver)
 
     @Test

@@ -7,7 +7,6 @@ import com.rarible.blockchain.scanner.configuration.RetryPolicyProperties
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.configuration.TaskProperties
 import com.rarible.core.daemon.DaemonWorkerProperties
-import org.springframework.boot.autoconfigure.cache.CacheProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.boot.context.properties.NestedConfigurationProperty
@@ -40,10 +39,10 @@ data class EthereumScannerProperties(
     val ignoreEpochBlocks: Boolean = false,
     val ignoreLogWithoutTransaction: Boolean = false,
     @NestedConfigurationProperty
-    val hyper: HyperProperties = HyperProperties()
+    val hyperArchive: HyperArchiveProperties = HyperArchiveProperties()
 ) : BlockchainScannerProperties
 
-data class HyperProperties(
+data class HyperArchiveProperties(
     val enabled: Boolean = false,
     @NestedConfigurationProperty
     val s3: S3Properties = S3Properties(),

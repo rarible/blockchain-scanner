@@ -2,14 +2,14 @@ package com.rarible.blockchain.scanner.ethereum.client.hyper
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.rarible.blockchain.scanner.ethereum.configuration.HyperProperties
+import com.rarible.blockchain.scanner.ethereum.configuration.HyperArchiveProperties
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactor.mono
 import java.math.BigInteger
 
 class CachedHyperBlockArchiver(
     private val hyperBlockArchiver: HyperBlockArchiver,
-    properties: HyperProperties
+    properties: HyperArchiveProperties,
 ) {
     private val cache: AsyncLoadingCache<BigInteger, HyperBlock> = Caffeine.newBuilder()
         .maximumSize(properties.cache.size)

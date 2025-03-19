@@ -1,6 +1,7 @@
 package com.rarible.blockchain.scanner.ethereum.client.hyper
 
 import com.rarible.blockchain.scanner.ethereum.client.hyper.Block as HyperBlock
+import com.rarible.blockchain.scanner.ethereum.client.hyper.Transaction as HyperTransaction
 import io.daonomic.rpc.domain.Binary
 import io.daonomic.rpc.domain.Word
 import scalether.domain.Address
@@ -30,6 +31,7 @@ class HyperBlockArchiverAdapter(
         var logIndex = 0L
         return receipts.mapIndexed { receiptIndex, receipt ->
             val transaction = transactions[receiptIndex]
+            val isRemovedLog = receipt.success.not()
             receipt.logs.map { log ->
                 Log(
                     BigInteger.valueOf(logIndex++),
@@ -39,7 +41,7 @@ class HyperBlockArchiverAdapter(
                     block.number(),
                     Address.apply(log.address),
                     Binary.apply(log.data.data),
-                    false, // removed
+                    isRemovedLog,
                     Lists.toScala(log.data.topics.map { Word.apply(it) }),
                     Binary.empty().prefixed() // type
                 )
@@ -82,7 +84,7 @@ class HyperBlockArchiverAdapter(
     }
 
     private fun convertTransaction(
-        hyperTx: com.rarible.blockchain.scanner.ethereum.client.hyper.Transaction,
+        hyperTx: HyperTransaction,
         blockNumber: BigInteger,
         blockHash: Word,
         txIndex: BigInteger
