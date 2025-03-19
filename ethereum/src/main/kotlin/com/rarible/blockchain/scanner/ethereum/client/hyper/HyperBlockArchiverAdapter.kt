@@ -93,7 +93,7 @@ class HyperBlockArchiverAdapter(
         val commonTx = hyperTx.transaction.getCommonTransaction()
 
         val nonce = BigInteger(commonTx.nonce)
-        val to = Address.apply(commonTx.to)
+        val to = commonTx.to?.let { Address.apply(it) } ?: Address.ZERO()
         val value = BigInteger(commonTx.value)
         val gas = BigInteger(commonTx.gas)
         val gasPrice = BigInteger(commonTx.gasPrice)

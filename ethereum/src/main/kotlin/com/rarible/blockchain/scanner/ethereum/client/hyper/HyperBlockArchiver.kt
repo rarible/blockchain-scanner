@@ -2,9 +2,17 @@ package com.rarible.blockchain.scanner.ethereum.client.hyper
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.BinaryNode
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.blockchain.scanner.ethereum.configuration.HyperArchiveProperties
+import io.daonomic.rpc.domain.Binary
 import kotlinx.coroutines.reactive.awaitFirst
 import net.jpountz.lz4.LZ4FrameInputStream
 import org.msgpack.jackson.dataformat.MessagePackFactory
@@ -42,7 +50,7 @@ class HyperBlockArchiver(
             .map { response ->
                 val compressedData = response.asByteArray()
                 val decompressedData = decompressLz4(compressedData)
-                val hyperBlock = deserializeMessagePack(decompressedData)
+                val hyperBlock = deserializeMessagePack(blockNumber, decompressedData)
                 hyperBlock
             }
             .onErrorMap { e ->
@@ -81,13 +89,49 @@ class HyperBlockArchiver(
         }
     }
 
-    private fun deserializeMessagePack(data: ByteArray): HyperBlock {
+    private fun deserializeMessagePack(block: BigInteger, data: ByteArray): HyperBlock {
+        if (hyperProperties.logBlockJson) {
+            val tree = objectMapper.readTree(data)
+            val convertedTree = convertBinaryNodes(tree)
+            val prettyJson = jacksonObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(convertedTree)
+            logger.info("Block: number=$block, json=\n: $prettyJson")
+        }
         return objectMapper.readValue(data, Array<HyperBlock>::class.java).single()
     }
 
     // Custom exceptions
     class BlockNotFoundException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
     class BlockProcessingException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+    private fun convertBinaryNodes(node: JsonNode): JsonNode {
+        return when (node) {
+            is ObjectNode -> {
+                val fields = node.fields()
+                val newObj = JsonNodeFactory.instance.objectNode()
+                fields.forEachRemaining { entry ->
+                    newObj.set<JsonNode>(entry.key, convertBinaryNodes(entry.value))
+                }
+                newObj
+            }
+            is ArrayNode -> {
+                val newArray = JsonNodeFactory.instance.arrayNode()
+                node.forEach { child ->
+                    newArray.add(convertBinaryNodes(child))
+                }
+                newArray
+            }
+            is BinaryNode -> {
+                val binaryValue = node.binaryValue()
+                val value = when {
+                    binaryValue.size >= 20 -> Binary.apply(binaryValue).prefixed()
+                    binaryValue.isEmpty() -> Binary.empty().prefixed()
+                    else -> BigInteger(binaryValue).toString()
+                }
+                TextNode(value)
+            }
+            else -> node
+        }
+    }
 }
 
 data class HyperBlock(
@@ -151,7 +195,7 @@ data class TransactionData(
 interface CommonTransaction {
     val chainId: ByteArray
     val nonce: ByteArray
-    val to: ByteArray
+    val to: ByteArray?
     val value: ByteArray
     val input: ByteArray
     val gas: ByteArray
@@ -162,7 +206,7 @@ interface CommonTransaction {
 data class LegacyTransaction(
     override val chainId: ByteArray,
     override val nonce: ByteArray,
-    override val to: ByteArray,
+    override val to: ByteArray?,
     override val value: ByteArray,
     override val input: ByteArray,
     override val gas: ByteArray,
@@ -173,7 +217,7 @@ data class LegacyTransaction(
 data class Eip1559Transaction(
     override val chainId: ByteArray,
     override val nonce: ByteArray,
-    override val to: ByteArray,
+    override val to: ByteArray?,
     override val value: ByteArray,
     override val input: ByteArray,
     override val gas: ByteArray,

@@ -21,16 +21,16 @@ class HyperBlockArchiverTest {
     private val cachedHyperBlockArchiver = CachedHyperBlockArchiver(hyperBlockArchiver, hyperProperties)
     private val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(cachedHyperBlockArchiver)
 
+    private val archivedBlock1 = javaClass.getResourceAsStream("/hyper/302292.rmp.lz4").use { it!!.readBytes() }
+    private val archivedBlock2 = javaClass.getResourceAsStream("/hyper/302293.rmp.lz4").use { it!!.readBytes() }
+
     @Test
     fun `read block - ok`() = runBlocking<Unit> {
-        val archivedBlock = javaClass.getResourceAsStream("/hyper/60025.rmp.lz4").use {
-            it!!.readBytes()
-        }
         every {
             s3Client.getObject(any<GetObjectRequest>(), any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>())
-        } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlock))
+        } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlock1))
 
         val ethBlock = hyperBlockArchiverAdapter.getBlock(BigInteger.ONE)
-        assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(60025))
+        assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(302292))
     }
 }

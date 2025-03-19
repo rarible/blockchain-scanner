@@ -44,6 +44,7 @@ data class EthereumScannerProperties(
 
 data class HyperArchiveProperties(
     val enabled: Boolean = false,
+    val logBlockJson: Boolean = true,
     @NestedConfigurationProperty
     val s3: S3Properties = S3Properties(),
     @NestedConfigurationProperty
