@@ -60,8 +60,10 @@ class HyperBlockArchiver(
     }
 
     private fun formatObjectKey(blockNumber: Long): String {
-        val millions = blockNumber / 1_000_000
-        return "blocks/${millions.toString().padStart(7, '0')}/${blockNumber.toString().padStart(8, '0')}.bin"
+        val thousands = blockNumber / 1_000
+        val topLevelDir = "${thousands * 1000}"
+        val secondLevelDir = thousands * 1000
+        return "$topLevelDir/$secondLevelDir/$blockNumber.rmp.lz4"
     }
 
     private fun decompressLz4(compressedData: ByteArray): ByteArray {
