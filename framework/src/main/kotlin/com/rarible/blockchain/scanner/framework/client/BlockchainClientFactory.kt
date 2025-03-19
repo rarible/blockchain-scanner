@@ -8,6 +8,6 @@ interface BlockchainClientFactory<BB : BlockchainBlock, BL : BlockchainLog, D : 
     fun createReconciliationClient(): BlockchainClient<BB, BL, D>
 
     fun createReindexClient(): BlockchainClient<BB, BL, D> {
-        return createMainClient()
+        return createReconciliationClient()
     }
 }
