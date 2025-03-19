@@ -19,4 +19,6 @@ interface ReindexParam {
     val publishEvents: Boolean
 
     fun toJson(): String = mapper.writeValueAsString(this)
+
+    fun <T> copyWithRange(range: BlockRange): T
 }

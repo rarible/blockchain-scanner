@@ -42,6 +42,8 @@ data class FlowReindexParam(
     companion object {
         fun parse(json: String) = ReindexParam.parse(json, FlowReindexParam::class.java)
     }
+
+    override fun <T> copyWithRange(range: BlockRange) = this.copy(range = range) as T
 }
 
 class FlowSubscriberFilter(

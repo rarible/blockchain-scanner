@@ -43,6 +43,8 @@ data class HederaReindexParam(
     companion object {
         fun parse(json: String) = ReindexParam.parse(json, HederaReindexParam::class.java)
     }
+
+    override fun <T> copyWithRange(range: BlockRange) = this.copy(range = range) as T
 }
 
 class HederaSubscriberFilter(

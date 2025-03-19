@@ -76,6 +76,8 @@ data class EthereumReindexParam(
     companion object {
         fun parse(json: String) = ReindexParam.parse(json, EthereumReindexParam::class.java)
     }
+
+    override fun <T> copyWithRange(range: BlockRange) = this.copy(range = range) as T
 }
 
 class EthereumSubscriberFilter(
