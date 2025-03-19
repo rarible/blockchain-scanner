@@ -110,13 +110,14 @@ fun ethLog(
     topic: Word,
     address: Address,
     logIndex: Int,
-    blockHash: Word
+    blockHash: Word,
+    blockNumber: BigInteger = randomPositiveBigInt(100),
 ) = scalether.domain.response.Log(
     logIndex.toBigInteger(),
     randomPositiveBigInt(100),
     transactionHash,
     blockHash,
-    randomPositiveBigInt(100),
+    blockNumber,
     address,
     Binary.apply("0x0"),
     false,
