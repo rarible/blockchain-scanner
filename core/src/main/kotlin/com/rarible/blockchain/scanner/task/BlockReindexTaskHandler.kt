@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory
 
 // Implement in blockchains if needed
 abstract class BlockReindexTaskHandler<
-    BB : BlockchainBlock,
-    BL : BlockchainLog,
-    R : LogRecord,
-    TR : TransactionRecord,
-    D : Descriptor<S>,
-    S : LogStorage,
-    P : ReindexParam
-    >(
+        BB : BlockchainBlock,
+        BL : BlockchainLog,
+        R : LogRecord,
+        TR : TransactionRecord,
+        D : Descriptor<S>,
+        S : LogStorage,
+        P : ReindexParam
+        >(
     private val manager: BlockchainScannerManager<BB, BL, R, TR, D, S>,
 ) : TaskHandler<Long> {
 
@@ -47,43 +47,44 @@ abstract class BlockReindexTaskHandler<
     private val defaultPlanner = manager.blockScanPlanner
     private val publisher = manager.logRecordEventPublisher
 
-    override fun runLongTask(from: Long?, param: String): Flow<Long> {
+    override fun runLongTask(from: Long?, param: String): Flow<Long> = flow {
         val taskParamParsed = getParam(param)
-        return flow {
-            val taskParam = if (taskParamParsed.range.to == null) {
-                val lastBlock = manager.blockService.getLastBlock()?.id
-                logger.warn("Range.to is empty, will be used the last block: $lastBlock")
-                taskParamParsed.copyWithRange(range = taskParamParsed.range.copy(to = lastBlock))
-            } else {
-                taskParamParsed
-            }
-            val filter = getFilter(taskParam)
-            val reindexer = getBlockReindexer(taskParam, defaultReindexer)
-            val planner = getBlockScanPlanner(taskParam, defaultPlanner)
-            val publisher = if (taskParam.publishEvents) publisher else null
-            val (reindexRanges, baseBlock, planFrom, planTo) = planner.getPlan(taskParam.range, from)
-            val blocks = reindexer.reindex(
-                baseBlock,
-                reindexRanges,
-                filter,
-                publisher
-            )
-            emitAll(blocks.map { block ->
-                ReindexResult(block.id, taskParam, planFrom, planTo)
-            })
-        }.map {
-            logger.info("Re-index finished up to block ${it.blockId}")
-            monitor.onReindex(
-                name = it.taskParam.name,
-                from = it.taskParam.range.from,
-                to = it.taskParam.range.to,
-                state = getTaskProgress(it.planFrom, it.planTo, it.blockId)
-            )
-            it.blockId
+        val taskParam = if (taskParamParsed.range.to == null) {
+            val lastBlock = manager.blockService.getLastBlock()?.id
+            logger.warn("Range.to is empty, will be used the last block: $lastBlock")
+            taskParamParsed.copyWithRange(range = taskParamParsed.range.copy(to = lastBlock))
+        } else {
+            taskParamParsed
         }
+        val filter = getFilter(taskParam)
+        val reindexer = getBlockReindexer(taskParam, defaultReindexer)
+        val planner = getBlockScanPlanner(taskParam, defaultPlanner)
+        val publisher = if (taskParam.publishEvents) publisher else null
+        val (reindexRanges, baseBlock, planFrom, planTo) = planner.getPlan(taskParam.range, from)
+        val blocks = reindexer.reindex(
+            baseBlock,
+            reindexRanges,
+            filter,
+            publisher
+        )
+        emitAll(blocks.map { block ->
+            ReindexResult(block.id, taskParam, planFrom, planTo)
+        })
+    }.map {
+        logger.info("Re-index finished up to block ${it.blockId}")
+        monitor.onReindex(
+            name = it.taskParam.name,
+            from = it.taskParam.range.from,
+            to = it.taskParam.range.to,
+            state = getTaskProgress(it.planFrom, it.planTo, it.blockId)
+        )
+        it.blockId
     }
 
-    protected open fun getBlockReindexer(param: P, defaultReindexer: BlockReindexer<BB, BL, R, D, S>): BlockReindexer<BB, BL, R, D, S> {
+    protected open fun getBlockReindexer(
+        param: P,
+        defaultReindexer: BlockReindexer<BB, BL, R, D, S>
+    ): BlockReindexer<BB, BL, R, D, S> {
         return defaultReindexer
     }
 
