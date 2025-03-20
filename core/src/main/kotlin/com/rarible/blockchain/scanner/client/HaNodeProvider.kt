@@ -73,7 +73,7 @@ class HaNodeProvider<CONFIG, NODE>(
                 try {
                     runBlocking { findAvailableNode() }
                 } catch (e: Exception) {
-                    logger.error("error while monitoring nodes", e)
+                    logger.warn("Error while monitoring nodes", e)
                 }
                 sleep(monitoringInterval.toMillis())
             }

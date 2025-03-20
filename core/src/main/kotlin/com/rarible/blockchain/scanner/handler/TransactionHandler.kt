@@ -48,7 +48,7 @@ class TransactionHandler<BB : BlockchainBlock, R : TransactionRecord>(
                         )
                         throw e
                     }
-                    logger.error("Failed to handle block {} by TX subscriber {}: ", blockEvent.number, group, e)
+                    logger.warn("Failed to handle block {} by TX subscriber {}: ", blockEvent.number, group, e)
                     SubscriberResultFail(blockEvent.number, group, e.message ?: "Unknown error")
                 }
             }

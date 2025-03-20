@@ -111,7 +111,7 @@ class ReconciliationLogHandlerImpl<
             return true
         }
         monitor.onInconsistency()
-        logger.error(
+        logger.warn(
             "Saved logs count for block {} and log storage '{}' are not consistent (saved={}, fetched={})",
             blockNumber, storage::class.simpleName, savedLogCount, chainLogCount
         )
