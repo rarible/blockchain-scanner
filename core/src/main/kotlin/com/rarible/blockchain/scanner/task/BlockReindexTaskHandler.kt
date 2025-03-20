@@ -30,7 +30,7 @@ abstract class BlockReindexTaskHandler<
     S : LogStorage,
     P : ReindexParam
     >(
-    manager: BlockchainScannerManager<BB, BL, R, TR, D, S>,
+    private val manager: BlockchainScannerManager<BB, BL, R, TR, D, S>,
 ) : TaskHandler<Long> {
 
     protected val logger: Logger = LoggerFactory.getLogger(javaClass)
@@ -49,7 +49,16 @@ abstract class BlockReindexTaskHandler<
     private val publisher = manager.logRecordEventPublisher
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
-        val taskParam = getParam(param)
+        val taskParamParsed = getParam(param)
+        val taskParam = if (taskParamParsed.range.to == null) {
+            val lastBlock = runBlocking {
+                manager.blockService.getLastBlock()?.id
+            }
+            logger.warn("Range.to is empty, will be used the last block: $lastBlock")
+            taskParamParsed.copyWithRange(range = taskParamParsed.range.copy(to = lastBlock))
+        } else {
+            taskParamParsed
+        }
         val filter = getFilter(taskParam)
         val reindexer = getBlockReindexer(taskParam, defaultReindexer)
         val planner = getBlockScanPlanner(taskParam, defaultPlanner)
