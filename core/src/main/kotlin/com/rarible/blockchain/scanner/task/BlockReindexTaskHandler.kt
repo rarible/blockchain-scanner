@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory
 
 // Implement in blockchains if needed
 abstract class BlockReindexTaskHandler<
-        BB : BlockchainBlock,
-        BL : BlockchainLog,
-        R : LogRecord,
-        TR : TransactionRecord,
-        D : Descriptor<S>,
-        S : LogStorage,
-        P : ReindexParam
-        >(
+    BB : BlockchainBlock,
+    BL : BlockchainLog,
+    R : LogRecord,
+    TR : TransactionRecord,
+    D : Descriptor<S>,
+    S : LogStorage,
+    P : ReindexParam
+    >(
     private val manager: BlockchainScannerManager<BB, BL, R, TR, D, S>,
 ) : TaskHandler<Long> {
 
