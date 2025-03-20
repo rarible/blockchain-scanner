@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -50,39 +49,37 @@ abstract class BlockReindexTaskHandler<
 
     override fun runLongTask(from: Long?, param: String): Flow<Long> {
         val taskParamParsed = getParam(param)
-        val taskParam = if (taskParamParsed.range.to == null) {
-            val lastBlock = runBlocking {
-                manager.blockService.getLastBlock()?.id
-            }
-            logger.warn("Range.to is empty, will be used the last block: $lastBlock")
-            taskParamParsed.copyWithRange(range = taskParamParsed.range.copy(to = lastBlock))
-        } else {
-            taskParamParsed
-        }
-        val filter = getFilter(taskParam)
-        val reindexer = getBlockReindexer(taskParam, defaultReindexer)
-        val planner = getBlockScanPlanner(taskParam, defaultPlanner)
-        val publisher = if (taskParam.publishEvents) publisher else null
-        val (reindexRanges, baseBlock, planFrom, planTo) = runBlocking {
-            planner.getPlan(taskParam.range, from)
-        }
         return flow {
+            val taskParam = if (taskParamParsed.range.to == null) {
+                val lastBlock = manager.blockService.getLastBlock()?.id
+                logger.warn("Range.to is empty, will be used the last block: $lastBlock")
+                taskParamParsed.copyWithRange(range = taskParamParsed.range.copy(to = lastBlock))
+            } else {
+                taskParamParsed
+            }
+            val filter = getFilter(taskParam)
+            val reindexer = getBlockReindexer(taskParam, defaultReindexer)
+            val planner = getBlockScanPlanner(taskParam, defaultPlanner)
+            val publisher = if (taskParam.publishEvents) publisher else null
+            val (reindexRanges, baseBlock, planFrom, planTo) = planner.getPlan(taskParam.range, from)
             val blocks = reindexer.reindex(
                 baseBlock,
                 reindexRanges,
                 filter,
                 publisher
             )
-            emitAll(blocks)
+            emitAll(blocks.map { block ->
+                ReindexResult(block.id, taskParam, planFrom, planTo)
+            })
         }.map {
-            logger.info("Re-index finished up to block $it")
+            logger.info("Re-index finished up to block ${it.blockId}")
             monitor.onReindex(
-                name = taskParam.name,
-                from = taskParam.range.from,
-                to = taskParam.range.to,
-                state = getTaskProgress(planFrom, planTo, it.id)
+                name = it.taskParam.name,
+                from = it.taskParam.range.from,
+                to = it.taskParam.range.to,
+                state = getTaskProgress(it.planFrom, it.planTo, it.blockId)
             )
-            it.id
+            it.blockId
         }
     }
 
@@ -102,4 +99,11 @@ abstract class BlockReindexTaskHandler<
     abstract fun getFilter(param: P): SubscriberFilter<BB, BL, R, D, S>
 
     abstract fun getParam(param: String): P
+
+    data class ReindexResult<P>(
+        val blockId: Long,
+        val taskParam: P,
+        val planFrom: Long,
+        val planTo: Long
+    )
 }
