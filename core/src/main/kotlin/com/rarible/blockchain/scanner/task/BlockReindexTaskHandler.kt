@@ -52,7 +52,7 @@ abstract class BlockReindexTaskHandler<
         val taskParamParsed = getParam(param)
         val taskParam = if (taskParamParsed.range.to == null) {
             val lastBlock = runBlocking {
-                manager.retryableClient.getLastBlockNumber()
+                manager.blockService.getLastBlock()?.id
             }
             logger.warn("Range.to is empty, will be used the last block: $lastBlock")
             taskParamParsed.copyWithRange(range = taskParamParsed.range.copy(to = lastBlock))

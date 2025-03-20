@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 
 class EthereumBlockReindexTaskHandlerTest {
 
-    private fun setupTestEnvironment(): Triple<EthereumScannerManager, EthereumBlockchainClient, ReindexMonitor> {
+    private fun setupTestEnvironment(): Triple<EthereumScannerManager, BlockService, ReindexMonitor> {
         val client: EthereumBlockchainClient = mockk()
         val blockService: BlockService = mockk()
         val reindexMonitor: ReindexMonitor = mockk()
@@ -44,18 +44,17 @@ class EthereumBlockReindexTaskHandlerTest {
             parentHash = "0x",
             status = BlockStatus.SUCCESS
         )
-        coEvery { blockService.getLastBlock() } returns block
         coEvery { blockService.getBlock(any()) } returns block
         coEvery { client.getBlock(any()) } returns null
         coEvery { client.getLastBlockNumber() } returns 42
         coEvery { client.getBlocks(any()) } returns emptyList()
 
-        return Triple(manager, client, reindexMonitor)
+        return Triple(manager, blockService, reindexMonitor)
     }
 
     @Test
     fun `reindex task has last block`() = runBlocking {
-        val (manager, client, reindexMonitor) = setupTestEnvironment()
+        val (manager, blockService, reindexMonitor) = setupTestEnvironment()
         coEvery { reindexMonitor.onReindex(0, 9, any(), any()) } returns Unit
 
         val blockchainClientFactory: EthereumClientFactory = mockk()
@@ -72,14 +71,22 @@ class EthereumBlockReindexTaskHandlerTest {
         )
         task.runLongTask(null, param.toJson()).collect()
 
-        coVerify(exactly = 1) { client.getLastBlockNumber() }
+        coVerify(exactly = 0) { blockService.getLastBlock() }
         coVerify(exactly = 1) { reindexMonitor.onReindex(0, 9, 7.0, "reindex") }
     }
 
     @Test
     fun `reindex task doesn't have last block`() = runBlocking {
-        val (manager, client, reindexMonitor) = setupTestEnvironment()
+        val (manager, blockService, reindexMonitor) = setupTestEnvironment()
         coEvery { reindexMonitor.onReindex(0, 42, any(), any()) } returns Unit
+        val block = Block(
+            id = 42,
+            hash = "0x",
+            timestamp = 0,
+            parentHash = "0x",
+            status = BlockStatus.SUCCESS
+        )
+        coEvery { blockService.getLastBlock() } returns block
 
         val blockchainClientFactory: EthereumClientFactory = mockk()
         every { blockchainClientFactory.createReindexClient() } returns mockk()
@@ -95,7 +102,7 @@ class EthereumBlockReindexTaskHandlerTest {
         )
         task.runLongTask(null, param.toJson()).collect()
 
-        coVerify(exactly = 2) { client.getLastBlockNumber() }
+        coVerify(exactly = 1) { blockService.getLastBlock() }
         coVerify(exactly = 1) { reindexMonitor.onReindex(0, 42, 8.0, "reindex") }
     }
 }
