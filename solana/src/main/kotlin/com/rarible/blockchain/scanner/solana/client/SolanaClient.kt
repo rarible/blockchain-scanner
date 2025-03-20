@@ -83,9 +83,8 @@ class SolanaClient(
             error("Can't find root block")
         } else {
             if (root.hash != root.parentHash) {
-                logger.error("Root's parent hash != hash")
+                logger.warn("Root's parent hash != hash")
             }
-
             root
         }
     }

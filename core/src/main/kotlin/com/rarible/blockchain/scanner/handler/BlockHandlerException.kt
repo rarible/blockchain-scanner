@@ -8,7 +8,7 @@ suspend fun <T> withExceptionLogging(actionName: String, block: suspend () -> T)
     return try {
         block()
     } catch (e: Exception) {
-        logger.error("Failed to '$actionName'", e)
+        logger.warn("Failed to '$actionName'", e)
         throw e
     }
 }

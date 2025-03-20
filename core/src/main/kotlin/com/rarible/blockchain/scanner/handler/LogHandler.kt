@@ -287,7 +287,7 @@ class LogHandler<
                             )
                             throw e
                         }
-                        logger.error("Failed to handle block {} by descriptor {}: ", event.number, descriptor.id, e)
+                        logger.warn("Failed to handle block {} by descriptor {}: ", event.number, descriptor.id, e)
                         SubscriberResultFail(event.number, descriptor.id, e.message ?: "Unknown error")
                     }
                 }

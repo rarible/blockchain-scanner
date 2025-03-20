@@ -60,7 +60,7 @@ class HyperBlockArchiver(
                         BlockNotFoundException("Block $blockNumber not found in S3 storage", e)
                     }
                     else -> {
-                        logger.error("Failed to download or process block $blockNumber", e)
+                        logger.warn("Failed to download or process block $blockNumber", e)
                         BlockProcessingException("Failed to download or process block $blockNumber", e)
                     }
                 }

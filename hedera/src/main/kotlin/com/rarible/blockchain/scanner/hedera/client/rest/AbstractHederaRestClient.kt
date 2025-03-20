@@ -105,7 +105,7 @@ abstract class AbstractHederaRestClient(
             requestType: String
         ): Nothing {
             val truncatedResponseBody = responseBody.truncate(maxErrorBodyLogLength)
-            logger.error("Failed hedera request for $method $requestType. Response: ${response.statusCode()} [$truncatedResponseBody]")
+            logger.warn("Failed hedera request for $method $requestType. Response: ${response.statusCode()} [$truncatedResponseBody]")
             throw response.createExceptionAndAwait()
         }
     }

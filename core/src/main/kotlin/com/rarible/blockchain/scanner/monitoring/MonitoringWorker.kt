@@ -41,7 +41,7 @@ class MonitoringWorker(
             try {
                 it.refresh()
             } catch (e: Exception) {
-                logger.error("Unable to update metrics for monitor [{}]", it, e)
+                logger.warn("Unable to update metrics for monitor [{}]", it, e)
             }
         }
         logger.debug("All monitors updated, next iteration starts in {}", pollingPeriod)

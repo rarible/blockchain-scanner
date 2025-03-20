@@ -118,7 +118,7 @@ open class DefaultEthereumLogRepository(
             try {
                 indexOps.ensureIndex(it)
             } catch (ex: Throwable) {
-                logger.error("Can't creating index: collection=$collection, index=$it", ex)
+                logger.warn("Can't creating index: collection=$collection, index=$it", ex)
             }
         }
     }
