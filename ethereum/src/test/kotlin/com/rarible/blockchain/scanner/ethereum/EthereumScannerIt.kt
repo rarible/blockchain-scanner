@@ -1,22 +1,40 @@
 package com.rarible.blockchain.scanner.ethereum
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.model.EthereumBlockStatus
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.ReversedEthereumLogRecord
+import com.rarible.blockchain.scanner.ethereum.task.EthereumBlockReindexTaskHandler
+import com.rarible.blockchain.scanner.ethereum.task.EthereumReindexParam
 import com.rarible.blockchain.scanner.ethereum.test.AbstractIntegrationTest
 import com.rarible.blockchain.scanner.ethereum.test.IntegrationTest
+import com.rarible.blockchain.scanner.ethereum.test.data.ethBlock
+import com.rarible.blockchain.scanner.ethereum.test.data.ethLog
+import com.rarible.blockchain.scanner.ethereum.test.data.ethTransaction
 import com.rarible.blockchain.scanner.ethereum.test.data.randomAddress
+import com.rarible.blockchain.scanner.ethereum.test.data.randomBlockHash
 import com.rarible.blockchain.scanner.ethereum.test.data.randomPositiveBigInt
+import com.rarible.blockchain.scanner.ethereum.test.data.randomString
+import com.rarible.blockchain.scanner.ethereum.test.data.randomWord
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumLogData
 import com.rarible.blockchain.scanner.ethereum.test.model.TestEthereumTransactionRecord
+import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestSimpleLogSubscriber
+import com.rarible.blockchain.scanner.framework.data.FullBlock
 import com.rarible.blockchain.scanner.handler.TypedBlockRange
+import com.rarible.blockchain.scanner.reindex.BlockRange
 import com.rarible.blockchain.scanner.util.BlockRanges
 import com.rarible.contracts.test.erc20.TestERC20
 import com.rarible.contracts.test.erc20.TransferEvent
+import com.rarible.core.common.nowMillis
 import com.rarible.core.test.wait.Wait
 import io.daonomic.rpc.domain.Word
+import io.mockk.coEvery
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -41,6 +59,12 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
     @Autowired
     private lateinit var blockService: BlockService
+
+    @Autowired
+    private lateinit var reindexTaskHandler: EthereumBlockReindexTaskHandler
+
+    @Autowired
+    private lateinit var jacksonObjectMapper: ObjectMapper
 
     @BeforeEach
     fun beforeEach() {
@@ -159,7 +183,8 @@ class EthereumScannerIt : AbstractIntegrationTest() {
         ).collect { }
 
         Wait.waitAssert(timeout = Duration.ofSeconds(30)) {
-            val events = testEthereumLogEventPublisher.publishedLogRecords.map { it.record as ReversedEthereumLogRecord }
+            val events =
+                testEthereumLogEventPublisher.publishedLogRecords.map { it.record as ReversedEthereumLogRecord }
             assertThat(events).hasSize(2)
 
             // We still have a single LogRecord in db
@@ -168,6 +193,102 @@ class EthereumScannerIt : AbstractIntegrationTest() {
 
             // We use random id in the TestTransferSubscriber, we must be sure that id from logEvents are the same
             assertThat(events.first().id).isEqualTo(events.last().id)
+        }
+    }
+
+    @Test
+    fun `reindex - use reconciliation client`() = runBlocking<Unit> {
+        val reconciliationClient = testEthereumClientFactory.createReconciliationClient()
+
+        val simpleTopic = TestSimpleLogSubscriber.topic
+        val descriptor = TestSimpleLogSubscriber.getDescriptor()
+
+        val blockHash = randomBlockHash()
+        val blockNumber = 10
+        val logIndex = 1
+        val ethBlock = ethBlock(
+            number = blockNumber, hash = blockHash, logs = listOf(
+                EthereumBlockchainLog(
+                    ethLog = ethLog(
+                        transactionHash = randomWord(),
+                        topic = simpleTopic,
+                        address = randomAddress(),
+                        logIndex = logIndex,
+                        blockHash = blockHash,
+                        blockNumber = blockNumber.toBigInteger(),
+                    ),
+                    ethTransaction = ethTransaction(
+                        transactionHash = randomWord(),
+                        blockHash = blockHash,
+                        blockNumber = blockNumber.toBigInteger(),
+                    ),
+                    index = logIndex,
+                    total = 1
+                )
+            )
+        )
+        val block = EthereumBlockchainBlock(ethBlock)
+
+        val parentBlock = EthereumBlockchainBlock(
+            number = blockNumber - 1L,
+            hash = block.parentHash.toString(),
+            parentHash = randomString(),
+            timestamp = block.timestamp - 1000L,
+            receivedTime = nowMillis(),
+            ethBlock = ethBlock(number = blockNumber - 1, block.ethBlock.parentHash())
+        )
+        val log = EthereumBlockchainLog(
+            ethLog = ethLog(
+                transactionHash = ethBlock.transactions().head().hash(),
+                topic = simpleTopic,
+                address = randomAddress(),
+                logIndex = logIndex,
+                blockHash = blockHash
+            ),
+            ethTransaction = ethTransaction(
+                transactionHash = ethBlock.transactions().head().hash(),
+                blockHash = blockHash,
+                blockNumber = blockNumber.toBigInteger()
+            ),
+            index = 0,
+            total = 1,
+        )
+
+        coEvery {
+            reconciliationClient.getBlock(blockNumber.toLong())
+        } returns EthereumBlockchainBlock(ethBlock)
+        coEvery {
+            reconciliationClient.getBlock(blockNumber - 1L)
+        } returns parentBlock
+        coEvery {
+            reconciliationClient.getBlocks(listOf(blockNumber.toLong()))
+        } returns listOf(block)
+        coEvery {
+            reconciliationClient.getLastBlockNumber()
+        } returns blockNumber + 100L
+        coEvery {
+            reconciliationClient.getBlockLogs(match { it.ethTopic == descriptor.ethTopic }, listOf(block), true)
+        } returns flowOf(FullBlock(block, listOf(log)))
+        coEvery {
+            reconciliationClient.getBlockLogs(match { it.ethTopic != descriptor.ethTopic }, listOf(block), true)
+        } returns flowOf(FullBlock(block, emptyList()))
+
+        val param = jacksonObjectMapper.writeValueAsString(
+            EthereumReindexParam(
+                range = BlockRange(blockNumber.toLong(), blockNumber.toLong(), 1),
+                useReconciliationRpcNode = true,
+                addresses = emptyList(),
+                topics = listOf(simpleTopic),
+                publishEvents = true,
+            )
+        )
+        val reindexedBlock = reindexTaskHandler.runLongTask(null, param).toList()
+        assertThat(reindexedBlock).containsExactly(blockNumber.toLong())
+
+        Wait.waitAssert(timeout = Duration.ofSeconds(30)) {
+            val events =
+                testEthereumLogEventPublisher.publishedLogRecords.map { it.record as ReversedEthereumLogRecord }
+            assertThat(events).hasSize(1)
         }
     }
 

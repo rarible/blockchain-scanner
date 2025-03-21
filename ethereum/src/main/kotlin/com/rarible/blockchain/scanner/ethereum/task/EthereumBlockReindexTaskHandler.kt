@@ -4,11 +4,11 @@ import com.rarible.blockchain.scanner.BlockchainScannerManager
 import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
-import com.rarible.blockchain.scanner.ethereum.client.EthereumClientFactory
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
 import com.rarible.blockchain.scanner.ethereum.repository.EthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.subscriber.EthereumLogEventSubscriber
+import com.rarible.blockchain.scanner.framework.client.BlockchainClientFactory
 import com.rarible.blockchain.scanner.framework.model.TransactionRecord
 import com.rarible.blockchain.scanner.framework.subscriber.LogEventSubscriber
 import com.rarible.blockchain.scanner.reindex.BlockRange
@@ -18,15 +18,13 @@ import com.rarible.blockchain.scanner.reindex.ReindexParam
 import com.rarible.blockchain.scanner.reindex.SubscriberFilter
 import com.rarible.blockchain.scanner.task.BlockReindexTaskHandler
 import io.daonomic.rpc.domain.Word
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.springframework.stereotype.Component
 import scalether.domain.Address
 
 @Component
-@OptIn(ExperimentalCoroutinesApi::class)
 class EthereumBlockReindexTaskHandler(
     manager: EthereumScannerManager,
-    blockchainClientFactory: EthereumClientFactory,
+    blockchainClientFactory: BlockchainClientFactory<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor>,
 ) : BlockReindexTaskHandler<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumLogRecord, TransactionRecord, EthereumDescriptor, EthereumLogRepository, EthereumReindexParam>(
     BlockchainScannerManager(blockchainClientFactory.createReindexClient(), manager)
 ) {

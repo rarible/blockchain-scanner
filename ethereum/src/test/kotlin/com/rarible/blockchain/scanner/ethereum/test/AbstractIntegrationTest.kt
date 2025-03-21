@@ -3,6 +3,8 @@ package com.rarible.blockchain.scanner.ethereum.test
 import com.rarible.blockchain.scanner.block.Block
 import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.block.BlockService
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.model.EthereumLogRecord
@@ -10,6 +12,7 @@ import com.rarible.blockchain.scanner.ethereum.service.EthereumLogService
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.framework.client.BlockchainClientFactory
 import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
 import com.rarible.blockchain.scanner.framework.data.TransactionRecordEvent
 import com.rarible.core.test.wait.BlockingWait
@@ -77,6 +80,10 @@ abstract class AbstractIntegrationTest {
     @Autowired
     @Qualifier("testEthereumTransactionEventPublisher")
     lateinit var testEthereumTransactionEventPublisher: TestEthereumTransactionRecordEventPublisher
+
+    @Autowired
+    @Qualifier("testEthereumClientFactory")
+    lateinit var testEthereumClientFactory: BlockchainClientFactory<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor>
 
     @Autowired
     lateinit var testBidSubscriber: TestBidSubscriber
