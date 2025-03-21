@@ -41,7 +41,7 @@ class EthereumClientFactory(
     private fun createHyperArchiveEthereumClient(): HyperArchiveEthereumClient {
         // Create S3AsyncClient with credentials from properties
         val s3Client = S3AsyncClient.builder()
-            .region(Region.US_EAST_1)
+            .region(Region.AP_NORTHEAST_1)
             .credentialsProvider(
                 if (properties.hyperArchive.s3.accessKeyId.isNotBlank() &&
                     properties.hyperArchive.s3.secretAccessKey.isNotBlank()
