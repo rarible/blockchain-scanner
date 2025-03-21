@@ -69,7 +69,7 @@ class HyperBlockArchiver(
 
     private fun formatObjectKey(blockNumber: Long): String {
         val thousands = blockNumber / 1_000
-        val topLevelDir = "${thousands * 1000}"
+        val topLevelDir = blockNumber / 1_000_000
         val secondLevelDir = thousands * 1000
         return "$topLevelDir/$secondLevelDir/$blockNumber.rmp.lz4"
     }
