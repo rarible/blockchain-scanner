@@ -22,6 +22,7 @@ import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
+import software.amazon.awssdk.services.s3.model.RequestPayer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.math.BigInteger
@@ -44,6 +45,7 @@ class HyperBlockArchiver(
         val request = GetObjectRequest.builder()
             .bucket(bucketName)
             .key(objectKey)
+            .requestPayer(RequestPayer.REQUESTER)
             .build()
 
         return Mono.fromFuture(s3Client.getObject(request, AsyncResponseTransformer.toBytes()))
