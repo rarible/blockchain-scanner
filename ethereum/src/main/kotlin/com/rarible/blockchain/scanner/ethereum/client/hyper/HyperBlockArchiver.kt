@@ -58,12 +58,12 @@ class HyperBlockArchiver(
             .onErrorMap { e ->
                 when (e) {
                     is NoSuchKeyException -> {
-                        logger.warn("Block $blockNumber not found in S3 storage")
-                        BlockNotFoundException("Block $blockNumber not found in S3 storage", e)
+                        logger.warn("Block $blockNumber not found in S3 storage (object key: $objectKey)")
+                        BlockNotFoundException("Block $blockNumber not found in S3 storage (object key: $objectKey)", e)
                     }
                     else -> {
-                        logger.warn("Failed to download or process block $blockNumber", e)
-                        BlockProcessingException("Failed to download or process block $blockNumber", e)
+                        logger.warn("Failed to download or process block $blockNumber (object key: $objectKey)", e)
+                        BlockProcessingException("Failed to download or process block $blockNumber (object key: $objectKey)", e)
                     }
                 }
             }.awaitFirst()
