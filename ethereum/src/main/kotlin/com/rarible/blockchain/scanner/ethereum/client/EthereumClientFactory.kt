@@ -56,7 +56,6 @@ class EthereumClientFactory(
                     null
                 }
             )
-            .endpointOverride(properties.hyperArchive.s3.uri)
             .build()
 
         val hyperBlockArchiver = HyperBlockArchiver(s3Client, properties.hyperArchive)

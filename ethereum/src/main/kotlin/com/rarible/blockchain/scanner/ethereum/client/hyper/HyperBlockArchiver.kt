@@ -39,7 +39,7 @@ class HyperBlockArchiver(
 
     suspend fun downloadBlock(blockNumber: BigInteger): HyperBlock {
         val objectKey = formatObjectKey(blockNumber.toLong())
-        val bucketName = hyperProperties.s3.uri.path
+        val bucketName = hyperProperties.s3.uri.host
 
         val request = GetObjectRequest.builder()
             .bucket(bucketName)
