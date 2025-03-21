@@ -32,7 +32,7 @@ class EthereumClientFactory(
 
     @ExperimentalCoroutinesApi
     override fun createReindexClient(): BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
-        return if (properties.hyperArchive.enabled) createHyperArchiveEthereumClient() else createReconciliationClient()
+        return if (properties.hyperArchive.enabled) createHyperArchiveEthereumClient() else createMainClient()
     }
 
     @ExperimentalCoroutinesApi
