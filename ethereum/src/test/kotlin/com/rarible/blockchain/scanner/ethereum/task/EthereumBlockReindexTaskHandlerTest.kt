@@ -5,6 +5,7 @@ import com.rarible.blockchain.scanner.block.BlockService
 import com.rarible.blockchain.scanner.block.BlockStatus
 import com.rarible.blockchain.scanner.ethereum.EthereumScannerManager
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
+import com.rarible.blockchain.scanner.ethereum.client.EthereumClient
 import com.rarible.blockchain.scanner.ethereum.client.EthereumClientFactory
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
 import com.rarible.blockchain.scanner.monitoring.ReindexMonitor
@@ -57,8 +58,14 @@ class EthereumBlockReindexTaskHandlerTest {
         val (manager, blockService, reindexMonitor) = setupTestEnvironment()
         coEvery { reindexMonitor.onReindex(0, 9, any(), any()) } returns Unit
 
+        val reindexClient = mockk<EthereumClient> {
+            coEvery { getLastBlockNumber() } returns 42
+            coEvery { getBlocks(any()) } returns emptyList()
+        }
+
         val blockchainClientFactory: EthereumClientFactory = mockk()
-        every { blockchainClientFactory.createReindexClient() } returns mockk()
+        every { blockchainClientFactory.createReindexClient() } returns reindexClient
+        every { blockchainClientFactory.createReconciliationClient() } returns reindexClient
         val task = EthereumBlockReindexTaskHandler(
             manager = manager,
             blockchainClientFactory = blockchainClientFactory,
@@ -88,8 +95,14 @@ class EthereumBlockReindexTaskHandlerTest {
         )
         coEvery { blockService.getLastBlock() } returns block
 
+        val reindexClient = mockk<EthereumClient> {
+            coEvery { getLastBlockNumber() } returns 42
+            coEvery { getBlocks(any()) } returns emptyList()
+        }
+
         val blockchainClientFactory: EthereumClientFactory = mockk()
-        every { blockchainClientFactory.createReindexClient() } returns mockk()
+        every { blockchainClientFactory.createReindexClient() } returns reindexClient
+        every { blockchainClientFactory.createReconciliationClient() } returns mockk()
         val task = EthereumBlockReindexTaskHandler(
             manager = manager,
             blockchainClientFactory = blockchainClientFactory,

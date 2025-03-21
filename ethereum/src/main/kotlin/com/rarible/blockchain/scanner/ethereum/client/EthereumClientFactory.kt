@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client
 
+import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.ethereum.client.hyper.HyperArchiveEthereumClient
 import com.rarible.blockchain.scanner.ethereum.client.hyper.HyperBlockArchiverAdapter
 import com.rarible.blockchain.scanner.ethereum.client.hyper.CachedHyperBlockArchiver
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 class EthereumClientFactory(
     private val mainEthereum: MonoEthereum,
     private val reconciliationEthereum: MonoEthereum,
+    private val blockRepository: BlockRepository,
     private val properties: EthereumScannerProperties,
 ) : BlockchainClientFactory<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
 
@@ -60,6 +62,6 @@ class EthereumClientFactory(
         val hyperBlockArchiver = HyperBlockArchiver(s3Client, properties.hyperArchive)
         val cachedHyperBlockArchiver = CachedHyperBlockArchiver(hyperBlockArchiver, properties.hyperArchive)
         val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(cachedHyperBlockArchiver)
-        return HyperArchiveEthereumClient(hyperBlockArchiverAdapter, properties)
+        return HyperArchiveEthereumClient(hyperBlockArchiverAdapter, blockRepository, properties)
     }
 }

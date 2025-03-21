@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client.hyper
 
+import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.configuration.ScanProperties
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
@@ -30,6 +31,7 @@ class HyperArchiveEthereumClientTest {
     private val properties = mockk<EthereumScannerProperties>()
     private val scanProperties = mockk<ScanProperties>()
     private val logRepository = mockk<EthereumLogRepository>()
+    private val blockRepository = mockk<BlockRepository>()
     private lateinit var client: HyperArchiveEthereumClient
 
     @BeforeEach
@@ -44,7 +46,7 @@ class HyperArchiveEthereumClientTest {
 
         coEvery { hyperBlockArchiverAdapter.getLogsByBlockRange(any(), any()) } returns emptyList()
 
-        client = HyperArchiveEthereumClient(hyperBlockArchiverAdapter, properties)
+        client = HyperArchiveEthereumClient(hyperBlockArchiverAdapter, blockRepository, properties)
     }
 
     @Test
@@ -92,10 +94,12 @@ class HyperArchiveEthereumClientTest {
     }
 
     @Test
-    fun `should throw exception for getLastBlockNumber`() {
-        assertThrows<UnsupportedOperationException> {
-            runBlocking { client.getLastBlockNumber() }
+    fun `getLastBlockNumber from block repository`() = runBlocking<Unit> {
+        coEvery { blockRepository.getLastBlock() } returns mockk {
+            every { id } returns 123L
         }
+        val latest = client.getLastBlockNumber()
+        assertThat(latest).isEqualTo(123L)
     }
 
     @Test

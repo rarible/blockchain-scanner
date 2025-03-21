@@ -1,5 +1,6 @@
 package com.rarible.blockchain.scanner.ethereum.client.hyper
 
+import com.rarible.blockchain.scanner.block.BlockRepository
 import com.rarible.blockchain.scanner.client.AbstractRetryableClient
 import com.rarible.blockchain.scanner.client.NonRetryableBlockchainClientException
 import com.rarible.blockchain.scanner.configuration.ClientRetryPolicyProperties
@@ -33,6 +34,7 @@ import java.math.BigInteger
 @ExperimentalCoroutinesApi
 class HyperArchiveEthereumClient(
     private val hyperBlockArchiverAdapter: HyperBlockArchiverAdapter,
+    private val blockRepository: BlockRepository,
     private val properties: EthereumScannerProperties,
 ) : EthereumBlockchainClient, AbstractRetryableClient(ClientRetryPolicyProperties(attempts = 0)) {
 
@@ -41,7 +43,7 @@ class HyperArchiveEthereumClient(
     }
 
     override suspend fun getLastBlockNumber(): Long {
-        throw UnsupportedOperationException("getLastBlockNumber is not supported for HyperArchiveEthereumClient")
+        return blockRepository.getLastBlock()?.id ?: properties.scan.firstAvailableBlock
     }
 
     override val newBlocks: Flow<EthereumBlockchainBlock> = emptyFlow()
