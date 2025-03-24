@@ -2,16 +2,23 @@ package com.rarible.blockchain.scanner.ethereum.test
 
 import com.github.cloudyrock.spring.v5.EnableMongock
 import com.rarible.blockchain.scanner.ethereum.EnableEthereumScanner
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainBlock
 import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainClient
+import com.rarible.blockchain.scanner.ethereum.client.EthereumBlockchainLog
 import com.rarible.blockchain.scanner.ethereum.configuration.EthereumScannerProperties
+import com.rarible.blockchain.scanner.ethereum.model.EthereumDescriptor
 import com.rarible.blockchain.scanner.ethereum.repository.DefaultEthereumLogRepository
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestBidSubscriber
+import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestSimpleLogSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransactionSubscriber
 import com.rarible.blockchain.scanner.ethereum.test.subscriber.TestTransferSubscriber
+import com.rarible.blockchain.scanner.framework.client.BlockchainClient
+import com.rarible.blockchain.scanner.framework.client.BlockchainClientFactory
 import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.mockk.mockk
 import io.mockk.spyk
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -60,6 +67,9 @@ class TestEthereumScannerConfiguration {
     }
 
     @Bean
+    fun testSimpleLogSubscriber() = TestSimpleLogSubscriber
+
+    @Bean
     fun testBidSubscriber(testBidRepository: DefaultEthereumLogRepository): TestBidSubscriber {
         return TestBidSubscriber(testBidRepository)
     }
@@ -83,6 +93,24 @@ class TestEthereumScannerConfiguration {
     @Qualifier("testEthereumBlockchainClient")
     fun testEthereumBlockchainClient(originalClient: EthereumBlockchainClient): EthereumBlockchainClient =
         spyk(TestEthereumBlockchainClient(originalClient))
+
+    @Bean
+    @Primary
+    @Qualifier("testEthereumClientFactory")
+    fun testEthereumClientFactory(
+        @Qualifier("testEthereumBlockchainClient") testEthereumBlockchainClient: TestEthereumBlockchainClient
+    ): BlockchainClientFactory<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
+        val reconciliationClient = mockk<BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor>>()
+        return object : BlockchainClientFactory<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
+            override fun createMainClient(): BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
+                return testEthereumBlockchainClient
+            }
+
+            override fun createReconciliationClient(): BlockchainClient<EthereumBlockchainBlock, EthereumBlockchainLog, EthereumDescriptor> {
+                return reconciliationClient
+            }
+        }
+    }
 
     @Bean
     @Primary
