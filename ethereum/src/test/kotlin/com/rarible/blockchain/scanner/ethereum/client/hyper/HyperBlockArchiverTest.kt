@@ -3,9 +3,12 @@ package com.rarible.blockchain.scanner.ethereum.client.hyper
 import com.rarible.blockchain.scanner.ethereum.configuration.HyperArchiveProperties
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -22,7 +25,6 @@ class HyperBlockArchiverTest {
     private val hyperBlockArchiverAdapter = HyperBlockArchiverAdapter(cachedHyperBlockArchiver)
 
     private val archivedBlock1 = javaClass.getResourceAsStream("/hyper/302292.rmp.lz4").use { it!!.readBytes() }
-    private val archivedBlock2 = javaClass.getResourceAsStream("/hyper/302293.rmp.lz4").use { it!!.readBytes() }
     private val archivedBlock3 = javaClass.getResourceAsStream("/hyper/302788.rmp.lz4").use { it!!.readBytes() }
 
     @Test
@@ -33,6 +35,24 @@ class HyperBlockArchiverTest {
 
         val ethBlock = hyperBlockArchiverAdapter.getBlock(BigInteger.ONE)
         assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(302292))
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "1, '0/0/1.rmp.lz4'",
+        "1000, '0/0/1000.rmp.lz4'",
+        "1001, '0/1000/1001.rmp.lz4'",
+    )
+    fun `block number is correctly mapped to S3 key`(blockNumber: Int, expectedKey: String) = runBlocking<Unit> {
+        every {
+            s3Client.getObject(any<GetObjectRequest>(), any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>())
+        } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlock1))
+
+        val ethBlock = hyperBlockArchiverAdapter.getBlock(blockNumber.toBigInteger())
+        assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(302292))
+        verify {
+            s3Client.getObject(match<GetObjectRequest> { it.key() == expectedKey }, any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>())
+        }
     }
 
     @Test
