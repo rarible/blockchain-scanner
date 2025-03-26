@@ -194,7 +194,7 @@ data class TransactionData(
 }
 
 interface CommonTransaction {
-    val chainId: ByteArray
+    val chainId: ByteArray?
     val nonce: ByteArray
     val to: ByteArray?
     val value: ByteArray
@@ -205,7 +205,7 @@ interface CommonTransaction {
 
 @Suppress("ArrayInDataClass")
 data class LegacyTransaction(
-    override val chainId: ByteArray,
+    override val chainId: ByteArray? = null,
     override val nonce: ByteArray,
     override val to: ByteArray?,
     override val value: ByteArray,
@@ -216,7 +216,7 @@ data class LegacyTransaction(
 
 @Suppress("ArrayInDataClass")
 data class Eip1559Transaction(
-    override val chainId: ByteArray,
+    override val chainId: ByteArray? = null,
     override val nonce: ByteArray,
     override val to: ByteArray?,
     override val value: ByteArray,
