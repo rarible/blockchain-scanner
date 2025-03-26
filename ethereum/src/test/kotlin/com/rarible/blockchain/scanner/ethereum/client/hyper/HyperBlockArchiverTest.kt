@@ -28,6 +28,7 @@ class HyperBlockArchiverTest {
     private val archivedBlock1 = javaClass.getResourceAsStream("/hyper/302292.rmp.lz4").use { it!!.readBytes() }
     private val archivedBlock3 = javaClass.getResourceAsStream("/hyper/302788.rmp.lz4").use { it!!.readBytes() }
     private val archivedBlockNoChainId = javaClass.getResourceAsStream("/hyper/5732.rmp.lz4").use { it!!.readBytes() }
+    private val archivedBlockEip2930Transaction = javaClass.getResourceAsStream("/hyper/336690.rmp.lz4").use { it!!.readBytes() }
 
     @Test
     fun `read big block - ok`() = runBlocking<Unit> {
@@ -196,5 +197,35 @@ class HyperBlockArchiverTest {
         assertThat(secondTx.nonce()).isEqualTo(BigInteger.valueOf(1))
         assertThat(secondTx.gas()).isEqualTo(BigInteger.valueOf(0x0000000000005208L))
         assertThat(secondTx.to().toString().lowercase()).isEqualTo("0x3fab184622dc19b6109349b94811493bf2a45362")
+    }
+
+    @Test
+    fun `supports EIP2930 transactions`() = runBlocking<Unit> {
+        every {
+            s3Client.getObject(any<GetObjectRequest>(), any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>())
+        } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlockEip2930Transaction))
+
+        val ethBlock = hyperBlockArchiverAdapter.getBlock(BigInteger.ONE)
+
+        // Verify block header attributes
+        assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(0x0000000000052332))
+        assertThat(ethBlock.hash().toString()).isEqualTo("0x352e7c5b059d30063c267ad68f5fe64c627cb2c3e729c37e3bfa2f7f6046c728")
+        assertThat(ethBlock.parentHash().toString()).isEqualTo("0x4a923cd44817b9af9ea51c5112745937478e73e63dac749b75517d9090607ffe")
+        assertThat(ethBlock.timestamp()).isEqualTo(BigInteger.valueOf(0x0000000067bdf20e))
+        assertThat(ethBlock.gasLimit()).isEqualTo(BigInteger.valueOf(0x00000000001e8480))
+        assertThat(ethBlock.gasUsed()).isEqualTo(BigInteger.valueOf(0x00000000000b54b9))
+
+        // Verify transactions count
+        assertThat(ethBlock.transactions().size()).isEqualTo(5)
+
+        // Verify first transaction
+        val firstTx = ethBlock.transactions().apply(0)
+        assertThat(firstTx.hash().toString()).isEqualTo("0x1d3061191770028da79f3bf6668db5e2a83df0679dde167eaad4ff5f96af8ba1")
+        assertThat(firstTx.nonce()).isEqualTo(BigInteger.valueOf(0))
+        assertThat(firstTx.gas()).isEqualTo(BigInteger.valueOf(0x00000000000f4240))
+        assertThat(firstTx.gasPrice()).isEqualTo(BigInteger.valueOf(0x000000000000000000000001e3730c5d))
+        assertThat(firstTx.to().toString().lowercase()).isEqualTo("0x5fbdb2315678afecb367f032d93f642f64180aa3")
+        assertThat(firstTx.value()).isEqualTo(BigInteger.valueOf(0))
+        assertThat(firstTx.input().toString()).isEqualTo("0x40c10f19000000000000000000000000bddbd3a43f2474147c48ca56dc849edb981145a00000000000000000000000000000000000000000000000487a9a304539440000")
     }
 }
