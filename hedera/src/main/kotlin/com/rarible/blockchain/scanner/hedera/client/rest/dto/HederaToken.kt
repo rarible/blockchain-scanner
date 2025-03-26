@@ -42,6 +42,7 @@ data class CustomFees(
 data class CustomRoyaltyFee(
     val collectorAccountId: String,
     val amount: Fee,
+    val fallbackFee: FallbackFee?
 )
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
@@ -49,4 +50,11 @@ data class CustomRoyaltyFee(
 data class Fee(
     val numerator: Long,
     val denominator: Long,
+)
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class FallbackFee(
+    val amount: Long, // HBAR * 1e-8
+    val denominatingTokenId: String?,
 )

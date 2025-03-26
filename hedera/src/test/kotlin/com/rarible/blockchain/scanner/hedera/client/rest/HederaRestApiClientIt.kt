@@ -2,6 +2,7 @@ package com.rarible.blockchain.scanner.hedera.client.rest
 
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.CustomFees
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.CustomRoyaltyFee
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.FallbackFee
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.Fee
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
@@ -143,6 +144,33 @@ class HederaRestApiClientIt {
                         amount = Fee(
                             numerator = 50,
                             denominator = 1000
+                        ),
+                        fallbackFee = null
+                    )
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `get token with fallback fee - ok`() = runBlocking<Unit> {
+        val tokenId = "0.0.8540648"
+        val token = client.getToken(tokenId)
+        logger.info("Found token: {}", token)
+
+        assertThat(token.customFees).isEqualTo(
+            CustomFees(
+                createdTimestamp = "1742241810.111772387",
+                royaltyFees = listOf(
+                    CustomRoyaltyFee(
+                        collectorAccountId = "0.0.7777433",
+                        amount = Fee(
+                            numerator = 783,
+                            denominator = 10000
+                        ),
+                        fallbackFee = FallbackFee(
+                            amount = 783000000,
+                            denominatingTokenId = null
                         )
                     )
                 )
