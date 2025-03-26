@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import scalether.domain.Address
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -26,6 +27,7 @@ class HyperBlockArchiverTest {
 
     private val archivedBlock1 = javaClass.getResourceAsStream("/hyper/302292.rmp.lz4").use { it!!.readBytes() }
     private val archivedBlock3 = javaClass.getResourceAsStream("/hyper/302788.rmp.lz4").use { it!!.readBytes() }
+    private val archivedBlockNoChainId = javaClass.getResourceAsStream("/hyper/5732.rmp.lz4").use { it!!.readBytes() }
 
     @Test
     fun `read big block - ok`() = runBlocking<Unit> {
@@ -157,5 +159,42 @@ class HyperBlockArchiverTest {
         val lastLog = logs.last()
         assertThat(lastLog.logIndex()).isEqualTo(BigInteger.valueOf(15))
         assertThat(lastLog.address().toString().lowercase()).isEqualTo("0x5555555555555555555555555555555555555555")
+    }
+
+    @Test
+    fun `can read block with transaction without chain ID`() = runBlocking<Unit> {
+        every {
+            s3Client.getObject(any<GetObjectRequest>(), any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>())
+        } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArrayUnsafe(mockk<GetObjectResponse>(), archivedBlockNoChainId))
+
+        val ethBlock = hyperBlockArchiverAdapter.getBlock(BigInteger.ONE)
+
+        // Verify block header attributes
+        assertThat(ethBlock.number()).isEqualTo(BigInteger.valueOf(0x1664))
+        assertThat(ethBlock.hash().toString()).isEqualTo("0xdf907704273c1307016bedbee720cdb5bca6a7b0c4edb0f1dbecf59c489d5cc0")
+        assertThat(ethBlock.parentHash().toString()).isEqualTo("0xf760e7d1949096f6b19479a11d06ba2ac33aac9509d227e0516d6474c63d628f")
+        assertThat(ethBlock.timestamp()).isEqualTo(BigInteger.valueOf(0x0000000067b42b86L))
+        assertThat(ethBlock.gasLimit()).isEqualTo(BigInteger.valueOf(0x00000000001e8480L))
+        assertThat(ethBlock.gasUsed()).isEqualTo(BigInteger.valueOf(0x0000000000015c31L))
+
+        // Verify transactions count
+        assertThat(ethBlock.transactions().size()).isEqualTo(2)
+
+        // Verify first transaction
+        val firstTx = ethBlock.transactions().apply(0)
+        assertThat(firstTx.hash().toString()).isEqualTo("0x2222222222222222222222222222222222222222222222222222222222222222")
+        assertThat(firstTx.nonce()).isEqualTo(BigInteger.valueOf(0))
+        assertThat(firstTx.gas()).isEqualTo(BigInteger.valueOf(0x00000000000186a0))
+        assertThat(firstTx.gasPrice()).isEqualTo(BigInteger.valueOf(0x0000000000000000000000174876e800L))
+        assertThat(firstTx.to()).isEqualTo(Address.ZERO())
+        assertThat(firstTx.value()).isEqualTo(BigInteger.valueOf(0))
+        assertThat(firstTx.input().toString()).isEqualTo("0x604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3")
+
+        // Verify second transaction
+        val secondTx = ethBlock.transactions().apply(1)
+        assertThat(secondTx.hash().toString()).isEqualTo("0x16e28a7275632633d6a0a0f9f3bfb0b9d964d97b5a5130d4f619f59f4ba5603a")
+        assertThat(secondTx.nonce()).isEqualTo(BigInteger.valueOf(1))
+        assertThat(secondTx.gas()).isEqualTo(BigInteger.valueOf(0x0000000000005208L))
+        assertThat(secondTx.to().toString().lowercase()).isEqualTo("0x3fab184622dc19b6109349b94811493bf2a45362")
     }
 }
