@@ -52,8 +52,19 @@ class HyperArchiveEthereumClient(
         coroutineScope { numbers.map { asyncWithTraceId(context = NonCancellable) { getBlock(it) } }.awaitAll() }
 
     override suspend fun getBlock(number: Long): EthereumBlockchainBlock {
-        val block = hyperBlockArchiverAdapter.getBlock(BigInteger.valueOf(number))
+        val block = retrieveBlock(BigInteger.valueOf(number))
         return EthereumBlockchainBlock(ReceivedBlock(block))
+    }
+
+    private suspend fun retrieveBlock(
+        blockNumber: BigInteger,
+    ): Block<Transaction> {
+        val block = try {
+            hyperBlockArchiverAdapter.getBlock(blockNumber)
+        } catch (e: Exception) {
+            throw HyperArchiveEthereumClientException(fromBlock = blockNumber, toBlock = null, e)
+        }
+        return block
     }
 
     override suspend fun getFirstAvailableBlock(): EthereumBlockchainBlock {
@@ -94,7 +105,7 @@ class HyperArchiveEthereumClient(
             }.entries.map { (blockNumber, blockLogs) ->
                 asyncWithTraceId(context = NonCancellable) {
                     val ethFullBlock = blocksMap.getOrElse(blockNumber) {
-                        hyperBlockArchiverAdapter.getBlock(blockNumber)
+                        retrieveBlock(blockNumber)
                     }
                     createFullBlock(ethFullBlock, blockLogs)
                 }
@@ -105,7 +116,11 @@ class HyperArchiveEthereumClient(
     private suspend fun getLogsByRange(descriptor: EthereumDescriptor, range: LongRange): List<Log> {
         val fromBlock = BigInteger.valueOf(range.first)
         val toBlock = BigInteger.valueOf(range.last)
-        val logs = hyperBlockArchiverAdapter.getLogsByBlockRange(fromBlock, toBlock)
+        val logs = try {
+            hyperBlockArchiverAdapter.getLogsByBlockRange(fromBlock, toBlock)
+        } catch (e: Exception) {
+            throw HyperArchiveEthereumClientException(fromBlock = fromBlock, toBlock = toBlock, cause = e)
+        }
 
         return logs.filter { log ->
             val matchesToTopic = log.topics().head().equals(descriptor.ethTopic)
@@ -143,7 +158,7 @@ class HyperArchiveEthereumClient(
                 val transaction = transactions[ethLog.transactionHash()]
                     ?: throw NonRetryableBlockchainClientException(
                         "Transaction #${ethLog.transactionHash()} is not found in the block $ethFullBlock\n" +
-                                "All transactions: $transactions"
+                            "All transactions: $transactions"
                     )
                 EthereumBlockchainLog(
                     ethLog = ethLog,
@@ -161,3 +176,16 @@ class HyperArchiveEthereumClient(
         val logger: Logger = LoggerFactory.getLogger(HyperArchiveEthereumClient::class.java)
     }
 }
+
+class HyperArchiveEthereumClientException(
+    val fromBlock: Number,
+    val toBlock: Number?,
+    cause: Throwable?
+) : Exception(
+    if (toBlock == null) {
+        "HyperEVM archive retrieval failed for block #$fromBlock"
+    } else {
+        "HyperEVM archive retrieval failed for blocks #$fromBlock..#$toBlock"
+    },
+    cause
+)
