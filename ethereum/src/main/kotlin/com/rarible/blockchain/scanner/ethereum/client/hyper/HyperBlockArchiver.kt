@@ -187,9 +187,11 @@ data class TransactionData(
     val legacy: LegacyTransaction? = null,
     @JsonProperty("Eip1559")
     val eip1559: Eip1559Transaction? = null,
+    @JsonProperty("Eip2930")
+    val eip2930: Eip2930Transaction? = null,
 ) {
     fun getCommonTransaction(): CommonTransaction {
-        return legacy ?: eip1559 ?: throw IllegalArgumentException("Transaction type not supported")
+        return legacy ?: eip1559 ?: eip2930 ?: throw IllegalArgumentException("Transaction type not supported")
     }
 }
 
@@ -227,6 +229,17 @@ data class Eip1559Transaction(
 ) : CommonTransaction {
     override val gasPrice = maxFeePerGas
 }
+
+@Suppress("ArrayInDataClass")
+data class Eip2930Transaction(
+    override val chainId: ByteArray? = null,
+    override val nonce: ByteArray,
+    override val to: ByteArray?,
+    override val value: ByteArray,
+    override val input: ByteArray,
+    override val gas: ByteArray,
+    override val gasPrice: ByteArray,
+) : CommonTransaction
 
 data class Receipt(
     @JsonProperty("tx_type")
