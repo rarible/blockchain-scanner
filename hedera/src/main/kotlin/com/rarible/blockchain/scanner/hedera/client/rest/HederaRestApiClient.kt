@@ -13,6 +13,8 @@ import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaNftResponse
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaToken
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceResponse
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaContractResultsRequest
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaContractResultsResponse
 import org.springframework.web.reactive.function.client.WebClient
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
@@ -93,6 +95,26 @@ class HederaRestApiClient(
             request.accountId?.let { queryParam("account.id", it) }
             request.limit?.let { queryParam("limit", it.coerceIn(1, MAX_LIMIT)) }
             request.order?.let { queryParam("order", it.value) }
+            this
+        }
+    }
+
+    suspend fun getContractResults(
+        request: HederaContractResultsRequest = HederaContractResultsRequest(),
+        nextLink: Links? = null
+    ): HederaContractResultsResponse {
+        if (nextLink?.next != null) {
+            return get(nextLink.next)
+        }
+        return get("/api/v1/contracts/results") {
+            request.from?.let { queryParam("from", it) }
+            request.blockHash?.let { queryParam("block.hash", it) }
+            request.blockNumber?.let { queryParam("block.number", it) }
+            queryParam("internal", request.internal)
+            queryParam("limit", request.limit.coerceIn(1, MAX_LIMIT))
+            queryParam("order", request.order.value)
+            request.timestamp?.forEach { queryParam("timestamp", it) }
+            request.transactionIndex?.let { queryParam("transaction.index", it) }
             this
         }
     }
