@@ -8,6 +8,7 @@ import com.rarible.core.kafka.KafkaMessage
 import com.rarible.core.kafka.RaribleKafkaProducer
 import com.rarible.core.kafka.RaribleKafkaTopics
 import com.rarible.core.kafka.json.JsonSerializer
+import io.micrometer.core.instrument.MeterRegistry
 import java.util.UUID
 
 class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
@@ -16,6 +17,7 @@ class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
     blockchain: String,
     service: String,
     type: String,
+    meterRegistry: MeterRegistry,
     private val kafkaRecordEventWrapper: KafkaRecordEventWrapper<E, R, RE>,
     private val numberOfPartitionsPerGroup: Int,
 ) : RecordEventPublisher<R, RE> {
@@ -31,6 +33,7 @@ class KafkaRecordEventPublisher<E, R : Record, RE : RecordEvent<R>>(
         bootstrapServers = brokerReplicaSet,
         compression = properties.compression,
         properties = properties.producerProperties,
+        meterRegistry = meterRegistry,
     )
 
     override suspend fun prepareGroup(groupId: String) {
