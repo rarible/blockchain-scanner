@@ -11,6 +11,7 @@ import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.blockchain.scanner.publisher.RecordEventPublisher
 import com.rarible.blockchain.scanner.publisher.TransactionRecordEventPublisher
 import com.rarible.core.application.ApplicationEnvironmentInfo
+import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -40,7 +41,8 @@ class KafkaConfiguration(
     @Bean
     @ConditionalOnMissingBean(LogRecordEventPublisher::class)
     fun kafkaLogEventPublisher(
-        kafkaRecordEventWrapper: KafkaLogRecordEventWrapper<*>
+        kafkaRecordEventWrapper: KafkaLogRecordEventWrapper<*>,
+        meterRegistry: MeterRegistry,
     ): LogRecordEventPublisher {
         if (kafkaProperties.enabled) {
             logger.info(
@@ -56,7 +58,8 @@ class KafkaConfiguration(
                 service = properties.service,
                 type = "log",
                 kafkaRecordEventWrapper = kafkaRecordEventWrapper,
-                numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup
+                numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup,
+                meterRegistry = meterRegistry,
             )
             return object : LogRecordEventPublisher {
                 override suspend fun isEnabled() = publisher.isEnabled()
@@ -75,7 +78,8 @@ class KafkaConfiguration(
     @Bean
     @ConditionalOnMissingBean(name = ["kafkaTransactionEventPublisher"])
     fun kafkaTransactionEventPublisher(
-        kafkaRecordEventWrapper: KafkaTransactionRecordEventWrapper<*>
+        kafkaRecordEventWrapper: KafkaTransactionRecordEventWrapper<*>,
+        meterRegistry: MeterRegistry,
     ): TransactionRecordEventPublisher {
         if (kafkaProperties.enabled) {
             logger.info(
@@ -91,7 +95,8 @@ class KafkaConfiguration(
                 service = properties.service,
                 type = "transaction",
                 kafkaRecordEventWrapper = kafkaRecordEventWrapper,
-                numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup
+                numberOfPartitionsPerGroup = kafkaProperties.numberOfPartitionsPerLogGroup,
+                meterRegistry = meterRegistry,
             )
             return object : TransactionRecordEventPublisher {
                 override suspend fun isEnabled() = publisher.isEnabled()
