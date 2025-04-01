@@ -6,6 +6,7 @@ import com.rarible.blockchain.scanner.hedera.client.rest.dto.FallbackFee
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.Fee
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBalanceRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaBlockRequest
+import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaContractResultsRequest
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaOrder
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampFrom
 import com.rarible.blockchain.scanner.hedera.client.rest.dto.HederaTimestampTo
@@ -76,6 +77,23 @@ class HederaRestApiClientIt {
         )
         val transactions = client.getTransactions(filter)
         logger.info("Found filtered transactions: {}", transactions)
+    }
+
+    @Test
+    fun `get contract results`() = runBlocking<Unit> {
+        val contractResults = client.getContractResults()
+        logger.info("Found contract results: {}", contractResults)
+    }
+
+    @Test
+    fun `get contract results with filter`() = runBlocking<Unit> {
+        val filter = HederaContractResultsRequest(
+            limit = 5,
+            order = HederaOrder.DESC,
+            from = "0x00000000000000000000000000000000007498ee"
+        )
+        val contractResults = client.getContractResults(filter)
+        logger.info("Found filtered contract results: {}", contractResults)
     }
 
     @Test
